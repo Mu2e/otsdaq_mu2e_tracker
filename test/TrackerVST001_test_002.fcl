@@ -55,7 +55,7 @@ fragment_receiver: {
     sendEmpties            : false
     verbose                : false
 
-    test                   : "test2"        # test mode
+    test                   : "test_002"     # test mode - 'buffer_test', async mode
     dtc_id                 : -1             # use $DTCLIB_DTC
     roc_mask               : 0x1            # for annex tests - just one ROC
     heartbeatsAfter        : 16

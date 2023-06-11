@@ -1,5 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // P.Murat: test version, implements multiple DTC read tests
+// test2: test_buffer in async mode
+// test3: test_buffer in sync  mode
 ///////////////////////////////////////////////////////////////////////////////
 #include "artdaq/DAQdata/Globals.hh"
 
@@ -74,7 +76,10 @@ namespace mu2e {
 
     void var_pattern_config ();
     void buffer_test        ();
-    void test2              ();
+    void buffer_test_003    ();
+					// different tests
+    void test_002           ();
+    void test_003           ();
 
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
     // returns a vector of the fragment IDs an instance of this class
@@ -253,19 +258,26 @@ void mu2e::TrackerVST001::stop() {
 bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& frags) {
   bool rc(true);
 
-  TLOG(TLVL_DEBUG) << __func__ << "P.Murat: START event : " << _ievent ;
+  // TLOG(TLVL_DEBUG) << __func__ << "P.Murat: START event : " << _ievent ;
+
+  printf("----------------------- mu2e::TrackerVST001::%s : event : %10i\n",__func__,_ievent);
 
   //  if (should_stop() or ev_counter() > _nEvents) return false;
 
   // _startProcTimer();
 
-  if (_test == "test2") { 
-    test2();
+  if (_test == "test_002") { 
+    test_002();
+    _ievent += 1;
+    rc      = (_ievent < _nEvents);
+  }
+  if (_test == "test_003") { 
+    test_003();
     _ievent += 1;
     rc      = (_ievent < _nEvents);
   }
   else {
-    printf("ERROR: undefined test mode, STOP\n");
+    printf("ERROR: undefined test mode: %s, STOP\n",_test.data());
     rc = false;
   }
   
@@ -460,7 +472,6 @@ void mu2e::TrackerVST001::buffer_test() {
   unsigned long timestampOffset = 1;
   unsigned      cfodelay       (200);
   int           _requestsAhead  ( 0);
-  unsigned      _heartbeatsAfter(16);
 
   TLOG(TLVL_DEBUG) << "number, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
 		   << number << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
@@ -553,18 +564,166 @@ void mu2e::TrackerVST001::buffer_test() {
 		  << "Device Read Rate: " << Utilities::FormatByteString(totalBytesRead / readDevTime, "/s") << std::endl;
 }
 
+//-----------------------------------------------------------------------------
+// buffer_test in sync mode
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::buffer_test_003() {
+  TLOG(TLVL_DEBUG) << "---------------------------------- operation \"__func__\"" << std::endl;
+  auto startTime = std::chrono::steady_clock::now();
+
+  auto initTime = _device->GetDeviceTime();
+  _device->ResetDeviceTime();
+  auto afterInit = std::chrono::steady_clock::now();
+  
+  bool          useCFOEmulator (true);
+  unsigned      packetCount    (0);
+  DTC_DebugType debugType      (DTC_DebugType_SpecialSequence);
+  bool          stickyDebugType(true);
+  bool          quiet          (true);  // was false
+  unsigned      quietCount     (5);     // was 0
+  bool          reallyQuiet    (false);
+  bool          useCFODRP      (false); // was (true);
+  bool          forceNoDebug   (true ); // (false);
+  uint          number         (1    ); // for test3 this is essential
+  bool          stopOnTimeout  (false);
+  bool          checkSERDES    (false);
+
+  TLOG(TLVL_DEBUG) << "useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, forceNoDebug, useCFODRP:" 
+		   << useCFOEmulator << " " << packetCount << " " << debugType << " " << stickyDebugType 
+		   << " " << quiet << " " << forceNoDebug << " " << useCFODRP ;
+
+  print_dtc_registers(_dtc,"buffer_test_003 000");
+
+  DTCSoftwareCFO cfo(_dtc, useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, false, forceNoDebug, useCFODRP);
+
+  bool          syncRequests = true;
+
+  print_dtc_registers(_dtc,"buffer_test_003 001");
+
+  std::string   timestampFile = "";
+
+  bool          incrementTimestamp(true);
+  unsigned long timestampOffset = 1;
+  unsigned      cfodelay       (200);
+  int           _requestsAhead  ( 0);
+  unsigned      _heartbeatsAfter(16);
+
+  TLOG(TLVL_DEBUG) << "number, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
+		   << number << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
+		   << _requestsAhead << " " << _heartbeatsAfter;
+  TLOG(TLVL_DEBUG) << "syncRequests:" <<  syncRequests;
+  
+  // cfo.SendRequestsForRange(number, 
+  // 			   DTC_EventWindowTag(timestampOffset), 
+  // 			   incrementTimestamp, 
+  // 			   cfodelay, 
+  // 			   _requestsAhead, 
+  // 			   _heartbeatsAfter);
+  
+  auto readoutRequestTime = _device->GetDeviceTime();
+  _device->ResetDeviceTime();
+
+  auto afterRequests = std::chrono::steady_clock::now();
+
+  print_dtc_registers(_dtc,"buffer_test_003 002");
+
+  unsigned      extraReads     (1);
+  for (unsigned ii = 0; ii < number + extraReads; ++ii) {
+    if (syncRequests && ii < number) {
+      auto startRequest   = std::chrono::steady_clock::now();
+      cfo.SendRequestForTimestamp(DTC_EventWindowTag(timestampOffset + (incrementTimestamp ? ii : 0), _heartbeatsAfter));
+      auto endRequest     = std::chrono::steady_clock::now();
+      readoutRequestTime += std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(endRequest - startRequest).count();
+    }
+    TLOG(TLVL_DEBUG) << "Reading buffer " << std::dec << ii << std::endl;
+    
+    bool readSuccess = false;
+    bool timeout     = false;
+    size_t sts       = 0;
+
+    print_dtc_registers(_dtc,"buffer_test_003 003");
+
+    mu2e_databuff_t* buffer = readDTCBuffer(_device, readSuccess, timeout, sts, false);
+
+    printf("BUFFER %5i read, sts=%5li readSuccess=%i timeout=%i\n",ii,sts,readSuccess,timeout);
+    
+    print_dtc_registers(_dtc,"buffer_test_003 004");
+
+    if      (!readSuccess && checkSERDES) break;
+    else if (!readSuccess)                continue;
+    
+    if (stopOnTimeout && timeout) {
+      TLOG(TLVL_ERROR) << "Timeout detected and stop-on-timeout mode enabled. Stopping after " << ii << " events!";
+      break;
+    }
+    
+    if (!reallyQuiet) DTCLib::Utilities::PrintBuffer(buffer, sts, quietCount);
+    
+    _device->read_release(DTC_DMA_Engine_DAQ, 1);
+    usleep(200);
+
+    print_dtc_registers(_dtc,"buffer_test_003 005");
+  }
+
+  _device->release_all(DTC_DMA_Engine_DAQ);
+  
+  print_dtc_registers(_dtc,"buffer_test3 006");
+
+  auto totalBytesRead    = _device->GetReadSize();
+  auto totalBytesWritten = _device->GetWriteSize();
+
+  auto readDevTime       = _device->GetDeviceTime();
+  auto doneTime          = std::chrono::steady_clock::now();
+  auto totalTime         = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(doneTime - startTime).count();
+  auto totalInitTime     = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(afterInit - startTime).count();
+  auto totalRequestTime  = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(afterRequests - afterInit).count();
+  auto totalReadTime     = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(doneTime - afterRequests).count();
+  
+  TLOG(TLVL_INFO) << "Total Elapsed Time: " << Utilities::FormatTimeString(totalTime) << "." << std::endl
+		  << "Total Init Time: " << Utilities::FormatTimeString(totalInitTime) << "." << std::endl
+		  << "Total Readout Request Time: " << Utilities::FormatTimeString(totalRequestTime) << "." << std::endl
+		  << "Total Read Time: " << Utilities::FormatTimeString(totalReadTime) << "." << std::endl;
+
+  TLOG(TLVL_INFO) << "Device Init Time: "    << Utilities::FormatTimeString(initTime) << "." << std::endl
+		  << "Device Request Time: " << Utilities::FormatTimeString(readoutRequestTime) << "." << std::endl
+		  << "Device Read Time: "    << Utilities::FormatTimeString(readDevTime) << "." << std::endl;
+
+  TLOG(TLVL_INFO) << "Total Bytes Written: " << Utilities::FormatByteString(static_cast<double>(totalBytesWritten), "")
+		  << "." << std::endl
+		  << "Total Bytes Read: " << Utilities::FormatByteString(static_cast<double>(totalBytesRead), "") << "."
+		  << std::endl;
+
+  TLOG(TLVL_INFO) << "Total PCIe Rate: "
+		  << Utilities::FormatByteString((totalBytesWritten + totalBytesRead) / totalTime, "/s") << std::endl
+		  << "Read Rate: " << Utilities::FormatByteString(totalBytesRead / totalReadTime, "/s") << std::endl
+		  << "Device Read Rate: " << Utilities::FormatByteString(totalBytesRead / readDevTime, "/s") << std::endl;
+}
+
 
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::test2() {
+void mu2e::TrackerVST001::test_002() {
   var_pattern_config ();
 
-  print_dtc_registers(_dtc,"test2 001");
+  print_dtc_registers(_dtc,"test_002 001");
   print_roc_registers();
 
   buffer_test        ();
 
-  print_dtc_registers(_dtc,"test2 002");
+  print_dtc_registers(_dtc,"test_002 002");
+  print_roc_registers();
+}
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::test_003() {
+  var_pattern_config ();
+
+  print_dtc_registers(_dtc,"test_003 001");
+  print_roc_registers();
+
+  buffer_test_003    ();
+
+  print_dtc_registers(_dtc,"test3 002");
   print_roc_registers();
 }
 
