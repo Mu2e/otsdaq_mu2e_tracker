@@ -1,0 +1,131 @@
+# -*- mode:tcl -*- 
+#------------------------------------------------------------------------------
+# usage: artdaqDriver -c driver_tracker_vst.fcl
+#------------------------------------------------------------------------------
+process_name: TestTrackerVST001
+
+events_to_generate: 1
+run_number        : 101
+
+source: {
+    module_type: "ArtdaqInput"
+}
+
+services: {
+    ArtdaqFragmentNamingServiceInterface: {
+	helper_plugin: "Mu2e"
+	service_provider: "ArtdaqFragmentNamingService"
+    }
+    ArtdaqSharedMemoryServiceInterface: {
+	resume_after_timeout: false
+	service_provider: "ArtdaqSharedMemoryService"
+	waiting_time: 1
+    }
+
+    DbService: {
+	dbName: "mu2e_conditions_prd"
+	purpose: "EMPTY"
+	verbose: 0
+	version: ""
+    }
+    GeometryService: {
+	inputFile: "Offline/Mu2eG4/geom/geom_common.txt"
+	simulatedDetector: {
+	    tool_type: "Mu2e"
+	}
+    }
+    GlobalConstantsService: {
+	inputFile: "Offline/Mu2eG4/test/globalConstants_01.txt"
+    }
+    ProditionsService: {
+    }
+}
+
+#------------------------------------------------------------------------------
+# this is the FCL structure passed to the fragmentgenerator (TrackerVST*)
+#------------------------------------------------------------------------------
+fragment_receiver: {
+    generator              : TrackerVST001  # daq generator plug-in type (defines the shared lib to load)
+    fragment_type          : Mu2e           # generator data fragment type
+    nEvents                :  1             # 
+    nSkip                  :  1             # 
+
+    rawOutput              : false
+    rawOutputFile          : "/tmp/TrackerVST001.bin"
+    sendEmpties            : false
+    verbose                : false
+
+    test                   : "test2"        # test mode
+    dtc_id                 : -1             # use $DTCLIB_DTC
+    roc_mask               : 0x1            # for annex tests - just one ROC
+    heartbeatsAfter        : 16
+    request_delay          : 20000
+
+    board_id               : 0
+    fragment_id            : 0
+    max_fragment_size_bytes: 0x100000
+
+    destinations: {}
+
+    routing_table_config: {
+        use_routing_manager: false
+    }
+}
+
+event_builder: {
+    art_analyzer_count: 1
+    buffer_count: 20
+    end_of_data_wait_s: 600
+    events_expected_in_SimpleQueueReader: 5
+    expected_art_event_processing_time_us: 3e7
+    expected_fragments_per_event: 1
+    max_fragment_size_bytes: 1.048576e6
+    print_event_store_stats: false
+    routing_token_config: {
+	use_routing_manager: false
+    }
+    sources: {}
+    use_art: true
+    verbose: false
+}
+
+physics: {
+    analyzers:   {
+	a1:    {
+	    module_type: OfflineFragmentsDumper
+	}
+    }
+
+    t1: [a1]
+}
+
+outputs: {
+    rootout: { module_type : RootDAQOut
+	fileName         : "driver_Crv.root"
+	compressionLevel : 501
+    }
+
+    out1: { module_type : FileDumperOutput
+	wantProductFriendlyClassName: true
+    }
+}
+
+
+# outputs: {
+#     rootNetOutput: {
+# 	SelectEvents: []
+# 	destinations: {}
+# 	host_map: []
+# 	module_type: "RootNetOutput"
+# 	outputCommands: [
+# 			 "drop *_*_*_*",
+# 			 "keep mu2e::IntensityInfo*_*_*_*",
+# 			 "keep mu2e::CaloHits_CaloHitMakerFast_caphri_*"
+# 			]
+# 	routing_table_config: {
+# 	    use_routing_manager: false
+# 	}
+#     }
+# }
+
+
