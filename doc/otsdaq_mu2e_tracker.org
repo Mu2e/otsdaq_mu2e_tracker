@@ -1,11 +1,9 @@
 #
+* ------------------------------------------------------------------------------
+* reading data (from Monica)
+* ------------------------------------------------------------------------------
+** 1) after each DIGIs power up, run control_ROC.py on trackerpi1            
 
-* reading the data (from Monica) 
-
-1)     after each DIGIs power up :
-
-   this is done on the PI, set_digi_rw is a command of control_ROC.py, 
-   
 #+begin_src
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
 reading
@@ -13,34 +11,70 @@ Waiting for ARM to connect
 ==========================
 ('Connected to ARM on', '/dev/ttyUSB0')
 set_digi_rw -s 1
-** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
+ ** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
 (94, 1)
 {'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
 Ending...
 #+end_src
 
-a.     set_digi_rw   –s 1 to let serial drives commands to DIGI
+1. start control_ROC.py on the PI
+   1.a : let serial drives commands to DIGI
+   1.b : do alignment, what is alignment ?
+   1.c : read smth, why ?
+   1.d : in the end, let fiber drive commands to DIGI
 
-b.     find_alignment
+#+begin_src  ## these are commands issued at the control_ROC.py prompt (may be invisible)
+set_digi_rw   –s 1
+find_alignment
+read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+set_digi_rw   –s 0
+#+end_src
 
-c.     read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
-
-d.     set_digi_rw   –s 0         to let fiber drive commands to DIGI
-
-2)  to configure the ROC:
-
-configure ROC to receive data from all 4 lanes
-15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
-and clear counters in ROC logic which saw stuff during the -read command)
+** 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes       
+   
+    15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
+    and clear counters in ROC logic which saw stuff during the -read command)
 
 #+begin_src
 ./var_link_config.sh 0 15
 ./var_read_all.sh 0          # must return register 18 = 0xf00, ie all DIGIs FIFOs are empty
 #+end_src
 
-
-  before next run, clear TDC counters with    ./DTC_clean.sh
-
+** 3) after taking some data DREQ and before sending next DREQs              
 
 
+if the ROCFIFOs are empty (ie reg. 18 returns 0xf0X) are the end of run, just issue:
 
+#+begin_src
+./digi_clear.sh LANE_NO
+#+end_src 
+
+if register 18 reads some FIFOs not empty (ie something other than 0xf00), issue 
+
+#+begin_src 
+./rocfifo_clear.sh LINK_NO
+#+end_src 
+
+** 4) helpful DTC counters to read after a run                               
+
+#+begin_src
+   ./DTC_counters.sh
+#+end_src
+
+example of returned info for a run of 1000 events, with no CRC errors, 1 DREQ missed because of EWM on top of DREQ:
+
+#+begin_quote
+ #DTCReq: 0x000003e8 sts=0
+ #HB:     0x000003f8 sts=0
+ #DataHeader: 0x000003e7 sts=0
+ #Payloads:   0x000289ea sts=0
+ #CRC errors: 0x00000000 sts=0
+#+end_quote
+ 
+before next run, clear TDC counters with
+
+#+begin_src
+./DTC_clean.sh
+#+end_src
+
+* ------------------------------------------------------------------------------
