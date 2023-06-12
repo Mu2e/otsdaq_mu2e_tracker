@@ -1,0 +1,46 @@
+#
+
+* reading the data (from Monica) 
+
+1)     after each DIGIs power up :
+
+   this is done on the PI, set_digi_rw is a command of control_ROC.py, 
+   
+#+begin_src
+mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
+reading
+Waiting for ARM to connect
+==========================
+('Connected to ARM on', '/dev/ttyUSB0')
+set_digi_rw -s 1
+** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
+(94, 1)
+{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
+Ending...
+#+end_src
+
+a.     set_digi_rw   –s 1 to let serial drives commands to DIGI
+
+b.     find_alignment
+
+c.     read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+
+d.     set_digi_rw   –s 0         to let fiber drive commands to DIGI
+
+2)  to configure the ROC:
+
+configure ROC to receive data from all 4 lanes
+15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
+and clear counters in ROC logic which saw stuff during the -read command)
+
+#+begin_src
+./var_link_config.sh 0 15
+./var_read_all.sh 0          # must return register 18 = 0xf00, ie all DIGIs FIFOs are empty
+#+end_src
+
+
+  before next run, clear TDC counters with    ./DTC_clean.sh
+
+
+
+
