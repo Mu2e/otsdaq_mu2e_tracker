@@ -731,7 +731,8 @@ void mu2e::TrackerVST001::test_003() {
 // this is to make an organized transition
 //-----------------------------------------------------------------------------
 mu2e_databuff_t* mu2e::TrackerVST001::readDTCBuffer(mu2edev* Device, bool& readSuccess, bool& timeout, 
-						 size_t& sts, bool continuedMode) {
+						    size_t& sts, 
+						    bool continuedMode) {
   mu2e_databuff_t* buffer;
   auto tmo_ms = 1500;
   readSuccess = false;

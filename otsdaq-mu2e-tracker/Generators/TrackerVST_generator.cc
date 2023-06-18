@@ -265,8 +265,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
 #endif
   }
 //-----------------------------------------------------------------------------
-// why on earth DTC_Link_2 ? - that will not work, 
-// at the very least, for VST test in the annex
+// initially were using link 2 for annex
 //-----------------------------------------------------------------------------
   _dtc->WriteROCRegister(DTC_Link_2,11,1,true, 0);
 
@@ -315,10 +314,8 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
     
     while (data.size() == 0 && retryCount >= 0) {
       try {
-	//				TLOG(TLVL_TRACE + 10) << oname << "Calling theInterface->GetData(zero)";
 	TLOG(TLVL_DEBUG) << oname << "Calling theInterface->GetData(zero)";
 	data = _dtc->GetData(zero);
-	//				TLOG(TLVL_TRACE + 10) << oname << "Done calling theInterface->GetData(zero)";
 	TLOG(TLVL_DEBUG) << oname << "Done calling theInterface->GetData(zero)";
       }
       catch (std::exception const& ex) {

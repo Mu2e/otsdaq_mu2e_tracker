@@ -2,9 +2,8 @@
 * ------------------------------------------------------------------------------
 * reading data (from Monica)
 * ------------------------------------------------------------------------------
-** 1) after each DIGIs power up, run control_ROC.py on trackerpi1            
-
-#+begin_src
+* 1) after each DIGIs power up, run control_ROC.py on trackerpi1             
+#+begin_src                                                                  
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
 reading
 Waiting for ARM to connect
@@ -16,32 +15,180 @@ set_digi_rw -s 1
 {'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
 Ending...
 #+end_src
-
 1. start control_ROC.py on the PI
    1.a : let serial drives commands to DIGI
    1.b : do alignment, what is alignment ?
    1.c : read smth, why ?
    1.d : in the end, let fiber drive commands to DIGI
-
 #+begin_src  ## these are commands issued at the control_ROC.py prompt (may be invisible)
 set_digi_rw   –s 1
 find_alignment
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
 set_digi_rw   –s 0
 #+end_src
-
-** 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes       
+** example of the control_ROC.py output:                                     
+#+begin_quote
+mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
+reading
+Waiting for ARM to connect
+==========================
+('Connected to ARM on', '/dev/ttyUSB0')
+set_digi_rw -s 1
+ ** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
+(94, 1)
+{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
+find_alignment
+(103, 159)
+('EyeMonitorWidth', 4)
+('IfPatternCheck', 1)
+ ******   Iteration 0   ******
+ADCPhase 0                | Ailgnment        | Bitslip          | Pttn 0x263
+ADC#     Straw#   Active  | Complete Error   | Done     Step    | Fail    
+-----------------------------------------------------------------------------------
+0        91       *       | *                | *        8       |         
+1        85       *       | *                | *        8       |         
+2        79       *       | *                | *        8       |         
+3        73       *       | *                | *        7       |         
+4        67       *       | *                | *        8       |         
+5        61       *       | *                | *        8       |         
+6        55       *       | *                | *        8       |         
+7        49       *       | *                | *        8       |         
+-----------------------------------------------------------------------------------
+8        43       *       | *                | *        8       |         
+9        37       *       | *                | *        8       |         
+10       31       *       | *                | *        8       |         
+11       25       *       | *                | *        8       |         
+12       19       *       | *                | *        8       |         
+13       13       *       | *                | *        8       |         
+14       7        *       | *                | *        9       |         
+15       1        *       | *                | *        9       |         
+-----------------------------------------------------------------------------------
+16       90       *       | *                | *        5       |         
+17       84       *       | *                | *        6       |         
+18       78       *       | *                | *        6       |         
+19       72       *       | *                | *        6       |         
+20       66       *       | *                | *        6       |         
+21       60       *       | *                | *        6       |         
+22       54       *       | *                | *        6       |         
+23       48       *       | *                | *        5       |         
+-----------------------------------------------------------------------------------
+24       42       *       | *                | *        6       |         
+25       36       *       | *                | *        6       |         
+26       30       *       | *                | *        6       |         
+27       24       *       | *                | *        6       |         
+28       18       *       | *                | *        6       |         
+29       12       *       | *                | *        6       |         
+30       6        *       | *                | *        7       |         
+31       0        *       | *                | *        7       |         
+-----------------------------------------------------------------------------------
+32       93       *       | *                | *        8       |         
+33       87       *       | *                | *        8       |         
+34       81       *       | *                | *        8       |         
+35       75       *       | *                | *        7       |         
+36       69       *       | *                | *        8       |         
+37       63       *       | *                | *        8       |         
+38       57       *       | *                | *        8       |         
+39       51       *       | *                | *        8       |         
+-----------------------------------------------------------------------------------
+40       45       *       | *                | *        8       |         
+41       39       *       | *                | *        8       |         
+42       33       *       | *                | *        8       |         
+43       27       *       | *                | *        8       |         
+44       21       *       | *                | *        8       |         
+45       15       *       | *                | *        8       |         
+46       9        *       | *                | *        9       |         
+47       3        *       | *                | *        9       |         
+-----------------------------------------------------------------------------------
+48       44       *       | *                | *        5       |         
+49       38       *       | *                | *        6       |         
+50       32       *       | *                | *        6       |         
+51       26       *       | *                | *        6       |         
+52       20       *       | *                | *        6       |         
+53       14       *       | *                | *        6       |         
+54       8        *       | *                | *        6       |         
+55       2        *       | *                | *        5       |         
+-----------------------------------------------------------------------------------
+56       92       *       | *                | *        6       |         
+57       86       *       | *                | *        6       |         
+58       80       *       | *                | *        6       |         
+59       74       *       | *                | *        6       |         
+60       68       *       | *                | *        6       |         
+61       62       *       | *                | *        6       |         
+62       56       *       | *                | *        7       |         
+63       50       *       | *                | *        7       |         
+-----------------------------------------------------------------------------------
+64       47       *       | *                | *        8       |         
+65       41       *       | *                | *        8       |         
+66       35       *       | *                | *        8       |         
+67       29       *       | *                | *        7       |         
+68       23       *       | *                | *        8       |         
+69       17       *       | *                | *        8       |         
+70       11       *       | *                | *        8       |         
+71       5        *       | *                | *        8       |         
+-----------------------------------------------------------------------------------
+72       95       *       | *                | *        8       |         
+73       89       *       | *                | *        8       |         
+74       83       *       | *                | *        8       |         
+75       77       *       | *                | *        8       |         
+76       71       *       | *                | *        8       |         
+77       65       *       | *                | *        8       |         
+78       59       *       | *                | *        9       |         
+79       53       *       | *                | *        9       |         
+-----------------------------------------------------------------------------------
+80       46       *       | *                | *        5       |         
+81       40       *       | *                | *        6       |         
+82       34       *       | *                | *        6       |         
+83       28       *       | *                | *        6       |         
+84       22       *       | *                | *        6       |         
+85       16       *       | *                | *        6       |         
+86       10       *       | *                | *        6       |         
+87       4        *       | *                | *        5       |         
+-----------------------------------------------------------------------------------
+88       94       *       | *                | *        6       |         
+89       88       *       | *                | *        6       |         
+90       82       *       | *                | *        6       |         
+91       76       *       | *                | *        6       |         
+92       70       *       | *                | *        6       |         
+93       64       *       | *                | *        6       |         
+94       58       *       | *                | *        7       |         
+95       52       *       | *                | *        7       |         
+read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+('OPENING FILE', 'run_73.txt')
+SETTING MODE TO  3
+(105, 35)
+{'AdcMode': 4,
+ 'Ch_mask1': '0b11111111111111111111111111111111',
+ 'Clock': 99,
+ 'EnablePulser': 1,
+ 'Mode': 0,
+ 'NumLookback': 8,
+ 'NumSamples': 1,
+ 'NumTriggers': 10,
+ 'TdcMode': 0,
+ 'TdcString': b'PULSER\x00\x00',
+ 'digi_read(0xb)': '0b1111111111111111',
+ 'digi_read(0xc)': '0b1',
+ 'digi_read(0xd)': '0b1111111111111111',
+ 'digi_read(0xe)': '0b1111111111111111'}
+5
+{'TriggerCount': 0, 'TriggerCountMatchNumTriggers': 0}
+set_digi_rw   –s 0
+ ** Disabling DIGI signals via serial, fiber is used by default.
+(94, 1)
+{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 0}
+^CEnding...
+#+end_quote
+* 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes        
    
     15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
     and clear counters in ROC logic which saw stuff during the -read command)
 
 #+begin_src
-./var_link_config.sh 0 15
-./var_read_all.sh 0          # must return register 18 = 0xf00, ie all DIGIs FIFOs are empty
+./srcs/otsdaq_mu2e_tracker/scripts/var_link_config.sh 0 15
+./srcs/otsdaq_mu2e_tracker/scripts/var_read_all.sh 0          # must return register 18 = 0xf00, ie all DIGIs FIFOs are empty
 #+end_src
 
-** 3) after taking some data DREQ and before sending next DREQs              
-
+* 3) after taking some data DREQ and before sending next DREQs               
 
 if the ROCFIFOs are empty (ie reg. 18 returns 0xf0X) are the end of run, just issue:
 
@@ -55,7 +202,7 @@ if register 18 reads some FIFOs not empty (ie something other than 0xf00), issue
 ./rocfifo_clear.sh LINK_NO
 #+end_src 
 
-** 4) helpful DTC counters to read after a run                               
+* 4) helpful DTC counters to read after a run                                
 
 #+begin_src
    ./DTC_counters.sh
@@ -77,4 +224,38 @@ before next run, clear TDC counters with
 ./DTC_clean.sh
 #+end_src
 
+* ------------------------------------------------------------------------------
+* older instruction (from pasha_005)
+1) chantsDataTestMonica.sh 
+
+link configuration check: link=2 is up : 0x0100 : bit0=0 bit1=0 bit2=1
+
+#+begin_src  # 0xf4 = 0x11110100
+[mu2etrk@mu2edaq09 ots_pasha]$ my_cntl read 0x9140
+0x000000f4
+sts=0
+#+end_src
+
+>> writing 1 to r_11 (dev board) = lets start taking data
+
+>>> 
+
+rocUtil -a 11 -l $link read_register
+
+my_cntl read 0x9140         # register DTC 
+0x000c5
+sts=0
+
+           11000101 -- ROC mask: links #0 and #2 connected
+
+rocUtil -a 0 -l $link read_register  # -1 'roc' 
+
+mu2eUtil -help
+
+mu2eUtil -q 10 -N buffer_test -r 0x1 -D 20000 -n 1  -f test.bit 
+
+rocUtil -a 13 -l $link read_register       # number of requested , or zero if all read)
+rocUtil -a 14 -l $link read_register       # last block          , or zero if all read
+rocUtil -a 11 -l $link read_register       # 1: keep reading     , 0: all read 
+rocUtil -a 11 -l $link write_register -w 1 # read again 
 * ------------------------------------------------------------------------------
