@@ -2,6 +2,7 @@
 // P.Murat: test version, implements multiple DTC read tests
 // test2: test_buffer in async mode
 // test3: test_buffer in sync  mode
+// test4: read_digi
 ///////////////////////////////////////////////////////////////////////////////
 #include "artdaq/DAQdata/Globals.hh"
 
@@ -73,13 +74,21 @@ namespace mu2e {
 
     void print_roc_registers();
     void print_dtc_registers(DTC* Dtc, const char* Header);
+    void printBuffer(const void* ptr, int sz);
+//-----------------------------------------------------------------------------
+// clones of Monica's scripts
+//-----------------------------------------------------------------------------
+    void monica_digi_clear         (DTC* Dtc);
+    void monica_var_link_config    (DTC* Dtc);
+    void monica_var_pattern_config (DTC* Dtc);
 
-    void var_pattern_config ();
-    void buffer_test        ();
+    void buffer_test_002    ();
     void buffer_test_003    ();
+    void buffer_test_004    ();
 					// different tests
     void test_002           ();
     void test_003           ();
+    void test_004           ();
 
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
     // returns a vector of the fragment IDs an instance of this class
@@ -114,6 +123,7 @@ namespace mu2e {
 
     std::string     _test;
     size_t          request_delay_;
+    size_t          _requestsAhead;
     size_t          _heartbeatsAfter;
     int             _dtc_id;
     uint            _roc_mask;
@@ -165,6 +175,7 @@ mu2e::TrackerVST001::TrackerVST001(fhicl::ParameterSet const& ps) :
   , _nEvents         (ps.get<size_t>      ("nEvents"        ))                 // default:  1
   , _test            (ps.get<std::string> ("test"           ))                 // type of the test, default : "test2"
   , request_delay_   (ps.get<size_t>      ("request_delay"  ))
+  , _requestsAhead   (ps.get<size_t>      ("requestsAhead"  ))                 // default:  1
   , _heartbeatsAfter (ps.get<size_t>      ("heartbeatsAfter"))                 // default: 16
   , _dtc_id          (ps.get<int>         ("dtc_id"         ))                 // default: -1
   , _roc_mask        (ps.get<int>         ("roc_mask"       ))                 // default: 0x1
@@ -184,6 +195,23 @@ mu2e::TrackerVST001::TrackerVST001(fhicl::ParameterSet const& ps) :
     // 			false, 
     // 			ps.get<std::string>("simulator_memory_file_name","mu2esim.bin"));
     _dtc->SetSequenceNumberDisable();
+
+
+    bool          useCFOEmulator (true);
+    unsigned      packetCount    (0);
+    DTC_DebugType debugType      (DTC_DebugType_SpecialSequence);
+    bool          stickyDebugType(true);
+    bool          quiet          (true);  // was false
+    bool          forceNoDebug   (true) ; // (false);
+    bool          useCFODRP      (false); // was (true);
+
+    TLOG(TLVL_DEBUG) << "useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, forceNoDebug, useCFODRP:" 
+		     << useCFOEmulator << " " << packetCount << " " << debugType << " " << stickyDebugType 
+		     << " " << quiet << " " << forceNoDebug << " " << useCFODRP ;
+
+    print_dtc_registers(_dtc,"buffer_test 000");
+
+    _cfo = new DTCSoftwareCFO(_dtc, useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, false, forceNoDebug, useCFODRP);
 
     // fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
     
@@ -244,8 +272,8 @@ void mu2e::TrackerVST001::readSimFile_(std::string sim_file) {
 //-----------------------------------------------------------------------------
 mu2e::TrackerVST001::~TrackerVST001() {
   rawOutputStream_.close();
-  // delete _cfo;
-  // delete _dtc;
+  delete _cfo;
+  delete _dtc;
 }
 
 //-----------------------------------------------------------------------------
@@ -258,7 +286,7 @@ void mu2e::TrackerVST001::stop() {
 bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& frags) {
   bool rc(true);
 
-  // TLOG(TLVL_DEBUG) << __func__ << "P.Murat: START event : " << _ievent ;
+  // TLOG(TLVL_DEBUG) << __func__ << "::getNext_ START event: " << _ievent ;
 
   printf("----------------------- mu2e::TrackerVST001::%s : event : %10i\n",__func__,_ievent);
 
@@ -269,23 +297,26 @@ bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& frags) {
   if (_test == "test_002") { 
     test_002();
     _ievent += 1;
-    rc      = (_ievent < _nEvents);
+    rc       = false;
   }
-  if (_test == "test_003") { 
+  else if (_test == "test_003") { 
     test_003();
     _ievent += 1;
-    rc      = (_ievent < _nEvents);
+    rc       = (_ievent < _nEvents);
+  }
+  else if (_test == "test_004") { 
+    test_004();
+    _ievent += 1;
+    rc       = (_ievent < _nEvents);
   }
   else {
     printf("ERROR: undefined test mode: %s, STOP\n",_test.data());
     rc = false;
   }
   
-  TLOG(TLVL_DEBUG) << __func__ << "P.Murat: END of getNext_, return " << rc;
+  TLOG(TLVL_DEBUG) << __func__ << ": end of getNext_, return " << rc;
   return rc;
 }
-
-
 
 //-----------------------------------------------------------------------------
 bool mu2e::TrackerVST001::sendEmpty_(artdaq::FragmentPtrs& frags) {
@@ -306,32 +337,82 @@ void mu2e::TrackerVST001::print_dtc_registers(DTC* Dtc, const char* Header) {
 }
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::var_pattern_config() {
+void mu2e::TrackerVST001::monica_digi_clear(DTCLib::DTC* Dtc) {
+//-----------------------------------------------------------------------------
+//  Monica's digi_clear
+//  this will proceed in 3 steps each for HV and CAL DIGIs:
+// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
+// 2) write TWI INIT high
+// 3) write TWI INIT low
+//-----------------------------------------------------------------------------
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,28,0x10,false,1000); // 
+
+  // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x00,false,1000); // write 0 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); // toggle INIT 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x01,false,1000); //  write 1 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); //  toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+
+  // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,25,0x10,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x00,false,1000); // write 0
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x01,false,1000); // write 1
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+}
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::monica_var_link_config(DTCLib::DTC* Dtc) {
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->write_register(0x91a8,100,0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::monica_var_pattern_config(DTC* Dtc) {
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"var_patern_config\"" << std::endl;
 
   //  auto startTime = std::chrono::steady_clock::now();
 
-  print_dtc_registers(_dtc,"var_pattern_config 001");  // debug
+  print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
 
-  _device->ResetDeviceTime();
+  mu2edev* dev = Dtc->GetDevice();
 
-  _dtc->WriteRegister_(0,DTC_Register(0x91a8)); // _CFOEmulation_HeartbeatInterval);
+  dev->ResetDeviceTime();
+
+  Dtc->WriteRegister_(0,DTC_Register(0x91a8)); // _CFOEmulation_HeartbeatInterval);
   sleep(1);
 
   int tmo_ms    (1500);  // 1500 is OK
   int sleep_time( 100);  //  300 is OK
 
-  _dtc->WriteROCRegister(DTC_Link_0,14,0x01,false,tmo_ms);  // this seems to be a reset
+  Dtc->WriteROCRegister(DTC_Link_0,14,0x01,false,tmo_ms);  // this seems to be a reset
   std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
 
-  _dtc->WriteROCRegister(DTC_Link_0, 8,0x10,false,tmo_ms);
+  Dtc->WriteROCRegister(DTC_Link_0, 8,0x10,false,tmo_ms);
   std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
 
-  _dtc->WriteROCRegister(DTC_Link_0,30,0x00,false,tmo_ms);
+  Dtc->WriteROCRegister(DTC_Link_0,30,0x00,false,tmo_ms);
   std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
 
-  print_dtc_registers(_dtc,"var_pattern_config 002");  // debug
+  print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
 }
+
 
 //-----------------------------------------------------------------------------
 // this is a clone of Monica's var_read_all.sh script
@@ -429,41 +510,16 @@ void mu2e::TrackerVST001::print_roc_registers() {
 
 }
 
-
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::buffer_test() {
+void mu2e::TrackerVST001::buffer_test_002() {
+
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"buffer_test\"" << std::endl;
   auto startTime = std::chrono::steady_clock::now();
-
-  // auto device    = _dtc->GetDevice();
 
   auto initTime = _device->GetDeviceTime();
   _device->ResetDeviceTime();
   auto afterInit = std::chrono::steady_clock::now();
   
-  bool          useCFOEmulator (true);
-  unsigned      packetCount    (0);
-  DTC_DebugType debugType      (DTC_DebugType_SpecialSequence);
-  bool          stickyDebugType(true);
-  bool          quiet          (true);  // was false
-  unsigned      quietCount     (5);     // was 0
-  bool          reallyQuiet    (false);
-  bool          useCFODRP      (false); // was (true);
-  bool          forceNoDebug   (true) ; // (false);
-  uint          number         (2);
-  bool          stopOnTimeout  (false);
-  bool          checkSERDES    (false);
-
-  TLOG(TLVL_DEBUG) << "useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, forceNoDebug, useCFODRP:" 
-		   << useCFOEmulator << " " << packetCount << " " << debugType << " " << stickyDebugType 
-		   << " " << quiet << " " << forceNoDebug << " " << useCFODRP ;
-
-  print_dtc_registers(_dtc,"buffer_test 000");
-
-  DTCSoftwareCFO cfo(_dtc, useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, false, forceNoDebug, useCFODRP);
-
-  bool          syncRequests = false;
-
   print_dtc_registers(_dtc,"buffer_test 001");
 
   std::string   timestampFile = "";
@@ -472,18 +528,19 @@ void mu2e::TrackerVST001::buffer_test() {
   unsigned long timestampOffset = 1;
   unsigned      cfodelay       (200);
   int           _requestsAhead  ( 0);
+  bool          syncRequests = false;
 
-  TLOG(TLVL_DEBUG) << "number, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
-		   << number << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
+  TLOG(TLVL_DEBUG) << "_nEvents, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
+		   << _nEvents << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
 		   << _requestsAhead << " " << _heartbeatsAfter;
   TLOG(TLVL_DEBUG) << "syncRequests:" <<  syncRequests;
   
-  cfo.SendRequestsForRange(number, 
-			   DTC_EventWindowTag(timestampOffset), 
-			   incrementTimestamp, 
-			   cfodelay, 
-			   _requestsAhead, 
-			   _heartbeatsAfter);
+  _cfo->SendRequestsForRange(_nEvents, 
+			     DTC_EventWindowTag(timestampOffset), 
+			     incrementTimestamp, 
+			     cfodelay, 
+			     _requestsAhead, 
+			     _heartbeatsAfter);
   
   auto readoutRequestTime = _device->GetDeviceTime();
   _device->ResetDeviceTime();
@@ -492,11 +549,17 @@ void mu2e::TrackerVST001::buffer_test() {
 
   print_dtc_registers(_dtc,"buffer_test 002");
 
+  // unsigned      quietCount     (5);     // was 0
+  //   bool          reallyQuiet    (false);
+
+  bool          stopOnTimeout  (false);
+  bool          checkSERDES    (false);
   unsigned      extraReads     (1);
-  for (unsigned ii = 0; ii < number + extraReads; ++ii) {
-    if (syncRequests && ii < number) {
+
+  for (unsigned ii = 0; ii < _nEvents + extraReads; ++ii) {
+    if (syncRequests && ii < _nEvents) {
       auto startRequest   = std::chrono::steady_clock::now();
-      cfo.SendRequestForTimestamp(DTC_EventWindowTag(timestampOffset + (incrementTimestamp ? ii : 0), _heartbeatsAfter));
+      _cfo->SendRequestForTimestamp(DTC_EventWindowTag(timestampOffset + (incrementTimestamp ? ii : 0), _heartbeatsAfter));
       auto endRequest     = std::chrono::steady_clock::now();
       readoutRequestTime += std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(endRequest - startRequest).count();
     }
@@ -522,7 +585,7 @@ void mu2e::TrackerVST001::buffer_test() {
       break;
     }
     
-    if (!reallyQuiet) DTCLib::Utilities::PrintBuffer(buffer, sts, quietCount);
+    DTCLib::Utilities::PrintBuffer(buffer, sts, 0);
     
     _device->read_release(DTC_DMA_Engine_DAQ, 1);
     usleep(200);
@@ -565,7 +628,7 @@ void mu2e::TrackerVST001::buffer_test() {
 }
 
 //-----------------------------------------------------------------------------
-// buffer_test in sync mode
+// buffer_test in sync mode : syncRequests = true
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST001::buffer_test_003() {
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"__func__\"" << std::endl;
@@ -575,30 +638,25 @@ void mu2e::TrackerVST001::buffer_test_003() {
   _device->ResetDeviceTime();
   auto afterInit = std::chrono::steady_clock::now();
   
-  bool          useCFOEmulator (true);
-  unsigned      packetCount    (0);
-  DTC_DebugType debugType      (DTC_DebugType_SpecialSequence);
-  bool          stickyDebugType(true);
-  bool          quiet          (true);  // was false
+  // bool          useCFOEmulator (true);
+  // unsigned      packetCount    (0);
+  // DTC_DebugType debugType      (DTC_DebugType_SpecialSequence);
+  // bool          stickyDebugType(true);
+  // bool          quiet          (true);  // was false
   unsigned      quietCount     (5);     // was 0
-  bool          reallyQuiet    (false);
-  bool          useCFODRP      (false); // was (true);
-  bool          forceNoDebug   (true ); // (false);
+  // bool          reallyQuiet    (false);
+  // bool          forceNoDebug   (true ); // (false);
+  // bool          useCFODRP      (false); // was (true);
+
   uint          number         (1    ); // for test3 this is essential
   bool          stopOnTimeout  (false);
   bool          checkSERDES    (false);
 
-  TLOG(TLVL_DEBUG) << "useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, forceNoDebug, useCFODRP:" 
-		   << useCFOEmulator << " " << packetCount << " " << debugType << " " << stickyDebugType 
-		   << " " << quiet << " " << forceNoDebug << " " << useCFODRP ;
+  // TLOG(TLVL_DEBUG) << "useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, forceNoDebug, useCFODRP:" 
+  // 		   << useCFOEmulator << " " << packetCount << " " << debugType << " " << stickyDebugType 
+  // 		   << " " << quiet << " " << forceNoDebug << " " << useCFODRP ;
 
   print_dtc_registers(_dtc,"buffer_test_003 000");
-
-  DTCSoftwareCFO cfo(_dtc, useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, false, forceNoDebug, useCFODRP);
-
-  bool          syncRequests = true;
-
-  print_dtc_registers(_dtc,"buffer_test_003 001");
 
   std::string   timestampFile = "";
 
@@ -607,19 +665,14 @@ void mu2e::TrackerVST001::buffer_test_003() {
   unsigned      cfodelay       (200);
   int           _requestsAhead  ( 0);
   unsigned      _heartbeatsAfter(16);
+  bool          syncRequests = true;
 
   TLOG(TLVL_DEBUG) << "number, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
 		   << number << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
 		   << _requestsAhead << " " << _heartbeatsAfter;
   TLOG(TLVL_DEBUG) << "syncRequests:" <<  syncRequests;
   
-  // cfo.SendRequestsForRange(number, 
-  // 			   DTC_EventWindowTag(timestampOffset), 
-  // 			   incrementTimestamp, 
-  // 			   cfodelay, 
-  // 			   _requestsAhead, 
-  // 			   _heartbeatsAfter);
-  
+
   auto readoutRequestTime = _device->GetDeviceTime();
   _device->ResetDeviceTime();
 
@@ -631,7 +684,7 @@ void mu2e::TrackerVST001::buffer_test_003() {
   for (unsigned ii = 0; ii < number + extraReads; ++ii) {
     if (syncRequests && ii < number) {
       auto startRequest   = std::chrono::steady_clock::now();
-      cfo.SendRequestForTimestamp(DTC_EventWindowTag(timestampOffset + (incrementTimestamp ? ii : 0), _heartbeatsAfter));
+      _cfo->SendRequestForTimestamp(DTC_EventWindowTag(timestampOffset + (incrementTimestamp ? ii : 0), _heartbeatsAfter));
       auto endRequest     = std::chrono::steady_clock::now();
       readoutRequestTime += std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(endRequest - startRequest).count();
     }
@@ -657,7 +710,7 @@ void mu2e::TrackerVST001::buffer_test_003() {
       break;
     }
     
-    if (!reallyQuiet) DTCLib::Utilities::PrintBuffer(buffer, sts, quietCount);
+    DTCLib::Utilities::PrintBuffer(buffer, sts, quietCount);
     
     _device->read_release(DTC_DMA_Engine_DAQ, 1);
     usleep(200);
@@ -700,15 +753,90 @@ void mu2e::TrackerVST001::buffer_test_003() {
 }
 
 
+//-----------------------------------------------------------------------------
+// buffer_test_004: read data in sync mode
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::buffer_test_004() {
+  uint32_t res; 
+  int      rc;
+
+  TLOG(TLVL_DEBUG) << "---------------------------------- operation \"__func__\"" << std::endl;
+
+  _device->ResetDeviceTime();
+  print_dtc_registers(_dtc,"buffer_test_003 000");
+
+  std::string   timestampFile = "";
+
+  bool          incrementTimestamp(true);
+  unsigned long timestampOffset = 1;
+  unsigned      cfodelay       (200);
+  int           delay         = 200;         // 500 was OK;
+
+  TLOG(TLVL_DEBUG) << "timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
+		   << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
+		   << _requestsAhead << " " << _heartbeatsAfter;
+
+  _device->ResetDeviceTime();
+
+  print_dtc_registers(_dtc,"buffer_test_003 002");
+//-----------------------------------------------------------------------------
+// each time read just one event
+//-----------------------------------------------------------------------------
+  // for (int i=0; i<1; i++) {
+  monica_digi_clear     (_dtc);
+  monica_var_link_config(_dtc);
+//-----------------------------------------------------------------------------
+// back to the time window of 25.6 us 0x400 = 1024 (x25 ns)
+//-----------------------------------------------------------------------------
+  _device->write_register(0x91a8,100,0x400);
+
+  int nev = 1;
+  _cfo->SendRequestsForRange(nev,DTC_EventWindowTag(uint64_t(_ievent)),
+			     incrementTimestamp,cfodelay,
+			     _requestsAhead,_heartbeatsAfter);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  _device->ResetDeviceTime();
+
+    // print_roc_registers(&_dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
+
+  size_t sts(0);
+  bool   timeout(false);
+  bool   readSuccess(false);
+
+  printf(" ----------------------------------------------------------------------- reading event %i\n",_ievent);
+    
+  mu2e_databuff_t* buffer = readDTCBuffer(_device, readSuccess, timeout, sts, false);
+  //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
+
+  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,sts);
+
+  // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
+
+  // DTCLib::Utilities::PrintBuffer(buffer, sts, 0);
+  
+  printBuffer(buffer, (int) sts);
+
+  _device->read_release(DTC_DMA_Engine_DAQ, 1);
+
+  if (delay > 0) usleep(delay);
+
+  rc = _device->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
+  rc = _device->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+
+  _device->release_all(DTC_DMA_Engine_DAQ);
+
+}
+
 
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST001::test_002() {
-  var_pattern_config ();
+  monica_var_pattern_config (_dtc);
 
   print_dtc_registers(_dtc,"test_002 001");
   print_roc_registers();
 
-  buffer_test        ();
+  buffer_test_002    ();
 
   print_dtc_registers(_dtc,"test_002 002");
   print_roc_registers();
@@ -716,7 +844,7 @@ void mu2e::TrackerVST001::test_002() {
 
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST001::test_003() {
-  var_pattern_config ();
+  monica_var_pattern_config (_dtc);
 
   print_dtc_registers(_dtc,"test_003 001");
   print_roc_registers();
@@ -725,6 +853,24 @@ void mu2e::TrackerVST001::test_003() {
 
   print_dtc_registers(_dtc,"test3 002");
   print_roc_registers();
+}
+
+
+//-----------------------------------------------------------------------------
+// read data
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::test_004() {
+
+  monica_digi_clear     (_dtc);
+  monica_var_link_config(_dtc);
+
+  print_dtc_registers(_dtc,"test_004 001");
+  //  print_roc_registers();
+
+  buffer_test_004();
+
+  print_dtc_registers(_dtc,"test4 002");
+  // print_roc_registers();
 }
 
 //-----------------------------------------------------------------------------
@@ -783,5 +929,33 @@ mu2e_databuff_t* mu2e::TrackerVST001::readDTCBuffer(mu2edev* Device, bool& readS
   return buffer;
 }
 
+
+//-----------------------------------------------------------------------------
+// print 16 bytes per line
+// size - number of bytes to print, even
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST001::printBuffer(const void* ptr, int sz) {
+
+  int     nw  = sz/2;
+  ushort* p16 = (ushort*) ptr;
+  int     n   = 0;
+
+  for (int i=0; i<nw; i++) {
+    if (n == 0) printf(" 0x%08x: ",i*2);
+
+    ushort  word = p16[i];
+    printf("0x%04x ",word);
+
+    n   += 1;
+    if (n == 8) {
+      printf("\n");
+      n = 0;
+    }
+  }
+
+  if (n != 0) printf("\n");
+}
+//-----------------------------------------------------------------------------
 // The following macro is defined in artdaq's GeneratorMacros.hh header
+//-----------------------------------------------------------------------------
 DEFINE_ARTDAQ_COMMANDABLE_GENERATOR(mu2e::TrackerVST001)

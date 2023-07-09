@@ -2,6 +2,8 @@
 #------------------------------------------------------------------------------
 # usage: artdaqDriver -c driver_tracker_vst.fcl
 #------------------------------------------------------------------------------
+#include "Offline/fcl/standardServices.fcl"
+
 process_name: TestTrackerVST001
 
 events_to_generate: 1
@@ -11,7 +13,8 @@ source: {
     module_type: "ArtdaqInput"
 }
 
-services: {
+services: { @table::Services.Reco 
+
     ArtdaqFragmentNamingServiceInterface: {
 	helper_plugin: "Mu2e"
 	service_provider: "ArtdaqFragmentNamingService"
@@ -33,11 +36,10 @@ services: {
 	simulatedDetector: {
 	    tool_type: "Mu2e"
 	}
+	bFieldFile: "Offline/Mu2eG4/geom/bfgeom_v01.txt"
     }
     GlobalConstantsService: {
-	inputFile: "Offline/Mu2eG4/test/globalConstants_01.txt"
-    }
-    ProditionsService: {
+	inputFile: "Offline/GlobalConstantsService/data/globalConstants_01.txt"
     }
 }
 
@@ -47,7 +49,7 @@ services: {
 fragment_receiver: {
     generator              : TrackerVST001  # daq generator plug-in type (defines the shared lib to load)
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                :  1             # 
+    nEvents                :  10            # 
     nSkip                  :  1             # 
 
     rawOutput              : false
@@ -58,6 +60,7 @@ fragment_receiver: {
     test                   : "test_002"     # test mode - 'buffer_test', async mode
     dtc_id                 : -1             # use $DTCLIB_DTC
     roc_mask               : 0x1            # for annex tests - just one ROC
+    requestsAhead          :  1
     heartbeatsAfter        : 16
     request_delay          : 20000
 

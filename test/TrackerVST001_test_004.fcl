@@ -47,7 +47,7 @@ services: { @table::Services.Reco
 fragment_receiver: {
     generator              : TrackerVST001  # daq generator plug-in type (defines the shared lib to load)
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                :  5             # 
+    nEvents                : 10             # number of events to read
     nSkip                  :  1             # 
 
     rawOutput              : false
@@ -55,10 +55,10 @@ fragment_receiver: {
     sendEmpties            : false
     verbose                : false
 
-    test                   : "test_003"     # test mode
+    test                   : "test_004"     # test mode
     dtc_id                 : -1             # use $DTCLIB_DTC
     roc_mask               : 0x1            # for annex tests - just one ROC
-    requestsAhead          :  1
+    requestsAhead          :  1             # read digis - what it should be ?
     heartbeatsAfter        : 16
     request_delay          : 20000
 
@@ -111,7 +111,6 @@ outputs: {
     }
 }
 
-
 # outputs: {
 #     rootNetOutput: {
 # 	SelectEvents: []
@@ -128,5 +127,3 @@ outputs: {
 # 	}
 #     }
 # }
-
-

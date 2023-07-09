@@ -259,13 +259,11 @@ void test2_read_data(int NEvents) {
 
   mu2edev* dev = dtc.GetDevice();
 
-  // monica_dtc_reset(&dtc);
-  
   print_dtc_registers(&dtc);
 //-----------------------------------------------------------------------------
 // print the ROC registers 11,13,14 - previously used in the readout
 //-----------------------------------------------------------------------------
-  print_roc_registers(&dtc,DTCLib::DTC_Link_0,"000");
+//  print_roc_registers(&dtc,DTCLib::DTC_Link_0,"000");
 //-----------------------------------------------------------------------------
 // now to reading the data
 //-----------------------------------------------------------------------------
