@@ -39,6 +39,20 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
 
 
 //-----------------------------------------------------------------------------
+void print_dtc_registers(DTCLib::DTC* Dtc) {
+  uint32_t res; 
+  int      rc;
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  rc = dev->read_register(0x9100,100,&res); printf("0x9100: DTC status       : 0x%08x\n",res); // expect: 0x40808404
+  rc = dev->read_register(0x9138,100,&res); printf("0x9138: SERDES Reset Done: 0x%08x\n",res); // expect: 0xbfbfbfbf
+  rc = dev->read_register(0x91a8,100,&res); printf("0x9158: time window      : 0x%08x\n",res); // expect: 
+  rc = dev->read_register(0x91c8,100,&res); printf("0x91c8: debug packet type: 0x%08x\n",res); // expect: 0x00000000
+}
+
+
+//-----------------------------------------------------------------------------
 void print_roc_registers(DTCLib::DTC* Dtc, DTCLib::DTC_Link_ID RocID, const char* Header) {
   uint16_t  roc_reg[100];
   printf("---------------------- %s print_roc_registers\n",Header);
@@ -53,6 +67,18 @@ void print_roc_registers(DTCLib::DTC* Dtc, DTCLib::DTC_Link_ID RocID, const char
   printf("---------------------- END print_roc_registers\n");
 }
 
+//-----------------------------------------------------------------------------
+// this implements Monica's bash DTC_Reset
+//-----------------------------------------------------------------------------
+void monica_dtc_reset(DTCLib::DTC* Dtc) {
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->write_register(0x9100,100,0x80000000);
+  dev->write_register(0x9100,100,0x00008000);
+  dev->write_register(0x9118,100,0xffff00ff);
+  dev->write_register(0x9118,100,0x00000000);
+}
 
 //-----------------------------------------------------------------------------
 void monica_digi_clear(DTCLib::DTC* dtc) {
@@ -113,26 +139,23 @@ void monica_var_link_config(DTCLib::DTC* dtc) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
+
 //-----------------------------------------------------------------------------
-void test_read_data(int NEvents) {
+// test1: each time, CFO requests N events, no CFO calls in the loop
+//-----------------------------------------------------------------------------
+void test1_read_data(int NEvents) {
 
   uint16_t  roc_reg[100];
 
   DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   uint32_t res; 
   int      rc;
 
   mu2edev* dev = dtc.GetDevice();
-//-----------------------------------------------------------------------------
-// this implements bash DTC_Reset
-//-----------------------------------------------------------------------------
-  // dev->write_register(0x9100,100,0x80000000);
-  // dev->write_register(0x9100,100,0x00008000);
-  // dev->write_register(0x9118,100,0xffff00ff);
-  // dev->write_register(0x9118,100,0x00000000);
-  
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  //  monica_dtc_reset(&dtc);
   
   rc = dev->read_register(0x9138,100,&res); printf("0x9138: SERDES Reset Done: 0x%08x\n",res); // expect: 
 
@@ -145,10 +168,7 @@ void test_read_data(int NEvents) {
 //-----------------------------------------------------------------------------
 // print the DTC registers
 //-----------------------------------------------------------------------------
-  rc = dev->read_register(0x9100,100,&res); printf("0x9100: DTC status       : 0x%08x\n",res); // expect: 0x40808404
-  rc = dev->read_register(0x9138,100,&res); printf("0x9138: SERDES Reset Done: 0x%08x\n",res); // expect: 
-  rc = dev->read_register(0x91a8,100,&res); printf("0x9158: time window      : 0x%08x\n",res); // expect: 
-  rc = dev->read_register(0x91c8,100,&res); printf("0x91c8: debug packet type: 0x%08x\n",res); // expect: 0x00000000
+  print_dtc_registers(&dtc);
 //-----------------------------------------------------------------------------
 // print the ROC registers 11,13,14 - previously used in the readout
 //-----------------------------------------------------------------------------
@@ -169,16 +189,19 @@ void test_read_data(int NEvents) {
   bool forceNoDebug     = true;
   bool useCFODRP        = false;
 
-  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,DTCLib::DTC_DebugType_SpecialSequence,stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
+  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,
+			     DTCLib::DTC_DebugType_SpecialSequence,
+			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
+
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  int incrementTimestamp=1;
-  int cfodelay       = 1024;
-  int requestsAhead  =  0;
-  int heartbeatsAfter= 16;
+  int incrementTimestamp =    1;
+  int cfodelay           = 1024;
+  int requestsAhead      =    1;
+  int heartbeatsAfter    =   16;
 
-  int tmo_ms = 1500;
-  int delay  = 500;
+  int tmo_ms             = 1500;
+  int delay              =  500;
 
   cfo.SendRequestsForRange(NEvents,DTCLib::DTC_EventWindowTag(uint64_t(0)),incrementTimestamp,cfodelay,requestsAhead,heartbeatsAfter);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -199,7 +222,107 @@ void test_read_data(int NEvents) {
     bool   timeout(false);
     bool   readSuccess(false);
 
-    printf(" ---- read event %i\n",i);
+    printf("----------------------------------------------------------------------- read event %i\n",i);
+
+    mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, sts);
+    //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
+
+    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,sts);
+
+    // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
+
+    DTCLib::Utilities::PrintBuffer(buffer, sts, 0);
+
+    dev->read_release(DTC_DMA_Engine_DAQ, 1);
+
+    if (delay > 0) usleep(delay);
+
+    rc = dev->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x\n",res); // expect: 0x40808404
+    rc = dev->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x\n",res); // expect: 0x00000000
+  }
+  dev->release_all(DTC_DMA_Engine_DAQ);
+}
+
+
+//-----------------------------------------------------------------------------
+// test2: each time, CFO requests one event
+//-----------------------------------------------------------------------------
+void test2_read_data(int NEvents) {
+
+  uint16_t  roc_reg[100];
+
+  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  uint32_t res; 
+  int      rc;
+
+  mu2edev* dev = dtc.GetDevice();
+
+  // monica_dtc_reset(&dtc);
+  
+  print_dtc_registers(&dtc);
+//-----------------------------------------------------------------------------
+// print the ROC registers 11,13,14 - previously used in the readout
+//-----------------------------------------------------------------------------
+  print_roc_registers(&dtc,DTCLib::DTC_Link_0,"000");
+//-----------------------------------------------------------------------------
+// now to reading the data
+//-----------------------------------------------------------------------------
+  dtc.SetSequenceNumberDisable(); 
+  auto initTime = dev->GetDeviceTime();
+  dev->ResetDeviceTime();
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  bool useCFOEmulator   = true;
+  int  packetCount      = 0;
+  bool stickyDebugType  = true;
+  bool quiet            = false;
+  bool asyncRR          = false; 
+  bool forceNoDebug     = true;
+  bool useCFODRP        = false;
+
+  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,
+			     DTCLib::DTC_DebugType_SpecialSequence,
+			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  int incrementTimestamp =    1;
+  int cfodelay           = 1024;
+  int requestsAhead      =    1;
+  int heartbeatsAfter    =   16;
+
+  int tmo_ms = 1500;
+  int delay  = 200;         // 500 was OK;
+//-----------------------------------------------------------------------------
+// for some reason, it seems critical that we reset device time after sending 
+// requests for range. 
+// definition of a timeout ?
+//-----------------------------------------------------------------------------
+  for (int i=0; i<NEvents; i++) {
+    monica_digi_clear     (&dtc);
+    monica_var_link_config(&dtc);
+//-----------------------------------------------------------------------------
+// back to 25.6 us
+//-----------------------------------------------------------------------------
+    dev->write_register(0x91a8,100,0x400);
+
+    int nev = 1;
+    cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(i)),incrementTimestamp,cfodelay,requestsAhead,heartbeatsAfter);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    dev->ResetDeviceTime();
+    // cfo.SendRequestForTimestamp(DTCLib::DTC_EventWindowTag(uint64_t(i+1)), heartbeatsAfter);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    print_roc_registers(&dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
+
+    size_t sts(0);
+    bool   timeout(false);
+    bool   readSuccess(false);
+
+    printf(" ----------------------------------------------------------------------- reading event %i\n",i);
 
     mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, sts);
     //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
