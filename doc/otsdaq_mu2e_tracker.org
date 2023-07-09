@@ -3,7 +3,12 @@
 * reading data (from Monica)
 * ------------------------------------------------------------------------------
 * 1) after each DIGIs power up, run control_ROC.py on trackerpi1             
-#+begin_src                                                                  
+1. start control_ROC.py on the PI
+   1.a : let serial drives commands to DIGI
+   1.b : do alignment, what is alignment ?
+   1.c : read smth, why ?
+   1.d : in the end, let fiber drive commands to DIGI
+#+begin_src     set_digi_rw -s 1                                             
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
 reading
 Waiting for ARM to connect
@@ -15,15 +20,15 @@ set_digi_rw -s 1
 {'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
 Ending...
 #+end_src
-1. start control_ROC.py on the PI
-   1.a : let serial drives commands to DIGI
-   1.b : do alignment, what is alignment ?
-   1.c : read smth, why ?
-   1.d : in the end, let fiber drive commands to DIGI
 #+begin_src  ## these are commands issued at the control_ROC.py prompt (may be invisible)
-set_digi_rw   –s 1
+set_digi_rw –s 1
 find_alignment
-read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+# enable all channels
+# read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+# enable just one channel per lane
+read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
+# enable 32 channels
+read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
 set_digi_rw   –s 0
 #+end_src
 ** example of the control_ROC.py output:                                     
@@ -224,8 +229,28 @@ before next run, clear TDC counters with
 ./DTC_clean.sh
 #+end_src
 
+* 5) annex test stands                                                       
+** Teststand0 is connected to ttuUSB1                                        
+- Power up and down with gpio 25
+- No fiber connected (this can change if we want to)
+- ROC FlashPro S201QNXR6
+- HV DIGI FlashPro:  86129
+- To program use ppd-138181
+** Teststand1 is connected to ttyUSB0                                        
+- Power up and down with gpio 27
+- Fiber 1 connected to DTC 
+- ROC FlashPro: S2001JWC9O
+- CAL DIGI FlashPro: 95232
+- To program use ppd-130027
+** powering up the test stand                                                
+#+begin_src
+gpio mode  27 output         # turn on output mode
+gpio write 27 1              # set pin 27 output level to high
+gpio read  27
+gpio write 27 0              # set output level to low 
+#+end_src
 * ------------------------------------------------------------------------------
-* older instruction (from pasha_005)
+* older instruction (from pasha_005)                                         
 1) chantsDataTestMonica.sh 
 
 link configuration check: link=2 is up : 0x0100 : bit0=0 bit1=0 bit2=1

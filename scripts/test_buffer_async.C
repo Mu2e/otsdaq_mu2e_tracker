@@ -38,9 +38,18 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
 }
 
 //-----------------------------------------------------------------------------
-void test_buffer_async(int NEvents) {
+void test_buffer_async(int Link, int NEvents) {
 
-  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
+  DTCLib::DTC_Link_ID roc_link;
+
+  if      (Link == 0) roc_link = DTCLib::DTC_Link_0;
+  else if (Link == 1) roc_link = DTCLib::DTC_Link_1;
+
+  int link_mask = 0x1 << (4*Link);
+
+  printf("ROC link mask: 0x%08x\n",link_mask);
+
+  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,link_mask,"");
 
   uint32_t res; 
   int      rc;
@@ -62,11 +71,11 @@ void test_buffer_async(int NEvents) {
 //-----------------------------------------------------------------------------
   dev->write_register(0x91a8,100,0);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  dtc.WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
+  dtc.WriteROCRegister(roc_link,14,     1,false,1000); // reset ROC
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  dtc.WriteROCRegister(DTCLib::DTC_Link_0, 8,0x0010,false,1000); // configure ROC to send patterns
+  dtc.WriteROCRegister(roc_link, 8,0x0010,false,1000); // configure ROC to send patterns
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  dtc.WriteROCRegister(DTCLib::DTC_Link_0,30,     0,false,1000); // configure STATUS_BIT in MODE=0
+  dtc.WriteROCRegister(roc_link,30,     0,false,1000); // configure STATUS_BIT in MODE=0
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   rc = dev->read_register(0x9100,100,&res); printf("0x9100: DTC status       : 0x%08x\n",res); // expect: 0x40808404
