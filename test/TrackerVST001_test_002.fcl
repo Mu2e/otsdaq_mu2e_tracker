@@ -55,7 +55,7 @@ fragment_receiver: {
     rawOutput              : false
     rawOutputFile          : "/tmp/TrackerVST001.bin"
     sendEmpties            : false
-    verbose                : false
+    debugLevel             : 0
 
     test                   : "test_002"     # test mode - 'buffer_test', async mode
     dtc_id                 : -1             # use $DTCLIB_DTC

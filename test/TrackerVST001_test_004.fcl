@@ -6,8 +6,8 @@
 
 process_name: TestTrackerVST001
 
-events_to_generate: 1
-run_number        : 101
+events_to_generate : 5
+run_number         : 101
 
 source: {
     module_type: "ArtdaqInput"
@@ -30,15 +30,6 @@ services: { @table::Services.Reco
 	verbose: 0
 	version: ""
     }
-#    GeometryService: {
-#	inputFile: "Offline/Mu2eG4/geom/geom_common.txt"
-#	simulatedDetector: {
-#	    tool_type: "Mu2e"
-#	}
-#    }
-#    GlobalConstantsService: {
-#	inputFile: "Offline/Mu2eG4/test/globalConstants_01.txt"
-#   }
 }
 
 #------------------------------------------------------------------------------
@@ -47,13 +38,13 @@ services: { @table::Services.Reco
 fragment_receiver: {
     generator              : TrackerVST001  # daq generator plug-in type (defines the shared lib to load)
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                : 10             # number of events to read
+    nEvents                : 10             # number of events to read  - is it used at all ?
     nSkip                  :  1             # 
 
     rawOutput              : false
     rawOutputFile          : "/tmp/TrackerVST001.bin"
     sendEmpties            : false
-    verbose                : false
+    debugLevel             : 0
 
     test                   : "test_004"     # test mode
     dtc_id                 : -1             # use $DTCLIB_DTC
@@ -74,39 +65,38 @@ fragment_receiver: {
 }
 
 event_builder: {
-    art_analyzer_count: 1
-    buffer_count: 20
-    end_of_data_wait_s: 600
-    events_expected_in_SimpleQueueReader: 5
-    expected_art_event_processing_time_us: 3e7
-    expected_fragments_per_event: 1
-    max_fragment_size_bytes: 1.048576e6
-    print_event_store_stats: false
-    routing_token_config: {
-	use_routing_manager: false
-    }
-    sources: {}
-    use_art: true
-    verbose: false
+    use_art                             : true
+    expected_fragments_per_event        : 1
+    print_event_store_stats             : false
+    verbose                             : false
+    events_expected_in_SimpleQueueReader: @local::events_to_generate
+    init_fragment_count                 : 0
+    buffer_count                        : 1
+    max_fragment_size_bytes             : 0x100000
 }
 
 physics: {
     analyzers:   {
-	a1:    {
-	    module_type: OfflineFragmentsDumper
+	dtcDump:     {
+	    module_type: DTCEventDump
+	    raw_output_file: "DTCEventDump.bin" # Will have timestamp inserted
+	    raw_output_in_detector_emulator_format: false
 	}
     }
-
-    t1: [a1]
+    
+    #  a1: [ dtcDump ]
+    a1 : [ ]
+    e1: [ out1, rootout ]
 }
 
 outputs: {
-    rootout: { module_type : RootDAQOut
-	fileName         : "driver_Crv.root"
-	compressionLevel : 501
+    rootout:  {
+	module_type: RootOutput
+	fileName: "tracker_vst.root"
+	compressionLevel: 0
     }
-
-    out1: { module_type : FileDumperOutput
+    out1:  {
+	module_type: FileDumperOutput
 	wantProductFriendlyClassName: true
     }
 }

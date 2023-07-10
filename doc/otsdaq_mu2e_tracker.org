@@ -31,8 +31,8 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
 set_digi_rw   –s 0
 #+end_src
-** example of the control_ROC.py output:                                     
-#+begin_quote
+** examples of the control_ROC.py output                                     
+#+begin_src                   find_alignment                                 
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
 reading
 Waiting for ARM to connect
@@ -182,7 +182,49 @@ set_digi_rw   –s 0
 (94, 1)
 {'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 0}
 ^CEnding...
-#+end_quote
+#+end_src
+#+begin_src                   readSPI                                        
+set_digi_rw -s 1
+readSPI
+(10, 72)
+{'A0': 872,
+ 'A1': 996,
+ 'A2': 1948,
+ 'A3': 980,
+ 'ADCSPARE': 0.89,
+ 'CALPCBTEMP': 38.99,
+ 'CAL_RAIL_1.8V(mV)': '1837.250',
+ 'CAL_RAIL_1V(mV)': '1045.625',
+ 'CAL_RAIL_2.5V(mV)': '2583.250',
+ 'CAL_TEMP(CELSIUS)': '35.9750',
+ 'HVPCBTEMP': 36.42,
+ 'HV_RAIL_1.8V(mV)': '1839.000',
+ 'HV_RAIL_1V(mV)': '1048.000',
+ 'HV_RAIL_2.5V(mV)': '2581.625',
+ 'HV_TEMP(CELSIUS)': '34.7250',
+ 'I1.2': 2.18,
+ 'I1.8CAL': 2.23,
+ 'I1.8HV': 2.01,
+ 'I2.5': 0.83,
+ 'I3.3': 0.46,
+ 'ICAL5.0': 0.06,
+ 'IHV5.0': 0.06,
+ 'ROCPCBTEMP': 24.49,
+ 'ROC_RAIL_1.8V(mV)': '1827.750',
+ 'ROC_RAIL_1V(mV)': '1035.875',
+ 'ROC_RAIL_2.5V(mV)': '2570.750',
+ 'ROC_TEMP(CELSIUS)': '30.6000',
+ 'RTD': 1.74,
+ 'V1.0': 1.06,
+ 'V1.8CAL': 1.84,
+ 'V1.8HV': 1.82,
+ 'V2.5': 2.57,
+ 'V3.3': 6.59,
+ 'V3.3HV': 3.31,
+ 'VCAL5.0': 4.87,
+ 'VDMBHV5.0': 4.88}
+set_digi_rw -s 0
+#+end_src 
 * 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes        
    
     15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled

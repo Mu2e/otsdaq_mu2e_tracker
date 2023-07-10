@@ -90,7 +90,7 @@ namespace mu2e {
     std::ofstream                         rawOutputStream_;
     size_t                                _nSkip;
     bool                                  sendEmpties_;
-    bool                                  verbose_;
+    int                                   _debugLevel;
     size_t                                nEvents_;
     size_t                                request_delay_;
     size_t                                _heartbeatsAfter;
@@ -133,7 +133,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , rawOutputFile_  (ps.get<std::string>("raw_output_file", "/tmp/TrackerVST.bin"))
   , _nSkip          (ps.get<size_t>("nSkip"                 ))
   , sendEmpties_    (ps.get<bool>  ("sendEmpties"           ))
-  , verbose_        (ps.get<bool>  ("verbose", false))
+  , _debugLevel     (ps.get<bool>  ("debugLevel", 0))
   , nEvents_        (ps.get<size_t>("number_of_events_to_generate"  ,    -1))
   , request_delay_  (ps.get<size_t>("delay_between_requests_ticks"  , 20000))
   , _heartbeatsAfter(ps.get<size_t>("heartbeatsAfter"       )) 
@@ -245,7 +245,6 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
 
   TLOG(TLVL_DEBUG) << oname << "after startProcTimer";
 
-  TLOG(TLVL_TRACE + 5) << oname << "Starting CFO thread";
   uint64_t           z(0);
   DTC_EventWindowTag zero(z);
 
@@ -265,7 +264,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
 #endif
   }
 //-----------------------------------------------------------------------------
-// initially were using link 2 for annex
+// initially were using link 2 for annex, now using link 0
 //-----------------------------------------------------------------------------
   _dtc->WriteROCRegister(DTC_Link_2,11,1,true, 0);
 

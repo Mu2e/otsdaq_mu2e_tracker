@@ -82,13 +82,15 @@ namespace mu2e {
     void monica_var_link_config    (DTC* Dtc);
     void monica_var_pattern_config (DTC* Dtc);
 
-    void buffer_test_002    ();
-    void buffer_test_003    ();
-    void buffer_test_004    ();
+    void buffer_test_002    (artdaq::FragmentPtrs& frags);
+    void buffer_test_003    (artdaq::FragmentPtrs& frags);
+    void buffer_test_004    (artdaq::FragmentPtrs& frags);
+
 					// different tests
-    void test_002           ();
-    void test_003           ();
-    void test_004           ();
+
+    void test_002           (artdaq::FragmentPtrs& frags);
+    void test_003           (artdaq::FragmentPtrs& frags);
+    void test_004           (artdaq::FragmentPtrs& frags);
 
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
     // returns a vector of the fragment IDs an instance of this class
@@ -117,7 +119,7 @@ namespace mu2e {
     std::ofstream   rawOutputStream_;
     size_t          nSkip_;
     bool            sendEmpties_;
-    bool            _verbose;
+    int             _debugLevel;
     size_t          _nEvents;
 
 
@@ -171,7 +173,7 @@ mu2e::TrackerVST001::TrackerVST001(fhicl::ParameterSet const& ps) :
   , rawOutputFile_   (ps.get<std::string> ("rawOutputFile"  ))
   , nSkip_           (ps.get<size_t>      ("nSkip"          ))
   , sendEmpties_     (ps.get<bool>        ("sendEmpties"    ))
-  , _verbose         (ps.get<bool>        ("verbose"        ))
+  , _debugLevel      (ps.get<int>         ("debugLevel"     ))
   , _nEvents         (ps.get<size_t>      ("nEvents"        ))                 // default:  1
   , _test            (ps.get<std::string> ("test"           ))                 // type of the test, default : "test2"
   , request_delay_   (ps.get<size_t>      ("request_delay"  ))
@@ -283,7 +285,7 @@ void mu2e::TrackerVST001::stop() {
 }
 
 //-----------------------------------------------------------------------------
-bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& frags) {
+bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& Frags) {
   bool rc(true);
 
   // TLOG(TLVL_DEBUG) << __func__ << "::getNext_ START event: " << _ievent ;
@@ -295,17 +297,17 @@ bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& frags) {
   // _startProcTimer();
 
   if (_test == "test_002") { 
-    test_002();
+    test_002(Frags);
     _ievent += 1;
     rc       = false;
   }
   else if (_test == "test_003") { 
-    test_003();
+    test_003(Frags);
     _ievent += 1;
     rc       = (_ievent < _nEvents);
   }
   else if (_test == "test_004") { 
-    test_004();
+    test_004(Frags);
     _ievent += 1;
     rc       = (_ievent < _nEvents);
   }
@@ -511,7 +513,7 @@ void mu2e::TrackerVST001::print_roc_registers() {
 }
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::buffer_test_002() {
+void mu2e::TrackerVST001::buffer_test_002(artdaq::FragmentPtrs& frags) {
 
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"buffer_test\"" << std::endl;
   auto startTime = std::chrono::steady_clock::now();
@@ -630,7 +632,7 @@ void mu2e::TrackerVST001::buffer_test_002() {
 //-----------------------------------------------------------------------------
 // buffer_test in sync mode : syncRequests = true
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::buffer_test_003() {
+void mu2e::TrackerVST001::buffer_test_003(artdaq::FragmentPtrs& frags) {
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"__func__\"" << std::endl;
   auto startTime = std::chrono::steady_clock::now();
 
@@ -756,7 +758,7 @@ void mu2e::TrackerVST001::buffer_test_003() {
 //-----------------------------------------------------------------------------
 // buffer_test_004: read data in sync mode
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::buffer_test_004() {
+void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
   uint32_t res; 
   int      rc;
 
@@ -817,6 +819,16 @@ void mu2e::TrackerVST001::buffer_test_004() {
   
   printBuffer(buffer, (int) sts);
 
+  double fragment_timestamp = _ievent;
+  artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), fragment_id(), FragmentType::TRK, fragment_timestamp);
+  frag->resizeBytes(sts);
+  void* af = frag->dataBegin();
+  Frags.emplace_back(frag);
+
+  memcpy(af, buffer,sts);
+//-----------------------------------------------------------------------------
+// release the DMA channel
+//-----------------------------------------------------------------------------
   _device->read_release(DTC_DMA_Engine_DAQ, 1);
 
   if (delay > 0) usleep(delay);
@@ -830,26 +842,26 @@ void mu2e::TrackerVST001::buffer_test_004() {
 
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::test_002() {
+void mu2e::TrackerVST001::test_002(artdaq::FragmentPtrs& Frags) {
   monica_var_pattern_config (_dtc);
 
   print_dtc_registers(_dtc,"test_002 001");
   print_roc_registers();
 
-  buffer_test_002    ();
+  buffer_test_002    (Frags);
 
   print_dtc_registers(_dtc,"test_002 002");
   print_roc_registers();
 }
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::test_003() {
+void mu2e::TrackerVST001::test_003(artdaq::FragmentPtrs& Frags) {
   monica_var_pattern_config (_dtc);
 
   print_dtc_registers(_dtc,"test_003 001");
   print_roc_registers();
 
-  buffer_test_003    ();
+  buffer_test_003    (Frags);
 
   print_dtc_registers(_dtc,"test3 002");
   print_roc_registers();
@@ -859,7 +871,7 @@ void mu2e::TrackerVST001::test_003() {
 //-----------------------------------------------------------------------------
 // read data
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST001::test_004() {
+void mu2e::TrackerVST001::test_004(artdaq::FragmentPtrs& Frags) {
 
   monica_digi_clear     (_dtc);
   monica_var_link_config(_dtc);
@@ -867,7 +879,7 @@ void mu2e::TrackerVST001::test_004() {
   print_dtc_registers(_dtc,"test_004 001");
   //  print_roc_registers();
 
-  buffer_test_004();
+  buffer_test_004(Frags);
 
   print_dtc_registers(_dtc,"test4 002");
   // print_roc_registers();
@@ -924,11 +936,10 @@ mu2e_databuff_t* mu2e::TrackerVST001::readDTCBuffer(mu2edev* Device, bool& readS
     }
   }
 
-  TLOG(TLVL_DEBUG) << "mu2e::TrackerVST001::readDTCBuffer: END" ;
+  printf("mu2e::TrackerVST001::readDTCBuffer: END\n") ;
 
   return buffer;
 }
-
 
 //-----------------------------------------------------------------------------
 // print 16 bytes per line
