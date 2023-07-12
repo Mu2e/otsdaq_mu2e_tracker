@@ -291,7 +291,125 @@ gpio write 27 1              # set pin 27 output level to high
 gpio read  27
 gpio write 27 0              # set output level to low 
 #+end_src
-* ------------------------------------------------------------------------------
+* 6) VST data format                                                         
+
+- 8x32-bit words OR 256 bits per hit (ie two DTC packets)
+- hit data format: 3 words of  timestamp  +  5 words of payload 
+- the first 16 bit of the timestamp contains the channels number (presently there is a bug for HV lanes I believe such that bit[15]=1)
+- the channel to serdes lane mapping is as per attached file
+
+- an example of the DIGIs readout after
+
+read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
+
+ - 0x00000000: 0x00d0 0x0000 0x0000 0x0000 0x00c8 0x0000 0x1322 0x0000 : data header packet *go figure* 
+     
+    - w0 : 0x00d0 : - total number of bytes 
+    - w1 : 0x0000 : - bit 15-08: valid + subsystem ID + reserved *go figure* 
+                    - bit 07-04: packet type (0x5)
+                    - bit 03-00: ROC link ID
+    - w2 : 0x0000 : - bit 15-11: 000000  
+                    - bit 10-00: packet count *bits or packets - go figure* 
+    - w3 : 0x0000 : - bit 15-08: EWM byte 1, bit 07-00: EWM byte 0 
+    - w4 : 0x00c8 : - bit 15-08: EWM byte 3, bit 07-00: EWM byte 2
+    - w5 : 0x0000 : - bit 15-08: EWM byte 5, bit 07-00: EWM byte 4
+    - w6 : 0x1322 : - bit 15-08: data packet format version                
+                    - bit 07-00: data header status                        
+                        - bit    00 : 1: data present, 0: no data in the event window
+			- bit    01 : 1: ROC didn't receive a heartbit for this window
+			- bit    02 : 1: data corrupt
+			- bit    03 : 1: more data requests queued
+			- bit 04-07 : reserved
+    - w7 : 0x0000 : - bit 15-08: event window mode                         
+                    - bit 07-00: DTC ID
+ - 0x00000010: 0x0000 0xff01 0xffff 0xffff 0x0000 0x0000 0x0100 0x0000 : ???
+ - 0x00000020: 0x00b0 0x0000 0x1322 0x0000 0x0000 0xff01 0xffff 0xffff : ???    *go figure* 
+    - w0 : 0x00b0 : N(bytes) starting from this point
+    - w1 : 0x0000 : 
+    - w2 : 0x1322 :
+    - w3 : 0x0000 :
+    - w4 : 0x0000 :
+    - w5 : 0xff01 :
+    - w6 : 0xffff :
+    - w7 : 0xffff :
+ - 0x00000030: 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x01ee : ???
+ - 0x00000040: 0x0090 0x8050 0x0008 0x1322 0x0000 0x0000 0x0055 0x0000 : ???    *go figure* 
+    - w0 : 0x0090 : N(bytes) starting from this point
+    - w1 : 0x8050 : 
+    - w2 : 0x0008 : N(packets) with the hit data
+    - w3 : 0x0000 :
+    - w4 : 0x0000 :
+    - w5 : 0xff01 :
+    - w6 : 0xffff :
+    - w7 : 0xffff :
+ - 0x00000050: 0x005b 0xb660 0x140b 0xb630 0x040b 0x0041 0xa955 0x155a : hit #1 data 
+ - 0x00000060: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #1 data
+ - 0x00000070: 0x002a 0xb66a 0x140b 0xb684 0x040b 0x0041 0xa955 0x155a : hit #2 data 
+ - 0x00000080: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #2 data 
+ - 0x00000090: 0x00de 0xe2ec 0x1306 0xe2df 0x0406 0x0041 0xa955 0x155a : hit #3 data 
+ - 0x000000a0: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #3 data 
+ - 0x000000b0: 0x00ac 0xe195 0x1406 0xe147 0x0406 0x0041 0x56aa 0x2aa5 : hit #4 data 
+ - 0x000000c0: 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 : hit #4 data 
+* 7) slow monitoring - ROC - readSPI over the fiber                          
+
+-----here is the sequence of commands to use to do the equivalent of readSPI via fiber.
+#+begin_src    <2023-07-12 Wed> from Monica
+Essentially one needs to do a write to ROC address 258 (0x102) to collect a list of 36 ADCs values, and read them all back using a block read of the same address.
+In between, there are a couple of diagnostic registers to read that will tell you whether the block read is ready to be executed.
+
+How to interpret the 36 numbers read, and the conversion factor needed, is contained in the trackerScript/unpacker.py code, under READMONADCS.
+The conversion factors listed at the end.
+
+Enjoy!
+Monica
+
+1) rocUtil write_register -a 258 -w 0    # instructs microprocessor inside the firmware to read 36 ADC value
+2) rocUtil simple_read    -a 128         # should return 0x800 if 1) was successful
+3) rocUtil simple_read    -a 129         # should return 40 (0x28) which is the number of ADC values collected in 1) plus 4
+4) rocUtil block_read     -a 258 -c 36   # start a block read of 36 words
+
+Example from DTC1:
+
+mu2etrk@mu2edaq09:~/test_stand/monica_001>rocUtil write_register -a 258 -w 0
+07-12 11:31:11.538389                           DTC_Registers     INFO DTC_Registers(...): Sim Mode is NoCFO
+07-12 11:31:11.538510                           DTC_Registers     INFO DTC_Registers(...): DTC ID is 1
+07-12 11:31:11.538522                           DTC_Registers     INFO SetSimMode(...): Initializing device, sim mode is NoCFO
+07-12 11:31:11.551326                                 DTC.cpp     INFO DTC(...): CONSTRUCTOR
+07-12 11:31:11.556697                                 DTC.cpp     INFO ~DTC(): DESTRUCTOR
+
+mu2etrk@mu2edaq09:~/test_stand/monica_001>rocUtil simple_read -a 128
+0 0x8000
+mu2etrk@mu2edaq09:~/test_stand/monica_001>rocUtil simple_read -a 129
+0 0x28
+#+end_src
+
+- ROOT example 
+#+begin_src
+root [0] DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
+07-12 14:26:09.959864                           DTC_Registers     INFO DTC_Registers(...): Sim Mode is NoCFO                                                                                                      
+07-12 14:26:09.959930                           DTC_Registers     INFO DTC_Registers(...): DTC ID is 1                                                                                                            
+07-12 14:26:09.959945                           DTC_Registers     INFO SetSimMode(...): Initializing device, sim mode is NoCFO                                                                                    
+07-12 14:26:09.966937                           DTC_Registers     INFO SetSimMode(...): SKIPPING Initializing device                                                                                              
+07-12 14:26:09.972616                                 DTC.cpp     INFO DTC(...): CONSTRUCTOR                                                                                                                      
+root [1] using namespace DTCLib;
+root [2] dtc.WriteROCRegister(DTCLib::DTC_Link_0,258,0x0000,false,100);
+root [3] auto u = dtc.ReadROCRegister(DTC_Link_0,roc_address_t(128),100); printf("0x%04x\n",u);
+0x8000
+root [4] auto u = dtc.ReadROCRegister(DTC_Link_0,roc_address_t(129),100); printf("0x%04x\n",u);
+0x0028
+(int) 7
+root [5] std::vector<uint16_t> dat;
+root [6] dtc.ReadROCBlock(dat,DTC_Link_0,258,36,false,100)
+root [7] printf("0x%04x\n",dat[0]);
+0x0048
+root [8] printf("0x%04x\n",dat[1]);
+0x0080
+root [9] printf("0x%04x\n",dat[2]);
+0x0128
+root [10] printf("0x%04x\n",dat[3]);
+0x031c
+#+end_src
+-------------------------------------------------------------------------
 * older instruction (from pasha_005)                                         
 1) chantsDataTestMonica.sh 
 
