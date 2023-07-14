@@ -215,50 +215,6 @@ mu2e::TrackerVST001::TrackerVST001(fhicl::ParameterSet const& ps) :
 
     _cfo = new DTCSoftwareCFO(_dtc, useCFOEmulator, packetCount, debugType, stickyDebugType, quiet, false, forceNoDebug, useCFODRP);
 
-    // fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
-    
-    // _cfo = new DTCSoftwareCFO(_dtc, 
-    // 			      cfoConfig.get<bool>("use_dtc_cfo_emulator", true), 
-    // 			      cfoConfig.get<size_t>("debug_packet_count", 0), 
-    // 			      DTC_DebugTypeConverter::ConvertToDebugType(cfoConfig.get<std::string>("debug_type", "2")), 
-    // 			      cfoConfig.get<bool>("sticky_debug_type", false), 
-    // 			      cfoConfig.get<bool>("quiet", false), 
-    // 			      cfoConfig.get<bool>("asyncRR", false), 
-    // 			      cfoConfig.get<bool>("force_no_debug_mode", false), 
-    // 			      cfoConfig.get<bool>("useCFODRP", false));
-    // mode_ = _dtc->ReadSimMode();
-    // _nbuffers = 2;     // N(buffers) per call
-    
-    // TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
-    
-    // if (ps.get<bool>("load_sim_file", false)) {
-
-    //   _dtc->SetDetectorEmulatorInUse();
-    //   _dtc->ResetDDR();
-    //   _dtc->ResetDTC();
-      
-    //   char* file_c = getenv("DTCLIB_SIM_FILE");
-      
-    //   auto sim_file = ps.get<std::string>("sim_file", "");
-    //   if (file_c != nullptr) {
-    // 	sim_file = std::string(file_c);
-    //   }
-    //   if (sim_file.size() > 0) {
-    // 	simFileRead_ = false;
-    // 	std::thread reader(&mu2e::TrackerVST001::readSimFile_, this, sim_file);
-    // 	reader.detach();
-    //   }
-    // }
-    // else {
-    //   _dtc->ClearDetectorEmulatorInUse();  // Needed if we're doing ROC Emulator...make sure Detector Emulation
-    // 					   // is disabled
-    //   simFileRead_ = true;
-    // }
-    
-    // if (rawOutput_) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
-
-    // _firstTime = 1;
-
     TLOG(TLVL_INFO) << "P,Murat: VST board reader created" ;
   }
 
@@ -288,15 +244,18 @@ void mu2e::TrackerVST001::stop() {
 bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& Frags) {
   bool rc(true);
 
-  // TLOG(TLVL_DEBUG) << __func__ << "::getNext_ START event: " << _ievent ;
-
   printf("----------------------- mu2e::TrackerVST001::%s : event : %10i\n",__func__,_ievent);
 
-  //  if (should_stop() or ev_counter() > _nEvents) return false;
+  if (should_stop()) return false;
 
   // _startProcTimer();
 
   if (_test == "test_002") { 
+//-----------------------------------------------------------------------------
+// this is a syncronous read, need only one call
+// it also looks that by using _nEvents I'm duplicating the existing functionality,
+// if so, need to get rid of that
+//-----------------------------------------------------------------------------
     test_002(Frags);
     _ievent += 1;
     rc       = false;
@@ -304,18 +263,20 @@ bool mu2e::TrackerVST001::getNext_(artdaq::FragmentPtrs& Frags) {
   else if (_test == "test_003") { 
     test_003(Frags);
     _ievent += 1;
-    rc       = (_ievent < _nEvents);
+    // rc       = (_nEvents > 0) and (_ievent < _nEvents);
   }
   else if (_test == "test_004") { 
     test_004(Frags);
     _ievent += 1;
-    rc       = (_ievent < _nEvents);
+    // rc       = (_nEvents > 0) and (_ievent < _nEvents);
   }
   else {
     printf("ERROR: undefined test mode: %s, STOP\n",_test.data());
     rc = false;
   }
-  
+
+  ev_counter_inc();
+
   TLOG(TLVL_DEBUG) << __func__ << ": end of getNext_, return " << rc;
   return rc;
 }
@@ -802,30 +763,35 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
 
     // print_roc_registers(&_dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
 
-  size_t sts(0);
+  size_t nbytes(0);
   bool   timeout(false);
   bool   readSuccess(false);
 
   printf(" ----------------------------------------------------------------------- reading event %i\n",_ievent);
     
-  mu2e_databuff_t* buffer = readDTCBuffer(_device, readSuccess, timeout, sts, false);
-  //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
+  mu2e_databuff_t* buffer = readDTCBuffer(_device, readSuccess, timeout, nbytes, false);
+  //    int nbytes = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
 
-  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,sts);
+  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
 
   // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
 
-  // DTCLib::Utilities::PrintBuffer(buffer, sts, 0);
+  // DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
   
-  printBuffer(buffer, (int) sts);
+  printBuffer(buffer, (int) nbytes);
 
+//-----------------------------------------------------------------------------
+// first 0x40 bytes seem to be useless, they are followed by the data header packer,
+// offline starts from there
+//-----------------------------------------------------------------------------
+  int offset = 0x40;
   double fragment_timestamp = _ievent;
   artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), fragment_id(), FragmentType::TRK, fragment_timestamp);
-  frag->resizeBytes(sts);
+  frag->resizeBytes(nbytes-offset);
   void* af = frag->dataBegin();
   Frags.emplace_back(frag);
 
-  memcpy(af, buffer,sts);
+  memcpy(af, (char*) buffer+offset,nbytes-offset);
 //-----------------------------------------------------------------------------
 // release the DMA channel
 //-----------------------------------------------------------------------------
@@ -908,7 +874,7 @@ mu2e_databuff_t* mu2e::TrackerVST001::readDTCBuffer(mu2edev* Device, bool& readS
     TLOG(TLVL_DEBUG) << "Buffer reports DMA size of " 
 		     << std::dec << bufSize << " bytes. Device driver reports read of "
 		     << sts << " bytes," << std::endl;
-    
+
     TLOG(TLVL_DEBUG) << "mu2e::TrackerVST001::readDTCBuffer: bufSize is " << bufSize;
 
     timeout = false;

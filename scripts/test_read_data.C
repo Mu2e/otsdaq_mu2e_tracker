@@ -1,6 +1,9 @@
 //
 #define __CLING__ 1
 
+#include <iomanip>
+#include <iostream>
+
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 //-----------------------------------------------------------------------------
@@ -246,8 +249,11 @@ void test1_read_data(int NEvents) {
 
 //-----------------------------------------------------------------------------
 // test2: each time, CFO requests one event
+// if defined, OutputFn is the name of the output raw file
 //-----------------------------------------------------------------------------
-void test2_read_data(int NEvents) {
+void test2_read_data(int NEvents, const char* OutputFn = nullptr) {
+
+  std::ofstream outputStream;
 
   uint16_t  roc_reg[100];
 
@@ -256,6 +262,10 @@ void test2_read_data(int NEvents) {
 
   uint32_t res; 
   int      rc;
+
+  if (OutputFn) {
+    outputStream.open(OutputFn, std::ios::out | std::ios::app | std::ios::binary);
+  }
 
   mu2edev* dev = dtc.GetDevice();
 
@@ -316,20 +326,27 @@ void test2_read_data(int NEvents) {
 
     print_roc_registers(&dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
 
-    size_t sts(0);
-    bool   timeout(false);
+    size_t nbytes     (0);
+    bool   timeout    (false);
     bool   readSuccess(false);
 
     printf(" ----------------------------------------------------------------------- reading event %i\n",i);
 
-    mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, sts);
+    mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, nbytes);
     //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
 
-    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,sts);
+    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+
+    if (OutputFn) {
+      if (readSuccess and (not timeout)) {
+	char* ptr = (char*) buffer;
+	outputStream.write(ptr+8 ,nbytes-8);
+      }
+    }
 
     print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
 
-    DTCLib::Utilities::PrintBuffer(buffer, sts, 0);
+    DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
 
     dev->read_release(DTC_DMA_Engine_DAQ, 1);
 
@@ -338,5 +355,11 @@ void test2_read_data(int NEvents) {
     rc = dev->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x\n",res); // expect: 0x40808404
     rc = dev->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x\n",res); // expect: 0x00000000
   }
+
   dev->release_all(DTC_DMA_Engine_DAQ);
+
+  if (OutputFn) {
+    outputStream.flush();
+    outputStream.close();
+  }
 }

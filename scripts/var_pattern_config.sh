@@ -18,7 +18,7 @@ elif [ $MODE -lt 0 -o $MODE -gt 3 ]; then
 fi
 
 
-nseconds=10; if [ ".$3" != "." ] ; then nseconds=$3 ; fi
+nseconds=2; if [ ".$3" != "." ] ; then nseconds=$3 ; fi
 
 # ./ewm_disable.sh
 # disable markers to make DCS commands more robust
