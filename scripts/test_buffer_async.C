@@ -7,38 +7,40 @@
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 
-//-----------------------------------------------------------------------------
-mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout, size_t& nbytes) {
-  mu2e_databuff_t* buffer;
-  auto tmo_ms = 1500;
-  readSuccess = false;
+#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
 
-  nbytes = device->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
+// //-----------------------------------------------------------------------------
+// mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout, size_t& nbytes) {
+//   mu2e_databuff_t* buffer;
+//   auto tmo_ms = 1500;
+//   readSuccess = false;
+
+//   nbytes = device->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
   
-  if (nbytes > 0)    {
-    readSuccess = true;
-    void* readPtr = &buffer[0];
-    uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
-    readPtr = static_cast<uint8_t*>(readPtr) + 8;
+//   if (nbytes > 0)    {
+//     readSuccess = true;
+//     void* readPtr = &buffer[0];
+//     uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
+//     readPtr = static_cast<uint8_t*>(readPtr) + 8;
     
-    timeout = false;
-    if (nbytes > sizeof(DTCLib::DTC_EventHeader) + sizeof(DTCLib::DTC_SubEventHeader) + 8) {
-      // Check for dead or cafe in first packet
-      readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTCLib::DTC_EventHeader) + sizeof(DTCLib::DTC_SubEventHeader);
-      std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
-      for (auto& word : wordsToCheck) 	{
-	uint16_t* wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
-	if (*wordPtr == 0xcafe || *wordPtr == 0xdead) 	  {
-	  printf(" Buffer Timeout detected! word=%5lu data: 0x%04x\n",word, *wordPtr);
-	  DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, /*TLVL_TRACE*/4 + 3);
-	  timeout = true;
-	  break;
-	}
-      }
-    }
-  }
-  return buffer;
-}
+//     timeout = false;
+//     if (nbytes > sizeof(DTCLib::DTC_EventHeader) + sizeof(DTCLib::DTC_SubEventHeader) + 8) {
+//       // Check for dead or cafe in first packet
+//       readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTCLib::DTC_EventHeader) + sizeof(DTCLib::DTC_SubEventHeader);
+//       std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
+//       for (auto& word : wordsToCheck) 	{
+// 	uint16_t* wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
+// 	if (*wordPtr == 0xcafe || *wordPtr == 0xdead) 	  {
+// 	  printf(" Buffer Timeout detected! word=%5lu data: 0x%04x\n",word, *wordPtr);
+// 	  DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, /*TLVL_TRACE*/4 + 3);
+// 	  timeout = true;
+// 	  break;
+// 	}
+//       }
+//     }
+//   }
+//   return buffer;
+// }
 
 //-----------------------------------------------------------------------------
 void test_buffer_async(int Link, int NEvents, const char* OutputFn = nullptr) {
