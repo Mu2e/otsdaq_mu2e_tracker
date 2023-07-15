@@ -92,7 +92,7 @@ physics: {
 outputs: {
     rootout:  {
 	module_type: RootOutput
-	fileName: "tracker_vst.root"
+	fileName: "tracker_vst_vadim_101.root"
 	compressionLevel: 0
     }
     out1:  {
