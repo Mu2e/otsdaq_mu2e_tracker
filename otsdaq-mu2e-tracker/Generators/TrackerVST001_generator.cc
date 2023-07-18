@@ -120,7 +120,7 @@ namespace mu2e {
     size_t          nSkip_;
     bool            sendEmpties_;
     int             _debugLevel;
-    size_t          _nEvents;
+    size_t          _nEvents;              // n(events) to dump
 
 
     std::string     _test;
@@ -726,7 +726,8 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"__func__\"" << std::endl;
 
   _device->ResetDeviceTime();
-  print_dtc_registers(_dtc,"buffer_test_003 000");
+
+  if (_debugLevel > 0) print_dtc_registers(_dtc,"buffer_test_003 000");
 
   std::string   timestampFile = "";
 
@@ -741,7 +742,7 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
 
   _device->ResetDeviceTime();
 
-  print_dtc_registers(_dtc,"buffer_test_003 002");
+  if (_debugLevel > 0) print_dtc_registers(_dtc,"buffer_test_003 002");
 //-----------------------------------------------------------------------------
 // each time read just one event
 //-----------------------------------------------------------------------------
@@ -766,20 +767,19 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
   size_t nbytes(0);
   bool   timeout(false);
   bool   readSuccess(false);
-
-  printf(" ----------------------------------------------------------------------- reading event %i\n",_ievent);
-    
+   
   mu2e_databuff_t* buffer = readDTCBuffer(_device, readSuccess, timeout, nbytes, false);
   //    int nbytes = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
 
-  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
-
   // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
 
-  // DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+  // if (_debugLevel > 0) DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
   
-  printBuffer(buffer, (int) nbytes);
-
+  if (ev_counter() < _nEvents) {
+    printf(" ----------------------------------------------------------------------- reading event %i\n",_ievent);
+    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+    printBuffer(buffer, (int) nbytes);
+  }
 //-----------------------------------------------------------------------------
 // first 0x40 bytes seem to be useless, they are followed by the data header packer,
 // offline starts from there
@@ -791,7 +791,31 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
   void* af = frag->dataBegin();
   Frags.emplace_back(frag);
 
-  memcpy(af, (char*) buffer+offset,nbytes-offset);
+  struct DataHeaderPacket_t {
+    uint16_t  nBytes;
+    uint16_t  w2;
+    uint16_t  nPackets;
+    uint16_t  evtWindowTag[3];
+    uint16_t  w7;
+    uint16_t  w8;
+
+    void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
+    void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
+  };
+
+  char* cbuf = (char*) buffer;
+  memcpy(af, cbuf+offset,nbytes-offset);
+
+  DataHeaderPacket_t* dp = (DataHeaderPacket_t*) af;
+  dp->setVersion(1);
+//-----------------------------------------------------------------------------
+// now print the block saved in the file
+//-----------------------------------------------------------------------------
+  if (ev_counter() < _nEvents) {
+    printf(" ----------------------------------------------------------------------- saved Fragment %i\n",_ievent);
+    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+    printBuffer(af, (int) nbytes-offset);
+  }
 //-----------------------------------------------------------------------------
 // release the DMA channel
 //-----------------------------------------------------------------------------
@@ -799,8 +823,10 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
 
   if (delay > 0) usleep(delay);
 
-  rc = _device->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
-  rc = _device->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+  if (_debugLevel > 0) {
+    rc = _device->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
+    rc = _device->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+  }
 
   _device->release_all(DTC_DMA_Engine_DAQ);
 
@@ -842,12 +868,12 @@ void mu2e::TrackerVST001::test_004(artdaq::FragmentPtrs& Frags) {
   monica_digi_clear     (_dtc);
   monica_var_link_config(_dtc);
 
-  print_dtc_registers(_dtc,"test_004 001");
+  if (_debugLevel > 0) print_dtc_registers(_dtc,"test_004 001");
   //  print_roc_registers();
 
   buffer_test_004(Frags);
 
-  print_dtc_registers(_dtc,"test4 002");
+  if (_debugLevel > 0) print_dtc_registers(_dtc,"test4 002");
   // print_roc_registers();
 }
 

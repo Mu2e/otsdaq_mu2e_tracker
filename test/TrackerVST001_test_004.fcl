@@ -6,7 +6,7 @@
 
 process_name: TestTrackerVST001
 
-events_to_generate : 10
+events_to_generate : 1000
 run_number         : 101
 
 source: {
@@ -38,7 +38,7 @@ services: { @table::Services.Reco
 fragment_receiver: {
     generator              : TrackerVST001  # daq generator plug-in type (defines the shared lib to load)
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                :  1             # don't neeeed this one here
+    nEvents                :  10            # don't need to dump more
     nSkip                  :  1             # 
 
     rawOutput              : false

@@ -502,6 +502,9 @@ readSPI
  'VDMBHV5.0': 4.88}
 #+end_src
 -------------------------------------------------------------------------
+* pulser :             
+pulser_on -c 4 -d 1000 -y 200
+
 * older instruction (from pasha_005)                                         
 1) chantsDataTestMonica.sh 
 
