@@ -6,7 +6,7 @@
 
 process_name: TestTrackerVST001
 
-events_to_generate : 1000
+events_to_generate : 10
 run_number         : 101
 
 source: {
@@ -92,7 +92,7 @@ physics: {
 outputs: {
     rootout:  {
 	module_type: RootOutput
-	fileName: "tracker_vst_vadim_101.root"
+	fileName: "tracker_vst_vadim_101.art"
 	compressionLevel: 0
     }
     out1:  {

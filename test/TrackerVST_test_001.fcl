@@ -3,16 +3,18 @@
 # usage: artdaqDriver -c srcs/otsdaq_mu2e_tracekr_test/test_TrackerVST_001.fcl
 # test_buffer
 #------------------------------------------------------------------------------
-process_name: TestTrackerVST001
+#include "Offline/fcl/standardServices.fcl"
 
-events_to_generate: 1
+process_name: TrackerVSTTest001
+
+events_to_generate: 10
 run_number        : 101
 
 source: {
     module_type: "ArtdaqInput"
 }
 
-services: {
+services: { @table::Services.Reco 
     ArtdaqFragmentNamingServiceInterface: {
 	helper_plugin: "Mu2e"
 	service_provider: "ArtdaqFragmentNamingService"
@@ -29,17 +31,6 @@ services: {
 	verbose: 0
 	version: ""
     }
-    GeometryService: {
-	inputFile: "Offline/Mu2eG4/geom/geom_common.txt"
-	simulatedDetector: {
-	    tool_type: "Mu2e"
-	}
-    }
-    GlobalConstantsService: {
-	inputFile: "Offline/Mu2eG4/test/globalConstants_01.txt"
-    }
-    ProditionsService: {
-    }
 }
 
 #------------------------------------------------------------------------------
@@ -47,21 +38,32 @@ services: {
 #------------------------------------------------------------------------------
 fragment_receiver: {
     generator              : TrackerVST     # daq generator plug-in type (defines the shared lib to load)
+    loadSimFile            : false
+    simFileName            : "none"
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                :  1             # 
+    nEvents                :  10            # don't need to dump more
     nSkip                  :  1             # 
 
-    loadSimFile            : false;         # can use only one of them [if simFileName is not ""]
-    simFileName            : "mu2esim.bin"  # 
-
     rawOutputEnable        : false
-    rawOutputFile          : "/tmp/TrackerVST001.bin"
+    rawOutputFile          : "/tmp/TrackerVST.bin"
     sendEmpties            : false
-    verbose                : false
+    debugLevel             : 1
 
-    test                   : "test2"        # test mode
     dtcId                  : -1             # use $DTCLIB_DTC
     rocMask                : 0x1            # for annex tests - just one ROC
+
+    cfo_config             : {
+	use_dtc_cfo_emulator   : true
+	debug_packet_count     : 0
+	debug_type             : "DTC_DebugType_SpecialSequence"
+	sticky_debug_type      : true
+	quiet                  : true
+	asyncRR                : true
+	force_no_debug_mode    : true
+	useCFODRP              : false
+    }  
+
+    requestsAhead          :  1             # read digis - what it should be ?
     heartbeatsAfter        : 16
     request_delay          : 20000
 
@@ -74,34 +76,17 @@ fragment_receiver: {
     routing_table_config: {
         use_routing_manager: false
     }
-
-    cfoConfig : {
-	use_dtc_cfo_emulator : true
-	debug_packet_count   : 0
-	debug_type           : "0"      ## =SpecialSequence , read as a string
-	sticky_debug_type    : false    # 
-	quiet                : false    #
-	asyncRR              : false    # 
-	force_no_debug_mode  : true     # sets a DTC bit, true for buffer_test
-	useCFODRP            : false    #
-    }
 }
 
 event_builder: {
-    art_analyzer_count: 1
-    buffer_count: 20
-    end_of_data_wait_s: 600
-    events_expected_in_SimpleQueueReader: 5
-    expected_art_event_processing_time_us: 3e7
-    expected_fragments_per_event: 1
-    max_fragment_size_bytes: 1.048576e6
-    print_event_store_stats: false
-    routing_token_config: {
-	use_routing_manager: false
-    }
-    sources: {}
-    use_art: true
-    verbose: false
+    use_art                             : true
+    expected_fragments_per_event        : 1
+    print_event_store_stats             : false
+    verbose                             : false
+    events_expected_in_SimpleQueueReader: @local::events_to_generate
+    init_fragment_count                 : 0
+    buffer_count                        : 1
+    max_fragment_size_bytes             : 0x100000
 }
 
 physics: {
@@ -111,20 +96,21 @@ physics: {
 	}
     }
 
-    t1: [a1]
+    # t1: [a1]
+    t1: [ ]
 }
 
 outputs: {
-    rootout: { module_type : RootDAQOut
-	fileName         : "driver_Crv.root"
-	compressionLevel : 501
+    rootout:  {
+	module_type: RootOutput
+	fileName: "TrackerVST.art"
+	compressionLevel: 0
     }
-
-    out1: { module_type : FileDumperOutput
+    out1:  {
+	module_type: FileDumperOutput
 	wantProductFriendlyClassName: true
     }
 }
-
 
 # outputs: {
 #     rootNetOutput: {

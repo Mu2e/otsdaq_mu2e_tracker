@@ -57,8 +57,17 @@ namespace mu2e {
     
     void stop() override;
     
-    void readSimFile_(std::string sim_file);
+    void readSimFile_       (std::string sim_file);
 
+    void print_dtc_registers(DTC* Dtc, const char* Header);
+    void printBuffer        (const void* ptr, int sz);
+//-----------------------------------------------------------------------------
+// clones of Monica's scripts
+//-----------------------------------------------------------------------------
+    void monica_digi_clear         (DTC* Dtc);
+    void monica_var_link_config    (DTC* Dtc);
+    void monica_var_pattern_config (DTC* Dtc);
+   
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
     // returns a vector of the fragment IDs an instance of this class
     // is responsible for (in the case of TrackerVST, this is just
@@ -91,13 +100,14 @@ namespace mu2e {
     size_t                                _nSkip;
     bool                                  sendEmpties_;
     int                                   _debugLevel;
-    size_t                                nEvents_;
+    size_t                                _nEventsDbg;
     size_t                                request_delay_;
     size_t                                _heartbeatsAfter;
     int                                   _dtcId;
     uint                                  _rocMask;
     			                  
     DTCLib::DTC*                          _dtc;
+    mu2edev*                              _device;
     DTCLib::DTCSoftwareCFO*               _cfo;
     
     double _timeSinceLastSend() {
@@ -133,8 +143,8 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , rawOutputFile_  (ps.get<std::string>("raw_output_file", "/tmp/TrackerVST.bin"))
   , _nSkip          (ps.get<size_t>("nSkip"                 ))
   , sendEmpties_    (ps.get<bool>  ("sendEmpties"           ))
-  , _debugLevel     (ps.get<bool>  ("debugLevel", 0))
-  , nEvents_        (ps.get<size_t>("number_of_events_to_generate"  ,    -1))
+  , _debugLevel      (ps.get<int>   ("debugLevel",  0))
+  , _nEventsDbg     (ps.get<size_t>("nEventsDbg", 10))
   , request_delay_  (ps.get<size_t>("delay_between_requests_ticks"  , 20000))
   , _heartbeatsAfter(ps.get<size_t>("heartbeatsAfter"       )) 
   , _dtcId          (ps.get<int>   ("dtcId"                 )) 
@@ -144,8 +154,10 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     TLOG(TLVL_DEBUG) << "TrackerVST_generator CONSTRUCTOR";
     // mode_ can still be overridden by environment!
     
-    _dtc  = new DTC(mode_,_dtcId,_rocMask,"",false,_simFileName);
-    mode_ = _dtc->ReadSimMode();
+    _dtc    = new DTC(mode_,_dtcId,_rocMask,"",false,_simFileName);
+    mode_   = _dtc->ReadSimMode();
+
+    _device = _dtc->GetDevice();
     
     TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
     
@@ -217,16 +229,14 @@ void mu2e::TrackerVST::stop() {
 }
 
 //-----------------------------------------------------------------------------
-bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
+// a virtual function called from the outside world
+//-----------------------------------------------------------------------------
+bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   const char* oname = "mu2e::TrackerVST::getNext_: ";
 
   TLOG(TLVL_DEBUG) << oname << "STARTING";
 
-  while (!simFileRead_ and !should_stop()) {
-    usleep(5000);
-  }
-
-  if (should_stop() or ev_counter() > nEvents_) return false;
+  if (should_stop()) return false;
 
   if (sendEmpties_) {
     int mod = ev_counter() % _nSkip;
@@ -237,369 +247,291 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& frags) {
     else {
       // TLOG(TLVL_DEBUG) << "Sending Empty Fragment for sequence id " << ev_counter() << " (board_id " <<
       // std::to_string(board_id_) << ")" ;
-      return sendEmpty_(frags);
+      return sendEmpty_(Frags);
     }
   }
 
   _startProcTimer();
 
   TLOG(TLVL_DEBUG) << oname << "after startProcTimer";
+//-----------------------------------------------------------------------------
+// Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
+//-----------------------------------------------------------------------------
+  monica_digi_clear     (_dtc);
+  monica_var_link_config(_dtc);
+//-----------------------------------------------------------------------------
+// back to the time window of 25.6 us 0x400 = 1024 (x25 ns)
+//-----------------------------------------------------------------------------
+  _dtc->GetDevice()->write_register(0x91a8,100,0x400);
+//-----------------------------------------------------------------------------
+// send a request for one event, what is the role of requestsAhead? 
+//-----------------------------------------------------------------------------
+  uint64_t             z(0);
+  DTC_EventWindowTag   zero(z);
+  bool                 incrementTimestamp(true);
+  unsigned             cfodelay          (200);
+  int                  delay             (200);         // 500 was OK;
+  int                  requestsAhead     (  0);
+  // unsigned long timestampOffset   (  1);
 
-  uint64_t           z(0);
-  DTC_EventWindowTag zero(z);
+  int nev = 1;
 
-  if (mode_ != 0) {
-#if 0
-    //_dtc->ReleaseAllBuffers();
-    TLOG(TLVL_DEBUG) << "Sending requests for " << mu2e::BLOCK_COUNT_MAX 
-		     << " timestamps, starting at " << mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1);
+  _cfo->SendRequestsForRange(nev,DTC_EventWindowTag(ev_counter()),
+			     incrementTimestamp,cfodelay,
+			     requestsAhead,_heartbeatsAfter);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    _cfo->SendRequestsForRange(mu2e::BLOCK_COUNT_MAX, DTCLib::DTC_EventWindowTag(mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1)));
-#else
-    int loc = mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1);
-    TLOG(TLVL_DEBUG) << "pasha Sending requests for " << mu2e::BLOCK_COUNT_MAX 
-		     << " timestamps, starting at loc=" << loc;
+   _dtc->GetDevice()->ResetDeviceTime();
 
-    _cfo->SendRequestsForRange(-1,DTC_EventWindowTag(loc),true,request_delay_,1,_heartbeatsAfter);
-#endif
+    // print_roc_registers(&_dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
+
+   printf(" ------------------------------------------------------- reading event %li",ev_counter());
+
+//-----------------------------------------------------------------------------
+// the body of the readDTCBuffer
+//-----------------------------------------------------------------------------
+  size_t nbytes(0);
+  bool   timeout(false);
+  bool   readSuccess(false);
+  auto   tmo_ms(1500);
+
+  mu2e_databuff_t* buffer; //  = readDTCBuffer( _dtc->GetDevice(), readSuccess, timeout, nbytes, false);
+
+  nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
+
+  if (nbytes > 0)    {
+    readSuccess      = true;
+    void* readPtr    = &buffer[0];
+    uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
+    readPtr          = static_cast<uint8_t*>(readPtr) + 8;
+
+    TLOG(TLVL_DEBUG) << "Buffer reports DMA size of " 
+		     << std::dec << bufSize << " bytes. Device driver reports read of "
+		     << nbytes << " bytes," << std::endl;
+    TLOG(TLVL_DEBUG) << "mu2e::TrackerVST001::readDTCBuffer: bufSize is " << bufSize;
+
+    timeout = false;
+
+    if (nbytes > sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader) + 8) {
+//-----------------------------------------------------------------------------
+// I suspect this is a check of any useful data being present. although not sure
+// what 8 stands for. Also not sure about the meaning of the checks performed
+// Check for dead or cafe in first packet
+//-----------------------------------------------------------------------------
+      readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader);
+      std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
+      for (auto& word : wordsToCheck) 	{
+	auto wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
+	TLOG(TLVL_DEBUG) << word << (word == 1 ? "st" : word == 2 ? "nd"
+				     : word == 3 ? "rd"
+				     : "th")
+			 << " word of buffer: " << *wordPtr;
+
+	if (*wordPtr == 0xcafe || *wordPtr == 0xdead) 	  {
+	  TLOG(TLVL_WARNING) << "Buffer Timeout detected! " 
+			     << word 
+			     << (word == 1 ? "st" : word == 2 ? "nd" : word == 3 ? "rd" : "th")
+			     << " word of buffer is 0x" << std::hex << *wordPtr;
+	  DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, TLVL_DEBUG);
+	  timeout = true;
+	  break;
+	}
+      }
+    }
+  }
+
+  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+
+  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+    // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
+    // DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+  
+    printBuffer(buffer, (int) nbytes);
   }
 //-----------------------------------------------------------------------------
-// initially were using link 2 for annex, now using link 0
+// first 0x40 bytes seem to be useless, they are followed by the data header packer,
+// offline starts from there
+// suspect the offset is the size of DTC_EventHeader + DTC_SubEventHeader
 //-----------------------------------------------------------------------------
-  _dtc->WriteROCRegister(DTC_Link_2,11,1,true, 0);
+  int offset = 0x40;
 
-  roc_data_t r11 = _dtc->ReadROCRegister(DTC_Link_2, 11, 0);
-
-  TLOG(TLVL_DEBUG) << "pasha reading regster 11: value=" << r11 ; 
-
-  TLOG(TLVL_TRACE + 5) << oname << "Initializing mu2eFragment metadata";
-  mu2eFragment::Metadata metadata;
-  metadata.sim_mode   = static_cast<int>(mode_);
-  metadata.run_number = run_number();
-  metadata.board_id   = board_id_;
+  double fragment_timestamp = ev_counter();
+  artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), fragment_id(), FragmentType::TRK, fragment_timestamp);
+  frag->resizeBytes(nbytes-offset);
+  void* af = frag->dataBegin();
+  Frags.emplace_back(frag);
 //-----------------------------------------------------------------------------
-// And use it, along with the artdaq::Fragment header information
-// (fragment id, sequence id, and user type) to create a fragment
+// copy data and patch format version - set it to 1
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_TRACE + 5) << oname << "Creating new mu2eFragment!";
-  frags.emplace_back(new artdaq::Fragment(0, ev_counter(), fragment_ids_[0], fragment_type_, metadata));
+  struct DataHeaderPacket_t {
+    uint16_t  nBytes;
+    uint16_t  w2;
+    uint16_t  nPackets;
+    uint16_t  evtWindowTag[3];
+    uint16_t  w7;
+    uint16_t  w8;
+
+    void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
+    void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
+  };
+
+  char* cbuf = (char*) buffer;
+  memcpy(af, cbuf+offset,nbytes-offset);
+
+  DataHeaderPacket_t* dp = (DataHeaderPacket_t*) af;
+  dp->setVersion(1);
 //-----------------------------------------------------------------------------
-// Now we make an instance of the overlay to put the data into...
+// now print the block saved in the file for 10 events
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_TRACE + 5) << oname << "Making mu2eFragmentWriter";
-  mu2eFragmentWriter newfrag(*frags.back());
-  
-  TLOG(TLVL_TRACE + 5) << oname << "Reserving space for 16 * 201 * BLOCK_COUNT_MAX bytes";
-
-  newfrag.addSpace(mu2e::BLOCK_COUNT_MAX * 16 * 201);
-
-  // Get data from Mu2eReceiver
-  TLOG(TLVL_TRACE + 5) << oname << "Starting DTCFragment Loop";
-  _dtc->GetDevice()->ResetDeviceTime();
-
-  size_t totalSize = 0;
-  bool   first     = true;
-  while (newfrag.hdr_block_count() < mu2e::BLOCK_COUNT_MAX) {
-    if (should_stop()) {
-      break;
-    }
-
-    TLOG(TLVL_TRACE + 5) << oname << "Getting DTC Data for block " << newfrag.hdr_block_count() 
-			 << "/" << mu2e::BLOCK_COUNT_MAX
-			 << ", sz=" << totalSize;
-
-    std::vector<std::unique_ptr<DTC_Event>> data;
-    int retryCount = 5;
-    
-    while (data.size() == 0 && retryCount >= 0) {
-      try {
-	TLOG(TLVL_DEBUG) << oname << "Calling theInterface->GetData(zero)";
-	data = _dtc->GetData(zero);
-	TLOG(TLVL_DEBUG) << oname << "Done calling theInterface->GetData(zero)";
-      }
-      catch (std::exception const& ex) {
-	TLOG(TLVL_ERROR) << "There was an error in the DTC Library: " << ex.what();
-      }
-      retryCount--;
-      // if (data.size() == 0){usleep(10000);}
-    }
-    
-    if (retryCount < 0 && data.size() == 0) {
-      TLOG(TLVL_DEBUG) << oname << "Retry count exceeded. Something is very wrong indeed";
-      TLOG(TLVL_ERROR) << oname << "Had an error with block " << newfrag.hdr_block_count() << " of event "
-		       << ev_counter();
-      if (newfrag.hdr_block_count() == 0) {
-	throw cet::exception("DTC Retry count exceeded in first block of Event. Probably something is very wrong, aborting");
-      }
-      break;
-    }
-    
-    TLOG(TLVL_TRACE + 6) << "Allocating space in Mu2eFragment for DTC packets";
-    totalSize = 0;
-    for (size_t i = 0; i < data.size(); ++i) {
-      totalSize += data[i]->GetEventByteCount();
-    }
-    
-    int64_t diff = totalSize + newfrag.dataEndBytes() - newfrag.dataSize();
-    TLOG(TLVL_TRACE + 7) << "diff=" << diff << ", totalSize=" << totalSize << ", dataSize=" << newfrag.dataEndBytes()
-			 << ", fragSize=" << newfrag.dataSize();
-    if (diff > 0) {
-      auto currSize = newfrag.dataSize();
-      auto remaining = 1.0 - (newfrag.hdr_block_count() / static_cast<double>(BLOCK_COUNT_MAX));
-      
-      auto newSize = static_cast<size_t>(currSize * remaining);
-      TLOG(TLVL_TRACE + 8) << "mu2eReceiver::getNext: " << totalSize << " + " << newfrag.dataEndBytes() << " > "
-			   << newfrag.dataSize() << ", allocating space for " << newSize + diff << " more bytes";
-      newfrag.addSpace(diff + newSize);
-    }
-    
-    auto tag = data[0]->GetEventWindowTag();
-    
-    auto fragment_timestamp = tag.GetEventWindowTag(true);
-    if (fragment_timestamp > highest_timestamp_seen_) {
-      highest_timestamp_seen_ = fragment_timestamp;
-    }
-    
-    if (first) {
-      first = false;
-      if (fragment_timestamp < highest_timestamp_seen_) {
-	if (fragment_timestamp == 0) { timestamp_loops_++; }
-	// Timestamps start at 0, so make sure to offset by one so we don't repeat highest_timestamp_seen_
-	fragment_timestamp += timestamp_loops_ * (highest_timestamp_seen_ + 1);
-      }
-      frags.back()->setTimestamp(fragment_timestamp);
-    }
-    
-    TLOG(TLVL_TRACE + 9) << "Copying DTC packets into Mu2eFragment";
-    // auto offset = newfrag.dataBegin() + newfrag.blockSizeBytes();
-    size_t offset = newfrag.dataEndBytes();
-    for (size_t i = 0; i < data.size(); ++i) {
-      auto begin = reinterpret_cast<const uint8_t*>(data[i]->GetRawBufferPointer());
-      auto size = data[i]->GetEventByteCount();
-      
-      while (data[i + 1]->GetRawBufferPointer() == static_cast<const void*>(begin + size)) {
-	size += data[++i]->GetEventByteCount();
-      }
-      
-      TLOG(TLVL_TRACE + 11) << "Copying data from " << begin << " to "
-			    << reinterpret_cast<void*>(newfrag.dataAtBytes(offset)) << " (sz=" << size << ")";
-      // memcpy(reinterpret_cast<void*>(offset + intraBlockOffset), data[i].blockPointer, data[i].byteSize);
-      memcpy(newfrag.dataAtBytes(offset), begin, size);
-      TLOG(TLVL_TRACE + 11) << "Done with copy";
-      //std::copy(begin, reinterpret_cast<const uint8_t*>(begin) + size, newfrag.dataAtBytes(offset));
-      if (_rawOutputEnable) rawOutputStream_.write((char*)begin, size);
-      offset += size;
-    }
-    
-    TLOG(TLVL_TRACE + 12) << oname << "Ending SubEvt " << newfrag.hdr_block_count();
-    newfrag.endSubEvt(offset - newfrag.dataEndBytes());
+  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+    printf(" ----------------------------------------------------------------------- saved Fragment %lu\n",ev_counter());
+    printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+    printBuffer(af, (int) nbytes-offset);
   }
-  
-  TLOG(TLVL_TRACE + 5) << oname << "Incrementing event counter";
+//-----------------------------------------------------------------------------
+// release the DMA channel
+//-----------------------------------------------------------------------------
+  _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ, 1);
+
+  if (delay > 0) usleep(delay);
+
+  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
+    int      rc;
+    uint32_t res;
+    rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
+    rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+  }
+
+  _dtc->GetDevice()->release_all(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// increment the number of generated events
+//-----------------------------------------------------------------------------
   ev_counter_inc();
-  
-  TLOG(TLVL_TRACE + 5) << oname << "Reporting Metrics";
-  timestamps_read_ += newfrag.hdr_block_count();
-  auto hwTime = _dtc->GetDevice()->GetDeviceTime();
 
-  double processing_rate = newfrag.hdr_block_count() / _getProcTimerCount();
-  double timestamp_rate = newfrag.hdr_block_count() / _timeSinceLastSend();
-  double hw_timestamp_rate = newfrag.hdr_block_count() / hwTime;
-  double hw_data_rate = newfrag.dataEndBytes() / hwTime;
-  
-  metricMan->sendMetric("Timestamp Count", timestamps_read_, "timestamps", 1, artdaq::MetricMode::LastPoint);
-  metricMan->sendMetric("Timestamp Rate", timestamp_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-  metricMan->sendMetric("Generator Timestamp Rate", processing_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-  metricMan->sendMetric("HW Timestamp Rate", hw_timestamp_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-  metricMan->sendMetric("PCIe Transfer Rate", hw_data_rate, "B/s", 1, artdaq::MetricMode::Average);
-  
-  TLOG(TLVL_TRACE + 5) << oname << "Returning true";
   return true;
 }
-//-----------------------------------------------------------------------------
-// old version
-//-----------------------------------------------------------------------------
-// 	while (!simFileRead_ && !should_stop()) {
-// 		usleep(5000);
-// 	}
 
-// 	if (should_stop() or (ev_counter() > nEvents_)) return false;
-
-// 	if (sendEmpties_) {
-// 		int mod = ev_counter() % _nSkip;
-// 		if (mod == board_id_ or (mod == 0 and board_id_ == _nSkip)) {
-// 			// TLOG(TLVL_DEBUG) << "Sending Data  Fragment for sequence id " << ev_counter() << " (board_id " <<
-// 			// std::to_string(board_id_) << ")" ;
-// 		}
-// 		else {
-// 			// TLOG(TLVL_DEBUG) << "Sending Empty Fragment for sequence id " << ev_counter() << " (board_id " <<
-// 			// std::to_string(board_id_) << ")" ;
-// 			return sendEmpty_(frags);
-// 		}
-// 	}
-
-// 	_startProcTimer();
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Starting CFO thread";
-// 	uint64_t z = 0;
-// 	DTCLib::DTC_EventWindowTag zero(z);
-// 	if (mode_ != 0) {
-// #if 0
-// 		//_dtc->ReleaseAllBuffers();
-// 		TLOG(TLVL_DEBUG) << "Sending requests for " << mu2e::BLOCK_COUNT_MAX << " timestamps, starting at " << mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1);
-// 		_cfo->SendRequestsForRange(mu2e::BLOCK_COUNT_MAX, DTCLib::DTC_EventWindowTag(mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1)));
-// #else
-// 		_cfo->SendRequestsForRange(-1, DTCLib::DTC_EventWindowTag(mu2e::BLOCK_COUNT_MAX * (ev_counter() - 1)), true, request_delay_, 1, heartbeats_after_);
-// #endif
-// 	}
-
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Initializing mu2eFragment metadata";
-// 	mu2eFragment::Metadata metadata;
-// 	metadata.sim_mode   = static_cast<int>(mode_);
-// 	metadata.run_number = run_number();
-// 	metadata.board_id   = board_id_;
-
-// 	// And use it, along with the artdaq::Fragment header information
-// 	// (fragment id, sequence id, and user type) to create a fragment
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Creating new mu2eFragment!";
-// 	frags.emplace_back(new artdaq::Fragment(0, ev_counter(), fragment_ids_[0], fragment_type_, metadata));
-// 	// Now we make an instance of the overlay to put the data into...
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Making mu2eFragmentWriter";
-// 	mu2eFragmentWriter newfrag(*frags.back());
-
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Reserving space for 16 * 201 * BLOCK_COUNT_MAX bytes";
-// 	newfrag.addSpace(mu2e::BLOCK_COUNT_MAX * 16 * 201);
-
-// 	// Get data from TrackerVST
-// 	TLOG(TLVL_TRACE +5) << "mu2eReceiver::getNext: Starting DTCFragment Loop";
-// 	_dtc->GetDevice()->ResetDeviceTime();
-// 	size_t totalSize = 0;
-// 	bool first = true;
-// 	while (newfrag.hdr_block_count() < mu2e::BLOCK_COUNT_MAX) {
-// 		if (should_stop()) {
-// 			break;
-// 		}
-
-// 		TLOG(TLVL_TRACE +5) << "Getting DTC Data for block " << newfrag.hdr_block_count()   
-// 												<< "/"                           << mu2e::BLOCK_COUNT_MAX
-// 												<< ", sz="                       << totalSize;
-
-// 		std::vector<std::unique_ptr<DTCLib::DTC_Event>> data;
-// 		int retryCount = 5;
-// 		while (data.size() == 0 && retryCount >= 0) {
-// 			try {
-// 				TLOG(TLVL_TRACE +10) << "Calling theInterface->GetData(zero)";
-// 				data = _dtc->GetData(zero);
-// 				TLOG(TLVL_TRACE +10) << "Done calling theInterface->GetData(zero)";
-// 			}
-// 			catch (std::exception const& ex) {
-// 				TLOG(TLVL_ERROR) << "There was an error in the DTC Library: " << ex.what();
-// 			}
-// 			retryCount--;
-// 			// if (data.size() == 0){usleep(10000);}
-// 		}
-// 		if (retryCount < 0 && data.size() == 0) {
-// 			TLOG(TLVL_DEBUG) << "Retry count exceeded. Something is very wrong indeed";
-// 			TLOG(TLVL_ERROR) << "Had an error with block " << newfrag.hdr_block_count() << " of event " << ev_counter();
-// 			if (newfrag.hdr_block_count() == 0) {
-// 				throw cet::exception("DTC Retry count exceeded in first block of Event. Probably something is very wrong, aborting");
-// 			}
-// 			break;
-// 		}
-
-// 		TLOG(TLVL_TRACE +6) << "Allocating space in Mu2eFragment for DTC packets";
-// 		totalSize = 0;
-// 		for (size_t i = 0; i < data.size(); ++i) {
-// 		  totalSize += data[i]->GetEventByteCount() ; // byteSize;
-// 		}
-
-// 		int64_t diff = totalSize + newfrag.dataEndBytes() - newfrag.dataSize();
-// 		TLOG(TLVL_TRACE +7) << "diff=" << diff << ", totalSize=" << totalSize << ", dataSize=" << newfrag.dataEndBytes()
-// 				 << ", fragSize=" << newfrag.dataSize();
-// 		if (diff > 0) {
-// 			auto currSize  = newfrag.dataSize();
-// 			auto remaining = 1.0 - (newfrag.hdr_block_count() / static_cast<double>(BLOCK_COUNT_MAX));
-
-// 			auto newSize   = static_cast<size_t>(currSize * remaining);
-// 			TLOG(TLVL_TRACE +8) << "mu2eReceiver::getNext: " << totalSize << " + " << newfrag.dataEndBytes() << " > "
-// 													<< newfrag.dataSize() << ", allocating space for " << newSize + diff << " more bytes";
-// 			newfrag.addSpace(diff + newSize);
-// 		}
-
-// 		TLOG(TLVL_TRACE +9) << "Copying DTC packets into Mu2eFragment";
-// 		// auto offset = newfrag.dataBegin() + newfrag.blockSizeBytes();
-// 		size_t offset = newfrag.dataEndBytes();
-// 		for (size_t i = 0; i < data.size(); ++i) {
-// 			auto dp  = DTCLib::DTC_DataPacket(data[i]->GetRawBufferPointer());
-// 			auto dhp = DTCLib::DTC_DataHeaderPacket(dp);
-// 			TLOG(TLVL_TRACE +12) << "Placing DataBlock with timestamp "
-// 					 << static_cast<double>(dhp.GetEventWindowTag()) << " into Mu2eFragment";
-
-// 			auto fragment_timestamp = dhp.GetEventWindowTag();
-// 			if (fragment_timestamp > highest_timestamp_seen_) {
-// 				highest_timestamp_seen_ = fragment_timestamp;
-// 			}
-
-// 			if (first) {
-// 				first = false;
-// 				if (fragment_timestamp < highest_timestamp_seen_) {
-// 					if (fragment_timestamp == 0) { timestamp_loops_++; }
-// 					// Timestamps start at 0, so make sure to offset by one so we don't repeat highest_timestamp_seen_
-// 					fragment_timestamp += timestamp_loops_ * (highest_timestamp_seen_ + 1);
-// 				}
-// 				frags.back()->setTimestamp(fragment_timestamp);
-// 			}
-
-// 			auto begin = reinterpret_cast<const uint8_t*>(data[i]->GetRawBufferPointer());
-// 			auto size = data[i]->GetEventByteCount();
-
-// 			while (data[i + 1]->GetRawBufferPointer() == static_cast<const void*>(begin + size)) {
-// 				size += data[++i]->GetEventByteCount();
-// 			}
-
-// 			TLOG(TLVL_TRACE +11) << "Copying data from " << begin << " to "
-// 					 << reinterpret_cast<void*>(newfrag.dataAtBytes(offset)) << " (sz=" << size << ")";
-// 			// memcpy(reinterpret_cast<void*>(offset + intraBlockOffset), data[i].blockPointer, data[i].byteSize);
-// 			memcpy(newfrag.dataAtBytes(offset), begin, size);
-// 			TLOG(TLVL_TRACE +11) << "Done with copy";
-// 			//std::copy(begin, reinterpret_cast<const uint8_t*>(begin) + size, newfrag.dataAtBytes(offset));
-// 			if (_rawOutputEnable) rawOutputStream_.write((char*)begin, size);
-// 			offset += size;
-// 		}
-
-// 		TLOG(TLVL_TRACE +12) << "Ending SubEvt " << newfrag.hdr_block_count();
-// 		newfrag.endSubEvt(offset - newfrag.dataEndBytes());
-// 	}
-// 	TLOG(TLVL_TRACE +5) << "Incrementing event counter";
-// 	ev_counter_inc();
-
-// 	TLOG(TLVL_TRACE +5) << "Reporting Metrics";
-// 	timestamps_read_ += newfrag.hdr_block_count();
-// 	auto hwTime = _dtc->GetDevice()->GetDeviceTime();
-
-// 	double processing_rate = newfrag.hdr_block_count() / _getProcTimerCount();
-// 	double timestamp_rate = newfrag.hdr_block_count() / _timeSinceLastSend();
-// 	double hw_timestamp_rate = newfrag.hdr_block_count() / hwTime;
-// 	double hw_data_rate = newfrag.dataEndBytes() / hwTime;
-
-// 	metricMan->sendMetric("Timestamp Count", timestamps_read_, "timestamps", 1, artdaq::MetricMode::LastPoint);
-// 	metricMan->sendMetric("Timestamp Rate", timestamp_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-// 	metricMan->sendMetric("Generator Timestamp Rate", processing_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-// 	metricMan->sendMetric("HW Timestamp Rate", hw_timestamp_rate, "timestamps/s", 1, artdaq::MetricMode::Average);
-// 	metricMan->sendMetric("PCIe Transfer Rate", hw_data_rate, "B/s", 1, artdaq::MetricMode::Average);
-
-// 	TLOG(TLVL_TRACE +5) << "Returning true";
-// 	return true;
-//}
 
 //-----------------------------------------------------------------------------
- bool mu2e::TrackerVST::sendEmpty_(artdaq::FragmentPtrs& frags) {
-	frags.emplace_back(new artdaq::Fragment());
-	frags.back()->setSystemType(artdaq::Fragment::EmptyFragmentType);
-	frags.back()->setSequenceID(ev_counter());
-	frags.back()->setFragmentID(fragment_ids_[0]);
-	ev_counter_inc();
-	return true;
+bool mu2e::TrackerVST::sendEmpty_(artdaq::FragmentPtrs& Frags) {
+  Frags.emplace_back(new artdaq::Fragment());
+  Frags.back()->setSystemType(artdaq::Fragment::EmptyFragmentType);
+  Frags.back()->setSequenceID(ev_counter());
+  Frags.back()->setFragmentID(fragment_ids_[0]);
+  ev_counter_inc();
+  return true;
 }
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST::print_dtc_registers(DTC* Dtc, const char* Header) {
+  printf("---------------------- %s : DTC status :\n",Header);
+  uint32_t r;
+  r = Dtc->ReadRegister_(DTC_Register(0x9100)); printf("  0x9100: status           : 0x%08x\n",r);
+  r = Dtc->ReadRegister_(DTC_Register(0x91c8)); printf("  0x91c8: debug packet type: 0x%08x\n",r);
+}
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST::monica_digi_clear(DTCLib::DTC* Dtc) {
+//-----------------------------------------------------------------------------
+//  Monica's digi_clear
+//  this will proceed in 3 steps each for HV and CAL DIGIs:
+// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
+// 2) write TWI INIT high
+// 3) write TWI INIT low
+//-----------------------------------------------------------------------------
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,28,0x10,false,1000); // 
+
+  // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x00,false,1000); // write 0 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); // toggle INIT 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x01,false,1000); //  write 1 
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); //  toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+
+  // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,25,0x10,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x00,false,1000); // write 0
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x01,false,1000); // write 1
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+}
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST::monica_var_link_config(DTCLib::DTC* Dtc) {
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->write_register(0x91a8,100,0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST::monica_var_pattern_config(DTC* Dtc) {
+  TLOG(TLVL_DEBUG) << "---------------------------------- operation \"var_patern_config\"" << std::endl;
+
+  //  auto startTime = std::chrono::steady_clock::now();
+
+  print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->ResetDeviceTime();
+
+  Dtc->WriteRegister_(0,DTC_Register(0x91a8)); // _CFOEmulation_HeartbeatInterval);
+  sleep(1);
+
+  int tmo_ms    (1500);  // 1500 is OK
+  int sleep_time( 100);  //  300 is OK
+
+  Dtc->WriteROCRegister(DTC_Link_0,14,0x01,false,tmo_ms);  // this seems to be a reset
+  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+
+  Dtc->WriteROCRegister(DTC_Link_0, 8,0x10,false,tmo_ms);
+  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+
+  Dtc->WriteROCRegister(DTC_Link_0,30,0x00,false,tmo_ms);
+  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+
+  print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
+}
+//-----------------------------------------------------------------------------
+// print 16 bytes per line
+// size - number of bytes to print, even
+//-----------------------------------------------------------------------------
+void mu2e::TrackerVST::printBuffer(const void* ptr, int sz) {
+
+  int     nw  = sz/2;
+  ushort* p16 = (ushort*) ptr;
+  int     n   = 0;
+
+  for (int i=0; i<nw; i++) {
+    if (n == 0) printf(" 0x%08x: ",i*2);
+
+    ushort  word = p16[i];
+    printf("0x%04x ",word);
+
+    n   += 1;
+    if (n == 8) {
+      printf("\n");
+      n = 0;
+    }
+  }
+
+  if (n != 0) printf("\n");
+}
+
 
 // The following macro is defined in artdaq's GeneratorMacros.hh header
 DEFINE_ARTDAQ_COMMANDABLE_GENERATOR(mu2e::TrackerVST)
