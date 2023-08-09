@@ -7,8 +7,8 @@
 
 process_name: TrackerVSTTest001
 
-events_to_generate: 10
-run_number        : 101
+events_to_generate : 10
+run_number         : 101
 
 source: {
     module_type: "ArtdaqInput"
@@ -16,13 +16,13 @@ source: {
 
 services: { @table::Services.Reco 
     ArtdaqFragmentNamingServiceInterface: {
-	helper_plugin: "Mu2e"
+	helper_plugin   : "Mu2e"
 	service_provider: "ArtdaqFragmentNamingService"
     }
     ArtdaqSharedMemoryServiceInterface: {
 	resume_after_timeout: false
-	service_provider: "ArtdaqSharedMemoryService"
-	waiting_time: 1
+	service_provider    : "ArtdaqSharedMemoryService"
+	waiting_time        : 1
     }
 
     DbService: {
@@ -41,8 +41,8 @@ fragment_receiver: {
     loadSimFile            : false
     simFileName            : "none"
     fragment_type          : Mu2e           # generator data fragment type
-    nEvents                :  10            # don't need to dump more
-    nSkip                  :  1             # 
+    nEventsDbg             :  10            # don't need to dump more
+#    nSkip                  :  1             # 
 
     rawOutputEnable        : false
     rawOutputFile          : "/tmp/TrackerVST.bin"
@@ -53,18 +53,19 @@ fragment_receiver: {
     rocMask                : 0x1            # for annex tests - just one ROC
 
     cfo_config             : {
-	use_dtc_cfo_emulator   : true
-	debug_packet_count     : 0
-	debug_type             : "DTC_DebugType_SpecialSequence"
-	sticky_debug_type      : true
-	quiet                  : true
-	asyncRR                : true
-	force_no_debug_mode    : true
-	useCFODRP              : false
-    }  
+				use_dtc_cfo_emulator   : true
+				debug_packet_count     : 0
+				debug_type             : "DTC_DebugType_SpecialSequence"
+				sticky_debug_type      : true
+				quiet                  : true
+				asyncRR                : true
+				force_no_debug_mode    : true
+				useCFODRP              : false
+    }
 
     requestsAhead          :  1             # read digis - what it should be ?
     heartbeatsAfter        : 16
+		heartbeatInterval      : 300
     request_delay          : 20000
 
     board_id               : 0
@@ -97,14 +98,14 @@ physics: {
     }
 
     # t1: [a1]
-    t1: [ ]
+    t1 : [ ]
+    e1 : [ rootout ]
 }
 
 outputs: {
-    rootout:  {
-	module_type: RootOutput
-	fileName: "TrackerVST.art"
-	compressionLevel: 0
+    rootout:  { module_type: RootOutput
+	fileName         : "TrackerVST.art"
+	compressionLevel : 0
     }
     out1:  {
 	module_type: FileDumperOutput

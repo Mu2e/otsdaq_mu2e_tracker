@@ -518,7 +518,7 @@ python3 diagnostic.py -m L -f test_20mV.dat -p /dev/ttyUSB1
 
 ** 3) login back to control_ROC, measure thresholds                          
 #+begin_src 
-python3 control_ROC /dev/ttyUSB1 115200
+python3 control_ROC.py /dev/ttyUSB1 115200
 measure_thresholds                                
 # (this should show the CAL thresholds (third column) about between
 # 17-20mV ? there is one channel 28 that is nor working)
@@ -528,38 +528,4 @@ pulser_on -c 4 -d 1000 -y 200
 # Of course, there will be cross talk, so other channels will show, 
 # but that can be easily rejected offline. 
 #+end_src 
-
-* older instruction (from pasha_005)                                         
-1) chantsDataTestMonica.sh 
-
-link configuration check: link=2 is up : 0x0100 : bit0=0 bit1=0 bit2=1
-
-#+begin_src  # 0xf4 = 0x11110100
-[mu2etrk@mu2edaq09 ots_pasha]$ my_cntl read 0x9140
-0x000000f4
-sts=0
-#+end_src
-
->> writing 1 to r_11 (dev board) = lets start taking data
-
->>> 
-
-rocUtil -a 11 -l $link read_register
-
-my_cntl read 0x9140         # register DTC 
-0x000c5
-sts=0
-
-           11000101 -- ROC mask: links #0 and #2 connected
-
-rocUtil -a 0 -l $link read_register  # -1 'roc' 
-
-mu2eUtil -help
-
-mu2eUtil -q 10 -N buffer_test -r 0x1 -D 20000 -n 1  -f test.bit 
-
-rocUtil -a 13 -l $link read_register       # number of requested , or zero if all read)
-rocUtil -a 14 -l $link read_register       # last block          , or zero if all read
-rocUtil -a 11 -l $link read_register       # 1: keep reading     , 0: all read 
-rocUtil -a 11 -l $link write_register -w 1 # read again 
 * ------------------------------------------------------------------------------

@@ -111,7 +111,7 @@ namespace mu2e {
     size_t          timestamps_read_;
     size_t          highest_timestamp_seen_{0};
     size_t          timestamp_loops_{0}; // For playback mode, so that we continually generate unique timestamps
-    DTC_SimMode     mode_;
+    DTC_SimMode     _sim_mode; 
     uint8_t         board_id_;
     bool            simFileRead_;
     bool            rawOutput_;
@@ -127,6 +127,7 @@ namespace mu2e {
     size_t          request_delay_;
     size_t          _requestsAhead;
     size_t          _heartbeatsAfter;
+		int             _heartbeatInterval;
     int             _dtc_id;
     uint            _roc_mask;
 					// hardware
@@ -164,34 +165,35 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 mu2e::TrackerVST001::TrackerVST001(fhicl::ParameterSet const& ps) : 
   CommandableFragmentGenerator(ps)
-  , fragment_type_   (toFragmentType("MU2E"))
-  , fragment_ids_    {static_cast<artdaq::Fragment::fragment_id_t>(fragment_id())}
-  , timestamps_read_ (0)
-  , mode_            (DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "Disabled")))
-  , board_id_        (static_cast<uint8_t>(ps.get<int>("board_id", 0)))
-  , rawOutput_       (ps.get<bool>        ("rawOutput"      ))
-  , rawOutputFile_   (ps.get<std::string> ("rawOutputFile"  ))
-  , nSkip_           (ps.get<size_t>      ("nSkip"          ))
-  , sendEmpties_     (ps.get<bool>        ("sendEmpties"    ))
-  , _debugLevel      (ps.get<int>         ("debugLevel"     ))
-  , _nEvents         (ps.get<size_t>      ("nEvents"        ))                 // default:  1
-  , _test            (ps.get<std::string> ("test"           ))                 // type of the test, default : "test2"
-  , request_delay_   (ps.get<size_t>      ("request_delay"  ))
-  , _requestsAhead   (ps.get<size_t>      ("requestsAhead"  ))                 // default:  1
-  , _heartbeatsAfter (ps.get<size_t>      ("heartbeatsAfter"))                 // default: 16
-  , _dtc_id          (ps.get<int>         ("dtc_id"         ))                 // default: -1
-  , _roc_mask        (ps.get<int>         ("roc_mask"       ))                 // default: 0x1
-  , lastReportTime_  (std::chrono::steady_clock::now()       ) 
+  , fragment_type_    (toFragmentType("MU2E"))
+  , fragment_ids_     {static_cast<artdaq::Fragment::fragment_id_t>(fragment_id())}
+  , timestamps_read_  (0)
+  , _sim_mode         (DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "Disabled")))
+  , board_id_         (static_cast<uint8_t>(ps.get<int>("board_id", 0)))
+  , rawOutput_        (ps.get<bool>        ("rawOutput"      ))
+  , rawOutputFile_    (ps.get<std::string> ("rawOutputFile"  ))
+  , nSkip_            (ps.get<size_t>      ("nSkip"          ))
+  , sendEmpties_      (ps.get<bool>        ("sendEmpties"    ))
+  , _debugLevel       (ps.get<int>         ("debugLevel"     ))
+  , _nEvents          (ps.get<size_t>      ("nEvents"        ))                 // default:  1
+  , _test             (ps.get<std::string> ("test"           ))                 // type of the test, default : "test2"
+  , request_delay_    (ps.get<size_t>      ("request_delay"  ))
+  , _requestsAhead    (ps.get<size_t>      ("requestsAhead"  ))                 // default:  1
+  , _heartbeatsAfter  (ps.get<size_t>      ("heartbeatsAfter"))                 // default: 16
+  , _heartbeatInterval(ps.get<int>         ("heartbeatInterval"))
+  , _dtc_id           (ps.get<int>         ("dtc_id"         ))                 // default: -1
+  , _roc_mask         (ps.get<int>         ("roc_mask"       ))                 // default: 0x1
+  , lastReportTime_   (std::chrono::steady_clock::now()       ) 
   {
     
     TLOG(TLVL_DEBUG) << "TrackerVST001_generator CONSTRUCTOR";
-    // mode_ can still be overridden by environment!
+    // _sim_mode can still be overridden by environment!
     
     _ievent   = 0;
 //-----------------------------------------------------------------------------
 // _dtc_id = -1 : use $DTCLIB_DTC to determine the DTC's PCI ID
 //-----------------------------------------------------------------------------
-    _dtc      = new DTC(mode_,_dtc_id,_roc_mask,"");
+    _dtc      = new DTC(_sim_mode,_dtc_id,_roc_mask,"");
     _device   = _dtc->GetDevice();
 
     // 			false, 
@@ -492,7 +494,7 @@ void mu2e::TrackerVST001::buffer_test_002(artdaq::FragmentPtrs& frags) {
 
   bool          incrementTimestamp(true);
   unsigned long timestampOffset = 1;
-  unsigned      cfodelay       (200);
+  // unsigned      cfodelay       (200);
   int           _requestsAhead  ( 0);
   bool          syncRequests = false;
 
@@ -504,7 +506,7 @@ void mu2e::TrackerVST001::buffer_test_002(artdaq::FragmentPtrs& frags) {
   _cfo->SendRequestsForRange(_nEvents, 
 			     DTC_EventWindowTag(timestampOffset), 
 			     incrementTimestamp, 
-			     cfodelay, 
+			     _heartbeatInterval, 
 			     _requestsAhead, 
 			     _heartbeatsAfter);
   
@@ -755,7 +757,7 @@ void mu2e::TrackerVST001::buffer_test_004(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
 // back to the time window of 25.6 us 0x400 = 1024 (x25 ns)
 //-----------------------------------------------------------------------------
-  _device->write_register(0x91a8,100,0x400);
+  _device->write_register(0x91a8,100,_heartbeatInterval);
 
   int nev = 1;
   _cfo->SendRequestsForRange(nev,DTC_EventWindowTag(uint64_t(_ievent)),
