@@ -498,8 +498,8 @@ void mu2e::TrackerVST001::buffer_test_002(artdaq::FragmentPtrs& frags) {
   int           _requestsAhead  ( 0);
   bool          syncRequests = false;
 
-  TLOG(TLVL_DEBUG) << "_nEvents, timestampOffset, incrementTimestamp,cfodelay,_requestsAhead,_heartbeatsAfter:" 
-		   << _nEvents << " " << timestampOffset << " " << incrementTimestamp << " " << cfodelay << " " 
+  TLOG(TLVL_DEBUG) << "_nEvents, timestampOffset, incrementTimestamp,_heartbeatInterval,_requestsAhead,_heartbeatsAfter:" 
+		   << _nEvents << " " << timestampOffset << " " << incrementTimestamp << " " << _heartbeatInterval << " " 
 		   << _requestsAhead << " " << _heartbeatsAfter;
   TLOG(TLVL_DEBUG) << "syncRequests:" <<  syncRequests;
   

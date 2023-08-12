@@ -291,6 +291,7 @@ gpio write 27 1              # set pin 27 output level to high
 gpio read  27
 gpio write 27 0              # set output level to low 
 #+end_src
+* 5.5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
 * 6) VST data format                                                         
 
 - 8x32-bit words OR 256 bits per hit (ie two DTC packets)
@@ -302,7 +303,7 @@ gpio write 27 0              # set output level to low
 
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
 
- - 0x00000000: 0x00d0 0x0000 0x0000 0x0000 0x00c8 0x0000 0x1322 0x0000 : data header packet *go figure* 
+ - 0x00000000: 0x00d0 0x0000 0x0000 0x0000 0x00c8 0x0000 0x1322 0x0000 : DTC_EventHeader ??? *go figure* 
      
     - w0 : 0x00d0 : - total number of bytes 
     - w1 : 0x0000 : - bit 15-08: valid + subsystem ID + reserved *go figure* 
@@ -333,7 +334,7 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
     - w6 : 0xffff :
     - w7 : 0xffff :
  - 0x00000030: 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x01ee : ???
- - 0x00000040: 0x0090 0x8050 0x0008 0x1322 0x0000 0x0000 0x0055 0x0000 : ???    *go figure* 
+ - 0x00000040: 0x0090 0x8050 0x0008 0x1322 0x0000 0x0000 0x0055 0x0000 : data header packet  
     - w0 : 0x0090 : N(bytes) starting from this point
     - w1 : 0x8050 : 
     - w2 : 0x0008 : N(packets) with the hit data
@@ -342,7 +343,7 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
     - w5 : 0xff01 :
     - w6 : 0xffff :
     - w7 : 0xffff :
- - 0x00000050: 0x005b 0xb660 0x140b 0xb630 0x040b 0x0041 0xa955 0x155a : hit #1 data 
+ - 0x00000050: 0x005b 0xb660 0x140b 0xb630 0x040b 0x0041 0xa955 0x155a : hit #1 data (two packets per hit)
  - 0x00000060: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #1 data
  - 0x00000070: 0x002a 0xb66a 0x140b 0xb684 0x040b 0x0041 0xa955 0x155a : hit #2 data 
  - 0x00000080: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #2 data 
@@ -350,6 +351,31 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
  - 0x000000a0: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #3 data 
  - 0x000000b0: 0x00ac 0xe195 0x1406 0xe147 0x0406 0x0041 0x56aa 0x2aa5 : hit #4 data 
  - 0x000000c0: 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 : hit #4 data 
+* 6.5) channel map - sequence in which the channels are supposed to come     
+
+#+begin_src c++ 
+uint8_t hvcal=1; // 1:CAL 2:HV 0:both
+
+uint8_t channel_map[96] = { 
+91,85,79,73,67,61,55,49,
+43,37,31,25,19,13, 7, 1,
+90,84,78,72,66,60,54,48,
+42,36,30,24,18,12, 6, 0,
+93,87,81,75,69,63,57,51,
+45,39,33,27,21,15, 9, 3,
+
+44,38,32,26,20,14, 8, 2,
+92,86,80,74,68,62,56,50,
+47,41,35,29,23,17,11, 5,
+95,89,83,77,71,65,59,53,
+46,40,34,28,22,16,10, 4,
+94,88,82,76,70,64,58,52};
+#+end_src 
+
+- example: CAL lane 0 channel 0: 91 .. 
+- bit 91 = 32+32+27
+- in control_ROC: -C0 -D0 -E08000000
+
 * 7) slow monitoring - ROC - readSPI over the fiber                          
 - <2023-07-12 Wed> instructions by Monica                           
 Essentially one needs to do a write to ROC address 258 (0x102) to collect a list of 36 ADCs values, 
@@ -528,4 +554,5 @@ pulser_on -c 4 -d 1000 -y 200
 # Of course, there will be cross talk, so other channels will show, 
 # but that can be easily rejected offline. 
 #+end_src 
+* <2023-08-12 Sat> after mu2edaq09 reboot : source ~/ots_mrb5/chantsDataTestVst.sh
 * ------------------------------------------------------------------------------

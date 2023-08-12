@@ -25,6 +25,33 @@ unsigned int reverseBits(unsigned int num) {
 }
 
 //-----------------------------------------------------------------------------
+// print 16 bytes per line
+// size - number of bytes to print, even
+//-----------------------------------------------------------------------------
+void print_buffer(const void* ptr, int sz) {
+
+  int     nw  = sz/2;
+  ushort* p16 = (ushort*) ptr;
+  int     n   = 0;
+
+  for (int i=0; i<nw; i++) {
+    if (n == 0) printf(" 0x%08x: ",i*2);
+
+    ushort  word = p16[i];
+    printf("0x%04x ",word);
+
+    n   += 1;
+    if (n == 8) {
+      printf("\n");
+      n = 0;
+    }
+  }
+
+  if (n != 0) printf("\n");
+}
+
+
+//-----------------------------------------------------------------------------
 // read one event, histogram hits
 //-----------------------------------------------------------------------------
 void read_dtc_event(DTC* Dtc, mu2e_databuff_t*& buffer, size_t& NBytes) {
@@ -125,12 +152,12 @@ void analyze(uint16_t* Ptr, int NWords) {
 // test2: each time, CFO requests one event
 // if defined, OutputFn is the name of the output raw file
 //-----------------------------------------------------------------------------
-void read_one_event(int NEvents = 1) {
+void read_one_event(int NEvents = 1, int Debug = 0) {
 
   uint16_t  roc_reg[100];
 
   DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   mu2edev* dev = dtc.GetDevice();
 
@@ -145,7 +172,7 @@ void read_one_event(int NEvents = 1) {
   dtc.SetSequenceNumberDisable(); 
   auto initTime = dev->GetDeviceTime();
   dev->ResetDeviceTime();
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   bool useCFOEmulator   = true;
   int  packetCount      = 0;
@@ -159,10 +186,10 @@ void read_one_event(int NEvents = 1) {
 			     DTCLib::DTC_DebugType_SpecialSequence,
 			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   int incrementTimestamp =    1;
-  int cfodelay           =  512; // was 1024;
+  int heartbeatInterval  =  512; // was 1024;
   int requestsAhead      =    1;
   int heartbeatsAfter    =   16;
 
@@ -181,12 +208,12 @@ void read_one_event(int NEvents = 1) {
   dev->write_register(0x91a8,100,0x100);
 
   int i   = 0;
-  cfo.SendRequestsForRange(NEvents,DTC_EventWindowTag(uint64_t(i)),incrementTimestamp,cfodelay,requestsAhead,heartbeatsAfter);
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  cfo.SendRequestsForRange(NEvents+1,DTC_EventWindowTag(uint64_t(i)),incrementTimestamp,heartbeatInterval,requestsAhead,heartbeatsAfter);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   dev->ResetDeviceTime();
     // cfo.SendRequestForTimestamp(DTC_EventWindowTag(uint64_t(i+1)), heartbeatsAfter);
-    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
 
@@ -200,6 +227,10 @@ void read_one_event(int NEvents = 1) {
 
     uint16_t* ptr = (uint16_t*) buffer;
     int offset(0x20);  // 0x40 bytes
+
+		if (Debug > 0) {
+			print_buffer(ptr,nbytes);
+		}
     
     analyze(ptr+offset,nbytes/2-offset);
   };

@@ -13,7 +13,7 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
   readSuccess = false;
 
   sts = device->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   
   if (sts > 0) {
     readSuccess   = true;
@@ -27,13 +27,13 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
       readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTCLib::DTC_EventHeader) + sizeof(DTCLib::DTC_SubEventHeader);
       std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
       for (auto& word : wordsToCheck) 	{
-	uint16_t* wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
-	if ((*wordPtr == 0xcafe) or (*wordPtr == 0xdead)) {
-	  printf(" Buffer Timeout detected! word=%5lu data: 0x%04x\n",word, *wordPtr);
-	  DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, /*TLVL_TRACE*/4 + 3);
-	  timeout = true;
-	  break;
-	}
+				uint16_t* wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
+				if ((*wordPtr == 0xcafe) or (*wordPtr == 0xdead)) {
+					printf(" Buffer Timeout detected! word=%5lu data: 0x%04x\n",word, *wordPtr);
+					DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, /*TLVL_TRACE*/4 + 3);
+					timeout = true;
+					break;
+				}
       }
     }
   }
@@ -133,11 +133,11 @@ void monica_var_link_config(DTCLib::DTC* dtc) {
   mu2edev* dev = dtc->GetDevice();
 
   dev->write_register(0x91a8,100,0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 

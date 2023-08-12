@@ -197,14 +197,14 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
       _dtc->ResetDTC();
       
       if (_simFileName.size() > 0) {
-	simFileRead_ = false;
-	std::thread reader(&mu2e::TrackerVST::readSimFile_,this,_simFileName);
-	reader.detach();
+				simFileRead_ = false;
+				std::thread reader(&mu2e::TrackerVST::readSimFile_,this,_simFileName);
+				reader.detach();
       }
     }
     else {
       _dtc->ClearDetectorEmulatorInUse();  // Needed if we're doing ROC Emulator...
-					   // make sure Detector Emulation is disabled
+			// make sure Detector Emulation is disabled
       simFileRead_ = true;
     }
     
