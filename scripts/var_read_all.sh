@@ -150,8 +150,8 @@ declare -a MYSPILL0
 MYSPILL0=($SPILLTAG0)
 declare -a MYSPILL1
 MYSPILL1=($SPILLTAG1)
-printf -v spillhex '0x%x' $(($((65536*${MYSPILL1[1]}))+${MYSPILL0[1]}))
-echo "last SPILL TAG:" $spillhex
+printf -v spillhex '0x%08x' $(($((65536*${MYSPILL1[1]}))+${MYSPILL0[1]}))
+echo "last SPILL TAG   :" $spillhex
 
 
 HBTAG0=`rocUtil -a 45 -l $LINK  simple_read`
@@ -161,8 +161,8 @@ declare -a MYHBTAG0
 MYHBTAG0=($HBTAG0)
 declare -a MYHBTAG1
 MYHBTAG1=($HBTAG1)
-printf -v hbtaghex '0x%x' $(($((65536*${MYHBTAG1[1]}))+${MYHBTAG0[1]}))
-echo "last HB tag:" $hbtaghex
+printf -v hbtaghex '0x%08x' $(($((65536*${MYHBTAG1[1]}))+${MYHBTAG0[1]}))
+echo "last HB tag      :" $hbtaghex
 
 
 PRETAG0=`rocUtil -a 48 -l $LINK  simple_read`
@@ -172,7 +172,7 @@ declare -a MYPRETAG0
 MYPRETAG0=($PRETAG0)
 declare -a MYPRETAG1
 MYPRETAG1=($PRETAG1)
-printf -v pretaghex '0x%x' $(($((65536*${MYPRETAG1[1]}))+${MYPRETAG0[1]}))
+printf -v pretaghex '0x%08x' $(($((65536*${MYPRETAG1[1]}))+${MYPRETAG0[1]}))
 echo "last PREFETCH tag:" $pretaghex
 
 
@@ -183,8 +183,8 @@ declare -a MYFETAG0
 MYFETAG0=($FETAG0)
 declare -a MYFETAG1
 MYFETAG1=($FETAG1)
-printf -v fetaghex '0x%x' $(($((65536*${MYFETAG1[1]}))+${MYFETAG0[1]}))
-echo "last FETCHED tag:" $fetaghex
+printf -v fetaghex '0x%08x' $(($((65536*${MYFETAG1[1]}))+${MYFETAG0[1]}))
+echo "last FETCHED tag :" $fetaghex
 
 DRETAG0=`rocUtil -a 54 -l $LINK  simple_read`
 DRETAG1=`rocUtil -a 55 -l $LINK  simple_read`
@@ -193,7 +193,7 @@ declare -a MYDRETAG0
 MYDRETAG0=($DRETAG0)
 declare -a MYDRETAG1
 MYDRETAG1=($DRETAG1)
-printf -v dretaghex '0x%x' $(($((65536*${MYDRETAG1[1]}))+${MYDRETAG0[1]}))
+printf -v dretaghex '0x%08x' $(($((65536*${MYDRETAG1[1]}))+${MYDRETAG0[1]}))
 echo "last DATA REQ tag:" $dretaghex
 
 
@@ -204,8 +204,8 @@ declare -a MYOFFTAG0
 MYOFFTAG0=($OFFTAG0)
 declare -a MYOFFTAG1
 MYOFFTAG1=($OFFTAG1)
-printf -v offtaghex '0x%x' $(($((65536*${MYOFFTAG1[1]}))+${MYOFFTAG0[1]}))
-echo "OFFSET tag:" $offtaghex
+printf -v offtaghex '0x%08x' $(($((65536*${MYOFFTAG1[1]}))+${MYOFFTAG0[1]}))
+echo "OFFSET tag       :" $offtaghex
 
 
 #FULLTAG0=`rocUtil -a 66 -l $LINK  simple_read`
