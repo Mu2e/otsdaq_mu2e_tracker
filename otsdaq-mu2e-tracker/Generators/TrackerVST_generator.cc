@@ -159,7 +159,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _dtcId            (ps.get<int>                     ("dtcId"                 ,          -1)) 
   , _rocMask          (ps.get<int>                     ("rocMask"               ,         0x1)) 
   , _sleepTimeDMA     (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
-  , _sleepTimeDTC     (ps.get<int>                     ("sleepTimeDTC"          ,         300))  // 300 microseconds
+  , _sleepTimeDTC     (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
   , _sleepTimeROC     (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
   , _sleepTimeROCReset(ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
   , _resetROC         (ps.get<int>                     ("resetROC"              ,           1))  // 
@@ -363,7 +363,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
     }
   }
 
-  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+  printf(" event: %10lu readSuccess : %1i timeout: %1i nbytes: %10lu\n",ev_counter(),readSuccess,timeout,nbytes);
 
   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
     // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
