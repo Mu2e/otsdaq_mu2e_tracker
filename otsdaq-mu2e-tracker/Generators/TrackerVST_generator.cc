@@ -106,6 +106,12 @@ namespace mu2e {
 		int                                   _heartbeatInterval;
     int                                   _dtcId;
     uint                                  _rocMask;
+    int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
+    int                                   _sleepTimeDTC;           // sleep time (ms) after register writes
+    int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
+    int                                   _sleepTimeROCReset;      // sleep time (ms) after ROC reset register write
+
+    int                                   _resetROC;               // 1: reset ROC every event
     			                  
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
@@ -139,20 +145,24 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , timestamps_read_  (0)
   , lastReportTime_   (std::chrono::steady_clock::now())
   , _sim_mode         (DTCLib::DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "N")))
-  , board_id_         (static_cast<uint8_t>(ps.get<int>("board_id"                    , 0)))
-  , _loadSimFile      (ps.get<bool>                    ("loadSimFile" ))
-  , _simFileName      (ps.get<std::string>             ("simFileName" ))
-  , _rawOutputEnable  (ps.get<bool>("rawOutputEnable"                 ))
+  , board_id_         (static_cast<uint8_t>(ps.get<int>("board_id"                       , 0)))
+  , _loadSimFile      (ps.get<bool>                    ("loadSimFile"                        ))
+  , _simFileName      (ps.get<std::string>             ("simFileName"                        ))
+  , _rawOutputEnable  (ps.get<bool>                    ("rawOutputEnable"                    ))
   , rawOutputFile_    (ps.get<std::string>             ("raw_output_file"             , "/tmp/TrackerVST.bin"))
-  //  , _nSkip          (ps.get<size_t>("nSkip"                 ))
-  , sendEmpties_      (ps.get<bool>                    ("sendEmpties" ))
-  , _debugLevel       (ps.get<int>                     ("debugLevel"                  ,  0))
-  , _nEventsDbg       (ps.get<size_t>                  ("nEventsDbg"                  , 20))
+  , sendEmpties_      (ps.get<bool>                    ("sendEmpties"                        ))
+  , _debugLevel       (ps.get<int>                     ("debugLevel"                  ,     0))
+  , _nEventsDbg       (ps.get<size_t>                  ("nEventsDbg"                  ,    20))
   , request_delay_    (ps.get<size_t>                  ("delay_between_requests_ticks", 20000))
-  , _heartbeatsAfter  (ps.get<size_t>                  ("heartbeatsAfter"       )) 
-  , _heartbeatInterval(ps.get<int>                     ("heartbeatInterval"     ))
-  , _dtcId            (ps.get<int>                     ("dtcId"                 ,   -1 )) 
-  , _rocMask          (ps.get<int>                     ("rocMask"               ,   0x1)) 
+  , _heartbeatsAfter  (ps.get<size_t>                  ("heartbeatsAfter"                    )) 
+  , _heartbeatInterval(ps.get<int>                     ("heartbeatInterval"                  ))
+  , _dtcId            (ps.get<int>                     ("dtcId"                 ,          -1)) 
+  , _rocMask          (ps.get<int>                     ("rocMask"               ,         0x1)) 
+  , _sleepTimeDMA     (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
+  , _sleepTimeDTC     (ps.get<int>                     ("sleepTimeDTC"          ,         300))  // 300 microseconds
+  , _sleepTimeROC     (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
+  , _sleepTimeROCReset(ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
+  , _resetROC         (ps.get<int>                     ("resetROC"              ,           1))  // 
   {
     
     TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR";
@@ -179,15 +189,15 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     bool          force_no_debug_mode  = cfoConfig.get<bool>       ("force_no_debug_mode" , true );  // sets a bit written to the DTC register
     bool          useCFODRP            = cfoConfig.get<bool>       ("useCFODRP"           , false);  // defaults to false
 
-    _cfo = new DTCSoftwareCFO(_dtc       ,
-			      use_dtc_cfo_emulator,
-			      debug_packet_count  ,
-			      debug_type          ,
-			      sticky_debug_type   ,
-			      quiet               ,
-			      asyncRR             ,
-			      force_no_debug_mode ,
-			      useCFODRP           );
+    _cfo = new DTCSoftwareCFO(_dtc                ,
+                              use_dtc_cfo_emulator,
+                              debug_packet_count  ,
+                              debug_type          ,
+                              sticky_debug_type   ,
+                              quiet               ,
+                              asyncRR             ,
+                              force_no_debug_mode ,
+                              useCFODRP           );
 //-----------------------------------------------------------------------------
 // not sure I fully understand the logic below
 //-----------------------------------------------------------------------------
@@ -231,7 +241,7 @@ mu2e::TrackerVST::~TrackerVST() {
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST::stop() {
   _dtc->DisableDetectorEmulator();
-  _dtc->DisableCFOEmulation();
+  _dtc->DisableCFOEmulation    ();
 }
 
 //-----------------------------------------------------------------------------
@@ -265,20 +275,19 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   TLOG(TLVL_DEBUG) << oname << "after startProcTimer";
 //-----------------------------------------------------------------------------
 // Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
+// having reset the ROC, go back to the requested time window 
 //-----------------------------------------------------------------------------
-  monica_digi_clear     (_dtc);
-  monica_var_link_config(_dtc);
-//-----------------------------------------------------------------------------
-// back to the time window of 25 us : 1000 (x25 ns)
-//-----------------------------------------------------------------------------
-  _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
+  if (_resetROC) {
+    monica_digi_clear     (_dtc);
+    monica_var_link_config(_dtc);
+    _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
+  }
 //-----------------------------------------------------------------------------
 // send a request for one event, what is the role of requestsAhead ? 
 //-----------------------------------------------------------------------------
   uint64_t             z(0);
   DTC_EventWindowTag   zero(z);
   bool                 incrementTimestamp(true);
-  int                  delay             (200);         // 500 was OK;
   int                  requestsAhead     (  0);
   // unsigned long timestampOffset   (  1);
 
@@ -287,16 +296,18 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 // duplicating setting the distance btw teh two event window markers
 //-----------------------------------------------------------------------------
   _cfo->SendRequestsForRange(nev,DTC_EventWindowTag(ev_counter()),
-			     incrementTimestamp,_heartbeatInterval,
-			     requestsAhead,_heartbeatsAfter);
+                             incrementTimestamp,
+                             _heartbeatInterval,
+                             requestsAhead,
+                             _heartbeatsAfter);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
-   _dtc->GetDevice()->ResetDeviceTime();
+  _dtc->GetDevice()->ResetDeviceTime();
 
     // print_roc_registers(&_dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
 
-   printf(" ------------------------------------------------------- reading event %li",ev_counter());
+  printf(" ------------------------------------------------------- reading event %li",ev_counter());
 
 //-----------------------------------------------------------------------------
 // the body of the readDTCBuffer
@@ -309,6 +320,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   mu2e_databuff_t* buffer; //  = readDTCBuffer( _dtc->GetDevice(), readSuccess, timeout, nbytes, false);
 
   nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
   if (nbytes > 0)    {
     readSuccess      = true;
@@ -355,9 +367,9 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 
   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
     // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
-    // DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+    DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
   
-    printBuffer(buffer, (int) nbytes);
+    // printBuffer(buffer, (int) nbytes);
   }
 //-----------------------------------------------------------------------------
 // first 0x40 bytes seem to be useless, they are followed by the data header packer,
@@ -369,10 +381,11 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   double fragment_timestamp = ev_counter();
   artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), fragment_id(), FragmentType::TRK, fragment_timestamp);
   frag->resizeBytes(nbytes-offset);
-  void* af = frag->dataBegin();
+
   Frags.emplace_back(frag);
 //-----------------------------------------------------------------------------
 // copy data and patch format version - set it to 1
+// don't copy 0x40 bytes - event header and subevent header (??) - to the artdaq fragment
 //-----------------------------------------------------------------------------
   struct DataHeaderPacket_t {
     uint16_t  nBytes;
@@ -387,9 +400,12 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   };
 
   char* cbuf = (char*) buffer;
-  memcpy(af, cbuf+offset,nbytes-offset);
-
-  DataHeaderPacket_t* dp = (DataHeaderPacket_t*) af;
+  void* afd  = frag->dataBegin();
+  memcpy(afd, cbuf+offset,nbytes-offset);
+//-----------------------------------------------------------------------------
+// artdaq fragment starts from the data header packet
+//-----------------------------------------------------------------------------
+  DataHeaderPacket_t* dp = (DataHeaderPacket_t*) afd;
   dp->setVersion(1);
 //-----------------------------------------------------------------------------
 // now print the block saved in the file for 10 events
@@ -404,7 +420,9 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
   _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ, 1);
 
-  if (delay > 0) usleep(delay);
+  if (_sleepTimeDMA > 0) {
+    std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDMA));
+  }
 
   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
     int      rc;
@@ -479,13 +497,14 @@ void mu2e::TrackerVST::monica_digi_clear(DTCLib::DTC* Dtc) {
 void mu2e::TrackerVST::monica_var_link_config(DTCLib::DTC* Dtc) {
   mu2edev* dev = Dtc->GetDevice();
 
-  dev->write_register(0x91a8,100,0);                              // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  dev->write_register(0x91a8,100,0);                                     // disable event window marker - set deltaT = 0
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000);        // reset ROC
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
+
+  Dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 }
 
 
@@ -495,28 +514,27 @@ void mu2e::TrackerVST::monica_var_pattern_config(DTC* Dtc) {
 
   //  auto startTime = std::chrono::steady_clock::now();
 
-  print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
+  if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
 
   mu2edev* dev = Dtc->GetDevice();
 
   dev->ResetDeviceTime();
 
   dev->write_register(0x91a8,100,0);                            // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
   int tmo_ms    (1500);  // 1500 is OK
-  int sleep_time( 100);  //  300 is OK
 
   Dtc->WriteROCRegister(DTC_Link_0,14,0x01,false,tmo_ms);  // this seems to be a reset
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
 
   Dtc->WriteROCRegister(DTC_Link_0, 8,0x10,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
   Dtc->WriteROCRegister(DTC_Link_0,30,0x00,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
-  print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
+   if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
 }
 //-----------------------------------------------------------------------------
 // print 16 bytes per line
