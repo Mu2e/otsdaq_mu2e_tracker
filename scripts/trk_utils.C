@@ -6,6 +6,11 @@
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 
+
+int gSleepTimeDTC      =  1000;  // [us]
+int gSleepTimeROC      =  2000;  // [us]
+int gSleepTimeROCReset =  4000;  // [us]
+
 //-----------------------------------------------------------------------------
 mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout, size_t& sts) {
   mu2e_databuff_t* buffer;
@@ -13,7 +18,7 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
   readSuccess = false;
 
   sts = device->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
   
   if (sts > 0) {
     readSuccess   = true;
@@ -133,11 +138,13 @@ void monica_var_link_config(DTCLib::DTC* dtc) {
   mu2edev* dev = dtc->GetDevice();
 
   dev->write_register(0x91a8,100,0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
+
+  dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000);              // reset ROC
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+
+  dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 }
 
 
