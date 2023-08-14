@@ -18,7 +18,7 @@ cet_set_compiler_flags(
         DIAGS VIGILANT
         WERROR  
         NO_UNDEFINED
-        EXTRA_FLAGS -pedantic -Wno-unused-parameter -pthread -g -O0 -v 
+        EXTRA_FLAGS -pedantic -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
 )
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
