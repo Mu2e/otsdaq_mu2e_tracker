@@ -127,6 +127,7 @@ void test2_read_data(int NEvents,
                      int SleepTimeROC      = 4000, 
                      int SleepTimeROCReset = 4000, 
                      int ResetROC          =    1, 
+                     int NevPrint          =   -1,
                      const char* OutputFn  = nullptr) {
 
   std::ofstream outputStream;
@@ -189,6 +190,7 @@ void test2_read_data(int NEvents,
 //-----------------------------------------------------------------------------
   monica_digi_clear     (&dtc);
   monica_var_link_config(&dtc);
+
   dev->write_register(0x91a8,100,heartbeatInterval);
 
   for (int i=0; i<NEvents; i++) {
@@ -222,18 +224,19 @@ void test2_read_data(int NEvents,
     mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, nbytes);
     //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
 
-    printf(" --- read event %6i readSuccess:%i timeout:%i nbytes: %5lu\n",i,readSuccess,timeout,nbytes);
-
     if (OutputFn) {
       if (readSuccess and (not timeout)) {
         char* ptr = (char*) buffer;
-        outputStream.write(ptr+8 ,nbytes-8);
+        outputStream.write(ptr ,nbytes);
       }
     }
 
     // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
 
-    DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+    if (i < NevPrint) {
+      printf(" --- read event %6i readSuccess:%i timeout:%i nbytes: %5lu\n",i,readSuccess,timeout,nbytes);
+      DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+    }
 
     dev->read_release(DTC_DMA_Engine_DAQ, 1);
 

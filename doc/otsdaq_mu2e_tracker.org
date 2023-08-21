@@ -21,7 +21,7 @@ set_digi_rw -s 1
 Ending...
 #+end_src
 #+begin_src  ## these are commands issued at the control_ROC.py prompt (may be invisible)
-set_digi_rw –s 1
+set_digi_rw -s 1
 find_alignment
 # enable all channels
 # read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
@@ -29,7 +29,7 @@ find_alignment
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
 # enable 32 channels
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
-set_digi_rw   –s 0
+set_digi_rw -s 0
 #+end_src
 ** examples of the control_ROC.py output                                     
 #+begin_src                   find_alignment                                 

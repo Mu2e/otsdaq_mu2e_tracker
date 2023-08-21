@@ -6,7 +6,6 @@
 
 using namespace DTCLib;
 
-
 //-----------------------------------------------------------------------------
 // print 16 bytes per line
 // size - number of bytes to print, even
