@@ -1,5 +1,138 @@
 #
 * ------------------------------------------------------------------------------
+* startup checks                                                             
+** 1. check version of the DTC firmware                                      
+#+begin_src
+mu2etrk@mu2edaq09:~/test_stand/pasha_018>my_cntl read 0x9004
+0x23080819
+sts=0
+#+end_src
+** 2. check locked fibers                                                    
+#+begin_src 
+mu2etrk@mu2edaq09:~/test_stand/pasha_018>my_cntl read 0x9140
+0x00000011
+sts=0
+#+end_src
+** 3. check ROC pattern readout                                              
+#+begin_src                                                                   
+mu2etrk@mu2edaq09:~/test_stand/pasha_018>srcs/otsdaq_mu2e_tracker/scripts/var_pattern_config.sh 0 0
+ 
+Disabling EWMs
+sts=0
+EWM deltaT set to 0x00000000 sts=0
+ 
+Resetting 0
+Configuring link 0 to send patterns
+Configuring STATUS_BIT in MODE 0::
+ ie STATUS_BIT=0x55
+... now sleep for 2 seconds
+mu2etrk@mu2edaq09:~/test_stand/pasha_018>mu2eUtil -q 10 -N buffer_test -D 600 -n 3
+08-23 08:34:05.384310                      DTC_Registers     INFO DTC_Registers(...): DTC Sim Mode is NoCFO
+08-23 08:34:05.384426                      DTC_Registers     INFO DTC_Registers(...): DTC ID is 1
+08-23 08:34:05.384446                      DTC_Registers     INFO SetSimMode(...): Initializing device, sim mode is NoCFO
+08-23 08:34:05.398122                            DTC.cpp     INFO DTC(...): CONSTRUCTOR
+08-23 08:34:05.404393                           mu2eUtil     INFO buffer_test(): Buffer Read 0
+08-23 08:34:05.404436                           mu2eUtil     INFO (...): Buffer reports DMA size of 112 bytes. Device driver reports read of 112 bytes,
+08-23 08:34:05.410149                          DTC_Types     INFO PrintBuffer(...): 0x000000: 0070 0000 0000 0000 0068 0000 0013 0000 
+08-23 08:34:05.410175                          DTC_Types     INFO PrintBuffer(...): 0x000010: 0000 ff01 ffff ffff 0000 0000 0100 0000 
+08-23 08:34:05.410182                          DTC_Types     INFO PrintBuffer(...): 0x000020: 0050 0000 0013 0000 0000 ff01 ffff ffff 
+08-23 08:34:05.410188                          DTC_Types     INFO PrintBuffer(...): 0x000030: 0000 0000 0000 0000 0000 0000 0000 01ee 
+08-23 08:34:05.410193                          DTC_Types     INFO PrintBuffer(...): 0x000040: 0030 8050 0002 0013 0000 0000 0055 0000 
+08-23 08:34:05.410198                          DTC_Types     INFO PrintBuffer(...): 0x000050: 0000 0000 0001 0000 0002 0000 0003 0000 
+08-23 08:34:05.410203                          DTC_Types     INFO PrintBuffer(...): 0x000060: 0004 0000 0005 0000 0006 0000 0007 0000 
+08-23 08:34:05.410213                           mu2eUtil     INFO buffer_test(): Buffer Read 1
+08-23 08:34:05.410220                           mu2eUtil     INFO (...): Buffer reports DMA size of 144 bytes. Device driver reports read of 144 bytes,
+08-23 08:34:05.410227                          DTC_Types     INFO PrintBuffer(...): 0x000000: 0090 0000 0000 0000 0088 0000 0014 0000 
+08-23 08:34:05.410233                          DTC_Types     INFO PrintBuffer(...): 0x000010: 0000 ff01 ffff ffff 0000 0000 0100 0000 
+08-23 08:34:05.410238                          DTC_Types     INFO PrintBuffer(...): 0x000020: 0070 0000 0014 0000 0000 ff01 ffff ffff 
+08-23 08:34:05.410243                          DTC_Types     INFO PrintBuffer(...): 0x000030: 0000 0000 0000 0000 0000 0000 0000 01ee 
+08-23 08:34:05.410249                          DTC_Types     INFO PrintBuffer(...): 0x000040: 0050 8050 0004 0014 0000 0000 0055 0000 
+08-23 08:34:05.410254                          DTC_Types     INFO PrintBuffer(...): 0x000050: 0008 0000 0009 0000 000a 0000 000b 0000 
+08-23 08:34:05.410259                          DTC_Types     INFO PrintBuffer(...): 0x000060: 000c 0000 000d 0000 000e 0000 000f 0000 
+08-23 08:34:05.410264                          DTC_Types     INFO PrintBuffer(...): 0x000070: 0010 0000 0011 0000 0012 0000 0013 0000 
+08-23 08:34:05.410270                          DTC_Types     INFO PrintBuffer(...): 0x000080: 0014 0000 0015 0000 0016 0000 0017 0000 
+08-23 08:34:05.410276                           mu2eUtil     INFO buffer_test(): Buffer Read 2
+08-23 08:34:05.410282                           mu2eUtil     INFO (...): Buffer reports DMA size of 176 bytes. Device driver reports read of 176 bytes,
+08-23 08:34:05.410288                          DTC_Types     INFO PrintBuffer(...): 0x000000: 00b0 0000 0000 0000 00a8 0000 0015 0000 
+08-23 08:34:05.410293                          DTC_Types     INFO PrintBuffer(...): 0x000010: 0000 ff01 ffff ffff 0000 0000 0100 0000 
+08-23 08:34:05.410299                          DTC_Types     INFO PrintBuffer(...): 0x000020: 0090 0000 0015 0000 0000 ff01 ffff ffff 
+08-23 08:34:05.410304                          DTC_Types     INFO PrintBuffer(...): 0x000030: 0000 0000 0000 0000 0000 0000 0000 01ee 
+08-23 08:34:05.410309                          DTC_Types     INFO PrintBuffer(...): 0x000040: 0070 8050 0006 0015 0000 0000 0055 0000 
+08-23 08:34:05.410314                          DTC_Types     INFO PrintBuffer(...): 0x000050: 0018 0000 0019 0000 001a 0000 001b 0000 
+08-23 08:34:05.410319                          DTC_Types     INFO PrintBuffer(...): 0x000060: 001c 0000 001d 0000 001e 0000 001f 0000 
+08-23 08:34:05.410324                          DTC_Types     INFO PrintBuffer(...): 0x000070: 0020 0000 0021 0000 0022 0000 0023 0000 
+08-23 08:34:05.410330                          DTC_Types     INFO PrintBuffer(...): 0x000080: 0024 0000 0025 0000 0026 0000 0027 0000 
+08-23 08:34:05.410335                          DTC_Types     INFO PrintBuffer(...): 0x000090: 0028 0000 0029 0000 002a 0000 002b 0000 
+08-23 08:34:05.410340                          DTC_Types     INFO PrintBuffer(...): 0x0000a0: 002c 0000 002d 0000 002e 0000 002f 0000 
+08-23 08:34:05.410346                           mu2eUtil     INFO buffer_test(): Buffer Read 3
+08-23 08:34:06.909774                           mu2eUtil     INFO buffer_test(): Total Elapsed Time: 1.5312 s.
+Total Init Time: 19.685 ms.
+Total Readout Request Time: 6.2187 ms.
+Total Read Time: 1.5053 s.
+08-23 08:34:06.909829                           mu2eUtil     INFO buffer_test(): Device Init Time: 7.4364 ms.
+Device Request Time: 314.7 us.
+Device Read Time: 1.4993 s.
+08-23 08:34:06.909869                           mu2eUtil     INFO buffer_test(): Total Bytes Written: 0 bytes (0 bytes).
+Total Bytes Read: 432 bytes (432 bytes).
+08-23 08:34:06.909880                           mu2eUtil     INFO buffer_test(): Total PCIe Rate: 282.13 bytes/s (282 bytes/s)
+Read Rate: 286.99 bytes/s (286 bytes/s)
+Device Read Rate: 288.13 bytes/s (288 bytes/s)
+#+end_src
+** 4. check simple event readout                                             
+#+begin_src
+mu2etrk@mu2edaq09:~/test_stand/pasha_018>root.exe
+   ------------------------------------------------------------------
+  | Welcome to ROOT 6.28/04                        https://root.cern |
+  | (c) 1995-2022, The ROOT Team; conception: R. Brun, F. Rademakers |
+  | Built for linuxx8664gcc on May 08 2023, 02:44:07                 |
+  | From tags/v6-28-04@v6-28-04                                      |
+  | With g++ (GCC) 9.3.0                                             |
+  | Try '.help'/'.?', '.demo', '.license', '.credits', '.quit'/'.q'  |
+   ------------------------------------------------------------------
+
+root [0] .L srcs/otsdaq_mu2e_tracker/scripts/test_read_data.C 
+root [1] test2_read_data(2,100,300,2500,4000,1,2)
+08-23 08:49:59.281945                      DTC_Registers     INFO DTC_Registers(...): DTC Sim Mode is NoCFO
+08-23 08:49:59.281998                      DTC_Registers     INFO DTC_Registers(...): DTC ID is 1
+08-23 08:49:59.282020                      DTC_Registers     INFO SetSimMode(...): Initializing device, sim mode is NoCFO
+08-23 08:49:59.294444                            DTC.cpp     INFO DTC(...): CONSTRUCTOR
+0x9100: DTC status       : 0x40808404
+0x9138: SERDES Reset Done: 0xbfbfbfbf
+0x9158: time window      : 0x000007d0
+0x91c8: debug packet type: 0x00000000
+ --- read event      0 readSuccess:1 timeout:0 nbytes:   176
+08-23 08:49:59.323811                          DTC_Types     CRIT PrintBuffer(...): 0x000000: 00b0 0000 0000 0000 00a8 0000 06ec 0000 
+08-23 08:49:59.323834                          DTC_Types     CRIT PrintBuffer(...): 0x000010: 0000 ff01 ffff ffff 0000 0000 0100 0000 
+08-23 08:49:59.323840                          DTC_Types     CRIT PrintBuffer(...): 0x000020: 0090 0000 06ec 0000 0000 ff01 ffff ffff 
+08-23 08:49:59.323846                          DTC_Types     CRIT PrintBuffer(...): 0x000030: 0000 0000 0000 0000 0000 0000 0000 01ee 
+08-23 08:49:59.323851                          DTC_Types     CRIT PrintBuffer(...): 0x000040: 0070 8050 0006 06ec 0000 0000 0055 0000 
+08-23 08:49:59.323857                          DTC_Types     CRIT PrintBuffer(...): 0x000050: 00ac 1a68 140a 1a21 050a 0041 56aa 2aa5 
+08-23 08:49:59.323862                          DTC_Types     CRIT PrintBuffer(...): 0x000060: a955 155a 56aa 2aa5 a955 155a 56aa 2aa5 
+08-23 08:49:59.323868                          DTC_Types     CRIT PrintBuffer(...): 0x000070: 00ac e96b 1416 e921 0516 0041 56aa 2aa5 
+08-23 08:49:59.323873                          DTC_Types     CRIT PrintBuffer(...): 0x000080: a955 155a 56aa 2aa5 a955 155a 56aa 2aa5 
+08-23 08:49:59.323879                          DTC_Types     CRIT PrintBuffer(...): 0x000090: 00ac b86b 1423 b821 0523 0041 a955 155a 
+08-23 08:49:59.323884                          DTC_Types     CRIT PrintBuffer(...): 0x0000a0: 56aa 2aa5 a955 155a 56aa 2aa5 a955 155a 
+DTC status       : 0x40808404
+debug packet type: 0x00000000
+ --- read event      1 readSuccess:1 timeout:0 nbytes:   176
+08-23 08:49:59.334384                          DTC_Types     CRIT PrintBuffer(...): 0x000000: 00b0 0000 0000 0000 00a8 0000 06fd 0000 
+08-23 08:49:59.334396                          DTC_Types     CRIT PrintBuffer(...): 0x000010: 0000 ff01 ffff ffff 0000 0000 0100 0000 
+08-23 08:49:59.334402                          DTC_Types     CRIT PrintBuffer(...): 0x000020: 0090 0000 06fd 0000 0000 ff01 ffff ffff 
+08-23 08:49:59.334408                          DTC_Types     CRIT PrintBuffer(...): 0x000030: 0000 0000 0000 0000 0000 0000 0000 01ee 
+08-23 08:49:59.334413                          DTC_Types     CRIT PrintBuffer(...): 0x000040: 0070 8050 0006 06fd 0000 0000 0055 0000 
+08-23 08:49:59.334418                          DTC_Types     CRIT PrintBuffer(...): 0x000050: 00ac 4be8 140b 4b9b 040b 0041 a955 155a 
+08-23 08:49:59.334424                          DTC_Types     CRIT PrintBuffer(...): 0x000060: 56aa 2aa5 a955 155a 56aa 2aa5 a955 155a 
+08-23 08:49:59.334429                          DTC_Types     CRIT PrintBuffer(...): 0x000070: 00ac 1ae8 1418 1a9b 0418 0041 56aa 2aa5 
+08-23 08:49:59.334434                          DTC_Types     CRIT PrintBuffer(...): 0x000080: a955 155a 56aa 2aa5 a955 155a 56aa 2aa5 
+08-23 08:49:59.334439                          DTC_Types     CRIT PrintBuffer(...): 0x000090: 00ac e9e8 1424 e99b 0424 0041 56aa 2aa5 
+08-23 08:49:59.334444                          DTC_Types     CRIT PrintBuffer(...): 0x0000a0: a955 155a 56aa 2aa5 a955 155a 56aa 2aa5 
+DTC status       : 0x40808404
+debug packet type: 0x00000000
+08-23 08:49:59.334624                            DTC.cpp     INFO ~DTC(): DESTRUCTOR
+root [2] .q
+#+end_src
+** after that can proceed with OTS
+* ------------------------------------------------------------------------------
 * reading data (from Monica)
 * ------------------------------------------------------------------------------
 * 1) after each DIGIs power up, run control_ROC.py on trackerpi1             
@@ -31,6 +164,43 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
 set_digi_rw -s 0
 #+end_src
+* control_ROC.py commands                                                   
+** digi_rw                                                 
+    - digi_rw -h 2 -a 2
+    - digi_rw -h 2 -a 1
+    - digi_rw -h 2 -a 0
+    - digi_rw -h 15 -a 16 -d 2 -w 1
+    - digi_rw -h 15 -a 15 -d 31 -w 1 
+    - digi_rw -h 9 -a d -d b -w 1
+
+** find_alignment                                          
+** set_preamp_thresh                                                        
+    - set_preamp_thresh -c 91 -d 350 -hv 1
+    - set_preamp_thresh -c 91 -d 350 -hv 0
+    - set_preamp_thresh -c 91 -d 400 -hv 1
+    - set_preamp_thresh -c 45 -d 420 -hv 0
+
+** measure_thresholds [-c channel]
+    - measure_thresholds -c 91 : channel 91
+** pulser_on -c 3 -d 10000 -y 200                             
+    -c 3 : (divide by 8) : pulse channel 91
+** readSPI : no parameters
+** set_digi_rw                                                              
+    set_digi_rw -s 1 : enable  commands over the serial connection
+    set_digi_rw -s 0 : disable commands over the serial connection
+** rates [-c channel]
+    - if channel is not specified, all channels
+    - rates -c 91 : rate in the channel # 91
+** read                    
+    - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
+   
+    -m 3   : mode  ... need -m 3 for internal pulser
+    -p 0/1 : 0: 
+    -t     : triggering 
+    channels go as follows -C : first 32, -D : next 32, -E: last 32
+
+   - read -a 0 -t 0 -s 1 -l 8 -T 10 -m 0 -p 0
+
 ** examples of the control_ROC.py output                                     
 #+begin_src                   find_alignment                                 
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
