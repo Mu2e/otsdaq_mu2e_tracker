@@ -1,6 +1,8 @@
 //
 #define __CLING__ 1
 
+#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 
@@ -33,23 +35,58 @@ void print_buffer(const void* ptr, int nw) {
 }
 
 //-----------------------------------------------------------------------------
-// read_spi: read slow control data
+// read_spi: read slow control data from one ROC at a given link 
 //-----------------------------------------------------------------------------
-void read_spi() {
+void read_spi(int Link = 0) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+  auto link  = DTC_Link_ID(Link);
 
-  DTC dtc(DTC_SimMode_NoCFO,-1,0x1,"");
+  int link_mask = 1 << (4*Link);
+  DTC dtc(DTC_SimMode_NoCFO,-1,link_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  bool useCFOEmulator   = true;
+  int  packetCount      = 0;
+  bool stickyDebugType  = true;
+  bool quiet            = false;
+  bool asyncRR          = false; 
+  bool forceNoDebug     = true;
+  bool useCFODRP        = false;
+
+  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,
+			     DTCLib::DTC_DebugType_SpecialSequence,
+			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
+
+  int incrementTimestamp =    1;
+  int heartbeatInterval  = 1000;
+  int requestsAhead      =    1;
+  int heartbeatsAfter    =   16;
+
+  int tmo_ms             = 1500;
+
+  int nev = 1;
+  cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(0)),
+                           incrementTimestamp,
+                           heartbeatInterval,
+                           requestsAhead,
+                           heartbeatsAfter);
+  std::this_thread::sleep_for(std::chrono::microseconds(100));
+
+  monica_var_link_config(&dtc,link);
+  monica_digi_clear     (&dtc,link);
 
   uint16_t u; 
   int      rc;
 
-  dtc.WriteROCRegister(DTC_Link_0,258,0x0000,false,100);
-  u = dtc.ReadROCRegister(DTC_Link_0,roc_address_t(128),100); printf("0x%04x\n",u);
-  u = dtc.ReadROCRegister(DTC_Link_0,roc_address_t(129),100); printf("0x%04x\n",u);
+  dtc.WriteROCRegister   (link,258,0x0000,false,100);
+  u = dtc.ReadROCRegister(link,128,100); printf("0x%04x\n",u);
+  u = dtc.ReadROCRegister(link,129,100); printf("0x%04x\n",u);
 
   vector<uint16_t> dat;
   int const nw = 36;
-  dtc.ReadROCBlock(dat,DTC_Link_0,258,nw,false,100);
+  dtc.ReadROCBlock(dat,link,258,nw,false,100);
 //-----------------------------------------------------------------------------
 // print SPI data in hex 
 //-----------------------------------------------------------------------------

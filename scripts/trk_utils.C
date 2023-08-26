@@ -87,7 +87,7 @@ void monica_dtc_reset(DTCLib::DTC* Dtc) {
 }
 
 //-----------------------------------------------------------------------------
-void monica_digi_clear(DTCLib::DTC* dtc) {
+void monica_digi_clear(DTCLib::DTC* dtc, int Link = 0) {
 //-----------------------------------------------------------------------------
 //  Monica's digi_clear
 //  this will proceed in 3 steps each for HV and CAL DIGIs:
@@ -96,54 +96,58 @@ void monica_digi_clear(DTCLib::DTC* dtc) {
 // 3) write TWI INIT low
 //-----------------------------------------------------------------------------
 // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,28,0x10,false,1000); // 
+  auto link = DTCLib::DTC_Link_ID(Link);
+
+  dtc->WriteROCRegister(link,28,0x10,false,1000); // 
 
   // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
   // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
   // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
   // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x00,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,27,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
 
 
   // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
   // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
   // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,27,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
 
   // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
   // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,25,0x10,false,1000); // 
+  dtc->WriteROCRegister(link,25,0x10,false,1000); // 
 
 // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
 // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
 // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x00,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,24,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
 
 // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
 // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
 // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,24,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
 }
 
 //-----------------------------------------------------------------------------
-void monica_var_link_config(DTCLib::DTC* dtc) {
+void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
   mu2edev* dev = dtc->GetDevice();
+
+  auto link = DTCLib::DTC_Link_ID(Link);
 
   dev->write_register(0x91a8,100,0);
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000);              // reset ROC
+  dtc->WriteROCRegister(link,14,     1,false,1000);              // reset ROC
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
 
-  dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
+  dtc->WriteROCRegister(link, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 }
 
