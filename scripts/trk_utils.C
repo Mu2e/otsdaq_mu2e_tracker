@@ -12,6 +12,139 @@ int gSleepTimeROC      =  2000;  // [us]
 int gSleepTimeROCReset =  4000;  // [us]
 
 //-----------------------------------------------------------------------------
+void monica_digi_clear(DTCLib::DTC* dtc, int Link = 0) {
+//-----------------------------------------------------------------------------
+//  Monica's digi_clear
+//  this will proceed in 3 steps each for HV and CAL DIGIs:
+// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
+// 2) write TWI INIT high
+// 3) write TWI INIT low
+//-----------------------------------------------------------------------------
+// rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
+  auto link = DTCLib::DTC_Link_ID(Link);
+
+  dtc->WriteROCRegister(link,28,0x10,false,1000); // 
+
+  // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+  // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
+  // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
+  // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+  dtc->WriteROCRegister(link,27,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
+  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
+
+
+  // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
+  // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
+  // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+  dtc->WriteROCRegister(link,27,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
+
+  // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+  // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
+  dtc->WriteROCRegister(link,25,0x10,false,1000); // 
+
+// rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
+// rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+// rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+  dtc->WriteROCRegister(link,24,0x00,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
+
+// rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
+// rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+// rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+  dtc->WriteROCRegister(link,24,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
+  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
+}
+
+//-----------------------------------------------------------------------------
+// this implements Monica's bash DTC_Reset
+//-----------------------------------------------------------------------------
+void monica_dtc_reset(DTCLib::DTC* Dtc) {
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->write_register(0x9100,100,0x80000000);
+  dev->write_register(0x9100,100,0x00008000);
+  dev->write_register(0x9118,100,0xffff00ff);
+  dev->write_register(0x9118,100,0x00000000);
+}
+
+//-----------------------------------------------------------------------------
+void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
+  mu2edev* dev = dtc->GetDevice();
+
+  auto link = DTCLib::DTC_Link_ID(Link);
+
+  dev->write_register(0x91a8,100,0);
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
+
+  dtc->WriteROCRegister(link,14,     1,false,1000);              // reset ROC
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+
+  dtc->WriteROCRegister(link, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+}
+
+//-----------------------------------------------------------------------------
+// print data starting from ptr , 'nw' 2-byte words
+// printout: 16 bytes per line, grouped in 2-byte words
+//-----------------------------------------------------------------------------
+void print_buffer(const void* ptr, int nw) {
+
+  // int     nw  = nbytes/2;
+  ushort* p16 = (ushort*) ptr;
+  int     n   = 0;
+
+  for (int i=0; i<nw; i++) {
+    if (n == 0) printf(" 0x%08x: ",i*2);
+
+    ushort  word = p16[i];
+    printf("0x%04x ",word);
+
+    n   += 1;
+    if (n == 8) {
+      printf("\n");
+      n = 0;
+    }
+  }
+
+  if (n != 0) printf("\n");
+}
+
+//-----------------------------------------------------------------------------
+void print_dtc_registers(DTCLib::DTC* Dtc) {
+  uint32_t res; 
+  int      rc;
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  rc = dev->read_register(0x9100,100,&res); printf("0x9100: DTC status       : 0x%08x\n",res); // expect: 0x40808404
+  rc = dev->read_register(0x9138,100,&res); printf("0x9138: SERDES Reset Done: 0x%08x\n",res); // expect: 0xbfbfbfbf
+  rc = dev->read_register(0x91a8,100,&res); printf("0x9158: time window      : 0x%08x\n",res); // expect: 
+  rc = dev->read_register(0x91c8,100,&res); printf("0x91c8: debug packet type: 0x%08x\n",res); // expect: 0x00000000
+}
+
+
+//-----------------------------------------------------------------------------
+void print_roc_registers(DTCLib::DTC* Dtc, DTCLib::DTC_Link_ID RocID, const char* Header) {
+  uint16_t  roc_reg[100];
+  printf("---------------------- %s print_roc_registers\n",Header);
+
+  // roc_reg[11] = Dtc->ReadROCRegister(RocID,11,100);
+  // printf("roc_reg[11] = 0x%04x\n",roc_reg[11]);
+  // roc_reg[13] = Dtc->ReadROCRegister(RocID,13,100);
+  // printf("roc_reg[13] = 0x%04x\n",roc_reg[13]);
+  // roc_reg[14] = Dtc->ReadROCRegister(RocID,14,100);
+  // printf("roc_reg[14] = 0x%04x\n",roc_reg[14]);
+
+  printf("---------------------- END print_roc_registers\n");
+}
+
+//-----------------------------------------------------------------------------
 mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout, size_t& sts) {
   mu2e_databuff_t* buffer;
   auto tmo_ms = 1500;
@@ -44,112 +177,5 @@ mu2e_databuff_t* readDTCBuffer(mu2edev* device, bool& readSuccess, bool& timeout
   }
   return buffer;
 }
-//-----------------------------------------------------------------------------
-void print_dtc_registers(DTCLib::DTC* Dtc) {
-  uint32_t res; 
-  int      rc;
-
-  mu2edev* dev = Dtc->GetDevice();
-
-  rc = dev->read_register(0x9100,100,&res); printf("0x9100: DTC status       : 0x%08x\n",res); // expect: 0x40808404
-  rc = dev->read_register(0x9138,100,&res); printf("0x9138: SERDES Reset Done: 0x%08x\n",res); // expect: 0xbfbfbfbf
-  rc = dev->read_register(0x91a8,100,&res); printf("0x9158: time window      : 0x%08x\n",res); // expect: 
-  rc = dev->read_register(0x91c8,100,&res); printf("0x91c8: debug packet type: 0x%08x\n",res); // expect: 0x00000000
-}
-
-
-//-----------------------------------------------------------------------------
-void print_roc_registers(DTCLib::DTC* Dtc, DTCLib::DTC_Link_ID RocID, const char* Header) {
-  uint16_t  roc_reg[100];
-  printf("---------------------- %s print_roc_registers\n",Header);
-
-  // roc_reg[11] = Dtc->ReadROCRegister(RocID,11,100);
-  // printf("roc_reg[11] = 0x%04x\n",roc_reg[11]);
-  // roc_reg[13] = Dtc->ReadROCRegister(RocID,13,100);
-  // printf("roc_reg[13] = 0x%04x\n",roc_reg[13]);
-  // roc_reg[14] = Dtc->ReadROCRegister(RocID,14,100);
-  // printf("roc_reg[14] = 0x%04x\n",roc_reg[14]);
-
-  printf("---------------------- END print_roc_registers\n");
-}
-
-//-----------------------------------------------------------------------------
-// this implements Monica's bash DTC_Reset
-//-----------------------------------------------------------------------------
-void monica_dtc_reset(DTCLib::DTC* Dtc) {
-
-  mu2edev* dev = Dtc->GetDevice();
-
-  dev->write_register(0x9100,100,0x80000000);
-  dev->write_register(0x9100,100,0x00008000);
-  dev->write_register(0x9118,100,0xffff00ff);
-  dev->write_register(0x9118,100,0x00000000);
-}
-
-//-----------------------------------------------------------------------------
-void monica_digi_clear(DTCLib::DTC* dtc, int Link = 0) {
-//-----------------------------------------------------------------------------
-//  Monica's digi_clear
-//  this will proceed in 3 steps each for HV and CAL DIGIs:
-// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
-// 2) write TWI INIT high
-// 3) write TWI INIT low
-//-----------------------------------------------------------------------------
-// rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
-  auto link = DTCLib::DTC_Link_ID(Link);
-
-  dtc->WriteROCRegister(link,28,0x10,false,1000); // 
-
-  // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
-  // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
-  // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
-  // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-  dtc->WriteROCRegister(link,27,0x00,false,1000); // 
-  dtc->WriteROCRegister(link,26,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
-
-
-  // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
-  // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
-  // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-  dtc->WriteROCRegister(link,27,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,26,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,26,0x00,false,1000); // 
-
-  // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
-  // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
-  dtc->WriteROCRegister(link,25,0x10,false,1000); // 
-
-// rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
-// rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-// rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-  dtc->WriteROCRegister(link,24,0x00,false,1000); // 
-  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
-
-// rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
-// rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-// rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-  dtc->WriteROCRegister(link,24,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,23,0x01,false,1000); // 
-  dtc->WriteROCRegister(link,23,0x00,false,1000); // 
-}
-
-//-----------------------------------------------------------------------------
-void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
-  mu2edev* dev = dtc->GetDevice();
-
-  auto link = DTCLib::DTC_Link_ID(Link);
-
-  dev->write_register(0x91a8,100,0);
-  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
-
-  dtc->WriteROCRegister(link,14,     1,false,1000);              // reset ROC
-  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
-
-  dtc->WriteROCRegister(link, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
-}
-
 
 #endif

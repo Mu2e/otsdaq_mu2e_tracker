@@ -9,92 +9,9 @@
 using namespace DTCLib;
 
 //-----------------------------------------------------------------------------
-// print 16 bytes per line
-// size - number of bytes to print, even
-//-----------------------------------------------------------------------------
-void print_buffer(const void* ptr, int nw) {
+void parse_spi_data(uint16_t* dat, int nw) {
 
-  // int     nw  = nbytes/2;
-  ushort* p16 = (ushort*) ptr;
-  int     n   = 0;
-
-  for (int i=0; i<nw; i++) {
-    if (n == 0) printf(" 0x%08x: ",i*2);
-
-    ushort  word = p16[i];
-    printf("0x%04x ",word);
-
-    n   += 1;
-    if (n == 8) {
-      printf("\n");
-      n = 0;
-    }
-  }
-
-  if (n != 0) printf("\n");
-}
-
-//-----------------------------------------------------------------------------
-// read_spi: read slow control data from one ROC at a given link 
-//-----------------------------------------------------------------------------
-void read_spi(int Link = 0) {
-//-----------------------------------------------------------------------------
-// convert into enum
-//-----------------------------------------------------------------------------
-  auto link  = DTC_Link_ID(Link);
-
-  int link_mask = 1 << (4*Link);
-  DTC dtc(DTC_SimMode_NoCFO,-1,link_mask,"");
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-  bool useCFOEmulator   = true;
-  int  packetCount      = 0;
-  bool stickyDebugType  = true;
-  bool quiet            = false;
-  bool asyncRR          = false; 
-  bool forceNoDebug     = true;
-  bool useCFODRP        = false;
-
-  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,
-			     DTCLib::DTC_DebugType_SpecialSequence,
-			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
-
-  int incrementTimestamp =    1;
-  int heartbeatInterval  = 1000;
-  int requestsAhead      =    1;
-  int heartbeatsAfter    =   16;
-
-  int tmo_ms             = 1500;
-
-  int nev = 1;
-  cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(0)),
-                           incrementTimestamp,
-                           heartbeatInterval,
-                           requestsAhead,
-                           heartbeatsAfter);
-  std::this_thread::sleep_for(std::chrono::microseconds(100));
-
-  monica_var_link_config(&dtc,link);
-  monica_digi_clear     (&dtc,link);
-
-  uint16_t u; 
-  int      rc;
-
-  dtc.WriteROCRegister   (link,258,0x0000,false,100);
-  u = dtc.ReadROCRegister(link,128,100); printf("0x%04x\n",u);
-  u = dtc.ReadROCRegister(link,129,100); printf("0x%04x\n",u);
-
-  vector<uint16_t> dat;
-  int const nw = 36;
-  dtc.ReadROCBlock(dat,link,258,nw,false,100);
-//-----------------------------------------------------------------------------
-// print SPI data in hex 
-//-----------------------------------------------------------------------------
-  print_buffer(&dat[0],nw);
-//-----------------------------------------------------------------------------
-// parse SPI data
-//-----------------------------------------------------------------------------
-  const char* keys[nw] = {
+  const char* keys[] = {
     "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
     "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
     "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
@@ -146,4 +63,59 @@ void read_spi(int Link = 0) {
 
     printf("%-20s : %10.3f\n",keys[i],val[i]);
   }
+}
+
+//-----------------------------------------------------------------------------
+// read_spi: read slow control data from one ROC at a given link 
+// on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
+// so can't do that for every event ...
+//-----------------------------------------------------------------------------
+void read_spi(int Link, int NEvents=1, int ROCSleepTime = 2000, int PrintParsedSPIData = 0) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+  auto roc  = DTC_Link_ID(Link);
+
+  int roc_mask = 1 << (4*Link);
+  DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  monica_var_link_config(&dtc,roc);
+
+  for (int ievent=0; ievent<NEvents; ievent++) {
+    monica_digi_clear     (&dtc,roc);
+//-----------------------------------------------------------------------------
+// after writing into reg 258, sleep for some time, 
+// then wait till reg 128 returns non-zero
+//-----------------------------------------------------------------------------
+    dtc.WriteROCRegister   (roc,258,0x0000,false,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
+
+    uint16_t u; 
+    while ((u = dtc.ReadROCRegister(roc,128,100)) == 0) {}; 
+    printf("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = dtc.ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+
+    nw = nw-4;
+    vector<uint16_t> spi;
+    dtc.ReadROCBlock(spi,roc,258,nw,false,100);
+//-----------------------------------------------------------------------------
+// print SPI data in hex 
+//-----------------------------------------------------------------------------
+    print_buffer(spi.data(),nw);
+//-----------------------------------------------------------------------------
+// parse SPI data and print them
+//-----------------------------------------------------------------------------
+    if (PrintParsedSPIData) {
+      parse_spi_data(spi.data(),nw);  // &spi[0]
+    }
+//-----------------------------------------------------------------------------
+// sleep
+//-----------------------------------------------------------------------------
+    // std::this_thread::sleep_for(std::chrono::milliseconds(SPISleepTime));
+  }
+
 }

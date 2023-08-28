@@ -119,11 +119,11 @@ void test1_read_data(int Link, int NEvents) {
   dev->release_all(DTC_DMA_Engine_DAQ);
 }
 
-
 //-----------------------------------------------------------------------------
-// test2: each time, CFO requests one event
+// test2: read DTC only (DTC to read is defined by $env(DTCLIB_DTC)
+// each time, CFO requests one event
 // if defined, OutputFn is the name of the output raw file
-// sleep time in ms
+// sleep times in us
 //-----------------------------------------------------------------------------
 void test2_read_data(int Link                    ,  // add, as the link can vary
                      int NEvents                 , 
@@ -276,17 +276,19 @@ int readDTCRegisters(DTCLib::DTC* Dtc, uint16_t* reg, int nreg, uint32_t* f2d) {
 //----------------------------------------------------------------------------------------
   f2d[0] = 1; 
 
-  for (int i=0; reg[i] < nreg; i++) {
+  for (int i=0; i<nreg; i++) {
     f2d[2*i+1] = reg[i];
-    printf(" --- reading DTC reg %x04x\n",reg[i]);
+    printf(" --- reading DTC reg 0x%04x",reg[i]);
     try   { 
       rc   = Dtc->GetDevice()->read_register(reg[i],100,f2d+2*i+2); 
       std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));   
+      printf(" --- var: 0x%08x",f2d[2*i+2]);
     }
     catch (...) {
       printf("readDTC ERROR, register : 0x%04x\n",reg[i]);
       break;
     }
+    printf("\n");
   }
 
   return rc;
@@ -314,7 +316,7 @@ void test3_read_data(int Link,
 
   uint16_t  roc_reg[100];
 
-  auto link = DTCLib::DTC_Link_ID(Link);
+  auto roc = DTCLib::DTC_Link_ID(Link);
 
   DTCLib::DTC* dtc = new DTC(DTCLib::DTC_SimMode_NoCFO,-1,0x1<<4*Link,"");
   // std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -337,7 +339,7 @@ void test3_read_data(int Link,
 //-----------------------------------------------------------------------------
 // print the ROC registers 11,13,14 - previously used in the readout
 //-----------------------------------------------------------------------------
-//  print_roc_registers(&dtc,link,"000");
+//  print_roc_registers(&dtc,roc,"000");
 //-----------------------------------------------------------------------------
 // now to reading the data
 //-----------------------------------------------------------------------------
@@ -370,8 +372,8 @@ void test3_read_data(int Link,
 // requests for range. 
 // definition of a timeout ?
 //-----------------------------------------------------------------------------
-  monica_digi_clear     (dtc,link);
-  monica_var_link_config(dtc,link);
+  monica_var_link_config(dtc,Link);
+  monica_digi_clear     (dtc,Link);
 
   dev->write_register(0x91a8,100,heartbeatInterval);
 
@@ -380,34 +382,37 @@ void test3_read_data(int Link,
 // reset and go back to 25.6 us
 //-----------------------------------------------------------------------------
     if (ResetROC != 0) {
-      monica_digi_clear     (dtc,link);
-      monica_var_link_config(dtc,link);
+      monica_digi_clear     (dtc,Link);
+      // monica_var_link_config(dtc,Link);                 // shouldn't need any more
       dev->write_register(0x91a8,100,heartbeatInterval);
     }
 //-----------------------------------------------------------------------------
 // emulate timing signals of the next event 
 //-----------------------------------------------------------------------------
     int nev = 1;
-    cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(i)),
-                             incrementTimestamp,heartbeatInterval,
-                             requestsAhead,heartbeatsAfter);
+    cfo.SendRequestsForRange(nev,
+                             DTCLib::DTC_EventWindowTag(uint64_t(i)),
+                             incrementTimestamp,
+                             heartbeatInterval,
+                             requestsAhead,
+                             heartbeatsAfter);
     std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
     dev->ResetDeviceTime();
     // cfo.SendRequestForTimestamp(DTCLib::DTC_EventWindowTag(uint64_t(i+1)), heartbeatsAfter);
     // std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
-    // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
+    // print_roc_registers(&dtc,roc,"001 [after cfo.SendRequestForTimestamp]");
 
     size_t nbytes     (0);
     bool   timeout    (false);
     bool   readSuccess(false);
 
     // printf(" ----------------------------------------------------------------------- reading event %i\n",i);
-
+    
     mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, nbytes);
     //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
-
+    
     if (OutputFn) {
       if (readSuccess and (not timeout)) {
         char* ptr = (char*) buffer;
@@ -416,7 +421,7 @@ void test3_read_data(int Link,
     }
 
     if (i < NevPrint) {
-      // print_roc_registers(&dtc,link,"002 [after readDTCBuffer]");
+      // print_roc_registers(&dtc,Link,"002 [after readDTCBuffer]");
       printf(" --- read event %6i readSuccess:%i timeout:%i nbytes: %5lu\n",i,readSuccess,timeout,nbytes);
       DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
     }
@@ -428,7 +433,7 @@ void test3_read_data(int Link,
     int      nreg(4);
     uint16_t reg[] = { 0x9004, 0x9100, 0x9190, 0x9194} ;
     uint32_t data[200];
-
+    
     readDTCRegisters(dtc,reg,nreg,data);
 
     if (i < NevPrint) {
@@ -436,24 +441,35 @@ void test3_read_data(int Link,
     }
 //-----------------------------------------------------------------------------
 // 3. read SPI
+// after writing to reg 258, sleep foror 2 msec, then wait till reg 128 becomes non-zero
+// don't go below 1.5msec of sleep
 //-----------------------------------------------------------------------------
-    uint16_t u; 
-
-    dtc->WriteROCRegister   (link,258,0x0000,false,100);
-    u = dtc->ReadROCRegister(link,128,100); printf("reg 0x%02x u = 0x%04x\n",128,u);
-    u = dtc->ReadROCRegister(link,129,100); printf("reg 0x%02x u = 0x%04x\n",129,u);
-
-    vector<uint16_t> spi;
-    int const nw = 36;
-    dtc->ReadROCBlock(spi,link,258,nw,false,100);
-
     printf(" -------------------- 3. read SPI:\n");
-    DTCLib::Utilities::PrintBuffer(spi.data(), nw*2, 0);
 
+    // dtc->WriteROCRegister   (roc,258,0x0000,false,100);
+    // std::this_thread::sleep_for(std::chrono::microseconds(2000));
+
+    // printf(" -------------------- 3.1 read r128\n");
+
+    // uint16_t u; 
+    // while ((u = dtc->ReadROCRegister(roc,128,100)) == 0) {}; 
+    // printf("reg 0x%02x u = 0x%04x\n",128,u);
+
+    // printf(" -------------------- 3.2 read r129\n");
+    // int nw = dtc->ReadROCRegister(roc,129,100); printf("reg_0x%02x val:0x%04x\n",129,nw);
+
+    // printf(" -------------------- 3.3 readROCBlock\n");
+    // std::vector<uint16_t> spi;
+    // nw = nw-4;                          // Monica tells about 4 extra words
+
+    // dtc->ReadROCBlock(spi,roc,258,nw,false,100);
+
+    // DTCLib::Utilities::PrintBuffer(spi.data(), nw*2, 0);
+
+    printf(" -------------------- 4 release DMA engine\n");
     dev->read_release(DTC_DMA_Engine_DAQ, 1);
 
     if (gSleepTimeDMA > 0) {
-      // usleep(gSleepTimeDMA);
       std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDMA));
     }
 

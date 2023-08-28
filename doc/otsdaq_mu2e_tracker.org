@@ -726,3 +726,57 @@ pulser_on -c 4 -d 1000 -y 200
 #+end_src 
 * <2023-08-12 Sat> after mu2edaq09 reboot : source ~/ots_mrb5/chantsDataTestVst.sh
 * ------------------------------------------------------------------------------
+* reading SPI from ROOT                                                      
+#+begin_src  
+root [0] .L srcs/otsdaq_mu2e_tracker/scripts/read_spi.C 
+root [1] read_spi(2)
+08-27 14:52:00.446941                      DTC_Registers     INFO DTC_Registers(...): DTC Sim Mode is NoCFO
+08-27 14:52:00.447025                      DTC_Registers     INFO DTC_Registers(...): DTC ID is 1
+08-27 14:52:00.447053                      DTC_Registers     INFO SetSimMode(...): Initializing device, sim mode is NoCFO
+08-27 14:52:00.459992                            DTC.cpp     INFO DTC(...): CONSTRUCTOR
+reg:128 0x8000
+reg:129 val:0x0028
+ 0x00000000: 0x0048 0x0078 0x0138 0x0324 0x0bd4 0x046c 0x0804 0x0638 
+ 0x00000010: 0x0448 0x0470 0x079c 0x04f0 0x0144 0x0144 0x0328 0x0458 
+ 0x00000020: 0x0ffc 0x0bd0 0x0478 0x0294 0x0138 0x01c4 0x01c4 0x0864 
+ 0x00000030: 0x20b0 0x3960 0x50c0 0x1309 0x20a9 0x3940 0x5033 0x1313 
+ 0x00000040: 0x20a3 0x396e 0x50b2 0x1321 
+I3.3                 :      0.483
+I2.5                 :      0.806
+I1.8HV               :      2.095
+IHV5.0               :      0.064
+VDMBHV5.0            :      4.879
+V1.8HV               :      1.824
+V3.3HV               :      3.306
+V2.5                 :      2.565
+A0                   :   1096.000
+A1                   :   1136.000
+A2                   :   1948.000
+A3                   :   1264.000
+I1.8CAL              :      2.175
+I1.2                 :      2.175
+ICAL5.0              :      0.064
+ADCSPARE             :      0.896
+V3.3                 :      6.594
+VCAL5.0              :      4.873
+V1.8CAL              :      1.843
+V1.0                 :      1.063
+ROCPCBTEMP           :     25.137
+HVPCBTEMP            :     36.416
+CALPCBTEMP           :     36.416
+RTD                  :      1.731
+ROC_RAIL_1V(mV)      :   1046.000
+ROC_RAIL_1.8V(mV)    :   1836.000
+ROC_RAIL_2.5V(mV)    :   2584.000
+ROC_TEMP(CELSIUS)    :     31.413
+CAL_RAIL_1V(mV)      :   1045.125
+CAL_RAIL_1.8V(mV)    :   1832.000
+CAL_RAIL_2.5V(mV)    :   2566.375
+CAL_TEMP(CELSIUS)    :     32.037
+HV_RAIL_1V(mV)       :   1044.375
+HV_RAIL_1.8V(mV)     :   1837.750
+HV_RAIL_2.5V(mV)     :   2582.250
+HV_TEMP(CELSIUS)     :     32.912
+08-27 14:52:00.988754                            DTC.cpp     INFO ~DTC(): DESTRUCTOR
+#+end_src 
+* ------------------------------------------------------------------------------
