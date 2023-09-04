@@ -35,6 +35,11 @@ using namespace DTCLib;
 
 namespace mu2e {
   class TrackerVST : public artdaq::CommandableFragmentGenerator {
+
+    enum {
+      kReadDigis   = 0,
+      kReadPattern = 1
+    };
 //-----------------------------------------------------------------------------
 // FHiCL-configurable variables. 
 // C++ variable names are the FHiCL parameter names prepended with a "_"
@@ -42,8 +47,6 @@ namespace mu2e {
     FragmentType const                    fragment_type_;  // Type of fragment (see FragmentType.hh)
 
     size_t                                timestamps_read_;
-    size_t                                highest_timestamp_seen_{0};
-    size_t                                timestamp_loops_{0}; // For playback mode, so that we continually generate unique timestamps
     std::chrono::steady_clock::time_point lastReportTime_;
     std::chrono::steady_clock::time_point procStartTime_;
     DTCLib::DTC_SimMode                   _sim_mode;
@@ -74,6 +77,7 @@ namespace mu2e {
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; default:0
     			                  
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
@@ -199,6 +203,8 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
+  , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           0))  // 
+
   {
     
     TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR";
@@ -272,20 +278,78 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
 //-----------------------------------------------------------------------------
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
-      monica_var_link_config(_dtc,_activeLinks[i]);
+
+      if      (_readoutMode == kReadDigis  ) monica_var_link_config   (_dtc,_activeLinks[i]);
+      else if (_readoutMode == kReadPattern) monica_var_pattern_config(_dtc,_activeLinks[i]);
     }
 //-----------------------------------------------------------------------------
-// DTC registers to save
+// DTC registers to save - zero those labeled as counters at begin run ! 
 //-----------------------------------------------------------------------------
     uint16_t reg[] = { 
-      0x9004, 0x9100, 0x9140, 0x9144, 0x9158, 0x9188, 0x9190, 0x9194, 0x91a8, 0x91ac,  // 10
-      0x91bc, 0x91c0, 0x91c4, 0x91c8, 0x91f4, 0x91F8, 0x93e0                           //  7
+      0x9004, 0,
+      0x9100, 0, 
+      0x9140, 0,
+      0x9144, 0, 
+      0x9158, 0,
+      0x9188, 0,
+      0x9190, 1,   // bits 7-0 could be ignored, 
+      0x9194, 1,   // bits 23-16 could be ignored 
+      0x9198, 1,
+      0x919c, 1,
+      0x91a8, 0,
+      0x91ac, 0,
+      0x91bc, 0,
+      0x91c0, 0,
+      0x91c4, 0,
+      0x91c8, 0,
+      0x91f4, 0,
+      0x91f8, 0,
+      0x9374, 1,
+      0x9378, 1,
+      0x9380, 1,    // Link 0 Error Flags
+      0x9384, 1,    // Link 1 Error Flags
+      0x9388, 1,    // Link 2 Error Flags
+      0x93b0, 1,
+      0x93b4, 1,
+      0x93b8, 1,
+      0x93d0, 1,   // CFO Link EventStart Character Error Count
+      0x93d8, 1,   // Input Buffer Fragment Dump Count
+      0x93dc, 1,   //  Output Buffer Fragment Dump Count
+      0x93e0, 0,
+      0x9560, 1,   // SERDES RX CRC Error Count Link 0
+      0x9564, 1,   // SERDES RX CRC Error Count Link 1
+      0x9568, 1,   // SERDES RX CRC Error Count Link 2
+      0x9630, 1,   // TX Data Request Packet Count Link 0
+      0x9634, 1,   // TX Data Request Packet Count Link 1
+      0x9638, 1,   // TX Data Request Packet Count Link 2
+      0x9650, 1,   // TX Heartbeat Packet Count Link 0
+      0x9654, 1,   // TX Heartbeat Packet Count Link 1
+      0x9658, 1,   // TX Heartbeat Packet Count Link 2
+      0x9670, 1,   // RX Data Header Packet Count Link 0
+      0x9674, 1,   // RX Data Header Packet Count Link 1
+      0x9678, 1,   // RX Data Header Packet Count Link 2
+      0x9690, 1,   // RX Data Packet Count Link 0                             //  link 2 reset - write 0
+      0x9694, 1,   // RX Data Packet Count Link 1                             //  link 2 reset - write 0
+      0x9698, 1,   // RX Data Packet Count Link 2                             //  link 2 reset - write 0
+      0xffff
     };
-    _nreg = 17;
 
-    for (int i=0; i<_nreg; i++) {
-      _reg[i] = reg[i];
-    }
+    _nreg = 0;
+    int i = 0;
+    do {
+      ushort r    = reg[2*i  ];
+      int    flag = reg[2*i+1];
+//-----------------------------------------------------------------------------
+// flag=1 : a counter, reset counters
+// according to Rick, to clear a counter one writes 0xffffffff to it
+//-----------------------------------------------------------------------------
+      if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
+      _reg[_nreg] = r;
+      _nreg += 1;
+      i     += 1;
+    } while (reg[2*i] != 0xffff) ;
+
+    TLOG(TLVL_INFO) << "N DTC registers to save: " << _nreg;
   }
 
 //-----------------------------------------------------------------------------
@@ -443,7 +507,7 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
 //-----------------------------------------------------------------------------
 // first word: version
 //----------------------------------------------------------------------------------------
-  f2d[0] = 1; 
+  f2d[0] = NReg; 
 
   for (int i=0; i<NReg; i++) {
     f2d[2*i+1] = Reg[i];
@@ -451,7 +515,7 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
       rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+2); 
     }
     catch (...) {
-      TLOG(TLVL_ERROR) << "readDTCRegisters ERROR, register : " << Reg[i];
+      TLOG(TLVL_ERROR) << "event: " << ev_counter() << "readDTCRegisters ERROR, register : " << Reg[i];
       break;
     }
   }
@@ -502,13 +566,13 @@ int mu2e::TrackerVST::readSPI(artdaq::Fragment* Frag) {
 bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   //  const char* oname = "mu2e::TrackerVST::getNext_: ";
 
-  TLOG(TLVL_DEBUG) << "STARTING";
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "STARTING";
 
   if (should_stop()) return false;
 
   _startProcTimer();
 
-  TLOG(TLVL_DEBUG) << "after startProcTimer";
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "after startProcTimer";
 //-----------------------------------------------------------------------------
 // Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
 // having reset the ROC, go back to the requested time window 
@@ -571,7 +635,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
     uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
     readPtr          = static_cast<uint8_t*>(readPtr) + 8;
 
-    TLOG(TLVL_DEBUG) << "bufSize: " << std::dec << bufSize << " nbytes: " << nbytes;
+    TLOG(TLVL_DEBUG) << "event: " << ev_counter() <<  "bufSize: " << std::dec << bufSize << " nbytes: " << nbytes;
 
     timeout = false;
 
@@ -657,7 +721,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
 // generate diagnostics
 //-----------------------------------------------------------------------------
-    TLOG(TLVL_ERROR) << "event length ERROR: " << nbytes;
+    TLOG(TLVL_ERROR) << "event: " << ev_counter() << " read length ERROR: " << nbytes;
   }
 
   if (_saveDTCRegisters) {
