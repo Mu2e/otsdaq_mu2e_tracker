@@ -60,7 +60,7 @@ my_cntl write 0x9158 0x1 >/dev/null
 ## disable transmission
 ## also needed to restart EWM after a DTC_Reset
 #my_cntl write 0x9100 0x40808404 > /dev/null
-# avoid enabling CFO emulator: should be enought to get EWM going from DTC2021_Sep29_17
+# avoid enabling CFO emulator: should be enough to get EWM going from DTC2021_Sep29_17
 my_cntl write 0x9100 0x808404 > /dev/null
 
 ## now reset the ROC. This assumes ROC link 0.

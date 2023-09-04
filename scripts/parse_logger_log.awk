@@ -1,5 +1,6 @@
 #------------------------------------------------------------------------------
 # write out parsed data to be used by TTree::ReadFile()
+# run_number comes from 'awk -v run_number=322'
 #------------------------------------------------------------------------------
 BEGIN {
   printf("mkt/I:date/C:time/C:nev/I:rate/F:dt/F\n");
@@ -40,8 +41,8 @@ BEGIN {
   rate = $13;
   dt   = $18
 
-  printf "%12i %s %s %6i  %10.5f %10.4f \n", 
-    mkt,date,time, nev,rate,dt;
+  printf "%5i %10i %s %s %6i  %10.5f %10.4f \n", 
+    run_number,mkt,date,time, nev,rate,dt;
 }
 
 

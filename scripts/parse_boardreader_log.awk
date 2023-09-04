@@ -1,5 +1,6 @@
 #------------------------------------------------------------------------------
 # write out parsed data to be used by TTree::ReadFile()
+# run_number comes from -v
 #------------------------------------------------------------------------------
 BEGIN {
   printf("mkt/I:date/C:time/C:nfr/I:calls_per_sec/F:frag_rate/F:rmon_win/F:nmin/I:nmax/I:")
@@ -68,8 +69,7 @@ BEGIN {
   request_wait_time = $17;
   output_wait_time = $23;
   
-  
-  printf("%10i %s %s",mkt, date, time);
+  printf("%5i %10i %s %s",run_number, mkt, date, time);
   printf(" %6i %8.3f %8.2f %6.2f %3i %3i", 
          fragments_read, calls_per_second,fragment_rate, rmon_window, nmin, nmax);
   printf(" %6i %8.2f %8.3f %8.3f %10.3e %10.3e",

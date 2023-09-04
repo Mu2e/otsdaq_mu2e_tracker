@@ -125,8 +125,9 @@ void test1_read_data(int Link, int NEvents) {
 // if defined, OutputFn is the name of the output raw file
 // sleep times in us
 //-----------------------------------------------------------------------------
-void test2_read_data(int Link                    ,  // add, as the link can vary
+void test2_read_data(int LinkMask                ,  // add, as the link can vary
                      int NEvents                 , 
+                     int HBInterval        = 1000,
                      int SleepTimeDMA      =  200,  // [us]
                      int SleepTimeDTC      = 1000,  // [us]
                      int SleepTimeROC      = 4000, 
@@ -139,9 +140,16 @@ void test2_read_data(int Link                    ,  // add, as the link can vary
 
   uint16_t  roc_reg[100];
 
-  auto link = DTCLib::DTC_Link_ID(Link);
+  std::vector<DTCLib::DTC_Link_ID> active_links;
 
-  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1<<4*Link,"");
+  for (int i=0; i<6; i++) {
+    int bit = (LinkMask >> 4*i) & 0x1;
+    if (bit) {
+      active_links.push_back(DTCLib::DTC_Link_ID(i));
+    }
+  }
+
+  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,LinkMask,"");
   // std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   uint32_t res; 
@@ -185,7 +193,6 @@ void test2_read_data(int Link                    ,  // add, as the link can vary
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   int incrementTimestamp =    1;
-  int heartbeatInterval  = 1000*2;
   int requestsAhead      =    1;
   int heartbeatsAfter    =   16;
 
@@ -195,19 +202,23 @@ void test2_read_data(int Link                    ,  // add, as the link can vary
 // requests for range. 
 // definition of a timeout ?
 //-----------------------------------------------------------------------------
-  monica_digi_clear     (&dtc,link);
-  monica_var_link_config(&dtc,link);
+  for (auto link : active_links) {
+    monica_digi_clear     (&dtc,link);
+    monica_var_link_config(&dtc,link);
+  }
 
-  dev->write_register(0x91a8,100,heartbeatInterval);
+  // dev->write_register(0x91a8,100,HBInterval);
 
   for (int i=0; i<NEvents; i++) {
 //-----------------------------------------------------------------------------
 // reset and go back to 25.6 us
 //-----------------------------------------------------------------------------
     if (ResetROC != 0) {
-      monica_digi_clear     (&dtc,link);
-      monica_var_link_config(&dtc,link);
-      dev->write_register(0x91a8,100,heartbeatInterval);
+      for (auto link : active_links) {
+        monica_digi_clear     (&dtc,link);
+        monica_var_link_config(&dtc,link);
+      }
+      // dev->write_register(0x91a8,100,HBInterval);
     }
 //-----------------------------------------------------------------------------
 // emulate timing signals of the next event 
@@ -215,7 +226,7 @@ void test2_read_data(int Link                    ,  // add, as the link can vary
     int nev = 1;
     cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(i)),
                              incrementTimestamp,
-                             heartbeatInterval,requestsAhead,heartbeatsAfter);
+                             HBInterval,requestsAhead,heartbeatsAfter);
     std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
     dev->ResetDeviceTime();
