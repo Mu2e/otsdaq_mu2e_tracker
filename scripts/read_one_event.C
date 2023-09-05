@@ -1,6 +1,6 @@
 //
 #define __CLING__ 1
-#define HIDE_FROM_ROOT 1
+// #define HIDE_FROM_ROOT 1
 #include <iomanip>
 #include <iostream>
 
