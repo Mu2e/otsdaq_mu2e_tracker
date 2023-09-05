@@ -1,19 +1,12 @@
-## run with  "source chantsDataTestsMonica.sh  (not  ./chantsDataTestsMonica.sh)
-source /mu2e/ups/setup
+#!/usr/bin/bash
+# assume that the DTC has already been setup
 
-if [ -z $PCIE_LINUX_KERNEL_MODULE_DIR ]; then
-    source setup_ots.sh
-    ## comment the next two lines when using ew DTC firmware with the latest EventTable
-    #export PRODUCTS=/mu2e/ups:/cvmfs/mu2e.opensciencegrid.org/artexternals
-    #setup pcie_linux_kernel_module v2_03_11 -q e20:prof:s105
-    source Setup_DTC.sh
-else
-    source Setup_DTC.sh
-fi
+# Need this to source local scripts
+       dir=`dirname $BASH_SOURCE`
+script_dir=`cd $dir ; pwd -P`
 
-
-## configure JA
-source JAConfig.sh
+## configure jitter attenuation, want to know which script I'm using
+source $MU2E_PCIE_UTILS_DIR/dtcInterfaceLib/JAConfig.sh
 
 echo "Finished configuring the jitter attenuator"
 sleep 5
@@ -56,7 +49,7 @@ my_cntl write 0x91BC 0x10 >/dev/null
 ## new Event Table data from Rick
 ## edited by Monica to get rid of "pcie_linux_kernel_module" version conflict
 ## not needed after Eric updates library
-source loadEventTableMonica.sh
+source $script_dir/loadEventTableMonica.sh
 
 #set num of EVB destination nodes
 my_cntl write 0x9158 0x1 >/dev/null
@@ -67,7 +60,7 @@ my_cntl write 0x9158 0x1 >/dev/null
 ## disable transmission
 ## also needed to restart EWM after a DTC_Reset
 #my_cntl write 0x9100 0x40808404 > /dev/null
-# avoid enabling CFO emulator: should be enought to get EWM going from DTC2021_Sep29_17
+# avoid enabling CFO emulator: should be enough to get EWM going from DTC2021_Sep29_17
 my_cntl write 0x9100 0x808404 > /dev/null
 
 ## now reset the ROC. This assumes ROC link 0.

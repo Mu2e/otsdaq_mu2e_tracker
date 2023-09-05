@@ -2,8 +2,6 @@
 #include "artdaq/DAQdata/Globals.hh"
 #define TRACE_NAME (app_name + "_TrackerVST").c_str()
 
-// #include "otsdaq-mu2e-tracker/Generators/TrackerVST.hh"
-
 #include "canvas/Utilities/Exception.h"
 
 #include "artdaq-core/Utilities/SimpleLookupPolicy.hh"
@@ -11,8 +9,8 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
-#include "artdaq-core-mu2e/Data/ArtFragment.hh"
-// #include "artdaq-core-mu2e/Overlays/mu2eFragmentWriter.hh"
+#include "artdaq-core-mu2e/Data/TrkDtcFragment.hh"
+#include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
 
 #include <fstream>
 #include <iomanip>
@@ -23,7 +21,6 @@
 #include "artdaq-core/Data/Fragment.hh"
 #include "artdaq/Generators/CommandableFragmentGenerator.hh"
 #include "fhiclcpp/fwd.h"
-#include "artdaq-core-mu2e/Overlays/FragmentType.hh"
 
 #include "dtcInterfaceLib/DTC.h"
 #include "dtcInterfaceLib/DTCSoftwareCFO.h"
@@ -38,6 +35,61 @@ using namespace DTCLib;
 
 namespace mu2e {
   class TrackerVST : public artdaq::CommandableFragmentGenerator {
+
+    enum {
+      kReadDigis   = 0,
+      kReadPattern = 1
+    };
+//-----------------------------------------------------------------------------
+// FHiCL-configurable variables. 
+// C++ variable names are the FHiCL parameter names prepended with a "_"
+//-----------------------------------------------------------------------------
+    FragmentType const                    fragment_type_;  // Type of fragment (see FragmentType.hh)
+
+    size_t                                timestamps_read_;
+    std::chrono::steady_clock::time_point lastReportTime_;
+    std::chrono::steady_clock::time_point procStartTime_;
+    DTCLib::DTC_SimMode                   _sim_mode;
+    uint8_t                               _board_id;
+    std::vector<uint16_t>                 _fragment_ids;           // handled by CommandableGenerator, but not a data member there
+    bool                                  simFileRead_;
+    bool                                  _loadSimFile;
+    std::string                           _simFileName;
+    bool                                  _rawOutputEnable;
+    std::string                           rawOutputFile_;
+    std::ofstream                         rawOutputStream_;
+    bool                                  sendEmpties_;
+    int                                   _debugLevel;
+    size_t                                _nEventsDbg;
+    size_t                                _request_delay;
+    size_t                                _heartbeatsAfter;
+		int                                   _heartbeatInterval;
+    int                                   _dtcId;
+    std::vector<int>                      _activeLinks;            // active links - connected ROCs
+    uint                                  _rocMask;
+    int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
+    int                                   _sleepTimeDTC;           // sleep time (ms) after register writes
+    int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
+    int                                   _sleepTimeROCReset;      // sleep time (ms) after ROC reset register write
+
+    int                                   _resetROC;               // 1: reset ROC every event
+    int                                   _saveDTCRegisters;       // 
+    int                                   _saveSPI;                // 
+    int                                   _printFreq;              // printout frequency
+    int                                   _maxEventsPerSubrun;     // 
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; default:0
+    			                  
+    DTCLib::DTC*                          _dtc;
+    mu2edev*                              _device;
+    DTCLib::DTCSoftwareCFO*               _cfo;
+                                                                   // 6 ROCs per DTC max
+    int                                   _nActiveLinks;
+
+    uint16_t                              _reg[200];               // DTC registers to be saved
+    int                                   _nreg;                   // their number
+//-----------------------------------------------------------------------------
+// functions
+//-----------------------------------------------------------------------------
   public:
     explicit TrackerVST(fhicl::ParameterSet const& ps);
     virtual ~TrackerVST();
@@ -64,53 +116,20 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
 // clones of Monica's scripts
 //-----------------------------------------------------------------------------
-    void monica_digi_clear         (DTC* Dtc);
-    void monica_var_link_config    (DTC* Dtc);
-    void monica_var_pattern_config (DTC* Dtc);
-   
+    void monica_digi_clear         (DTC* Dtc, int Link);
+    void monica_var_link_config    (DTC* Dtc, int Link);
+    void monica_var_pattern_config (DTC* Dtc, int Link);
+
+                                        // diagnostics fragment: SPI data
+    int  readSPI         (artdaq::Fragment* Frag);
+    int  readDTCRegisters(artdaq::Fragment* Frag, uint16_t* reg, int nreg);
+
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
     // returns a vector of the fragment IDs an instance of this class
     // is responsible for (in the case of TrackerVST, this is just
     // the fragment_id_ variable declared in the parent
     // CommandableFragmentGenerator class)
 
-    std::vector<artdaq::Fragment::fragment_id_t> fragmentIDs_() { return fragment_ids_; }
-
-    // FHiCL-configurable variables. Note that the C++ variable names
-    // are the FHiCL variable names with a "_" appended
-
-    FragmentType const fragment_type_;  // Type of fragment (see FragmentType.hh)
-
-    std::vector<artdaq::Fragment::fragment_id_t> fragment_ids_;
-
-    // State
-    size_t                                timestamps_read_;
-    size_t                                highest_timestamp_seen_{0};
-    size_t                                timestamp_loops_{0}; // For playback mode, so that we continually generate unique timestamps
-    std::chrono::steady_clock::time_point lastReportTime_;
-    std::chrono::steady_clock::time_point procStartTime_;
-    DTCLib::DTC_SimMode                   _sim_mode;
-    uint8_t                               board_id_;
-    bool                                  simFileRead_;
-    bool                                  _loadSimFile;
-    std::string                           _simFileName;
-    bool                                  _rawOutputEnable;
-    std::string                           rawOutputFile_;
-    std::ofstream                         rawOutputStream_;
-    //    size_t                                _nSkip;
-    bool                                  sendEmpties_;
-    int                                   _debugLevel;
-    size_t                                _nEventsDbg;
-    size_t                                request_delay_;
-    size_t                                _heartbeatsAfter;
-		int                                   _heartbeatInterval;
-    int                                   _dtcId;
-    uint                                  _rocMask;
-    			                  
-    DTCLib::DTC*                          _dtc;
-    mu2edev*                              _device;
-    DTCLib::DTCSoftwareCFO*               _cfo;
-    
     double _timeSinceLastSend() {
       auto now    = std::chrono::steady_clock::now();
       auto deltaw = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - lastReportTime_).count();
@@ -119,6 +138,16 @@ namespace mu2e {
     }
     
     void   _startProcTimer() { procStartTime_ = std::chrono::steady_clock::now(); }
+
+//-----------------------------------------------------------------------------
+// - the first one came from the generator template, 
+// - the second one - comments in the CommandableFragmentGenerator.hh
+// - the base class provides the one w/o the underscore 
+// - the comments seem to have a general confusion 
+// do we really need both ?
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t>         fragmentIDs_() { return _fragment_ids; }
+    virtual std::vector<uint16_t> fragmentIDs () override;
     
     double _getProcTimerCount() {
       auto now = std::chrono::steady_clock::now();
@@ -129,43 +158,79 @@ namespace mu2e {
   };
 }  // namespace mu2e
 
+
+//-----------------------------------------------------------------------------
+// define allowed fragment types( = ID's)
+//-----------------------------------------------------------------------------
+std::vector<uint16_t> mu2e::TrackerVST::fragmentIDs() {
+  std::vector<uint16_t> v;
+  v.push_back(0);
+  if (_saveDTCRegisters) v.push_back(FragmentType::TRKDTC);
+  if (_saveSPI)          v.push_back(FragmentType::TRKSPI);
+  
+  return v;
+}
+
 //-----------------------------------------------------------------------------
 // sim_mode="N" means real DTC 
 //-----------------------------------------------------------------------------
 mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : 
   CommandableFragmentGenerator(ps)
-  , fragment_type_    (toFragmentType("MU2E"))
-  , fragment_ids_     {static_cast<artdaq::Fragment::fragment_id_t>(fragment_id())}
-  , timestamps_read_  (0)
-  , lastReportTime_   (std::chrono::steady_clock::now())
-  , _sim_mode         (DTCLib::DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "N")))
-  , board_id_         (static_cast<uint8_t>(ps.get<int>("board_id"                    , 0)))
-  , _loadSimFile      (ps.get<bool>                    ("loadSimFile" ))
-  , _simFileName      (ps.get<std::string>             ("simFileName" ))
-  , _rawOutputEnable  (ps.get<bool>("rawOutputEnable"                 ))
-  , rawOutputFile_    (ps.get<std::string>             ("raw_output_file"             , "/tmp/TrackerVST.bin"))
-  //  , _nSkip          (ps.get<size_t>("nSkip"                 ))
-  , sendEmpties_      (ps.get<bool>                    ("sendEmpties" ))
-  , _debugLevel       (ps.get<int>                     ("debugLevel"                  ,  0))
-  , _nEventsDbg       (ps.get<size_t>                  ("nEventsDbg"                  , 20))
-  , request_delay_    (ps.get<size_t>                  ("delay_between_requests_ticks", 20000))
-  , _heartbeatsAfter  (ps.get<size_t>                  ("heartbeatsAfter"       )) 
-  , _heartbeatInterval(ps.get<int>                     ("heartbeatInterval"     ))
-  , _dtcId            (ps.get<int>                     ("dtcId"                 ,   -1 )) 
-  , _rocMask          (ps.get<int>                     ("rocMask"               ,   0x1)) 
+  , fragment_type_     (toFragmentType("MU2E"))
+  , timestamps_read_   (0)
+  , lastReportTime_    (std::chrono::steady_clock::now())
+  , _sim_mode          (DTCLib::DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "N")))
+  , _board_id          (static_cast<uint8_t>(ps.get<int>("board_id"                    ,     0)))
+  , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"          , std::vector<uint16_t>()))  // 
+  , _loadSimFile       (ps.get<bool>                    ("loadSimFile"                        ))
+  , _simFileName       (ps.get<std::string>             ("simFileName"                        ))
+  , _rawOutputEnable   (ps.get<bool>                    ("rawOutputEnable"                    ))
+  , rawOutputFile_     (ps.get<std::string>             ("raw_output_file"             , "/tmp/TrackerVST.bin"))
+  , sendEmpties_       (ps.get<bool>                    ("sendEmpties"                        ))
+  , _debugLevel        (ps.get<int>                     ("debugLevel"                  ,     0))
+  , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"                  ,   100))
+  , _request_delay     (ps.get<size_t>                  ("delay_between_requests_ticks", 20000))
+  , _heartbeatsAfter   (ps.get<size_t>                  ("heartbeatsAfter"                    )) 
+  , _heartbeatInterval (ps.get<int>                     ("heartbeatInterval"                  ))
+  , _dtcId             (ps.get<int>                     ("dtcId"                 ,          -1)) 
+  , _activeLinks       (ps.get<std::vector<int>>        ("activeLinks"                        )) 
+  , _sleepTimeDMA      (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
+  , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
+  , _sleepTimeROC      (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
+  , _sleepTimeROCReset (ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
+  , _resetROC          (ps.get<int>                     ("resetROC"              ,           1))  // 
+  , _saveDTCRegisters  (ps.get<int>                     ("saveDTCRegisters"      ,           1))  // 
+  , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
+  , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
+  , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
+  , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           0))  // 
+
   {
     
     TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR";
 //-----------------------------------------------------------------------------
 // _sim_mode can still be overridden by environment var $DTCLIB_SIM_ENABLE 
 // the sim mode conversion is non-trivial
+// 
 //-----------------------------------------------------------------------------
+    _nActiveLinks = _activeLinks.size();
+    _rocMask      = 0;
+    for (int i=0; i<_nActiveLinks; i++) {
+      int link = _activeLinks[i];
+      _rocMask |= (1 << 4*link);
+    }
+//-----------------------------------------------------------------------------
+// to take the first step, assume that n(links) = 1
+//-----------------------------------------------------------------------------
+    assert(_nActiveLinks == 1);
+
     _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
     _sim_mode = _dtc->ReadSimMode();
 
     _device = _dtc->GetDevice();
     
     TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
+    // TLOG(TLVL_INFO) << "Fragment IDs: " << _fragment_ids;
     
     fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
     
@@ -179,15 +244,15 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     bool          force_no_debug_mode  = cfoConfig.get<bool>       ("force_no_debug_mode" , true );  // sets a bit written to the DTC register
     bool          useCFODRP            = cfoConfig.get<bool>       ("useCFODRP"           , false);  // defaults to false
 
-    _cfo = new DTCSoftwareCFO(_dtc       ,
-			      use_dtc_cfo_emulator,
-			      debug_packet_count  ,
-			      debug_type          ,
-			      sticky_debug_type   ,
-			      quiet               ,
-			      asyncRR             ,
-			      force_no_debug_mode ,
-			      useCFODRP           );
+    _cfo = new DTCSoftwareCFO(_dtc                ,
+                              use_dtc_cfo_emulator,
+                              debug_packet_count  ,
+                              debug_type          ,
+                              sticky_debug_type   ,
+                              quiet               ,
+                              asyncRR             ,
+                              force_no_debug_mode ,
+                              useCFODRP           );
 //-----------------------------------------------------------------------------
 // not sure I fully understand the logic below
 //-----------------------------------------------------------------------------
@@ -207,8 +272,84 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
 			// make sure Detector Emulation is disabled
       simFileRead_ = true;
     }
-    
     if (_rawOutputEnable) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
+//-----------------------------------------------------------------------------
+// do it once anyway
+//-----------------------------------------------------------------------------
+    for (int i=0; i<_nActiveLinks; i++) {
+      monica_digi_clear     (_dtc,_activeLinks[i]);
+
+      if      (_readoutMode == kReadDigis  ) monica_var_link_config   (_dtc,_activeLinks[i]);
+      else if (_readoutMode == kReadPattern) monica_var_pattern_config(_dtc,_activeLinks[i]);
+    }
+//-----------------------------------------------------------------------------
+// DTC registers to save - zero those labeled as counters at begin run ! 
+//-----------------------------------------------------------------------------
+    uint16_t reg[] = { 
+      0x9004, 0,
+      0x9100, 0, 
+      0x9140, 0,
+      0x9144, 0, 
+      0x9158, 0,
+      0x9188, 0,
+      0x9190, 1,   // bits 7-0 could be ignored, 
+      0x9194, 1,   // bits 23-16 could be ignored 
+      0x9198, 1,
+      0x919c, 1,
+      0x91a8, 0,
+      0x91ac, 0,
+      0x91bc, 0,
+      0x91c0, 0,
+      0x91c4, 0,
+      0x91c8, 0,
+      0x91f4, 0,
+      0x91f8, 0,
+      0x9374, 1,
+      0x9378, 1,
+      0x9380, 1,    // Link 0 Error Flags
+      0x9384, 1,    // Link 1 Error Flags
+      0x9388, 1,    // Link 2 Error Flags
+      0x93b0, 1,
+      0x93b4, 1,
+      0x93b8, 1,
+      0x93d0, 1,   // CFO Link EventStart Character Error Count
+      0x93d8, 1,   // Input Buffer Fragment Dump Count
+      0x93dc, 1,   //  Output Buffer Fragment Dump Count
+      0x93e0, 0,
+      0x9560, 1,   // SERDES RX CRC Error Count Link 0
+      0x9564, 1,   // SERDES RX CRC Error Count Link 1
+      0x9568, 1,   // SERDES RX CRC Error Count Link 2
+      0x9630, 1,   // TX Data Request Packet Count Link 0
+      0x9634, 1,   // TX Data Request Packet Count Link 1
+      0x9638, 1,   // TX Data Request Packet Count Link 2
+      0x9650, 1,   // TX Heartbeat Packet Count Link 0
+      0x9654, 1,   // TX Heartbeat Packet Count Link 1
+      0x9658, 1,   // TX Heartbeat Packet Count Link 2
+      0x9670, 1,   // RX Data Header Packet Count Link 0
+      0x9674, 1,   // RX Data Header Packet Count Link 1
+      0x9678, 1,   // RX Data Header Packet Count Link 2
+      0x9690, 1,   // RX Data Packet Count Link 0                             //  link 2 reset - write 0
+      0x9694, 1,   // RX Data Packet Count Link 1                             //  link 2 reset - write 0
+      0x9698, 1,   // RX Data Packet Count Link 2                             //  link 2 reset - write 0
+      0xffff
+    };
+
+    _nreg = 0;
+    int i = 0;
+    do {
+      ushort r    = reg[2*i  ];
+      int    flag = reg[2*i+1];
+//-----------------------------------------------------------------------------
+// flag=1 : a counter, reset counters
+// according to Rick, to clear a counter one writes 0xffffffff to it
+//-----------------------------------------------------------------------------
+      if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
+      _reg[_nreg] = r;
+      _nreg += 1;
+      i     += 1;
+    } while (reg[2*i] != 0xffff) ;
+
+    TLOG(TLVL_INFO) << "N DTC registers to save: " << _nreg;
   }
 
 //-----------------------------------------------------------------------------
@@ -231,206 +372,7 @@ mu2e::TrackerVST::~TrackerVST() {
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST::stop() {
   _dtc->DisableDetectorEmulator();
-  _dtc->DisableCFOEmulation();
-}
-
-//-----------------------------------------------------------------------------
-// a virtual function called from the outside world
-//-----------------------------------------------------------------------------
-bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
-  const char* oname = "mu2e::TrackerVST::getNext_: ";
-
-  TLOG(TLVL_DEBUG) << oname << "STARTING";
-
-  if (should_stop()) return false;
-
-//-----------------------------------------------------------------------------
-// P.Murat: don't know what it is, comment out
-//-----------------------------------------------------------------------------
-  // if (sendEmpties_) {
-  //   int mod = ev_counter() % _nSkip;
-  //   if (mod == board_id_ || (mod == 0 && board_id_ == _nSkip)) {
-  //     // TLOG(TLVL_DEBUG) << "Sending Data  Fragment for sequence id " << ev_counter() << " (board_id " <<
-  //     // std::to_string(board_id_) << ")" ;
-  //   }
-  //   else {
-  //     // TLOG(TLVL_DEBUG) << "Sending Empty Fragment for sequence id " << ev_counter() << " (board_id " <<
-  //     // std::to_string(board_id_) << ")" ;
-  //     return sendEmpty_(Frags);
-  //   }
-  // }
-
-  _startProcTimer();
-
-  TLOG(TLVL_DEBUG) << oname << "after startProcTimer";
-//-----------------------------------------------------------------------------
-// Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
-//-----------------------------------------------------------------------------
-  monica_digi_clear     (_dtc);
-  monica_var_link_config(_dtc);
-//-----------------------------------------------------------------------------
-// back to the time window of 25 us : 1000 (x25 ns)
-//-----------------------------------------------------------------------------
-  _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
-//-----------------------------------------------------------------------------
-// send a request for one event, what is the role of requestsAhead ? 
-//-----------------------------------------------------------------------------
-  uint64_t             z(0);
-  DTC_EventWindowTag   zero(z);
-  bool                 incrementTimestamp(true);
-  int                  delay             (200);         // 500 was OK;
-  int                  requestsAhead     (  0);
-  // unsigned long timestampOffset   (  1);
-
-  int nev = 1;
-//-----------------------------------------------------------------------------
-// duplicating setting the distance btw teh two event window markers
-//-----------------------------------------------------------------------------
-  _cfo->SendRequestsForRange(nev,DTC_EventWindowTag(ev_counter()),
-			     incrementTimestamp,_heartbeatInterval,
-			     requestsAhead,_heartbeatsAfter);
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-   _dtc->GetDevice()->ResetDeviceTime();
-
-    // print_roc_registers(&_dtc,DTCLib::DTC_Link_0,"001 [after cfo.SendRequestForTimestamp]");
-
-   printf(" ------------------------------------------------------- reading event %li",ev_counter());
-
-//-----------------------------------------------------------------------------
-// the body of the readDTCBuffer
-//-----------------------------------------------------------------------------
-  size_t nbytes(0);
-  bool   timeout(false);
-  bool   readSuccess(false);
-  auto   tmo_ms(1500);
-
-  mu2e_databuff_t* buffer; //  = readDTCBuffer( _dtc->GetDevice(), readSuccess, timeout, nbytes, false);
-
-  nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
-
-  if (nbytes > 0)    {
-    readSuccess      = true;
-    void* readPtr    = &buffer[0];
-    uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
-    readPtr          = static_cast<uint8_t*>(readPtr) + 8;
-
-    TLOG(TLVL_DEBUG) << "Buffer reports DMA size of " 
-		     << std::dec << bufSize << " bytes. Device driver reports read of "
-		     << nbytes << " bytes," << std::endl;
-    TLOG(TLVL_DEBUG) << "mu2e::TrackerVST::readDTCBuffer: bufSize is " << bufSize;
-
-    timeout = false;
-
-    if (nbytes > sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader) + 8) {
-//-----------------------------------------------------------------------------
-// I suspect this is a check of any useful data being present. although not sure
-// what 8 stands for. Also not sure about the meaning of the checks performed
-// Check for dead or cafe in first packet
-//-----------------------------------------------------------------------------
-      readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader);
-      std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
-      for (auto& word : wordsToCheck) 	{
-				auto wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
-				TLOG(TLVL_DEBUG) << word << (word == 1 ? "st" : word == 2 ? "nd"
-																		 : word == 3 ? "rd"
-																		 : "th")
-												 << " word of buffer: " << *wordPtr;
-				
-				if (*wordPtr == 0xcafe || *wordPtr == 0xdead) 	  {
-					TLOG(TLVL_WARNING) << "Buffer Timeout detected! " 
-														 << word 
-														 << (word == 1 ? "st" : word == 2 ? "nd" : word == 3 ? "rd" : "th")
-														 << " word of buffer is 0x" << std::hex << *wordPtr;
-					DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, TLVL_DEBUG);
-					timeout = true;
-					break;
-				}
-      }
-    }
-  }
-
-  printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
-
-  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-    // print_roc_registers(&dtc,DTCLib::DTC_Link_0,"002 [after readDTCBuffer]");
-    // DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
-  
-    printBuffer(buffer, (int) nbytes);
-  }
-//-----------------------------------------------------------------------------
-// first 0x40 bytes seem to be useless, they are followed by the data header packer,
-// offline starts from there
-// suspect the offset is the size of the (DTC_EventHeader + DTC_SubEventHeader)
-//-----------------------------------------------------------------------------
-  int offset = 0x40;
-
-  double fragment_timestamp = ev_counter();
-  artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), fragment_id(), FragmentType::TRK, fragment_timestamp);
-  frag->resizeBytes(nbytes-offset);
-  void* af = frag->dataBegin();
-  Frags.emplace_back(frag);
-//-----------------------------------------------------------------------------
-// copy data and patch format version - set it to 1
-//-----------------------------------------------------------------------------
-  struct DataHeaderPacket_t {
-    uint16_t  nBytes;
-    uint16_t  w2;
-    uint16_t  nPackets;
-    uint16_t  evtWindowTag[3];
-    uint16_t  w7;
-    uint16_t  w8;
-
-    void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
-    void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
-  };
-
-  char* cbuf = (char*) buffer;
-  memcpy(af, cbuf+offset,nbytes-offset);
-
-  DataHeaderPacket_t* dp = (DataHeaderPacket_t*) af;
-  dp->setVersion(1);
-//-----------------------------------------------------------------------------
-// now print the block saved in the file for 10 events
-//-----------------------------------------------------------------------------
-  // if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-  //   printf(" ----------------------------------------------------------------------- saved Fragment %lu\n",ev_counter());
-  //   printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
-  //   printBuffer(af, (int) nbytes-offset);
-  // }
-//-----------------------------------------------------------------------------
-// release the DMA channel
-//-----------------------------------------------------------------------------
-  _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ, 1);
-
-  if (delay > 0) usleep(delay);
-
-  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
-    int      rc;
-    uint32_t res;
-    rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
-    rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
-  }
-
-  _dtc->GetDevice()->release_all(DTC_DMA_Engine_DAQ);
-//-----------------------------------------------------------------------------
-// increment the number of generated events
-//-----------------------------------------------------------------------------
-  ev_counter_inc();
-
-  return true;
-}
-
-
-//-----------------------------------------------------------------------------
-bool mu2e::TrackerVST::sendEmpty_(artdaq::FragmentPtrs& Frags) {
-  Frags.emplace_back(new artdaq::Fragment());
-  Frags.back()->setSystemType(artdaq::Fragment::EmptyFragmentType);
-  Frags.back()->setSequenceID(ev_counter());
-  Frags.back()->setFragmentID(fragment_ids_[0]);
-  ev_counter_inc();
-  return true;
+  _dtc->DisableCFOEmulation    ();
 }
 
 //-----------------------------------------------------------------------------
@@ -443,7 +385,7 @@ void mu2e::TrackerVST::print_dtc_registers(DTC* Dtc, const char* Header) {
 }
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST::monica_digi_clear(DTCLib::DTC* Dtc) {
+void mu2e::TrackerVST::monica_digi_clear(DTCLib::DTC* Dtc, int Link) {
 //-----------------------------------------------------------------------------
 //  Monica's digi_clear
 //  this will proceed in 3 steps each for HV and CAL DIGIs:
@@ -451,73 +393,79 @@ void mu2e::TrackerVST::monica_digi_clear(DTCLib::DTC* Dtc) {
 // 2) write TWI INIT high
 // 3) write TWI INIT low
 //-----------------------------------------------------------------------------
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,28,0x10,false,1000); // 
+  auto link = DTC_Link_ID(Link);
+
+  Dtc->WriteROCRegister(link,28,0x10,false,1000); // 
 
   // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x00,false,1000); // write 0 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); // toggle INIT 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+  Dtc->WriteROCRegister(link,27,0x00,false,1000); // write 0 
+  Dtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
+  Dtc->WriteROCRegister(link,26,0x00,false,1000); // 
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,27,0x01,false,1000); //  write 1 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x01,false,1000); //  toggle INIT
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,26,0x00,false,1000); // 
+  Dtc->WriteROCRegister(link,27,0x01,false,1000); //  write 1 
+  Dtc->WriteROCRegister(link,26,0x01,false,1000); //  toggle INIT
+  Dtc->WriteROCRegister(link,26,0x00,false,1000); // 
 
   // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,25,0x10,false,1000); // 
+  Dtc->WriteROCRegister(link,25,0x10,false,1000); // 
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x00,false,1000); // write 0
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+  Dtc->WriteROCRegister(link,24,0x00,false,1000); // write 0
+  Dtc->WriteROCRegister(link,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(link,23,0x00,false,1000); // 
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,24,0x01,false,1000); // write 1
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x01,false,1000); // toggle INIT
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,23,0x00,false,1000); // 
+  Dtc->WriteROCRegister(link,24,0x01,false,1000); // write 1
+  Dtc->WriteROCRegister(link,23,0x01,false,1000); // toggle INIT
+  Dtc->WriteROCRegister(link,23,0x00,false,1000); // 
 }
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST::monica_var_link_config(DTCLib::DTC* Dtc) {
+void mu2e::TrackerVST::monica_var_link_config(DTCLib::DTC* Dtc, int Link) {
   mu2edev* dev = Dtc->GetDevice();
 
-  dev->write_register(0x91a8,100,0);                              // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  dev->write_register(0x91a8,100,0);                                     // disable event window marker - set deltaT = 0
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0,14,     1,false,1000); // reset ROC
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  Dtc->WriteROCRegister(DTCLib::DTC_Link_0, 8,0x030f,false,1000); // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  auto link = DTC_Link_ID(Link);
+  Dtc->WriteROCRegister(link,14,     1,false,1000);        // reset ROC
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
+
+  Dtc->WriteROCRegister(link, 8,0x030f,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 }
 
 
 //-----------------------------------------------------------------------------
-void mu2e::TrackerVST::monica_var_pattern_config(DTC* Dtc) {
+void mu2e::TrackerVST::monica_var_pattern_config(DTC* Dtc, int Link) {
   TLOG(TLVL_DEBUG) << "---------------------------------- operation \"var_patern_config\"" << std::endl;
 
   //  auto startTime = std::chrono::steady_clock::now();
 
-  print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
+  if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
 
   mu2edev* dev = Dtc->GetDevice();
 
   dev->ResetDeviceTime();
 
   dev->write_register(0x91a8,100,0);                            // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
   int tmo_ms    (1500);  // 1500 is OK
-  int sleep_time( 100);  //  300 is OK
 
-  Dtc->WriteROCRegister(DTC_Link_0,14,0x01,false,tmo_ms);  // this seems to be a reset
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  auto link = DTC_Link_ID(Link);
+  Dtc->WriteROCRegister(link,14,0x01,false,tmo_ms);  // this seems to be a reset
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
 
-  Dtc->WriteROCRegister(DTC_Link_0, 8,0x10,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  Dtc->WriteROCRegister(link, 8,0x10,false,tmo_ms);
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
-  Dtc->WriteROCRegister(DTC_Link_0,30,0x00,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+  Dtc->WriteROCRegister(link,30,0x00,false,tmo_ms);
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
-  print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
+   if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
 }
+
+
 //-----------------------------------------------------------------------------
 // print 16 bytes per line
 // size - number of bytes to print, even
@@ -542,6 +490,322 @@ void mu2e::TrackerVST::printBuffer(const void* ptr, int sz) {
   }
 
   if (n != 0) printf("\n");
+}
+
+
+//-----------------------------------------------------------------------------
+// read SPI data from ROC, in 16-bit words
+// decoding doesn't belong here
+// links to be handled
+//-----------------------------------------------------------------------------
+int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, int NReg) {
+
+  int      rc(0);
+  
+  Frag->resizeBytes(NReg*8+4);
+  uint* f2d = (uint*) Frag->dataBegin();
+//-----------------------------------------------------------------------------
+// first word: version
+//----------------------------------------------------------------------------------------
+  f2d[0] = NReg; 
+
+  for (int i=0; i<NReg; i++) {
+    f2d[2*i+1] = Reg[i];
+    try   { 
+      rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+2); 
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << "event: " << ev_counter() << "readDTCRegisters ERROR, register : " << Reg[i];
+      break;
+    }
+  }
+
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+// read SPI data from ROC, in 16-bit words
+// decoding doesn't belong here
+// links to be handled
+// TrkSpiFragment has a fixed length
+//-----------------------------------------------------------------------------
+int mu2e::TrackerVST::readSPI(artdaq::Fragment* Frag) {
+  int      rc(0);
+
+  int nw     = TrkSpiFragment::nWords();
+  int nb_spi = nw*2;
+  Frag->resizeBytes(nb_spi);
+
+  //  void* fd  = Frag->dataBegin();
+  
+//   try {
+//     _dtc->WriteROCRegister   (DTC_Link_0,258,0x0000  ,false,100);
+
+//     _dtc->ReadROCRegister(DTC_Link_0,roc_address_t(128),100); // printf("0x%04x\n",u);
+//     _dtc->ReadROCRegister(DTC_Link_0,roc_address_t(129),100); // printf("0x%04x\n",u);
+  
+//     std::vector<uint16_t> v;
+//     _dtc->ReadROCBlock(v,DTC_Link_0,258,nw,false,100);
+
+//     memcpy(fd,&v[0],2*nw);
+//   }
+//   catch (...) {
+// //-----------------------------------------------------------------------------
+// // need to know which kind of exception could be thrown
+// //-----------------------------------------------------------------------------
+//     TLOG(TLVL_ERROR) << "readSPI ERROR: ";
+//     rc = -1;
+//   }
+  
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+// a virtual function called from the outside world
+//-----------------------------------------------------------------------------
+bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
+  //  const char* oname = "mu2e::TrackerVST::getNext_: ";
+
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "STARTING";
+
+  if (should_stop()) return false;
+
+  _startProcTimer();
+
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "after startProcTimer";
+//-----------------------------------------------------------------------------
+// Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
+// having reset the ROC, go back to the requested time window 
+//-----------------------------------------------------------------------------
+  if (_resetROC) {
+    for (int i=0; i<_nActiveLinks; i++) {
+      monica_digi_clear     (_dtc,_activeLinks[i]);
+      //  monica_var_link_config(_dtc,_activeLinks[i]);
+    }
+    _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
+  }
+//-----------------------------------------------------------------------------
+// send a request for one event, what is the role of requestsAhead ? 
+//-----------------------------------------------------------------------------
+  uint64_t             z(0);
+  DTC_EventWindowTag   zero(z);
+  bool                 incrementTimestamp(true);
+  int                  requestsAhead     (  0);
+
+  int nev = 1;
+//-----------------------------------------------------------------------------
+// duplicating setting the distance btw the two event window markers
+//-----------------------------------------------------------------------------
+  _cfo->SendRequestsForRange(nev,
+                             DTC_EventWindowTag(ev_counter()),
+                             incrementTimestamp,
+                             _heartbeatInterval,
+                             requestsAhead,
+                             _heartbeatsAfter);
+
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
+
+  _dtc->GetDevice()->ResetDeviceTime();
+//-----------------------------------------------------------------------------
+// a hack : reduce the PMT logfile size 
+//-----------------------------------------------------------------------------
+  int print_event = (ev_counter() % _printFreq) == 0;
+
+  if (print_event) {
+    // print_roc_registers(&_dtc,link,"001 [after cfo.SendRequestForTimestamp]");
+
+    printf(" ------------------------------ reading event %li\n",ev_counter());
+  }
+//-----------------------------------------------------------------------------
+// the body of the readDTCBuffer
+//-----------------------------------------------------------------------------
+  size_t nbytes(0);
+  bool   timeout(false);
+  bool   readSuccess(false);
+  auto   tmo_ms(1500);
+
+  mu2e_databuff_t* buffer; //  = readDTCBuffer( _dtc->GetDevice(), readSuccess, timeout, nbytes, false);
+
+  nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
+
+  if (nbytes > 0)    {
+    readSuccess      = true;
+    void* readPtr    = &buffer[0];
+    uint16_t bufSize = static_cast<uint16_t>(*static_cast<uint64_t*>(readPtr));
+    readPtr          = static_cast<uint8_t*>(readPtr) + 8;
+
+    TLOG(TLVL_DEBUG) << "event: " << ev_counter() <<  "bufSize: " << std::dec << bufSize << " nbytes: " << nbytes;
+
+    timeout = false;
+
+    if (nbytes > sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader) + 8) {
+//-----------------------------------------------------------------------------
+// I suspect this is a check of any useful data being present. although not sure
+// what 8 stands for. Also not sure about the meaning of the checks performed
+// Check for dead or cafe in first packet
+//-----------------------------------------------------------------------------
+      readPtr = static_cast<uint8_t*>(readPtr) + sizeof(DTC_EventHeader) + sizeof(DTC_SubEventHeader);
+      std::vector<size_t> wordsToCheck{ 1, 2, 3, 7, 8 };
+      for (auto& word : wordsToCheck) 	{
+				auto wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
+				TLOG(TLVL_DEBUG) << word << (word == 1 ? "st" : word == 2 ? "nd" : word == 3 ? "rd" : "th")
+												 << " *wordPtr: 0x" << std::hex << *wordPtr;
+				
+				if (*wordPtr == 0xcafe || *wordPtr == 0xdead) 	  {
+					TLOG(TLVL_WARNING) << "Buffer Timeout detected! " << word 
+														 << (word == 1 ? "st" : word == 2 ? "nd" : word == 3 ? "rd" : "th")
+														 << " *wordPtr 0x" << std::hex << *wordPtr;
+					DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, TLVL_DEBUG);
+					timeout = true;
+					break;
+				}
+      }
+    }
+  }
+
+  if (print_event) {
+    printf(" event: %10lu readSuccess : %1i timeout: %1i nbytes: %10lu\n",ev_counter(),readSuccess,timeout,nbytes);
+  }
+
+  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+    // print_roc_registers(&dtc,link,"002 [after readDTCBuffer]");
+    DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
+  
+    // printBuffer(buffer, (int) nbytes);
+  }
+//-----------------------------------------------------------------------------
+// first 0x40 bytes seem to be useless, they are followed by the data header packer,
+// offline starts from there
+// suspect the offset is the size of the (DTC_EventHeader + DTC_SubEventHeader)
+// UPDATE: the latest version of the Mu2 interface assumes that
+//         the event and subevent headers are not dropped
+//-----------------------------------------------------------------------------
+  int offset                = 0; // 0x40;
+  double fragment_timestamp = ev_counter();
+  artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, fragment_timestamp);
+
+  int data_size = nbytes-offset;
+  frag->resizeBytes(data_size);
+
+  Frags.emplace_back(frag);
+//-----------------------------------------------------------------------------
+// copy data and patch format version - set it to 1
+// don't copy 0x40 bytes - event header and subevent header (??) - to the artdaq fragment
+//-----------------------------------------------------------------------------
+  struct DataHeaderPacket_t {
+    uint16_t  nBytes;
+    uint16_t  w2;
+    uint16_t  nPackets;
+    uint16_t  evtWindowTag[3];
+    uint16_t  w7;
+    uint16_t  w8;
+
+    void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
+    void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
+  };
+
+  char* cbuf = (char*) buffer;
+  void* afd  = frag->dataBegin();
+
+  if (data_size > 0) {
+    memcpy(afd, cbuf+offset,data_size);
+//-----------------------------------------------------------------------------
+// artdaq fragment starts from the data header packet
+// do we still need to set version ? ADC bit ordering ?
+//-----------------------------------------------------------------------------
+    DataHeaderPacket_t* dp = (DataHeaderPacket_t*) afd;
+    dp->setVersion(1);
+  }
+  else {
+//-----------------------------------------------------------------------------
+// generate diagnostics
+//-----------------------------------------------------------------------------
+    TLOG(TLVL_ERROR) << "event: " << ev_counter() << " read length ERROR: " << nbytes;
+  }
+
+  if (_saveDTCRegisters) {
+//-----------------------------------------------------------------------------
+// 2. need to add one more fragment of debug type with the diagnostics registers
+//    8 bytes per register - (register number, value)
+//-----------------------------------------------------------------------------
+    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,fragment_timestamp);
+    readDTCRegisters(f2,_reg,_nreg);
+    Frags.emplace_back(f2);
+    if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+      printf("%s: DTC registers\n",__func__);
+      int nb_dtc = 4+8*_nreg;
+      printBuffer(f2->dataBegin(),nb_dtc);
+    }
+  }
+//-----------------------------------------------------------------------------
+// 3. add SPI fragment. it looks that the fragment_id is the ID of the board reader
+//-----------------------------------------------------------------------------
+  if (_saveSPI) {
+    artdaq::Fragment* f3 = new artdaq::Fragment(ev_counter(),_fragment_ids[2],FragmentType::TRKSPI,fragment_timestamp);
+    readSPI(f3);
+    Frags.emplace_back(f3);
+    if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+      printf("%s: SPI data\n",__func__);
+      int nb_spi = TrkSpiFragment::nWords()*2;
+      printBuffer(f3->dataBegin(),nb_spi);
+    }
+  }
+//-----------------------------------------------------------------------------
+// now print the block saved in the file for 10 events
+//-----------------------------------------------------------------------------
+  // if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+  //   printf(" ----------------------------------------------------------------------- saved Fragment %lu\n",ev_counter());
+  //   printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
+  //   printBuffer(af, (int) nbytes-offset);
+  // }
+//-----------------------------------------------------------------------------
+// release the DMA channel
+//-----------------------------------------------------------------------------
+  _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ,1);
+
+  if (_sleepTimeDMA > 0) {
+    std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDMA));
+  }
+
+  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
+    int      rc;
+    uint32_t res;
+    rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
+    rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+  }
+
+  _dtc->GetDevice()->release_all(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// increment the number of generated events
+//-----------------------------------------------------------------------------
+  ev_counter_inc();
+//-----------------------------------------------------------------------------
+// increment the subrun number, if needed
+//-----------------------------------------------------------------------------
+  if ((ev_counter() % _maxEventsPerSubrun) == 0) {
+
+    artdaq::Fragment* esf = new artdaq::Fragment(1);
+
+    esf->setSystemType(artdaq::Fragment::EndOfSubrunFragmentType);
+    esf->setSequenceID(ev_counter() + 1);
+    esf->setTimestamp(1 + (ev_counter() / _maxEventsPerSubrun));
+    *esf->dataBegin() = 0;
+    Frags.emplace_back(esf);
+  }
+
+  return true;
+}
+
+
+//-----------------------------------------------------------------------------
+bool mu2e::TrackerVST::sendEmpty_(artdaq::FragmentPtrs& Frags) {
+  Frags.emplace_back(new artdaq::Fragment());
+  Frags.back()->setSystemType(artdaq::Fragment::EmptyFragmentType);
+  Frags.back()->setSequenceID(ev_counter());
+  Frags.back()->setFragmentID(_fragment_ids[0]);
+  ev_counter_inc();
+  return true;
 }
 
 
