@@ -87,6 +87,19 @@ void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
 
   dtc->WriteROCRegister(link, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
+  // added register for selecting kind of data to report in DTC status bits
+  // Use with pattern data. Set to zero, ie STATUS=0x55, when taking DIGI data 
+  // rocUtil -a 30  -w 0  -l $LINK write_register > /dev/null
+
+  dtc->WriteROCRegister(link,30,0x0000,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
+  // echo "Setting packet format version to 1"
+  // rocUtil -a 29  -w 1  -l $LINK write_register > /dev/null
+
+  dtc->WriteROCRegister(link,29,0x0001,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 }
 
 //-----------------------------------------------------------------------------
