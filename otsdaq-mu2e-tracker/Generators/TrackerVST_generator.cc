@@ -1,4 +1,6 @@
-
+///////////////////////////////////////////////////////////////////////////////
+//
+///////////////////////////////////////////////////////////////////////////////
 #include "artdaq/DAQdata/Globals.hh"
 #define TRACE_NAME (app_name + "_TrackerVST").c_str()
 
@@ -10,7 +12,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
 #include "artdaq-core-mu2e/Data/TrkDtcFragment.hh"
-#include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
+// #include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
 
 #include <fstream>
 #include <iomanip>
@@ -166,7 +168,7 @@ std::vector<uint16_t> mu2e::TrackerVST::fragmentIDs() {
   std::vector<uint16_t> v;
   v.push_back(0);
   if (_saveDTCRegisters) v.push_back(FragmentType::TRKDTC);
-  if (_saveSPI)          v.push_back(FragmentType::TRKSPI);
+  //  if (_saveSPI)          v.push_back(FragmentType::TRKSPI);
   
   return v;
 }
@@ -203,7 +205,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
-  , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           0))  // 
+  , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           1))  // 
 
   {
     
@@ -432,6 +434,19 @@ void mu2e::TrackerVST::monica_var_link_config(DTCLib::DTC* Dtc, int Link) {
 
   Dtc->WriteROCRegister(link, 8,0x030f,false,1000);        // configure ROC to read all 4 lanes
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
+
+  // added register for selecting kind of data to report in DTC status bits
+  // Use with pattern data. Set to zero, ie STATUS=0x55, when taking DIGI data 
+  // rocUtil -a 30  -w 0  -l $LINK write_register > /dev/null
+
+  Dtc->WriteROCRegister(link,30,0x0000,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
+
+  // echo "Setting packet format version to 1"
+  // rocUtil -a 29  -w 1  -l $LINK write_register > /dev/null
+
+  Dtc->WriteROCRegister(link,29,0x0001,false,1000);        // configure ROC to read all 4 lanes
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 }
 
 
@@ -532,9 +547,9 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
 int mu2e::TrackerVST::readSPI(artdaq::Fragment* Frag) {
   int      rc(0);
 
-  int nw     = TrkSpiFragment::nWords();
-  int nb_spi = nw*2;
-  Frag->resizeBytes(nb_spi);
+  // int nw     = TrkSpiFragment::nWords();
+  // int nb_spi = nw*2;
+  // Frag->resizeBytes(nb_spi);
 
   //  void* fd  = Frag->dataBegin();
   
@@ -624,8 +639,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   bool   readSuccess(false);
   auto   tmo_ms(1500);
 
-  mu2e_databuff_t* buffer; //  = readDTCBuffer( _dtc->GetDevice(), readSuccess, timeout, nbytes, false);
-
+  mu2e_databuff_t* buffer; 
   nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
@@ -681,44 +695,43 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 // UPDATE: the latest version of the Mu2 interface assumes that
 //         the event and subevent headers are not dropped
 //-----------------------------------------------------------------------------
-  int offset                = 0; // 0x40;
-  double fragment_timestamp = ev_counter();
-  artdaq::Fragment* frag    = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, fragment_timestamp);
-
-  int data_size = nbytes-offset;
-  frag->resizeBytes(data_size);
+  double timestamp       = ev_counter();
+  artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, timestamp);
 
   Frags.emplace_back(frag);
-//-----------------------------------------------------------------------------
-// copy data and patch format version - set it to 1
-// don't copy 0x40 bytes - event header and subevent header (??) - to the artdaq fragment
-//-----------------------------------------------------------------------------
-  struct DataHeaderPacket_t {
-    uint16_t  nBytes;
-    uint16_t  w2;
-    uint16_t  nPackets;
-    uint16_t  evtWindowTag[3];
-    uint16_t  w7;
-    uint16_t  w8;
 
-    void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
-    void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
-  };
+  frag->resizeBytes(nbytes);
 
   char* cbuf = (char*) buffer;
   void* afd  = frag->dataBegin();
 
-  if (data_size > 0) {
-    memcpy(afd, cbuf+offset,data_size);
+  if (nbytes > 0) memcpy(afd,cbuf,nbytes);
 //-----------------------------------------------------------------------------
 // artdaq fragment starts from the data header packet
 // do we still need to set version ? ADC bit ordering ?
 //-----------------------------------------------------------------------------
-    DataHeaderPacket_t* dp = (DataHeaderPacket_t*) afd;
-    dp->setVersion(1);
+  if (nbytes >= 0x50) {
+//-----------------------------------------------------------------------------
+// copy data and patch format version - set it to 1
+//-----------------------------------------------------------------------------
+    struct DataHeaderPacket_t {
+      uint16_t  nBytes;
+      uint16_t  w2;
+      uint16_t  nPackets;
+      uint16_t  evtWindowTag[3];
+      uint16_t  w7;
+      uint16_t  w8;
+
+      void setVersion(int version) { w7 = (w7 & 0x00ff) + ((version & 0xff) << 8) ; }
+      void setStatus (int status ) { w7 = (w7 & 0xff00) + (status & 0xff)         ; }
+    };
+
+    DataHeaderPacket_t* dhp = (DataHeaderPacket_t*) ((char*) afd + 0x40);
+    dhp->setVersion(1);
   }
   else {
 //-----------------------------------------------------------------------------
+// read data size < (event_header+subevent_header+data_packet_header)
 // generate diagnostics
 //-----------------------------------------------------------------------------
     TLOG(TLVL_ERROR) << "event: " << ev_counter() << " read length ERROR: " << nbytes;
@@ -729,7 +742,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 // 2. need to add one more fragment of debug type with the diagnostics registers
 //    8 bytes per register - (register number, value)
 //-----------------------------------------------------------------------------
-    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,fragment_timestamp);
+    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,timestamp);
     readDTCRegisters(f2,_reg,_nreg);
     Frags.emplace_back(f2);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
@@ -741,16 +754,16 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
 // 3. add SPI fragment. it looks that the fragment_id is the ID of the board reader
 //-----------------------------------------------------------------------------
-  if (_saveSPI) {
-    artdaq::Fragment* f3 = new artdaq::Fragment(ev_counter(),_fragment_ids[2],FragmentType::TRKSPI,fragment_timestamp);
-    readSPI(f3);
-    Frags.emplace_back(f3);
-    if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-      printf("%s: SPI data\n",__func__);
-      int nb_spi = TrkSpiFragment::nWords()*2;
-      printBuffer(f3->dataBegin(),nb_spi);
-    }
-  }
+  // if (_saveSPI) {
+  //   artdaq::Fragment* f3 = new artdaq::Fragment(ev_counter(),_fragment_ids[2],FragmentType::TRKSPI,timestamp);
+  //   readSPI(f3);
+  //   Frags.emplace_back(f3);
+  //   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+  //     printf("%s: SPI data\n",__func__);
+  //     int nb_spi = TrkSpiFragment::nWords()*2;
+  //     printBuffer(f3->dataBegin(),nb_spi);
+  //   }
+  // }
 //-----------------------------------------------------------------------------
 // now print the block saved in the file for 10 events
 //-----------------------------------------------------------------------------
