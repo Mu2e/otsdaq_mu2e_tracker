@@ -164,8 +164,18 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
 read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
 set_digi_rw -s 0
 #+end_src
-* control_ROC.py commands                                                   
-** digi_rw                                                 
+* setting the pulser frequency (Richie)                                      
+-  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
+- 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+
+corresponding distance between the two consecutive pulses :
+|-----------------+-----------+-----------|
+| expected (usec) | 16.395014 | 4.1227229 |
+| observed (usec) | 16.394982 | 4.1227156 |
+|-----------------+-----------+-----------|
+
+* control_ROC.py commands                                                    
+** digi_rw                                                                   
     - digi_rw -h 2 -a 2
     - digi_rw -h 2 -a 1
     - digi_rw -h 2 -a 0
@@ -174,7 +184,7 @@ set_digi_rw -s 0
     - digi_rw -h 9 -a d -d b -w 1
 
 ** find_alignment                                          
-** set_preamp_thresh                                                        
+** set_preamp_thresh                                                         
     - set_preamp_thresh -c 91 -d 350 -hv 1
     - set_preamp_thresh -c 91 -d 350 -hv 0
     - set_preamp_thresh -c 91 -d 400 -hv 1
@@ -182,8 +192,19 @@ set_digi_rw -s 0
 
 ** measure_thresholds [-c channel]
     - measure_thresholds -c 91 : channel 91
-** pulser_on -c 3 -d 10000 -y 200                             
+** pulser_on -c 3 -d 10000 -y 200                                            
     -c 3 : (divide by 8) : pulse channel 91
+** readDeviceID                                                              
+#+begin_src 
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52f41f',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x5a71cc9fee9731be3f0fbd0452b0364b'}
+
+('DRAC ROC ID #', '5a71c')
+#+end_src
 ** readSPI : no parameters
 ** set_digi_rw                                                              
     set_digi_rw -s 1 : enable  commands over the serial connection
@@ -395,6 +416,8 @@ readSPI
  'VDMBHV5.0': 4.88}
 set_digi_rw -s 0
 #+end_src 
+* ROC channel map (Vadim)                                                    
+  https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
 * 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes        
    
     15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
@@ -462,6 +485,7 @@ gpio read  27
 gpio write 27 0              # set output level to low 
 #+end_src
 * 5.5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
+* 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
 
 - 8x32-bit words OR 256 bits per hit (ie two DTC packets)

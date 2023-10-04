@@ -276,8 +276,15 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     }
     if (_rawOutputEnable) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
 //-----------------------------------------------------------------------------
-// do it once anyway
+// do it once anyway, the next two lines - DTC soft reset
+// my_cntl write 0x9100 0x80000000 > /dev/null
+// my_cntl write 0x9100 0x00008000 > /dev/nul
 //-----------------------------------------------------------------------------
+    // _dtc->GetDevice()->write_register(0x9100,100,0x80000000);
+    // std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
+    // _dtc->GetDevice()->write_register(0x9100,100,0x00008000);
+    // std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
+
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
 
@@ -333,6 +340,20 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
       0x9690, 1,   // RX Data Packet Count Link 0                             //  link 2 reset - write 0
       0x9694, 1,   // RX Data Packet Count Link 1                             //  link 2 reset - write 0
       0x9698, 1,   // RX Data Packet Count Link 2                             //  link 2 reset - write 0
+//-----------------------------------------------------------------------------
+// 2023-09-14 - new counters by Rick - in DTC2023Sep02_22_22.1
+//-----------------------------------------------------------------------------
+      0x9720, 1,   // rxlink0           
+      0x9724, 1,   // rxlink1           
+      0x9728, 1,   // rxlink2           
+      0x972C, 1,   // rxlink3           
+      0x9730, 1,   // rxlink4           
+      0x9734, 1,   // rxlink5           
+      0x9740, 1,   // rxinputbufferin   
+      0x9744, 1,   // DDRWrite          
+      0x9748, 1,   // DDRRead           
+      0x974C, 1,   // DMAtoPCI          
+      
       0xffff
     };
 
