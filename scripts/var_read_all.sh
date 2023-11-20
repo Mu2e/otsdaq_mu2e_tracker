@@ -21,7 +21,7 @@ echo "DTC 0x91a8 : EWM deltaT set to "`my_cntl read 0x91a8`
 for reg in 0 8 18 ; do
   res=`rocUtil simple_read -a $reg -l $LINK`
   declare -a w ; w=($res)
-  echo "ROC   `printf %4i $reg` : link $LINK data: `printf 0x%04x ${w[1]}` rc: ${w[0]}" .. $res
+  echo "Link:$LINK reg:`printf %03i $reg` : `printf 0x%04x ${w[1]}`  rc: ${w[0]}" # .. $res
 done
 
 echo " "
@@ -152,7 +152,7 @@ MYSPILL0=($SPILLTAG0)
 declare -a MYSPILL1
 MYSPILL1=($SPILLTAG1)
 printf -v spillhex '0x%08x' $(($((65536*${MYSPILL1[1]}))+${MYSPILL0[1]}))
-echo "last SPILL TAG   :" $spillhex
+echo "last SPILL TAG             :" $spillhex
 
 
 HBTAG0=`rocUtil -a 45 -l $LINK  simple_read`
@@ -163,7 +163,7 @@ MYHBTAG0=($HBTAG0)
 declare -a MYHBTAG1
 MYHBTAG1=($HBTAG1)
 printf -v hbtaghex '0x%08x' $(($((65536*${MYHBTAG1[1]}))+${MYHBTAG0[1]}))
-echo "last HB tag      :" $hbtaghex
+echo "last HB tag                :" $hbtaghex
 
 
 PRETAG0=`rocUtil -a 48 -l $LINK  simple_read`
@@ -174,7 +174,7 @@ MYPRETAG0=($PRETAG0)
 declare -a MYPRETAG1
 MYPRETAG1=($PRETAG1)
 printf -v pretaghex '0x%08x' $(($((65536*${MYPRETAG1[1]}))+${MYPRETAG0[1]}))
-echo "last PREFETCH tag:" $pretaghex
+echo "last PREFETCH tag          :" $pretaghex
 
 
 FETAG0=`rocUtil -a 51 -l $LINK  simple_read`
@@ -185,7 +185,7 @@ MYFETAG0=($FETAG0)
 declare -a MYFETAG1
 MYFETAG1=($FETAG1)
 printf -v fetaghex '0x%08x' $(($((65536*${MYFETAG1[1]}))+${MYFETAG0[1]}))
-echo "last FETCHED tag :" $fetaghex
+echo "last FETCHED tag           :" $fetaghex
 
 DRETAG0=`rocUtil -a 54 -l $LINK  simple_read`
 DRETAG1=`rocUtil -a 55 -l $LINK  simple_read`
@@ -195,7 +195,7 @@ MYDRETAG0=($DRETAG0)
 declare -a MYDRETAG1
 MYDRETAG1=($DRETAG1)
 printf -v dretaghex '0x%08x' $(($((65536*${MYDRETAG1[1]}))+${MYDRETAG0[1]}))
-echo "last DATA REQ tag:" $dretaghex
+echo "last DATA REQ tag          :" $dretaghex
 
 
 OFFTAG0=`rocUtil -a 57 -l $LINK  simple_read`
@@ -206,7 +206,7 @@ MYOFFTAG0=($OFFTAG0)
 declare -a MYOFFTAG1
 MYOFFTAG1=($OFFTAG1)
 printf -v offtaghex '0x%08x' $(($((65536*${MYOFFTAG1[1]}))+${MYOFFTAG0[1]}))
-echo "OFFSET tag       :" $offtaghex
+echo "OFFSET tag                 :" $offtaghex
 
 
 #FULLTAG0=`rocUtil -a 66 -l $LINK  simple_read`
