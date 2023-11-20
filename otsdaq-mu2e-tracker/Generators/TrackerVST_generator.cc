@@ -760,7 +760,8 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 //    8 bytes per register - (register number, value)
 //-----------------------------------------------------------------------------
 	auto              metadata = TrkDtcFragment::create_metadata();
-    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,metadata,timestamp);
+    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,timestamp);
+	f2->setMetadata(metadata);
     readDTCRegisters(f2,_reg,_nreg);
     Frags.emplace_back(f2);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
