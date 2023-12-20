@@ -11,6 +11,17 @@ using namespace DTCLib;
 //-----------------------------------------------------------------------------
 // read_dtc_registers: read some registers
 //-----------------------------------------------------------------------------
+int read_dtc_register(int Dtc, uint32_t Register) {
+  uint32_t res;
+  DTC dtc(DTC_SimMode_NoCFO,Dtc,0x0,"");
+  int rc  = dtc.GetDevice()->read_register(Register,100,&res); 
+  printf("res: 0x%08x\n",res);
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+// read_dtc_registers: read some registers
+//-----------------------------------------------------------------------------
 void read_dtc_registers(int NEvents=1) {
 
   uint16_t reg[] = { 
