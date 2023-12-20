@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-//
+// 
 ///////////////////////////////////////////////////////////////////////////////
 #include "artdaq/DAQdata/Globals.hh"
 #define TRACE_NAME (app_name + "_TrackerVST").c_str()
@@ -11,7 +11,7 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
-#include "artdaq-core-mu2e/Data/TrkDtcFragment.hh"
+#include "artdaq-core-mu2e/Overlays/TrkDtcFragment.hh"
 // #include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
 
 #include <fstream>
@@ -74,12 +74,13 @@ namespace mu2e {
     int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
     int                                   _sleepTimeROCReset;      // sleep time (ms) after ROC reset register write
 
+    int                                   _readData;               // 1: read data, 0: save empty fragment
     int                                   _resetROC;               // 1: reset ROC every event
     int                                   _saveDTCRegisters;       // 
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
-    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; default:0
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; 101:simulate data internally, DTC not used; default:0
     			                  
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
@@ -101,9 +102,11 @@ namespace mu2e {
     // functionality; it's a mandatory override of the pure virtual
     // getNext_ function declared in CommandableFragmentGenerator
     
-    bool getNext_(artdaq::FragmentPtrs& output) override;
+    bool readEvent    (artdaq::FragmentPtrs& output);
+    bool simulateEvent(artdaq::FragmentPtrs& output);  
+    bool getNext_     (artdaq::FragmentPtrs& output) override;
 
-    bool sendEmpty_(artdaq::FragmentPtrs& output);
+    bool sendEmpty_   (artdaq::FragmentPtrs& output);
 
     void start() override {}
 
@@ -122,8 +125,9 @@ namespace mu2e {
     void monica_var_link_config    (DTC* Dtc, int Link);
     void monica_var_pattern_config (DTC* Dtc, int Link);
 
-                                        // diagnostics fragment: SPI data
-    int  readSPI         (artdaq::Fragment* Frag);
+                                        // read functions
+
+    int  readData        (artdaq::Fragment* Frag);
     int  readDTCRegisters(artdaq::Fragment* Frag, uint16_t* reg, int nreg);
 
     // Like "getNext_", "fragmentIDs_" is a mandatory override; it
@@ -200,6 +204,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
   , _sleepTimeROC      (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
   , _sleepTimeROCReset (ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
+  , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
   , _resetROC          (ps.get<int>                     ("resetROC"              ,           1))  // 
   , _saveDTCRegisters  (ps.get<int>                     ("saveDTCRegisters"      ,           1))  // 
   , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
@@ -209,11 +214,11 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
 
   {
     
-    TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR";
+    TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR (1) readData:" << _readData;
+    printf("TrackerVST::TrackerVST readData=%i\n",_readData);
 //-----------------------------------------------------------------------------
 // _sim_mode can still be overridden by environment var $DTCLIB_SIM_ENABLE 
 // the sim mode conversion is non-trivial
-// 
 //-----------------------------------------------------------------------------
     _nActiveLinks = _activeLinks.size();
     _rocMask      = 0;
@@ -224,7 +229,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
 //-----------------------------------------------------------------------------
 // to take the first step, assume that n(links) = 1
 //-----------------------------------------------------------------------------
-    assert(_nActiveLinks == 1);
+    // assert(_nActiveLinks == 1);
 
     _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
     _sim_mode = _dtc->ReadSimMode();
@@ -560,108 +565,17 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
 }
 
 //-----------------------------------------------------------------------------
-// read SPI data from ROC, in 16-bit words
-// decoding doesn't belong here
-// links to be handled
-// TrkSpiFragment has a fixed length
-//-----------------------------------------------------------------------------
-int mu2e::TrackerVST::readSPI(artdaq::Fragment* Frag) {
-  int      rc(0);
-
-  // int nw     = TrkSpiFragment::nWords();
-  // int nb_spi = nw*2;
-  // Frag->resizeBytes(nb_spi);
-
-  //  void* fd  = Frag->dataBegin();
-  
-//   try {
-//     _dtc->WriteROCRegister   (DTC_Link_0,258,0x0000  ,false,100);
-
-//     _dtc->ReadROCRegister(DTC_Link_0,roc_address_t(128),100); // printf("0x%04x\n",u);
-//     _dtc->ReadROCRegister(DTC_Link_0,roc_address_t(129),100); // printf("0x%04x\n",u);
-  
-//     std::vector<uint16_t> v;
-//     _dtc->ReadROCBlock(v,DTC_Link_0,258,nw,false,100);
-
-//     memcpy(fd,&v[0],2*nw);
-//   }
-//   catch (...) {
-// //-----------------------------------------------------------------------------
-// // need to know which kind of exception could be thrown
-// //-----------------------------------------------------------------------------
-//     TLOG(TLVL_ERROR) << "readSPI ERROR: ";
-//     rc = -1;
-//   }
-  
-  return rc;
-}
-
-//-----------------------------------------------------------------------------
-// a virtual function called from the outside world
-//-----------------------------------------------------------------------------
-bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
-  //  const char* oname = "mu2e::TrackerVST::getNext_: ";
-
-  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "STARTING";
-
-  if (should_stop()) return false;
-
-  _startProcTimer();
-
-  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "after startProcTimer";
-//-----------------------------------------------------------------------------
-// Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
-// having reset the ROC, go back to the requested time window 
-//-----------------------------------------------------------------------------
-  if (_resetROC) {
-    for (int i=0; i<_nActiveLinks; i++) {
-      monica_digi_clear     (_dtc,_activeLinks[i]);
-      //  monica_var_link_config(_dtc,_activeLinks[i]);
-    }
-    _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
-  }
-//-----------------------------------------------------------------------------
-// send a request for one event, what is the role of requestsAhead ? 
-//-----------------------------------------------------------------------------
-  uint64_t             z(0);
-  DTC_EventWindowTag   zero(z);
-  bool                 incrementTimestamp(true);
-  int                  requestsAhead     (  0);
-
-  int nev = 1;
-//-----------------------------------------------------------------------------
-// duplicating setting the distance btw the two event window markers
-//-----------------------------------------------------------------------------
-  _cfo->SendRequestsForRange(nev,
-                             DTC_EventWindowTag(ev_counter()),
-                             incrementTimestamp,
-                             _heartbeatInterval,
-                             requestsAhead,
-                             _heartbeatsAfter);
-
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
-
-  _dtc->GetDevice()->ResetDeviceTime();
-//-----------------------------------------------------------------------------
-// a hack : reduce the PMT logfile size 
-//-----------------------------------------------------------------------------
-  int print_event = (ev_counter() % _printFreq) == 0;
-
-  if (print_event) {
-    // print_roc_registers(&_dtc,link,"001 [after cfo.SendRequestForTimestamp]");
-
-    printf(" ------------------------------ reading event %li\n",ev_counter());
-  }
+int mu2e::TrackerVST::readData(artdaq::Fragment* Frag) {
 //-----------------------------------------------------------------------------
 // the body of the readDTCBuffer
 //-----------------------------------------------------------------------------
-  size_t nbytes(0);
+  int    rc(-1);                        // return code, negative if error
   bool   timeout(false);
   bool   readSuccess(false);
   auto   tmo_ms(1500);
 
   mu2e_databuff_t* buffer; 
-  nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
+  size_t nbytes = _dtc->GetDevice()->read_data(DTC_DMA_Engine_DAQ, reinterpret_cast<void**>(&buffer), tmo_ms);
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
   if (nbytes > 0)    {
@@ -699,6 +613,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
     }
   }
 
+  int print_event = (ev_counter() % _printFreq) == 0;
   if (print_event) {
     printf(" event: %10lu readSuccess : %1i timeout: %1i nbytes: %10lu\n",ev_counter(),readSuccess,timeout,nbytes);
   }
@@ -716,15 +631,10 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 // UPDATE: the latest version of the Mu2 interface assumes that
 //         the event and subevent headers are not dropped
 //-----------------------------------------------------------------------------
-  double timestamp       = ev_counter();
-  artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, timestamp);
-
-  Frags.emplace_back(frag);
-
-  frag->resizeBytes(nbytes);
+  Frag->resizeBytes(nbytes);
 
   char* cbuf = (char*) buffer;
-  void* afd  = frag->dataBegin();
+  void* afd  = Frag->dataBegin();
 
   if (nbytes > 0) memcpy(afd,cbuf,nbytes);
 //-----------------------------------------------------------------------------
@@ -752,47 +662,97 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   }
   else {
 //-----------------------------------------------------------------------------
-// read data size < (event_header+subevent_header+data_packet_header)
+// ERROR: data size < (event_header+subevent_header+data_packet_header)
 // generate diagnostics
 //-----------------------------------------------------------------------------
     TLOG(TLVL_ERROR) << "event: " << ev_counter() << " read length ERROR: " << nbytes;
+    rc = -1;
   }
+  return rc;
+}
 
+//-----------------------------------------------------------------------------
+bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
+//-----------------------------------------------------------------------------
+// read data
+// Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
+// having reset the ROC, go back to the requested time window 
+//-----------------------------------------------------------------------------
+  if (_resetROC) {
+    for (int i=0; i<_nActiveLinks; i++) {
+      monica_digi_clear     (_dtc,_activeLinks[i]);
+      monica_var_link_config(_dtc,_activeLinks[i]);
+    }
+    _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
+  }
+//-----------------------------------------------------------------------------
+// send a request for one event, what is the role of requestsAhead ? 
+//-----------------------------------------------------------------------------
+  uint64_t             z(0);
+  DTC_EventWindowTag   zero(z);
+  bool                 incrementTimestamp(true);
+  int                  requestsAhead     (  0);
+
+  int nev = 1;
+//-----------------------------------------------------------------------------
+// duplicating setting the distance btw the two event window markers
+//-----------------------------------------------------------------------------
+  _cfo->SendRequestsForRange(nev,
+                             DTC_EventWindowTag(ev_counter()),
+                             incrementTimestamp,
+                             _heartbeatInterval,
+                             requestsAhead,
+                             _heartbeatsAfter);
+
+  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
+
+  _dtc->GetDevice()->ResetDeviceTime();
+//-----------------------------------------------------------------------------
+// a hack : reduce the PMT logfile size 
+//-----------------------------------------------------------------------------
+  int print_event = (ev_counter() % _printFreq) == 0;
+
+  if (print_event) {
+    // print_roc_registers(&_dtc,link,"001 [after cfo.SendRequestForRange]");
+    printf(" ------------------------------ reading event %li\n",ev_counter());
+  }
+//-----------------------------------------------------------------------------
+// make sure even a fake fragment goes in
+//-----------------------------------------------------------------------------
+  double tstamp          = ev_counter();
+  artdaq::Fragment* f1 = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, tstamp);
+  if (_readData) {
+//-----------------------------------------------------------------------------
+// read data 
+//-----------------------------------------------------------------------------
+    readData(f1);
+  }
+  else {
+//-----------------------------------------------------------------------------
+// fake reading
+//-----------------------------------------------------------------------------
+    f1->resizeBytes(4);
+    uint* afd  = (uint*) f1->dataBegin();
+    *afd = 0x00ffffff;
+    // printf("%s: fake data\n",__func__);
+    // printBuffer(f1->dataBegin(),4);
+  }
+  Frags.emplace_back(f1);
+//-----------------------------------------------------------------------------
+// read DTC registers
+// add one more fragment of debug type with the diagnostics registers: 8 bytes per register - (register number, value)
+// for simplicity, keep both 4-byte integers
+//-----------------------------------------------------------------------------
+  artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,tstamp);
   if (_saveDTCRegisters) {
-//-----------------------------------------------------------------------------
-// 2. need to add one more fragment of debug type with the diagnostics registers
-//    8 bytes per register - (register number, value)
-//-----------------------------------------------------------------------------
-    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,timestamp);
     readDTCRegisters(f2,_reg,_nreg);
-    Frags.emplace_back(f2);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
       printf("%s: DTC registers\n",__func__);
       int nb_dtc = 4+8*_nreg;
       printBuffer(f2->dataBegin(),nb_dtc);
     }
   }
-//-----------------------------------------------------------------------------
-// 3. add SPI fragment. it looks that the fragment_id is the ID of the board reader
-//-----------------------------------------------------------------------------
-  // if (_saveSPI) {
-  //   artdaq::Fragment* f3 = new artdaq::Fragment(ev_counter(),_fragment_ids[2],FragmentType::TRKSPI,timestamp);
-  //   readSPI(f3);
-  //   Frags.emplace_back(f3);
-  //   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-  //     printf("%s: SPI data\n",__func__);
-  //     int nb_spi = TrkSpiFragment::nWords()*2;
-  //     printBuffer(f3->dataBegin(),nb_spi);
-  //   }
-  // }
-//-----------------------------------------------------------------------------
-// now print the block saved in the file for 10 events
-//-----------------------------------------------------------------------------
-  // if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-  //   printf(" ----------------------------------------------------------------------- saved Fragment %lu\n",ev_counter());
-  //   printf(" readSuccess:%i timeout:%i nbytes: %5lu\n",readSuccess,timeout,nbytes);
-  //   printBuffer(af, (int) nbytes-offset);
-  // }
+  Frags.emplace_back(f2);
 //-----------------------------------------------------------------------------
 // release the DMA channel
 //-----------------------------------------------------------------------------
@@ -810,8 +770,87 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   }
 
   _dtc->GetDevice()->release_all(DTC_DMA_Engine_DAQ);
+  return true;
+}
+
 //-----------------------------------------------------------------------------
-// increment the number of generated events
+bool mu2e::TrackerVST::simulateEvent(artdaq::FragmentPtrs& Frags) {
+
+  double tstamp          = ev_counter();
+  artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, tstamp);
+
+  const uint16_t fake_event [] = {
+    0x01d0 , 0x0000 , 0x0000 , 0x0000 , 0x01c8 , 0x0000 , 0x0169 , 0x0000,   // 0x000000: 
+    0x0000 , 0x0101 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0100 , 0x0000,   // 0x000010: 
+    0x01b0 , 0x0000 , 0x0169 , 0x0000 , 0x0000 , 0x0101 , 0x0000 , 0x0000,   // 0x000020: 
+    0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x01ee,   // 0x000030: 
+    0x0190 , 0x8150 , 0x0018 , 0x0169 , 0x0000 , 0x0000 , 0x0155 , 0x0000,   // 0x000040: 
+    0x005b , 0x858d , 0x1408 , 0x8560 , 0x0408 , 0x0041 , 0xa955 , 0x155a,   // 0x000050: 
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000060: 
+    0x005b , 0x548e , 0x1415 , 0x5462 , 0x0415 , 0x0041 , 0xa955 , 0x155a,   // 0x000070: 
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000080: 
+    0x005b , 0x2393 , 0x1422 , 0x2362 , 0x0422 , 0x0041 , 0xa955 , 0x155a,   // 0x000090: 
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x0000a0: 
+    0x002a , 0x859a , 0x1408 , 0x85b2 , 0x0408 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000b0: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000c0: 
+    0x002a , 0x549a , 0x1415 , 0x54b5 , 0x0415 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000d0: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000e0: 
+    0x002a , 0x239c , 0x1422 , 0x23b5 , 0x0422 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000f0: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000100: 
+    0x00de , 0xca6a , 0x1400 , 0xca5c , 0x0400 , 0x0041 , 0x56aa , 0x2aa5,   // 0x000110: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000120: 
+    0x00de , 0x996a , 0x140d , 0x995c , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000130: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000140: 
+    0x00de , 0x686c , 0x141a , 0x685d , 0x041a , 0x0041 , 0xa955 , 0x155a,   // 0x000150: 
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000160: 
+    0x00ac , 0xc90d , 0x1500 , 0xcabf , 0x0400 , 0x0041 , 0xa955 , 0x155a,   // 0x000170: 
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000180: 
+    0x00ac , 0x980d , 0x150d , 0x99c5 , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000190: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0001a0: 
+    0x00ac , 0x670d , 0x151a , 0x68c5 , 0x041a , 0x0041 , 0x56aa , 0x2aa5,   // 0x0001b0: 
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5    // 0x0001c0: 
+  };
+
+  int nb = 0x1d0;
+  frag->resizeBytes(nb);
+
+  uint* afd  = (uint*) frag->dataBegin();
+  memcpy(afd,fake_event,nb);
+
+  // printf("%s: fake data\n",__func__);
+  // printBuffer(f1->dataBegin(),4);
+
+  Frags.emplace_back(frag);
+  return true;
+}
+
+//-----------------------------------------------------------------------------
+// a virtual function called from the outside world
+//-----------------------------------------------------------------------------
+bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
+  //  const char* oname = "mu2e::TrackerVST::getNext_: ";
+  bool rc(true);
+
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "STARTING";
+
+  if (should_stop()) return false;
+
+  _startProcTimer();
+
+  TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "after startProcTimer";
+  if (_readoutMode < 100) {
+    rc =readEvent(Frags);
+  }
+  else {
+//-----------------------------------------------------------------------------
+// increment number of generated events
+//-----------------------------------------------------------------------------
+//    readout mode > 100 : simulation
+//-----------------------------------------------------------------------------
+    rc = simulateEvent(Frags);
+  }
+//-----------------------------------------------------------------------------
+// increment number of generated events
 //-----------------------------------------------------------------------------
   ev_counter_inc();
 //-----------------------------------------------------------------------------
@@ -828,7 +867,7 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
     Frags.emplace_back(esf);
   }
 
-  return true;
+  return rc;
 }
 
 
