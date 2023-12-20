@@ -11,7 +11,8 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
-#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
+#include "artdaq-core-mu2e/Overlays/TrkDtcFragment.hh"
+
 // #include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
 
 #include <fstream>
@@ -538,17 +539,13 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
 
   int      rc(0);
   
-  Frag->resizeBytes(NReg*8+4);
+  Frag->resizeBytes(NReg*sizeof(TrkDtcFragment::RegEntry));
   uint* f2d = (uint*) Frag->dataBegin();
-//-----------------------------------------------------------------------------
-// first word: version
-//----------------------------------------------------------------------------------------
-  f2d[0] = NReg; 
 
   for (int i=0; i<NReg; i++) {
-    f2d[2*i+1] = Reg[i];
+    f2d[2*i] = Reg[i];
     try   { 
-      rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+2); 
+      rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+1); 
     }
     catch (...) {
       TLOG(TLVL_ERROR) << "event: " << ev_counter() << "readDTCRegisters ERROR, register : " << Reg[i];
@@ -763,7 +760,9 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
 // 2. need to add one more fragment of debug type with the diagnostics registers
 //    8 bytes per register - (register number, value)
 //-----------------------------------------------------------------------------
+	auto              metadata = TrkDtcFragment::create_metadata();
     artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,timestamp);
+	f2->setMetadata(metadata);
     readDTCRegisters(f2,_reg,_nreg);
     Frags.emplace_back(f2);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
