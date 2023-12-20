@@ -12,7 +12,6 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
 #include "artdaq-core-mu2e/Overlays/TrkDtcFragment.hh"
-// #include "artdaq-core-mu2e/Data/TrkSpiFragment.hh"
 
 #include <fstream>
 #include <iomanip>
@@ -543,17 +542,13 @@ int mu2e::TrackerVST::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, in
 
   int      rc(0);
   
-  Frag->resizeBytes(NReg*8+4);
+  Frag->resizeBytes(NReg*sizeof(TrkDtcFragment::RegEntry));
   uint* f2d = (uint*) Frag->dataBegin();
-//-----------------------------------------------------------------------------
-// first word: version
-//----------------------------------------------------------------------------------------
-  f2d[0] = NReg; 
 
   for (int i=0; i<NReg; i++) {
-    f2d[2*i+1] = Reg[i];
+    f2d[2*i] = Reg[i];
     try   { 
-      rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+2); 
+      rc   = _dtc->GetDevice()->read_register(Reg[i],100,f2d+2*i+1); 
     }
     catch (...) {
       TLOG(TLVL_ERROR) << "event: " << ev_counter() << "readDTCRegisters ERROR, register : " << Reg[i];
@@ -744,7 +739,10 @@ bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
 // for simplicity, keep both 4-byte integers
 //-----------------------------------------------------------------------------
   artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,tstamp);
+	auto              metadata = TrkDtcFragment::create_metadata();
+  f2->setMetadata(metadata);
   if (_saveDTCRegisters) {
+
     readDTCRegisters(f2,_reg,_nreg);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
       printf("%s: DTC registers\n",__func__);

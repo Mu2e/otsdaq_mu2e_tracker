@@ -15,7 +15,7 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "artdaq-core-mu2e/Overlays/FragmentType.hh"
-#include "artdaq-core-mu2e/Data/ArtFragment.hh"
+
 // #include "artdaq-core-mu2e/Overlays/mu2eFragmentWriter.hh"
 
 #include <fstream>
