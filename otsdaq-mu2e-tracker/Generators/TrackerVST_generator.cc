@@ -676,7 +676,7 @@ bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
   if (_resetROC) {
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
-      monica_var_link_config(_dtc,_activeLinks[i]);
+      // monica_var_link_config(_dtc,_activeLinks[i]);
     }
     _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
   }
