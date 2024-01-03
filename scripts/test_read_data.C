@@ -216,7 +216,7 @@ void test2_read_data(int LinkMask                ,  // add, as the link can vary
     if (ResetROC != 0) {
       for (auto link : active_links) {
         monica_digi_clear     (&dtc,link);
-        monica_var_link_config(&dtc,link);
+        // monica_var_link_config(&dtc,link);
       }
       dev->write_register(0x91a8,100,HBInterval);
     }

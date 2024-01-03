@@ -616,14 +616,12 @@ int mu2e::TrackerVST::readData(artdaq::Fragment* Frag) {
   if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
     // print_roc_registers(&dtc,link,"002 [after readDTCBuffer]");
     DTCLib::Utilities::PrintBuffer(buffer, nbytes, 0);
-  
-    // printBuffer(buffer, (int) nbytes);
   }
 //-----------------------------------------------------------------------------
 // first 0x40 bytes seem to be useless, they are followed by the data header packer,
 // offline starts from there
 // suspect the offset is the size of the (DTC_EventHeader + DTC_SubEventHeader)
-// UPDATE: the latest version of the Mu2 interface assumes that
+// UPDATE: the latest version of the Mu2e interface assumes that
 //         the event and subevent headers are not dropped
 //-----------------------------------------------------------------------------
   Frag->resizeBytes(nbytes);
@@ -676,7 +674,7 @@ bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
   if (_resetROC) {
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
-      monica_var_link_config(_dtc,_activeLinks[i]);
+      // monica_var_link_config(_dtc,_activeLinks[i]);
     }
     _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
   }
