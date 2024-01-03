@@ -1,4 +1,4 @@
-#
+#+startup:fold
 * ------------------------------------------------------------------------------
 * startup checks                                                             
 ** 1. check version of the DTC firmware                                      
@@ -133,15 +133,15 @@ root [2] .q
 #+end_src
 ** after that can proceed with OTS
 * ------------------------------------------------------------------------------
-* reading data (from Monica)
-* ------------------------------------------------------------------------------
+* powering up the test stands (Vadim):                                       
+  https://docs.google.com/document/d/1theA9NIRA5XeUUPVuFGVhU7NddPljgaGznR9aMu-Fv8/edit?usp=sharing
 * slow controls of the DTC's                                                 
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature
   -- 0x9014 : VCCINT
   -- 0x9018 : VCCAUX
   -- 0x901c : VCCBRAM
-** implemented in file:../../frontends/dtc_frontend/dtc_frontend.cc
+** readout implemented in file:../../frontends/dtc_frontend/dtc_frontend.cc
 * slow control of ROC's                                                      
 ** ROC_1 : SPI data:                                                         
     see file:../
@@ -300,7 +300,7 @@ HV_TEMP(CELSIUS)     :     32.662
 07-12 16:56:55.927739                                 DTC.cpp     INFO ~DTC(): DESTRUCTOR
 #+end_src
 ** implemented in file:../scripts/read_spi.C  
-** <2023-12-20 Wed> also implemented in the slow monitoring : file:../../frontends/roc_frontend/roc_frontend.cc
+** <2023-12-20 Wed> also implemented in the MIDAS slow monitoring : file:../../frontends/roc_frontend/roc_frontend.cc
 ** SPI data over the serial, unpacked                                         
 #+begin_src
 readSPI
