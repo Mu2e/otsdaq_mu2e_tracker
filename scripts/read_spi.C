@@ -47,7 +47,7 @@ struct TrkSpiData_t {
   uint16_t  HV_TEMP;
 
   TrkSpiData_t*  spiData() { return (TrkSpiData_t*) &I3_3; }
-  static int     nWords () { return sizeof(Data_t)/2;      }
+  static int     nWords () { return sizeof(TrkSpiData_t)/2;      }
 };
 
 
