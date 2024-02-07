@@ -29,7 +29,8 @@ cet_set_compiler_flags(
 #cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
-find_package(otsdaq_mu2e 1.02.00 REQUIRED)
+# find_package(otsdaq_mu2e 1.02.00 REQUIRED)
+find_package(artdaq 3.12.07 REQUIRED)
 
 #------------------------------------------------------------------------------
 # XDAQ Extra setup
