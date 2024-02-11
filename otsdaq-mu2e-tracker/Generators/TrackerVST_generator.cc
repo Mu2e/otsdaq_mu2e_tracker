@@ -68,13 +68,14 @@ namespace mu2e {
     int                                   _dtcId;
     std::vector<int>                      _activeLinks;            // active links - connected ROCs
     uint                                  _rocMask;
+    int                                   _sleepTimeMs;            // introduce sleep time (ms) to throttle the input event rate
     int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
     int                                   _sleepTimeDTC;           // sleep time (ms) after register writes
     int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
     int                                   _sleepTimeROCReset;      // sleep time (ms) after ROC reset register write
 
     int                                   _readData;               // 1: read data, 0: save empty fragment
-    int                                   _resetROC;               // 1: reset ROC every event
+    int                                   _resetROC;               // 1: clear digis 2: also reset ROC every event
     int                                   _saveDTCRegisters;       // 
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
@@ -199,6 +200,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _heartbeatInterval (ps.get<int>                     ("heartbeatInterval"                  ))
   , _dtcId             (ps.get<int>                     ("dtcId"                 ,          -1)) 
   , _activeLinks       (ps.get<std::vector<int>>        ("activeLinks"                        )) 
+  , _sleepTimeMs       (ps.get<int>                     ("sleepTimeMs"           ,          -1))  // 0   milliseconds
   , _sleepTimeDMA      (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
   , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
   , _sleepTimeROC      (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
@@ -225,19 +227,15 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
       int link = _activeLinks[i];
       _rocMask |= (1 << 4*link);
     }
-//-----------------------------------------------------------------------------
-// to take the first step, assume that n(links) = 1
-//-----------------------------------------------------------------------------
-    // assert(_nActiveLinks == 1);
 
     _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
     _sim_mode = _dtc->GetSimMode();
-
-    _device = _dtc->GetDevice();
+    _device   = _dtc->GetDevice();
     
     TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
-    // TLOG(TLVL_INFO) << "Fragment IDs: " << _fragment_ids;
-    
+//-----------------------------------------------------------------------------
+// initialize the CFO emulator
+//-----------------------------------------------------------------------------
     fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
     
     bool          use_dtc_cfo_emulator = cfoConfig.get<bool>       ("use_dtc_cfo_emulator", true );
@@ -260,7 +258,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
                               force_no_debug_mode ,
                               useCFODRP           );
 //-----------------------------------------------------------------------------
-// not sure I fully understand the logic below
+// P.M. not sure I fully understand the logic below, take the DTC reset out 
 //-----------------------------------------------------------------------------
     if (_loadSimFile) {
       _dtc->SetDetectorEmulatorInUse();
@@ -279,15 +277,6 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
       simFileRead_ = true;
     }
     if (_rawOutputEnable) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
-//-----------------------------------------------------------------------------
-// do it once anyway, the next two lines - DTC soft reset
-// my_cntl write 0x9100 0x80000000 > /dev/null
-// my_cntl write 0x9100 0x00008000 > /dev/nul
-//-----------------------------------------------------------------------------
-    // _dtc->GetDevice()->write_register(0x9100,100,0x80000000);
-    // std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
-    // _dtc->GetDevice()->write_register(0x9100,100,0x00008000);
-    // std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
 
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
@@ -667,14 +656,25 @@ int mu2e::TrackerVST::readData(artdaq::Fragment* Frag) {
 //-----------------------------------------------------------------------------
 bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
+// throttle the input rate
+//-----------------------------------------------------------------------------
+  if (_sleepTimeMs > 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(_sleepTimeMs));
+  }
+//-----------------------------------------------------------------------------
 // read data
+// ----------
 // Monica's way of resetting the DTC and the ROC - so far, assume just one ROC
 // having reset the ROC, go back to the requested time window 
+// _resetROC = 1: only clear DIGI FPGAs
+// _resetROC = 2: in addition, reset the ROC
 //-----------------------------------------------------------------------------
-  if (_resetROC) {
+  if (_resetROC != 0) {
     for (int i=0; i<_nActiveLinks; i++) {
       monica_digi_clear     (_dtc,_activeLinks[i]);
-      // monica_var_link_config(_dtc,_activeLinks[i]);
+      if (_resetROC == 2) {
+        monica_var_link_config(_dtc,_activeLinks[i]);
+      }
     }
     _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
   }

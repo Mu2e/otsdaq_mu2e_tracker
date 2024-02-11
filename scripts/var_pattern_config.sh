@@ -6,15 +6,15 @@ echo " "
 if [ $# -lt 2 ]; then
     echo "Need LINK and MODE argument"
     echo " "
-    exit 2
+    return 2
 elif [ $LINK -lt 0 -o $LINK -gt 5 ]; then
     echo "Bad LINK: range 0 to 5"
     echo " "
-    exit 2
+    return 2
 elif [ $MODE -lt 0 -o $MODE -gt 3 ]; then
     echo "Bad MODE: range 0 to 3"
     echo " "
-    exit 2
+    return 2
 fi
 
 
