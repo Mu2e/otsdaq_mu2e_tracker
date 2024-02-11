@@ -10,4 +10,4 @@ ROOT::Gui
 )
 
 
-cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq_core_demo::artdaq-core-demo_Overlays)
+# cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq_core_demo::artdaq-core-demo_Overlays)
