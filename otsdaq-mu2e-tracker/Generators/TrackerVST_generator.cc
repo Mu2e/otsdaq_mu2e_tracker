@@ -231,7 +231,6 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
     _sim_mode = _dtc->GetSimMode();
     _device   = _dtc->GetDevice();
-
     
     TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
 //-----------------------------------------------------------------------------
@@ -264,6 +263,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
     if (_loadSimFile) {
       _dtc->SetDetectorEmulatorInUse();
       _dtc->ResetDDR();
+      _dtc->SoftReset();
       
       if (_simFileName.size() > 0) {
 				simFileRead_ = false;
