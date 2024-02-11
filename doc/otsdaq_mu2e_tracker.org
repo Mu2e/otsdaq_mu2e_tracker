@@ -2,9 +2,10 @@
 * ------------------------------------------------------------------------------
 * startup checks                                                             
 ** 1. check version of the DTC firmware                                      
+- the last working and mostly used version : 0x23090211
 #+begin_src
 mu2etrk@mu2edaq09:~/test_stand/pasha_018>my_cntl read 0x9004
-0x23080819
+0x23090211
 sts=0
 #+end_src
 ** 2. check locked fibers                                                    
@@ -131,18 +132,29 @@ debug packet type: 0x00000000
 08-23 08:49:59.334624                            DTC.cpp     INFO ~DTC(): DESTRUCTOR
 root [2] .q
 #+end_src
-** after that can proceed with OTS
+** after that can proceed
 * ------------------------------------------------------------------------------
+* after mu2edaq09 reboot                                                     
+ - source [[file:../scripts/chantsDataTestVst.sh][srcs/otsdaq_mu2e_tracker/scripts/chantsDataTestVst.sh]]
 * powering up the test stands (Vadim):                                       
   https://docs.google.com/document/d/1theA9NIRA5XeUUPVuFGVhU7NddPljgaGznR9aMu-Fv8/edit?usp=sharing
-* slow controls of the DTC's                                                 
+#+begin_src                           
+mu2e@trackerpi5:~/trackerScripts$ power --list
+ TS 1 : DeviceID b1 : Port /dev/ttyACM2 : Power on 
+ TS 0 : DeviceID b0 : Port /dev/ttyACM1 : Power off 
+ TS 2 : DeviceID b2 : Port /dev/ttyACM0 : Power on 
+power --ts 1 off
+deviceid=b1 port=/dev/ttyACM2
+#+end_src
+* [[file:control_roc.org][control_ROC.py and its commands]]
+* slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature
   -- 0x9014 : VCCINT
   -- 0x9018 : VCCAUX
   -- 0x901c : VCCBRAM
 ** readout implemented in file:../../frontends/dtc_frontend/dtc_frontend.cc
-* slow control of ROC's                                                      
+* slow control of ROCs (readSPI)                                             
 ** ROC_1 : SPI data:                                                         
     see file:../
     all - uint16_t
@@ -190,7 +202,7 @@ primary source : https://github.com/bonventre/trackerScripts/blob/master/constan
 |    35 | uint16_t | HV_TEMP;       |         |
 |-------+----------+----------------+---------|
 
-** <2023-07-12 Wed> instructions by Monica                                   
+** <2023-07-12 Wed> instructions by Monica : readSPI over the fiber          
 Essentially one needs to do a write to ROC address 258 (0x102) to collect a list of 36 ADCs values, 
 and read them all back using a block read of the same address.
 In between, there are a couple of diagnostic registers to read that will 
@@ -299,9 +311,8 @@ HV_RAIL_2.5V(mV)     :   2581.625
 HV_TEMP(CELSIUS)     :     32.662
 07-12 16:56:55.927739                                 DTC.cpp     INFO ~DTC(): DESTRUCTOR
 #+end_src
-** implemented in file:../scripts/read_spi.C  
 ** <2023-12-20 Wed> also implemented in the MIDAS slow monitoring : file:../../frontends/roc_frontend/roc_frontend.cc
-** SPI data over the serial, unpacked                                         
+** SPI data over the serial, unpacked                                        
 #+begin_src
 readSPI
 (10, 72)
@@ -343,467 +354,7 @@ readSPI
  'VDMBHV5.0': 4.88}
 #+end_src
 -------------------------------------------------------------------------
-* setting up preamps to generate pulses [by Vadim]                           
-** 1) run control_ROC, find_alignment, exit                                  
-#+begin_src 
-python3 control_ROC /dev/ttyUSB1 115200
-find_alignment
-Ctrl-C
-#+end_src 
-  exiting at this point is important, otherwise the serial port will not work properly
-
-** 2) run diagnostics                                                        
-#+begin_src 
-python3 diagnostic.py -m L -f test_20mV.dat -p /dev/ttyUSB1
-#+end_src
-
-** 3) login back to control_ROC, measure thresholds                          
-#+begin_src 
-python3 control_ROC.py /dev/ttyUSB1 115200
-measure_thresholds                                
-# (this should show the CAL thresholds (third column) about between
-# 17-20mV ? there is one channel 28 that is nor working)
-pulser_on -c 4 -d 1000 -y 200
-# Charge injection works in modulo 8. In other words, -c 0 will pulse channels 0,8,16,etc. 
-# In the example above, -c 4 will pulse channels 4, 12,20, etc. 
-# Of course, there will be cross talk, so other channels will show, 
-# but that can be easily rejected offline. 
-#+end_src 
-* <2023-08-12 Sat> after mu2edaq09 reboot : source srcs/otsdaq_mu2e_tracker/scripts/chantsDataTestVst.sh
-* 1) after each DIGIs power up, run control_ROC.py on trackerpi1/trackerpi5  
-1. start control_ROC.py on the PI
-   1.a : let serial drives commands to DIGI
-   1.b : do alignment, what is alignment ?
-   1.c : read smth, why ?
-   1.d : in the end, let fiber drive commands to DIGI
-#+begin_src     set_digi_rw -s 1                                             
-mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
-reading
-Waiting for ARM to connect
-==========================
-('Connected to ARM on', '/dev/ttyUSB0')
-set_digi_rw -s 1
- ** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
-(94, 1)
-{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
-Ending...
-#+end_src
-#+begin_src  ## these are commands issued at the control_ROC.py prompt (may be invisible)
-set_digi_rw -s 1
-find_alignment
-# enable all channels
-# read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
-# enable just one channel per lane
-read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
-# enable 32 channels
-read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 0 -E FFFFFFFF
-set_digi_rw -s 0
-#+end_src
-* setting the pulser frequency (Richie)                                      
--  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
-- 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
-
-corresponding distance between the two consecutive pulses :
-|-----------------+-----------+-----------|
-| expected (usec) | 16.395014 | 4.1227229 |
-| observed (usec) | 16.394982 | 4.1227156 |
-|-----------------+-----------+-----------|
-
-* control_ROC.py commands                                                    
-** digi_rw                                                                   
-    - digi_rw -h 2 -a 2
-    - digi_rw -h 2 -a 1
-    - digi_rw -h 2 -a 0
-    - digi_rw -h 15 -a 16 -d 2 -w 1
-    - digi_rw -h 15 -a 15 -d 31 -w 1 
-    - digi_rw -h 9 -a d -d b -w 1
-
-** find_alignment                                          
-** set_preamp_thresh                                                         
-    - set_preamp_thresh -c 91 -d 350 -hv 1
-    - set_preamp_thresh -c 91 -d 350 -hv 0
-    - set_preamp_thresh -c 91 -d 400 -hv 1
-    - set_preamp_thresh -c 45 -d 420 -hv 0
-
-** measure_thresholds [-c channel]
-    - measure_thresholds -c 91 : channel 91
-** pulser_on -c 3 -d 10000 -y 200                                            
-    -c 3 : (divide by 8) : pulse channel 91
-** readDeviceID                                                              
-#+begin_src 
-readDeviceID
-(13, 52)
-{'BackLevelVer': '0x0000',
- 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52f41f',
- 'DesignVer': '0x0000',
- 'DeviceSerial': '0x5a71cc9fee9731be3f0fbd0452b0364b'}
-
-('DRAC ROC ID #', '5a71c')
-#+end_src
-** readSPI : no parameters
-** set_digi_rw                                                              
-    set_digi_rw -s 1 : enable  commands over the serial connection
-    set_digi_rw -s 0 : disable commands over the serial connection
-** rates [-c channel]
-    - if channel is not specified, all channels
-    - rates -c 91 : rate in the channel # 91
-** read                    
-    - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
-   
-    -m 3   : mode  ... need -m 3 for internal pulser
-    -p 0/1 : 0: 
-    -t     : triggering 
-    channels go as follows -C : first 32, -D : next 32, -E: last 32
-
-   - read -a 0 -t 0 -s 1 -l 8 -T 10 -m 0 -p 0
-
-** examples of the control_ROC.py output                                     
-#+begin_src                   find_alignment                                 
-mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
-reading
-Waiting for ARM to connect
-==========================
-('Connected to ARM on', '/dev/ttyUSB0')
-set_digi_rw -s 1
- ** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
-(94, 1)
-{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
-find_alignment
-(103, 159)
-('EyeMonitorWidth', 4)
-('IfPatternCheck', 1)
- ******   Iteration 0   ******
-ADCPhase 0                | Ailgnment        | Bitslip          | Pttn 0x263
-ADC#     Straw#   Active  | Complete Error   | Done     Step    | Fail    
------------------------------------------------------------------------------------
-0        91       *       | *                | *        8       |         
-1        85       *       | *                | *        8       |         
-2        79       *       | *                | *        8       |         
-3        73       *       | *                | *        7       |         
-4        67       *       | *                | *        8       |         
-5        61       *       | *                | *        8       |         
-6        55       *       | *                | *        8       |         
-7        49       *       | *                | *        8       |         
------------------------------------------------------------------------------------
-8        43       *       | *                | *        8       |         
-9        37       *       | *                | *        8       |         
-10       31       *       | *                | *        8       |         
-11       25       *       | *                | *        8       |         
-12       19       *       | *                | *        8       |         
-13       13       *       | *                | *        8       |         
-14       7        *       | *                | *        9       |         
-15       1        *       | *                | *        9       |         
------------------------------------------------------------------------------------
-16       90       *       | *                | *        5       |         
-17       84       *       | *                | *        6       |         
-18       78       *       | *                | *        6       |         
-19       72       *       | *                | *        6       |         
-20       66       *       | *                | *        6       |         
-21       60       *       | *                | *        6       |         
-22       54       *       | *                | *        6       |         
-23       48       *       | *                | *        5       |         
------------------------------------------------------------------------------------
-24       42       *       | *                | *        6       |         
-25       36       *       | *                | *        6       |         
-26       30       *       | *                | *        6       |         
-27       24       *       | *                | *        6       |         
-28       18       *       | *                | *        6       |         
-29       12       *       | *                | *        6       |         
-30       6        *       | *                | *        7       |         
-31       0        *       | *                | *        7       |         
------------------------------------------------------------------------------------
-32       93       *       | *                | *        8       |         
-33       87       *       | *                | *        8       |         
-34       81       *       | *                | *        8       |         
-35       75       *       | *                | *        7       |         
-36       69       *       | *                | *        8       |         
-37       63       *       | *                | *        8       |         
-38       57       *       | *                | *        8       |         
-39       51       *       | *                | *        8       |         
------------------------------------------------------------------------------------
-40       45       *       | *                | *        8       |         
-41       39       *       | *                | *        8       |         
-42       33       *       | *                | *        8       |         
-43       27       *       | *                | *        8       |         
-44       21       *       | *                | *        8       |         
-45       15       *       | *                | *        8       |         
-46       9        *       | *                | *        9       |         
-47       3        *       | *                | *        9       |         
------------------------------------------------------------------------------------
-48       44       *       | *                | *        5       |         
-49       38       *       | *                | *        6       |         
-50       32       *       | *                | *        6       |         
-51       26       *       | *                | *        6       |         
-52       20       *       | *                | *        6       |         
-53       14       *       | *                | *        6       |         
-54       8        *       | *                | *        6       |         
-55       2        *       | *                | *        5       |         
------------------------------------------------------------------------------------
-56       92       *       | *                | *        6       |         
-57       86       *       | *                | *        6       |         
-58       80       *       | *                | *        6       |         
-59       74       *       | *                | *        6       |         
-60       68       *       | *                | *        6       |         
-61       62       *       | *                | *        6       |         
-62       56       *       | *                | *        7       |         
-63       50       *       | *                | *        7       |         
------------------------------------------------------------------------------------
-64       47       *       | *                | *        8       |         
-65       41       *       | *                | *        8       |         
-66       35       *       | *                | *        8       |         
-67       29       *       | *                | *        7       |         
-68       23       *       | *                | *        8       |         
-69       17       *       | *                | *        8       |         
-70       11       *       | *                | *        8       |         
-71       5        *       | *                | *        8       |         
------------------------------------------------------------------------------------
-72       95       *       | *                | *        8       |         
-73       89       *       | *                | *        8       |         
-74       83       *       | *                | *        8       |         
-75       77       *       | *                | *        8       |         
-76       71       *       | *                | *        8       |         
-77       65       *       | *                | *        8       |         
-78       59       *       | *                | *        9       |         
-79       53       *       | *                | *        9       |         
------------------------------------------------------------------------------------
-80       46       *       | *                | *        5       |         
-81       40       *       | *                | *        6       |         
-82       34       *       | *                | *        6       |         
-83       28       *       | *                | *        6       |         
-84       22       *       | *                | *        6       |         
-85       16       *       | *                | *        6       |         
-86       10       *       | *                | *        6       |         
-87       4        *       | *                | *        5       |         
------------------------------------------------------------------------------------
-88       94       *       | *                | *        6       |         
-89       88       *       | *                | *        6       |         
-90       82       *       | *                | *        6       |         
-91       76       *       | *                | *        6       |         
-92       70       *       | *                | *        6       |         
-93       64       *       | *                | *        6       |         
-94       58       *       | *                | *        7       |         
-95       52       *       | *                | *        7       |         
-read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
-('OPENING FILE', 'run_73.txt')
-SETTING MODE TO  3
-(105, 35)
-{'AdcMode': 4,
- 'Ch_mask1': '0b11111111111111111111111111111111',
- 'Clock': 99,
- 'EnablePulser': 1,
- 'Mode': 0,
- 'NumLookback': 8,
- 'NumSamples': 1,
- 'NumTriggers': 10,
- 'TdcMode': 0,
- 'TdcString': b'PULSER\x00\x00',
- 'digi_read(0xb)': '0b1111111111111111',
- 'digi_read(0xc)': '0b1',
- 'digi_read(0xd)': '0b1111111111111111',
- 'digi_read(0xe)': '0b1111111111111111'}
-5
-{'TriggerCount': 0, 'TriggerCountMatchNumTriggers': 0}
-set_digi_rw   –s 0
- ** Disabling DIGI signals via serial, fiber is used by default.
-(94, 1)
-{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 0}
-^CEnding...
-#+end_src
-#+begin_src                   readSPI                                        
-set_digi_rw -s 1
-readSPI
-(10, 72)
-{'A0': 872,
- 'A1': 996,
- 'A2': 1948,
- 'A3': 980,
- 'ADCSPARE': 0.89,
- 'CALPCBTEMP': 38.99,
- 'CAL_RAIL_1.8V(mV)': '1837.250',
- 'CAL_RAIL_1V(mV)': '1045.625',
- 'CAL_RAIL_2.5V(mV)': '2583.250',
- 'CAL_TEMP(CELSIUS)': '35.9750',
- 'HVPCBTEMP': 36.42,
- 'HV_RAIL_1.8V(mV)': '1839.000',
- 'HV_RAIL_1V(mV)': '1048.000',
- 'HV_RAIL_2.5V(mV)': '2581.625',
- 'HV_TEMP(CELSIUS)': '34.7250',
- 'I1.2': 2.18,
- 'I1.8CAL': 2.23,
- 'I1.8HV': 2.01,
- 'I2.5': 0.83,
- 'I3.3': 0.46,
- 'ICAL5.0': 0.06,
- 'IHV5.0': 0.06,
- 'ROCPCBTEMP': 24.49,
- 'ROC_RAIL_1.8V(mV)': '1827.750',
- 'ROC_RAIL_1V(mV)': '1035.875',
- 'ROC_RAIL_2.5V(mV)': '2570.750',
- 'ROC_TEMP(CELSIUS)': '30.6000',
- 'RTD': 1.74,
- 'V1.0': 1.06,
- 'V1.8CAL': 1.84,
- 'V1.8HV': 1.82,
- 'V2.5': 2.57,
- 'V3.3': 6.59,
- 'V3.3HV': 3.31,
- 'VCAL5.0': 4.87,
- 'VDMBHV5.0': 4.88}
-set_digi_rw -s 0
-#+end_src 
-* ROC channel map (Vadim)                                                    
-  https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
-* 2) on mu2edaq09, configure the ROC to receive data from all 4 lanes        
-#+begin_src
-./srcs/otsdaq_mu2e_tracker/scripts/var_link_config.sh 0 15
-./srcs/otsdaq_mu2e_tracker/scripts/var_read_all.sh 0         # must return register 18 = 0x0f00, ie all DIGIs FIFOs are empty
-#+end_src
-
-    15 = 0x1111 means ROC1/ROC/CAL1/CAL0 lanes are all enabled
-    and clear counters in ROC logic which saw stuff during the -read command)
-* 3) after taking some data requests (dreqs) and before sending next dreqs   
-if the ROC FIFOs are empty (ie ROC R018 returns 0xf0X) are the end of run, just issue:
-
-#+begin_src
-./digi_clear.sh LANE_NO
-#+end_src 
-
-if R018 reads some FIFOs not empty (ie something other than 0xf00), issue 
-
-#+begin_src 
-./rocfifo_clear.sh LINK_NO
-#+end_src 
-
-* 4) helpful DTC counters to read after a run                                
-
-#+begin_src
-   ./DTC_counters.sh
-#+end_src
-
-example of returned info for a run of 1000 events, with no CRC errors, 1 DREQ missed because of EWM on top of DREQ:
-
-#+begin_quote
- #DTCReq: 0x000003e8 sts=0
- #HB:     0x000003f8 sts=0
- #DataHeader: 0x000003e7 sts=0
- #Payloads:   0x000289ea sts=0
- #CRC errors: 0x00000000 sts=0
-#+end_quote
- 
-before next run, clear TDC counters with
-
-#+begin_src
-./DTC_clean.sh
-#+end_src
-
-* 5) annex test stands                                                       
-** Teststand0 is connected to ttuUSB1                                        
-- Power up and down with gpio 25
-- No fiber connected (this can change if we want to)
-- ROC FlashPro S201QNXR6
-- HV DIGI FlashPro:  86129
-- To program use ppd-138181
-** Teststand1 is connected to ttyUSB0                                        
-- Power up and down with gpio 27
-- Fiber 1 connected to DTC 
-- ROC FlashPro: S2001JWC9O
-- CAL DIGI FlashPro: 95232
-- To program use ppd-130027
-** powering up the test stand                                                
-#+begin_src
-gpio mode  27 output         # turn on output mode
-gpio write 27 1              # set pin 27 output level to high
-gpio read  27
-gpio write 27 0              # set output level to low 
-#+end_src
-* 5.5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
-* 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
-* 6) VST data format                                                         
-
-- 8x32-bit words OR 256 bits per hit (ie two DTC packets)
-- hit data format: 3 words of  timestamp  +  5 words of payload 
-- the first 16 bit of the timestamp contains the channels number (presently there is a bug for HV lanes I believe such that bit[15]=1)
-- the channel to serdes lane mapping is as per attached file
-
-- an example of the DIGIs readout after
-
-read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
-
- - 0x00000000: 0x00d0 0x0000 0x0000 0x0000 0x00c8 0x0000 0x1322 0x0000 : DTC_EventHeader ??? *go figure* 
-     
-    - w0 : 0x00d0 : - total number of bytes 
-    - w1 : 0x0000 : - bit 15-08: valid + subsystem ID + reserved *go figure* 
-                    - bit 07-04: packet type (0x5)
-                    - bit 03-00: ROC link ID
-    - w2 : 0x0000 : - bit 15-11: 000000  
-                    - bit 10-00: packet count *bits or packets - go figure* 
-    - w3 : 0x0000 : - bit 15-08: EWM byte 1, bit 07-00: EWM byte 0 
-    - w4 : 0x00c8 : - bit 15-08: EWM byte 3, bit 07-00: EWM byte 2
-    - w5 : 0x0000 : - bit 15-08: EWM byte 5, bit 07-00: EWM byte 4
-    - w6 : 0x1322 : - bit 15-08: data packet format version                
-                    - bit 07-00: data header status                        
-                        - bit    00 : 1: data present, 0: no data in the event window
-			- bit    01 : 1: ROC didn't receive a heartbit for this window
-			- bit    02 : 1: data corrupt
-			- bit    03 : 1: more data requests queued
-			- bit 04-07 : reserved
-    - w7 : 0x0000 : - bit 15-08: event window mode                         
-                    - bit 07-00: DTC ID
- - 0x00000010: 0x0000 0xff01 0xffff 0xffff 0x0000 0x0000 0x0100 0x0000 : ???
- - 0x00000020: 0x00b0 0x0000 0x1322 0x0000 0x0000 0xff01 0xffff 0xffff : ???    *go figure* 
-    - w0 : 0x00b0 : N(bytes) starting from this point
-    - w1 : 0x0000 : 
-    - w2 : 0x1322 :
-    - w3 : 0x0000 :
-    - w4 : 0x0000 :
-    - w5 : 0xff01 :
-    - w6 : 0xffff :
-    - w7 : 0xffff :
- - 0x00000030: 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000 0x01ee : ???
- - 0x00000040: 0x0090 0x8050 0x0008 0x1322 0x0000 0x0000 0x0055 0x0000 : data header packet  
-    - w0 : 0x0090 : N(bytes) starting from this point
-    - w1 : 0x8050 : 
-    - w2 : 0x0008 : N(packets) with the hit data
-    - w3 : 0x0000 :
-    - w4 : 0x0000 :
-    - w5 : 0xff01 :
-    - w6 : 0xffff :
-    - w7 : 0xffff :
- - 0x00000050: 0x005b 0xb660 0x140b 0xb630 0x040b 0x0041 0xa955 0x155a : hit #1 data (two packets per hit)
- - 0x00000060: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #1 data
- - 0x00000070: 0x002a 0xb66a 0x140b 0xb684 0x040b 0x0041 0xa955 0x155a : hit #2 data 
- - 0x00000080: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #2 data 
- - 0x00000090: 0x00de 0xe2ec 0x1306 0xe2df 0x0406 0x0041 0xa955 0x155a : hit #3 data 
- - 0x000000a0: 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a : hit #3 data 
- - 0x000000b0: 0x00ac 0xe195 0x1406 0xe147 0x0406 0x0041 0x56aa 0x2aa5 : hit #4 data 
- - 0x000000c0: 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 : hit #4 data 
-* 6.5) channel map - sequence in which the channels are supposed to come     
-
-#+begin_src c++ 
-uint8_t hvcal=1; // 1:CAL 2:HV 0:both
-
-uint8_t channel_map[96] = { 
-91,85,79,73,67,61,55,49,
-43,37,31,25,19,13, 7, 1,
-90,84,78,72,66,60,54,48,
-42,36,30,24,18,12, 6, 0,
-93,87,81,75,69,63,57,51,
-45,39,33,27,21,15, 9, 3,
-
-44,38,32,26,20,14, 8, 2,
-92,86,80,74,68,62,56,50,
-47,41,35,29,23,17,11, 5,
-95,89,83,77,71,65,59,53,
-46,40,34,28,22,16,10, 4,
-94,88,82,76,70,64,58,52};
-#+end_src 
-
-- example: CAL lane 0 channel 0: 91 .. 
-- bit 91 = 32+32+27
-- in control_ROC: -C0 -D0 -E08000000
-
-* ------------------------------------------------------------------------------
-* reading SPI from ROOT                                                      
+** reading SPI from ROOT : file:../scripts/read_spi.C                        
 #+begin_src  
 root [0] .L srcs/otsdaq_mu2e_tracker/scripts/read_spi.C 
 root [1] read_spi(2)
@@ -856,6 +407,14 @@ HV_RAIL_2.5V(mV)     :   2582.250
 HV_TEMP(CELSIUS)     :     32.912
 08-27 14:52:00.988754                            DTC.cpp     INFO ~DTC(): DESTRUCTOR
 #+end_src 
+corresponding distance between the two consecutive pulses :
+|-----------------+-----------+-----------|
+| expected (usec) | 16.395014 | 4.1227229 |
+| observed (usec) | 16.394982 | 4.1227156 |
+|-----------------+-----------+-----------|
+
+* ROC channel map (Vadim)                                                    
+  https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file                            
 <2023-12-13 Wed> Monica
