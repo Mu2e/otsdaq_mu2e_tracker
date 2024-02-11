@@ -9,13 +9,16 @@ cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 
 # these are minimum required versions, not the actual product versions
 find_package(cetmodules  3.16.00 REQUIRED)
-find_package(artdaq      3.12.07 REQUIRED)
-find_package(artdaq_core 3.09.16 REQUIRED)
 
 project(otsdaq_mu2e_tracker VERSION 1.03.02)
 
 include(CetCMakeEnv)
 cet_cmake_env()
+#------------------------------------------------------------------------------
+# it looks that these packages should be looked for only after cet_cmake_env
+#------------------------------------------------------------------------------
+find_package(artdaq      3.12.07 REQUIRED)
+find_package(artdaq_core 3.09.16 REQUIRED)
 
 cet_set_compiler_flags(
         DIAGS VIGILANT
