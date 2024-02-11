@@ -35,7 +35,7 @@ void print_buffer(const void* ptr, int nw) {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-void write_roc(int Link, int ROCSleepTime=5000) {
+void roc_write_block(int Link, int ROCSleepTime=5000) {
 
   auto link = DTC_Link_ID(Link);
 
@@ -77,7 +77,7 @@ void write_roc(int Link, int ROCSleepTime=5000) {
 //-----------------------------------------------------------------------------
 // an example of cloning a function
 //-----------------------------------------------------------------------------
-void write_roc_1() {
+void roc_write_block_1() {
 
   DTC dtc(DTC_SimMode_NoCFO,-1,0x1,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(500));

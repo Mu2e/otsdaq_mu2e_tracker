@@ -6,11 +6,11 @@ echo " "
 if [ $# -lt 1 ]; then
     echo "Need LINK argument"
     echo " "
-    exit 2
+    return 2
 elif [ $LINK -lt 0 -o $LINK -gt 5 ]; then
     echo "Bad LINK: range 0 to 5"
     echo " "
-    exit 2
+    return 2
 fi
 
 # disable markers to make DCS commands more robust

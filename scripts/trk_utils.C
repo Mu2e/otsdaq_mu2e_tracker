@@ -11,6 +11,7 @@ int gSleepTimeDTC      =  1000;  // [us]
 int gSleepTimeROC      =  2000;  // [us]
 int gSleepTimeROCReset =  4000;  // [us]
 
+using namespace DTCLib;
 //-----------------------------------------------------------------------------
 void monica_digi_clear(DTCLib::DTC* dtc, int Link = 0) {
 //-----------------------------------------------------------------------------
@@ -61,6 +62,29 @@ void monica_digi_clear(DTCLib::DTC* dtc, int Link = 0) {
 }
 
 //-----------------------------------------------------------------------------
+// reset: write 1 into ROC r14 
+// Link < 0: reset all six ROCs
+//-----------------------------------------------------------------------------
+void reset_roc(int DtcID, int Link) {
+  if (Link >= 0) { 
+    uint mask = 0x1<<4*Link;
+    DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,DtcID,mask,"");
+    auto link = DTCLib::DTC_Link_ID(Link);
+    dtc.WriteROCRegister(link,14,0x01,false,1000); 
+  }
+  else {
+//-----------------------------------------------------------------------------
+// reset all links
+//-----------------------------------------------------------------------------
+    DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,DtcID,0x111111,"");
+    for (int i=0; i<6; i++) {
+      auto link = DTC_Link_ID(i);
+      dtc.WriteROCRegister(link,14,0x01,false,1000); 
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
 // this implements Monica's bash DTC_Reset
 //-----------------------------------------------------------------------------
 void monica_dtc_reset(DTCLib::DTC* Dtc) {
@@ -71,6 +95,18 @@ void monica_dtc_reset(DTCLib::DTC* Dtc) {
   dev->write_register(0x9100,100,0x00008000);
   dev->write_register(0x9118,100,0xffff00ff);
   dev->write_register(0x9118,100,0x00000000);
+}
+
+//-----------------------------------------------------------------------------
+// DTC_softreset should work as reset with the latest versions of the DTC firmware
+// but not with 23090211
+//-----------------------------------------------------------------------------
+void monica_dtc_softreset(DTCLib::DTC* Dtc) {
+
+  mu2edev* dev = Dtc->GetDevice();
+
+  dev->write_register(0x9100,100,0x80000000);
+  dev->write_register(0x9100,100,0x00008000);
 }
 
 //-----------------------------------------------------------------------------
@@ -141,6 +177,72 @@ void print_dtc_registers(DTCLib::DTC* Dtc) {
   rc = dev->read_register(0x91c8,100,&res); printf("0x91c8: debug packet type: 0x%08x\n",res); // expect: 0x00000000
 }
 
+
+//-----------------------------------------------------------------------------
+void print_dtc_counters(int DtcID, int Link) {
+  uint32_t reg, res; 
+  int      rc;
+
+  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,DtcID,0x1<<4*Link,"");
+
+  mu2edev* dev = dtc.GetDevice();
+//-----------------------------------------------------------------------------
+// packet counters
+//-----------------------------------------------------------------------------
+  reg = 0x9630 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(TX DTC data requests                   ): 0x%08x\n",reg,res);
+  reg = 0x9650 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(TX hearbeat packets                    ): 0x%08x\n",reg,res);
+  reg = 0x9670 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX data header packets                 ): 0x%08x\n",reg,res);
+  reg = 0x9690 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX data packets                        ): 0x%08x\n",reg,res);
+//-----------------------------------------------------------------------------
+// ERROR counters
+//-----------------------------------------------------------------------------
+//  reg = 0x9500 + (Link << 2);
+//  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES Character Not In Table Errors): 0x%08x\n",reg,res);
+//  reg = 0x9520 + (Link << 2);
+//  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES Disparity Errors             ): 0x%08x\n",reg,res);
+  reg = 0x9540 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES PRBS Errors                  ): 0x%08x\n",reg,res);
+  reg = 0x9560 + (Link << 2);
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES CRC Errors                   ): 0x%08x\n",reg,res);
+  reg = 0x9590;
+  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(EVB SERDES RX Packet Errors            ): 0x%08x\n",reg,res);
+}
+
+//-----------------------------------------------------------------------------
+// for a given Link
+//-----------------------------------------------------------------------------
+void reset_dtc_counters(int DtcID, int Link, int Print=0) {
+  uint32_t reg, res; 
+  int      rc;
+
+  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,DtcID,0x1<<4*Link,"");
+
+  mu2edev* dev = dtc.GetDevice();
+//-----------------------------------------------------------------------------
+// packet counters
+//-----------------------------------------------------------------------------
+  rc  = dev->write_register(0x9630 + (Link << 2),100,0x1);
+  rc  = dev->write_register(0x9650 + (Link << 2),100,0x1);
+  rc  = dev->write_register(0x9670 + (Link << 2),100,0x1);
+  rc  = dev->write_register(0x9690 + (Link << 2),100,0x1);
+//-----------------------------------------------------------------------------
+// ERROR counters
+//-----------------------------------------------------------------------------
+//  reg = 0x9500 + (Link << 2);
+//  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES Character Not In Table Errors): 0x%08x\n",reg,res);
+//  reg = 0x9520 + (Link << 2);
+//  rc  = dev->read_register(reg,100,&res); printf("0x%04x: N(RX SERDES Disparity Errors             ): 0x%08x\n",reg,res);
+
+  rc  = dev->write_register(0x9540+(Link << 2),100,0x1);
+  rc  = dev->write_register(0x9560+(Link << 2),100,0x1);
+  rc  = dev->write_register(0x9590            ,100,0x1);
+
+  if (Print != 0) print_dtc_counters(DtcID,Link);
+}
 
 //-----------------------------------------------------------------------------
 void print_roc_registers(DTCLib::DTC* Dtc, DTCLib::DTC_Link_ID RocID, const char* Header) {
