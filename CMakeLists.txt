@@ -7,7 +7,10 @@
 # ======================================================================
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 
-find_package(cetmodules 3.16.00 REQUIRED)
+# these are minimum required versions, not the actual product versions
+find_package(cetmodules  3.16.00 REQUIRED)
+find_package(artdaq      3.12.07 REQUIRED)
+find_package(artdaq_core 3.09.16 REQUIRED)
 
 project(otsdaq_mu2e_tracker VERSION 1.03.02)
 
@@ -28,31 +31,6 @@ cet_set_compiler_flags(
 
 #cet_report_compiler_flags()
 
-# these are minimum required versions, not the actual product versions
-find_package(artdaq      3.12.07 REQUIRED)
-find_package(artdaq_core 3.09.16 REQUIRED)
-#------------------------------------------------------------------------------
-# XDAQ Extra setup
-#------------------------------------------------------------------------------x
-include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
-link_directories($ENV{XDAQ_LIB})
-
-message(>>> OTSDAQ_MU2E_TRACKER: XDAQ_INC=$ENV{XDAQ_INC})
-
-link_directories($ENV{XDAQ_LIB})
-
-set(XDAQ_BASIC_LIB_LIST 
-   log4cplus
-   executive
-   xcept
-   xoap
-   xdaq
-   toolbox
-   xerces-c
-   cgicc
- )
- set(XDAQ_XERCES-C xerces-c)
-
 #string(REGEX MATCHALL "[0-9][0-9]?[0-9]?" ART_VERSION_LIST "$ENV{ART_VERSION}")
 #list(GET ART_VERSION_LIST 0 ART_MAJOR_VERSION)
 #list(GET ART_VERSION_LIST 1 ART_MINOR_VERSION)
@@ -72,11 +50,6 @@ add_subdirectory(otsdaq-mu2e-tracker)
 
 # Test Programs
 #add_subdirectory(test)
-
-# Documentation (to comment out if not needed DOXYGEN locally)
-if( $ENV{OTS_DOXY} MATCHES "DOIT" )
-	add_subdirectory(doc)
-endif()
 
 # Data
 #FILE(COPY ConfigurationDataExamples DESTINATION Data)
