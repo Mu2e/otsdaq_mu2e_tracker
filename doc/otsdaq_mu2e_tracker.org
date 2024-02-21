@@ -415,6 +415,8 @@ corresponding distance between the two consecutive pulses :
 
 * ROC channel map (Vadim)                                                    
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
+* known DRAC boards                                                          
+** [[file:roc_id_1b561.org][ROC ID: 1b561]] : <2024-02-15 Thu> currently installed at TS1               
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file                            
 <2023-12-13 Wed> Monica

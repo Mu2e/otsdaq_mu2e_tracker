@@ -1,0 +1,12 @@
+#+startup:fold   
+
+<2024-02-15 Thu>                                       
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52eb0a',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x1b561170e1a31d8ce76538eff83552dc'}
+
+('DRAC ROC ID #', '1b561')
+* 
