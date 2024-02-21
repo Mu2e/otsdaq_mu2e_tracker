@@ -37,16 +37,17 @@ readDeviceID
 ('DRAC ROC ID #', '5a71c')
 #+end_src
 ** readSPI : no parameters
-** set_digi_rw                                                              
+** set_digi_rw                                                               
     set_digi_rw -s 1 : enable  commands over the serial connection
     set_digi_rw -s 0 : disable commands over the serial connection
-** rates [-c channel]
+** rates [-c channel]                                                        
     - if channel is not specified, all channels
     - rates -c 91 : rate in the channel # 91
-** read                    
+** read                                                                      
     - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
    
-    -m 3   : mode  ... need -m 3 for internal pulser
+    -m 3   : mode  ... need -m 3 for internal pulser 
+    -l 8   : defines the look-back number of ADC samples for the waveform readout (may want to set to 0) 
     -p 0/1 : 0: 
     -t     : triggering 
     channels go as follows -C : first 32, -D : next 32, -E: last 32
@@ -248,6 +249,7 @@ readSPI
 set_digi_rw -s 0
 #+end_src 
 
+* ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
@@ -269,6 +271,8 @@ Ctrl-C
    - thresholds - around 400
 #+begin_src 
 python3 diagnostic.py -m L -f settings_pasha.dat -p /dev/ttyUSB2
+# or , if one neeeds to adjust the thresholds
+python3 diagnostic.py -m V -tv 30 -f settings_pasha_002.dat -p /dev/ttyUSB0
 #+end_src
 
 ** 3) login back to control_ROC, measure thresholds, set pulser              
@@ -283,13 +287,14 @@ pulser_on -c 4 -d 1000 -y 200
 # Of course, there will be cross talk, so other channels will show, 
 # but that can be easily rejected offline. 
 # next - read rates, check that the right channels have pulses in them
-read -m 0
+read -p 0
 rates
 #
 # '-s 2' - two ADC packets
 #
 read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C FFFF -D 0 -E 0
-read -a 0 -t 3 -s 2 -l 8 -T 10 -m 3 -p 0 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+read -a 0 -t 3 -s 2 -l 0 -T 10 -m 3 -p 0 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
+read -a 0 -t 3 -s 2 -l 0 -T 10 -m 3 -p 0 -C FFFF -D 0 -E 0
 #+end_src 
 ** -- from trackerpi5:/home/mu2e/vrusu-dev/trackerScripts/mu2e_roc.hist      
 - to generate 2 ADC packets use '-s2' 
