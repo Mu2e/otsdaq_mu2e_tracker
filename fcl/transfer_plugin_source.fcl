@@ -1,0 +1,73 @@
+# -*- mode:tcl -*-
+#------------------------------------------------------------------------------
+TransferPluginConfig: {
+    transferPluginType : TCPSocket
+    host_map           : [
+                          { rank:100 host: "localhost"},   ## tracker DQM - doesn't matter ?
+                          { rank:  3 host: "localhost"},   ## dispatcher01
+                          { rank:  2 host: "localhost"},   ## datalogger01
+                          { rank:  1 host: "localhost"},   ## eventbuilder01
+                          { rank:  0 host: "localhost"}    ## boardreader01
+                         ]
+    
+    max_fragment_size_words : 1048576
+    source_rank             : 3          ## dispatcher
+    destination_rank        : 100        ## DQM client
+}
+
+source: {
+    module_type         : TransferInput
+    dispatcherHost      : "localhost"
+    dispatcherPort      : 10500   ## 18103, 18500 was OK         ## dispatcher01 port number is declared explicitly
+    commanderPluginType : xmlrpc
+    transfer_plugin     : @local::TransferPluginConfig 
+#------------------------------------------------------------------------------
+# dispatcher_config seems to be the part sent to the server
+#------------------------------------------------------------------------------
+    dispatcher_config: {
+        path         : [dispatcherTransferOutput]
+        filter_paths : [ ]
+        unique_label : "DQMClient01"  ## this is the one to be renamed
+        services: {
+            ArtdaqSharedMemoryServiceInterface: { service_provider: ArtdaqSharedMemoryService 
+                waiting_time        : 100
+                resume_after_timeout: false
+            }
+
+            ArtdaqFragmentNamingServiceInterface: { service_provider: ArtdaqFragmentNamingService
+                helper_plugin: Mu2e
+            }
+
+            ArtdaqSharedMemoryServiceInterface : { service_provider : ArtdaqSharedMemoryService }
+        }
+
+        outputs: {
+            dumpOutput: { module_type : FileDumperOutput
+                wantProductFriendlyClassName : true
+            }
+
+            dispatcherTransferOutput: { module_type: TransferOutput
+                transfer_plugin: @local::TransferPluginConfig 
+            }
+        }
+
+        physics: {
+            filters: {
+                prescaler: {
+                    module_type    : Prescaler
+                    prescaleFactor : 100
+                    prescaleOffset :   0
+                }
+            }
+
+            dispatcher_path        : [ prescaler ]
+            out                    : [ dispatcherTransferOutput, dumpOutput ]
+        }
+
+        source: {
+            module_type: ArtdaqInput
+        }
+
+        process_name: DispatcherArtJob
+    }
+}

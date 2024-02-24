@@ -34,6 +34,10 @@
 
 using namespace DTCLib;
 
+#include "xmlrpc-c/config.h"  /* information about this build environment */
+#include <xmlrpc-c/base.h>
+#include <xmlrpc-c/client.h>
+
 namespace mu2e {
   class TrackerVST : public artdaq::CommandableFragmentGenerator {
 
@@ -67,6 +71,8 @@ namespace mu2e {
 		int                                   _heartbeatInterval;
     int                                   _dtcId;
     std::vector<int>                      _activeLinks;            // active links - connected ROCs
+    std::string                           _tfmHost;                // used to send xmlrpc messages to
+
     uint                                  _rocMask;
     int                                   _sleepTimeMs;            // introduce sleep time (ms) to throttle the input event rate
     int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
@@ -80,7 +86,8 @@ namespace mu2e {
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
-    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; 101:simulate data internally, DTC not used; default:0
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern; 
+                                                                   // 101:simulate data internally, DTC not used; default:0
     			                  
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
@@ -90,6 +97,7 @@ namespace mu2e {
 
     uint16_t                              _reg[200];               // DTC registers to be saved
     int                                   _nreg;                   // their number
+    xmlrpc_env                            _env;                    // XML-RPC environment
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -118,6 +126,11 @@ namespace mu2e {
 
     void print_dtc_registers(DTC* Dtc, const char* Header);
     void printBuffer        (const void* ptr, int sz);
+//-----------------------------------------------------------------------------
+// try follow Simon ... perhaps one can improve on bool? 
+// also do not pass strings by value
+//-----------------------------------------------------------------------------
+    int  message(const std::string& msg_type, const std::string& message);
 //-----------------------------------------------------------------------------
 // clones of Monica's scripts
 //-----------------------------------------------------------------------------
@@ -180,8 +193,7 @@ std::vector<uint16_t> mu2e::TrackerVST::fragmentIDs() {
 //-----------------------------------------------------------------------------
 // sim_mode="N" means real DTC 
 //-----------------------------------------------------------------------------
-mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : 
-  CommandableFragmentGenerator(ps)
+mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : CommandableFragmentGenerator(ps)
   , fragment_type_     (toFragmentType("MU2E"))
   , timestamps_read_   (0)
   , lastReportTime_    (std::chrono::steady_clock::now())
@@ -200,6 +212,7 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _heartbeatInterval (ps.get<int>                     ("heartbeatInterval"                  ))
   , _dtcId             (ps.get<int>                     ("dtcId"                 ,          -1)) 
   , _activeLinks       (ps.get<std::vector<int>>        ("activeLinks"                        )) 
+  , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
   , _sleepTimeMs       (ps.get<int>                     ("sleepTimeMs"           ,          -1))  // 0   milliseconds
   , _sleepTimeDMA      (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
   , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
@@ -212,161 +225,183 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) :
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
   , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           1))  // 
-
-  {
+{
     
-    TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR (1) readData:" << _readData;
-    printf("TrackerVST::TrackerVST readData=%i\n",_readData);
+  TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR (1) readData:" << _readData;
+  printf("TrackerVST::TrackerVST readData=%i\n",_readData);
 //-----------------------------------------------------------------------------
 // _sim_mode can still be overridden by environment var $DTCLIB_SIM_ENABLE 
 // the sim mode conversion is non-trivial
 //-----------------------------------------------------------------------------
-    _nActiveLinks = _activeLinks.size();
-    _rocMask      = 0;
-    for (int i=0; i<_nActiveLinks; i++) {
-      int link = _activeLinks[i];
-      _rocMask |= (1 << 4*link);
-    }
+  _nActiveLinks = _activeLinks.size();
+  _rocMask      = 0;
+  for (int i=0; i<_nActiveLinks; i++) {
+    int link = _activeLinks[i];
+    _rocMask |= (1 << 4*link);
+  }
 
-    _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
-    _sim_mode = _dtc->GetSimMode();
-    _device   = _dtc->GetDevice();
+  _dtc      = new DTC(_sim_mode,_dtcId,_rocMask,"",false,_simFileName);
+  _sim_mode = _dtc->GetSimMode();
+  _device   = _dtc->GetDevice();
     
-    TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
+  TLOG(TLVL_INFO) << "The DTC Firmware version string is: " << _dtc->ReadDesignVersion();
 //-----------------------------------------------------------------------------
 // initialize the CFO emulator
 //-----------------------------------------------------------------------------
-    fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
+  fhicl::ParameterSet cfoConfig = ps.get<fhicl::ParameterSet>("cfo_config", fhicl::ParameterSet());
     
-    bool          use_dtc_cfo_emulator = cfoConfig.get<bool>       ("use_dtc_cfo_emulator", true );
-    size_t        debug_packet_count   = cfoConfig.get<size_t>     ("debug_packet_count"  , 0);
-    std::string   dbtype               = cfoConfig.get<std::string>("debug_type"          , "DTC_DebugType_SpecialSequence");   // default was set to "2"
-    DTC_DebugType debug_type           = DTC_DebugTypeConverter::ConvertToDebugType(dbtype);
-    bool          sticky_debug_type    = cfoConfig.get<bool>       ("sticky_debug_type"   , true );  // what is this ?
-    bool          quiet                = cfoConfig.get<bool>       ("quiet"               , true );
-    bool          asyncRR              = cfoConfig.get<bool>       ("asyncRR"             , true );  // default was false
-    bool          force_no_debug_mode  = cfoConfig.get<bool>       ("force_no_debug_mode" , true );  // sets a bit written to the DTC register
-    bool          useCFODRP            = cfoConfig.get<bool>       ("useCFODRP"           , false);  // defaults to false
+  bool          use_dtc_cfo_emulator = cfoConfig.get<bool>       ("use_dtc_cfo_emulator", true );
+  size_t        debug_packet_count   = cfoConfig.get<size_t>     ("debug_packet_count"  , 0);
+  std::string   dbtype               = cfoConfig.get<std::string>("debug_type"          , "DTC_DebugType_SpecialSequence");   // default was set to "2"
+  DTC_DebugType debug_type           = DTC_DebugTypeConverter::ConvertToDebugType(dbtype);
+  bool          sticky_debug_type    = cfoConfig.get<bool>       ("sticky_debug_type"   , true );  // what is this ?
+  bool          quiet                = cfoConfig.get<bool>       ("quiet"               , true );
+  bool          asyncRR              = cfoConfig.get<bool>       ("asyncRR"             , true );  // default was false
+  bool          force_no_debug_mode  = cfoConfig.get<bool>       ("force_no_debug_mode" , true );  // sets a bit written to the DTC register
+  bool          useCFODRP            = cfoConfig.get<bool>       ("useCFODRP"           , false);  // defaults to false
 
-    _cfo = new DTCSoftwareCFO(_dtc                ,
-                              use_dtc_cfo_emulator,
-                              debug_packet_count  ,
-                              debug_type          ,
-                              sticky_debug_type   ,
-                              quiet               ,
-                              asyncRR             ,
-                              force_no_debug_mode ,
-                              useCFODRP           );
+  _cfo = new DTCSoftwareCFO(_dtc                ,
+                            use_dtc_cfo_emulator,
+                            debug_packet_count  ,
+                            debug_type          ,
+                            sticky_debug_type   ,
+                            quiet               ,
+                            asyncRR             ,
+                            force_no_debug_mode ,
+                            useCFODRP           );
 //-----------------------------------------------------------------------------
 // P.M. not sure I fully understand the logic below, take the DTC reset out 
 //-----------------------------------------------------------------------------
-    if (_loadSimFile) {
-      _dtc->SetDetectorEmulatorInUse();
-      _dtc->ResetDDR();
-      _dtc->SoftReset();
-      
-      if (_simFileName.size() > 0) {
-				simFileRead_ = false;
-				std::thread reader(&mu2e::TrackerVST::readSimFile_,this,_simFileName);
-				reader.detach();
-      }
+  if (_loadSimFile) {
+    _dtc->SetDetectorEmulatorInUse();
+    _dtc->ResetDDR();
+    _dtc->SoftReset();
+    
+    if (_simFileName.size() > 0) {
+      simFileRead_ = false;
+      std::thread reader(&mu2e::TrackerVST::readSimFile_,this,_simFileName);
+      reader.detach();
     }
-    else {
-      _dtc->ClearDetectorEmulatorInUse();  // Needed if we're doing ROC Emulator...
-			// make sure Detector Emulation is disabled
-      simFileRead_ = true;
-    }
-    if (_rawOutputEnable) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
-
-    for (int i=0; i<_nActiveLinks; i++) {
-      monica_digi_clear     (_dtc,_activeLinks[i]);
-
-      if      (_readoutMode == kReadDigis  ) monica_var_link_config   (_dtc,_activeLinks[i]);
-      else if (_readoutMode == kReadPattern) monica_var_pattern_config(_dtc,_activeLinks[i]);
-    }
+  }
+  else {
+    _dtc->ClearDetectorEmulatorInUse();  // Needed if we're doing ROC Emulator...
+    // make sure Detector Emulation is disabled
+    simFileRead_ = true;
+  }
+  if (_rawOutputEnable) rawOutputStream_.open(rawOutputFile_, std::ios::out | std::ios::app | std::ios::binary);
+  
+  for (int i=0; i<_nActiveLinks; i++) {
+    monica_digi_clear     (_dtc,_activeLinks[i]);
+    
+    if      (_readoutMode == kReadDigis  ) monica_var_link_config   (_dtc,_activeLinks[i]);
+    else if (_readoutMode == kReadPattern) monica_var_pattern_config(_dtc,_activeLinks[i]);
+  }
 //-----------------------------------------------------------------------------
 // DTC registers to save - zero those labeled as counters at begin run ! 
 //-----------------------------------------------------------------------------
-    uint16_t reg[] = { 
-      0x9004, 0,
-      0x9100, 0, 
-      0x9140, 0,
-      0x9144, 0, 
-      0x9158, 0,
-      0x9188, 0,
-      0x9190, 1,   // bits 7-0 could be ignored, 
-      0x9194, 1,   // bits 23-16 could be ignored 
-      0x9198, 1,
-      0x919c, 1,
-      0x91a8, 0,
-      0x91ac, 0,
-      0x91bc, 0,
-      0x91c0, 0,
-      0x91c4, 0,
-      0x91c8, 0,
-      0x91f4, 0,
-      0x91f8, 0,
-      0x9374, 1,
-      0x9378, 1,
-      0x9380, 1,    // Link 0 Error Flags
-      0x9384, 1,    // Link 1 Error Flags
-      0x9388, 1,    // Link 2 Error Flags
-      0x93b0, 1,
-      0x93b4, 1,
-      0x93b8, 1,
-      0x93d0, 1,   // CFO Link EventStart Character Error Count
-      0x93d8, 1,   // Input Buffer Fragment Dump Count
-      0x93dc, 1,   //  Output Buffer Fragment Dump Count
-      0x93e0, 0,
-      0x9560, 1,   // SERDES RX CRC Error Count Link 0
-      0x9564, 1,   // SERDES RX CRC Error Count Link 1
-      0x9568, 1,   // SERDES RX CRC Error Count Link 2
-      0x9630, 1,   // TX Data Request Packet Count Link 0
-      0x9634, 1,   // TX Data Request Packet Count Link 1
-      0x9638, 1,   // TX Data Request Packet Count Link 2
-      0x9650, 1,   // TX Heartbeat Packet Count Link 0
-      0x9654, 1,   // TX Heartbeat Packet Count Link 1
-      0x9658, 1,   // TX Heartbeat Packet Count Link 2
-      0x9670, 1,   // RX Data Header Packet Count Link 0
-      0x9674, 1,   // RX Data Header Packet Count Link 1
-      0x9678, 1,   // RX Data Header Packet Count Link 2
-      0x9690, 1,   // RX Data Packet Count Link 0                             //  link 2 reset - write 0
-      0x9694, 1,   // RX Data Packet Count Link 1                             //  link 2 reset - write 0
-      0x9698, 1,   // RX Data Packet Count Link 2                             //  link 2 reset - write 0
+  uint16_t reg[] = { 
+    0x9004, 0,
+    0x9100, 0, 
+    0x9140, 0,
+    0x9144, 0, 
+    0x9158, 0,
+    0x9188, 0,
+    0x9190, 1,   // bits 7-0 could be ignored, 
+    0x9194, 1,   // bits 23-16 could be ignored 
+    0x9198, 1,
+    0x919c, 1,
+    0x91a8, 0,
+    0x91ac, 0,
+    0x91bc, 0,
+    0x91c0, 0,
+    0x91c4, 0,
+    0x91c8, 0,
+    0x91f4, 0,
+    0x91f8, 0,
+    0x9374, 1,
+    0x9378, 1,
+    0x9380, 1,    // Link 0 Error Flags
+    0x9384, 1,    // Link 1 Error Flags
+    0x9388, 1,    // Link 2 Error Flags
+    0x93b0, 1,
+    0x93b4, 1,
+    0x93b8, 1,
+    0x93d0, 1,   // CFO Link EventStart Character Error Count
+    0x93d8, 1,   // Input Buffer Fragment Dump Count
+    0x93dc, 1,   //  Output Buffer Fragment Dump Count
+    0x93e0, 0,
+    0x9560, 1,   // SERDES RX CRC Error Count Link 0
+    0x9564, 1,   // SERDES RX CRC Error Count Link 1
+    0x9568, 1,   // SERDES RX CRC Error Count Link 2
+    0x9630, 1,   // TX Data Request Packet Count Link 0
+    0x9634, 1,   // TX Data Request Packet Count Link 1
+    0x9638, 1,   // TX Data Request Packet Count Link 2
+    0x9650, 1,   // TX Heartbeat Packet Count Link 0
+    0x9654, 1,   // TX Heartbeat Packet Count Link 1
+    0x9658, 1,   // TX Heartbeat Packet Count Link 2
+    0x9670, 1,   // RX Data Header Packet Count Link 0
+    0x9674, 1,   // RX Data Header Packet Count Link 1
+    0x9678, 1,   // RX Data Header Packet Count Link 2
+    0x9690, 1,   // RX Data Packet Count Link 0                             //  link 2 reset - write 0
+    0x9694, 1,   // RX Data Packet Count Link 1                             //  link 2 reset - write 0
+    0x9698, 1,   // RX Data Packet Count Link 2                             //  link 2 reset - write 0
 //-----------------------------------------------------------------------------
 // 2023-09-14 - new counters by Rick - in DTC2023Sep02_22_22.1
 //-----------------------------------------------------------------------------
-      0x9720, 1,   // rxlink0           
-      0x9724, 1,   // rxlink1           
-      0x9728, 1,   // rxlink2           
-      0x972C, 1,   // rxlink3           
-      0x9730, 1,   // rxlink4           
-      0x9734, 1,   // rxlink5           
-      0x9740, 1,   // rxinputbufferin   
-      0x9744, 1,   // DDRWrite          
-      0x9748, 1,   // DDRRead           
-      0x974C, 1,   // DMAtoPCI          
-      
-      0xffff
-    };
+    0x9720, 1,   // rxlink0           
+    0x9724, 1,   // rxlink1           
+    0x9728, 1,   // rxlink2           
+    0x972C, 1,   // rxlink3           
+    0x9730, 1,   // rxlink4           
+    0x9734, 1,   // rxlink5           
+    0x9740, 1,   // rxinputbufferin   
+    0x9744, 1,   // DDRWrite          
+    0x9748, 1,   // DDRRead           
+    0x974C, 1,   // DMAtoPCI          
+    
+    0xffff
+  };
 
-    _nreg = 0;
-    int i = 0;
-    do {
-      ushort r    = reg[2*i  ];
-      int    flag = reg[2*i+1];
+  _nreg = 0;
+  int i = 0;
+  do {
+    ushort r    = reg[2*i  ];
+    int    flag = reg[2*i+1];
 //-----------------------------------------------------------------------------
 // flag=1 : a counter, reset counters
 // according to Rick, to clear a counter one writes 0xffffffff to it
 //-----------------------------------------------------------------------------
-      if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
-      _reg[_nreg] = r;
-      _nreg += 1;
-      i     += 1;
-    } while (reg[2*i] != 0xffff) ;
+    if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
+    _reg[_nreg] = r;
+    _nreg += 1;
+    i     += 1;
+  } while (reg[2*i] != 0xffff) ;
+  
+  TLOG(TLVL_INFO+10) << "N DTC registers to save: " << _nreg;
+//-----------------------------------------------------------------------------
+// finally, initialize the environment for the XML-RPC messaging client
+//-----------------------------------------------------------------------------
+  xmlrpc_client_init(XMLRPC_CLIENT_NO_FLAGS, "debug", "v1_0");
+  xmlrpc_env_init(&_env);
+}
 
-    TLOG(TLVL_INFO) << "N DTC registers to save: " << _nreg;
+//-----------------------------------------------------------------------------
+// let the boardreader send messages back to the TFM and report problems 
+// so far, make the TFM hist a talk-to parameter
+// GetPartitionNumber() is an artdaq global function - see artdaq/artdaq/DAQdata/Globals.hh
+//-----------------------------------------------------------------------------
+int mu2e::TrackerVST::message(const std::string& msg_type, const std::string& message) {
+    
+  auto _xmlrpcUrl = "http://" + _tfmHost + ":" + std::to_string((10000 +1000 * GetPartitionNumber()))+"/RPC2";
+
+  xmlrpc_client_call(&_env, _xmlrpcUrl.data(), "message","(ss)", msg_type.data(), 
+                     (artdaq::Globals::app_name_+":"+message).data());
+  if (_env.fault_occurred) {
+    TLOG(TLVL_ERROR) << "XML-RPC rc=" << _env.fault_code << " " << _env.fault_string;
+    return -1;
   }
+  return 0;
+}
 
 //-----------------------------------------------------------------------------
 void mu2e::TrackerVST::readSimFile_(std::string sim_file) {
@@ -596,6 +631,13 @@ int mu2e::TrackerVST::readData(artdaq::Fragment* Frag) {
       }
     }
   }
+  else {
+//-----------------------------------------------------------------------------
+// ERROR: read zero bytes
+//-----------------------------------------------------------------------------
+    TLOG(TLVL_ERROR) << "zero length read, event:" << ev_counter();
+    message("alarm", "TrackerVST::ReadData::ERROR event="+std::to_string(ev_counter())+" nbytes=0") ;
+  }
 
   int print_event = (ev_counter() % _printFreq) == 0;
   if (print_event) {
@@ -655,12 +697,6 @@ int mu2e::TrackerVST::readData(artdaq::Fragment* Frag) {
 
 //-----------------------------------------------------------------------------
 bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
-//-----------------------------------------------------------------------------
-// throttle the input rate
-//-----------------------------------------------------------------------------
-  if (_sleepTimeMs > 0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(_sleepTimeMs));
-  }
 //-----------------------------------------------------------------------------
 // read data
 // ----------
@@ -828,6 +864,17 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   bool rc(true);
 
   TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "STARTING";
+
+  if (ev_counter() == 1) {
+    std::string msg = "TrackerVST::getNext: " + std::to_string(ev_counter());
+    message("info",msg);
+  }
+//-----------------------------------------------------------------------------
+// throttle the input rate
+//-----------------------------------------------------------------------------
+  if (_sleepTimeMs > 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(_sleepTimeMs));
+  }
 
   if (should_stop()) return false;
 

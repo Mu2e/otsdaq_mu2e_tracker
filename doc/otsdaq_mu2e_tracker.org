@@ -417,6 +417,19 @@ corresponding distance between the two consecutive pulses :
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
 * known DRAC boards                                                          
 ** [[file:roc_id_1b561.org][ROC ID: 1b561]] : <2024-02-15 Thu> currently installed at TS1               
+* TS0, TS1, TS2
+** TS1: baud rate claimed to be 57600
+<2024-02-23 Fri> 
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52840a',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x1b561170e1a31d8ce76538eff83552dc'}
+
+('DRAC ROC ID #', '1b561')
+
+** TS2: baud rate 115200
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file                            
 <2023-12-13 Wed> Monica
