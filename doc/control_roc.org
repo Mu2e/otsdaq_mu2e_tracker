@@ -282,6 +282,8 @@ measure_thresholds
 # (this should show the CAL thresholds (third column) about between
 # 17-20mV ? there is one channel 28 that is nor working)
 pulser_on -c 4 -d 1000 -y 200
+# -d 1000 50kHz , -d 10000 - 5kHz
+# -y 200 : about 4 us, -y 10 : 200ns 
 # Charge injection works in modulo 8. In other words, '-c 0' will pulse channels 0,8,16,etc. 
 # In the example above, -c 4 will pulse channels 4, 12,20, etc. 
 # Of course, there will be cross talk, so other channels will show, 

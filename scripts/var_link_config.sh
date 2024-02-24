@@ -11,7 +11,6 @@ USE_LANE=$2
 #------------------------------------------------------------------------------
 # USE_LANE is a bit code 
 #------------------------------------------------------------------------------
-
 # disable markers to make DCS commands more robust : my_cntl write 0x91a8 0x0
 # ./ewm_disable.sh
 my_cntl write 0x91a8 0x0
