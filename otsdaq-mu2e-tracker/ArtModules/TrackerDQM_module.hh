@@ -52,6 +52,7 @@ class TrackerDQM : public art::EDAnalyzer {
       fhicl::Atom<int>             timeWindow             {Name("timeWindow"        )    , Comment("time window, 25 ns ticks"   ) };
       fhicl::Atom<int>             nSamplesBL             {Name("nSamplesBL"        )    , Comment("N(baseline samples)"        ) };
       fhicl::Atom<float>           minPulseHeight         {Name("minPulseHeight"    )    , Comment("min pulse over threshold"   ) };
+      fhicl::Sequence<int>         plotWaveforms          {Name("plotWaveforms"     )    , Comment("[link, channel]"            ) };
     };
 
                                         // TODO use constants from StrawID
@@ -61,8 +62,20 @@ class TrackerDQM : public art::EDAnalyzer {
     kNPanelsPerPlane    =  6,
     kNChannels          = 96,
     kMaxNLinks          =  6,
-    kMaxNHitsPerChannel = 15   
+    kMaxNHitsPerChannel = 15,
+    kMaxNSamples        = 30
   };
+
+  enum {
+    kNBytesErrorBit     = 0x0001,
+    kNWfsErrorBit       = 0x0002,
+    kLinkIDErrorBit     = 0x0004,  // link ID error bit
+    kChIDErrorBit       = 0x0008,
+    kNChHitsErrorBit    = 0x0010,
+
+    kNErrorBits         = 5
+  };
+
 //-----------------------------------------------------------------------------
 // per-channel histograms
 //-----------------------------------------------------------------------------
@@ -98,6 +111,12 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         nhits;
     TH1F*         fsize;
     TH1F*         error;
+    TH1F*         error_rate;
+    TH1F*         n_nb_errors;
+    TH1F*         n_nwfs_errors;
+    TH1F*         n_linkid_errors;
+    TH1F*         n_chid_errors;
+    TH1F*         n_nchh_errors;
     TH1F*         valid;
   };
 
@@ -118,6 +137,8 @@ class TrackerDQM : public art::EDAnalyzer {
                                         // each TDC separately
     TH1F*         dt0r01;
     TH1F*         dt1r01;
+
+    TH1F*         sum_error_vs_ch;
 
     TH2F*         dt0rc_vs_ch[2];
     TH2F*         dt1rc_vs_ch[2];
@@ -145,6 +166,12 @@ class TrackerDQM : public art::EDAnalyzer {
     float ph;                         // pulse height
     float q;                          // Q(positive)
     float qt;                         // Q(tail)
+  };
+
+  struct PlotWaveform_t {
+    int station;
+    int link;
+    int channel;
   };
 
   struct DtcDMAPacket_t {              // 2 16-byte words
@@ -179,6 +206,7 @@ class TrackerDQM : public art::EDAnalyzer {
   };
 
   struct ChannelData_t {
+    int      error;                    // 1:filled up
     int      nhits;
     float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
     float    dt1r;                     // time dist btw this channel and an FPGA reference channel, TDC1, ns
@@ -213,6 +241,12 @@ class TrackerDQM : public art::EDAnalyzer {
     int       nfrag;
     int       valid;
     int       error;
+    int       n_nb_errors;     // 0x01 : wrong event size
+    int       n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
+    int       n_linkid_errors; // 0x04 : hit reported wrond channel ID
+    int       n_chid_errors;   // 0x08 : hit reported wrond channel ID
+    int       n_nchh_errors;   // 0x10 : too many hits in one channel
+
     RocData_t rdata[kNStations][kNPlanesPerStation][kMaxNLinks];
     
     std::vector<FragmentData_t> fragments;
@@ -242,6 +276,7 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _nSamplesBL;
   float            _minPulseHeight;
   int              _port;               // http://localhost:port serves histograms
+  std::vector<int> _plotWaveforms;
 //-----------------------------------------------------------------------------
 // the rest
 //-----------------------------------------------------------------------------
@@ -261,6 +296,7 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _initialized;    // histograms are booked in beginRun, protect ...
 
   Hist_t           _hist;
+  PlotWaveform_t   _plot_wf;
   
   art::ServiceHandle<art::TFileService> tfs;
 
