@@ -1,0 +1,19 @@
+#+startup:fold   
+
+<2024-02-25 Sun>                                       
+mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 2
+SERIALRATE= 115200
+Waiting for ARM to connect
+==========================
+('Connected to ARM on', '/dev/ttyUSB1')
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f523d42',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x805d653a1e62bc2ea2257c13224ecbef'}
+
+('DRAC ROC ID #', '805d6')
+* ------------------------------------------------------------------------------
+* back to [[file:otsdaq_mu2e_tracker.org]]
+* ------------------------------------------------------------------------------

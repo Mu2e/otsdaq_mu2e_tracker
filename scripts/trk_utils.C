@@ -85,7 +85,7 @@ void reset_roc(int DtcID, int Link) {
 }
 
 //-----------------------------------------------------------------------------
-// this implements Monica's bash DTC_Reset
+// this implements Monica's bash DTC_Reset (Hard Reset)
 //-----------------------------------------------------------------------------
 void monica_dtc_reset(DTCLib::DTC* Dtc) {
 
@@ -110,7 +110,7 @@ void monica_dtc_softreset(DTCLib::DTC* Dtc) {
 }
 
 //-----------------------------------------------------------------------------
-void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
+void monica_var_link_config_old(DTCLib::DTC* dtc, int Link = 0) {
   mu2edev* dev = dtc->GetDevice();
 
   auto link = DTCLib::DTC_Link_ID(Link);
@@ -136,6 +136,50 @@ void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
 
   dtc->WriteROCRegister(link,29,0x0001,false,1000);        // configure ROC to read all 4 lanes
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+}
+
+//-----------------------------------------------------------------------------
+// Link = -1: configure all 6 ROCs
+//-----------------------------------------------------------------------------
+void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
+  mu2edev* dev = dtc->GetDevice();
+
+  if ((Link >= 0) and (Link < 6)) { 
+    auto link = DTCLib::DTC_Link_ID(Link);
+
+  // dev->write_register(0x91a8,100,0);
+  // std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeDTC));
+
+  // dtc->WriteROCRegister(link,14,     1,false,1000);              // reset ROC
+  // std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+
+  // dtc->WriteROCRegister(link, 8,0x030f,false,1000);             // configure ROC to read all 4 lanes
+  // std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
+  // added register for selecting kind of data to report in DTC status bits
+  // Use with pattern data. Set to zero, ie STATUS=0x55, when taking DIGI data 
+  // rocUtil -a 30  -w 0  -l $LINK write_register > /dev/null
+
+  // dtc->WriteROCRegister(link,30,0x0000,false,1000);        // configure ROC to read all 4 lanes
+  // std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+//-----------------------------------------------------------------------------
+// echo "Setting packet format version to 1"
+//-----------------------------------------------------------------------------
+  // rocUtil -a 29  -w 1  -l $LINK write_register > /dev/null
+
+    dtc->WriteROCRegister(link,29,0x0001,false,1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+  }
+  else if (Link == -1) {
+    for (int i=0; i<6; i++) {
+      auto link = DTCLib::DTC_Link_ID(i);
+      dtc->WriteROCRegister(link,29,0x0001,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+    }
+  }
+  else {
+    printf("trk_utils;:monica_var_link_config ERROR: wrong link : %i\n",Link);
+  }
 }
 
 //-----------------------------------------------------------------------------
