@@ -7,6 +7,7 @@ ROOT::Tree
 ROOT::Core
 ROOT::RIO
 ROOT::Gui
+Offline::RecoDataProducts
 )
 
 

@@ -1,7 +1,4 @@
-link_directories($ENV{MESSAGEFACILITY_LIB})
-link_directories($ENV{FHICLCPP_LIB})
-link_directories($ENV{CETLIB_LIB})
-link_directories($ENV{CETLIB_EXCEPT_LIB})
+
 include(artdaq::commandableGenerator)
 
 cet_build_plugin(ToySim artdaq::commandableGenerator 
@@ -16,8 +13,10 @@ install_source()
 
 cet_build_plugin(TrackerVST artdaq::commandableGenerator 
                  LIBRARIES REG 
-                 artdaq_core_mu2e::artdaq-core-mu2e_Overlays canvas::canvas mu2e_pcie_utils::DTCInterface
-                 xmlrpc_client xmlrpc xmlrpc_util 
-                 # xmlrpc_client++ xmlrpc++ xmlrpc_util++ 
-                 pthread rt util
+                 artdaq_core_mu2e::artdaq-core-mu2e_Overlays 
+                 canvas::canvas 
+                 mu2e_pcie_utils::DTCInterface
+                 ${XMLRPC_LIBRARIES}
 )
+target_include_directories(otsdaq-mu2e-tracker_Generators_TrackerVST_generator
+  PRIVATE ${XMLRPC_INCLUDE_DIRS})

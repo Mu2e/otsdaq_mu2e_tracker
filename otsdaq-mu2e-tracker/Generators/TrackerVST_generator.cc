@@ -51,7 +51,6 @@ namespace mu2e {
 //-----------------------------------------------------------------------------
     FragmentType const                    fragment_type_;  // Type of fragment (see FragmentType.hh)
 
-    size_t                                timestamps_read_;
     std::chrono::steady_clock::time_point lastReportTime_;
     std::chrono::steady_clock::time_point procStartTime_;
     DTCLib::DTC_SimMode                   _sim_mode;
@@ -195,7 +194,6 @@ std::vector<uint16_t> mu2e::TrackerVST::fragmentIDs() {
 //-----------------------------------------------------------------------------
 mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : CommandableFragmentGenerator(ps)
   , fragment_type_     (toFragmentType("MU2E"))
-  , timestamps_read_   (0)
   , lastReportTime_    (std::chrono::steady_clock::now())
   , _sim_mode          (DTCLib::DTC_SimModeConverter::ConvertToSimMode(ps.get<std::string>("sim_mode", "N")))
   , _board_id          (static_cast<uint8_t>(ps.get<int>("board_id"                    ,     0)))
