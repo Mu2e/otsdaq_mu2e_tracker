@@ -55,7 +55,7 @@ namespace mu2e {
     std::chrono::steady_clock::time_point procStartTime_;
     DTCLib::DTC_SimMode                   _sim_mode;
     uint8_t                               _board_id;
-    std::vector<uint16_t>                 _fragment_ids;           // handled by CommandableGenerator, but not a data member there
+    std::vector<uint16_t>                 _fragment_ids;    // handled by CommandableGenerator, but not a data member there
     bool                                  simFileRead_;
     bool                                  _loadSimFile;
     std::string                           _simFileName;
@@ -87,6 +87,8 @@ namespace mu2e {
     int                                   _maxEventsPerSubrun;     // 
     int                                   _readoutMode;            // 0:digis; 1:ROC pattern; 
                                                                    // 101:simulate data internally, DTC not used; default:0
+    int                                   _networkCFO;             // if 1, the heartbeats come over the network
+    int                                   _port;                   // port number
     			                  
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
@@ -97,6 +99,12 @@ namespace mu2e {
     uint16_t                              _reg[200];               // DTC registers to be saved
     int                                   _nreg;                   // their number
     xmlrpc_env                            _env;                    // XML-RPC environment
+//-----------------------------------------------------------------------------
+// networking part
+//-----------------------------------------------------------------------------
+    struct sockaddr_in                    _addr;
+    int                                   _sock;
+    struct ip_mreq                        _mreq;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -142,12 +150,6 @@ namespace mu2e {
     int  readData        (artdaq::Fragment* Frag);
     int  readDTCRegisters(artdaq::Fragment* Frag, uint16_t* reg, int nreg);
 
-    // Like "getNext_", "fragmentIDs_" is a mandatory override; it
-    // returns a vector of the fragment IDs an instance of this class
-    // is responsible for (in the case of TrackerVST, this is just
-    // the fragment_id_ variable declared in the parent
-    // CommandableFragmentGenerator class)
-
     double _timeSinceLastSend() {
       auto now    = std::chrono::steady_clock::now();
       auto deltaw = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - lastReportTime_).count();
@@ -162,7 +164,7 @@ namespace mu2e {
 // - the second one - comments in the CommandableFragmentGenerator.hh
 // - the base class provides the one w/o the underscore 
 // - the comments seem to have a general confusion 
-// do we really need both ?
+//   do we really need both ?
 //-----------------------------------------------------------------------------
     std::vector<uint16_t>         fragmentIDs_() { return _fragment_ids; }
     virtual std::vector<uint16_t> fragmentIDs () override;
@@ -170,7 +172,7 @@ namespace mu2e {
     double _getProcTimerCount() {
       auto now = std::chrono::steady_clock::now();
       auto deltaw =
-	std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - procStartTime_).count();
+        std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - procStartTime_).count();
       return deltaw;
     }
   };
@@ -223,6 +225,9 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : CommandableFragmen
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
   , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           1))  // 
+  , _networkCFO        (ps.get<int>                     ("networkCFO"            ,           0))  // 
+  , _port              (ps.get<int>                     ("port"                  ,        3133))  // 
+  
 {
     
   TLOG(TLVL_INFO) << "TrackerVST_generator CONSTRUCTOR (1) readData:" << _readData;
@@ -371,11 +376,40 @@ mu2e::TrackerVST::TrackerVST(fhicl::ParameterSet const& ps) : CommandableFragmen
 //-----------------------------------------------------------------------------
     if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
     _reg[_nreg] = r;
-    _nreg += 1;
-    i     += 1;
+    _nreg      += 1;
+    i          += 1;
   } while (reg[2*i] != 0xffff) ;
   
   TLOG(TLVL_INFO+10) << "N DTC registers to save: " << _nreg;
+//-----------------------------------------------------------------------------
+// check if external 'CFO' mode
+//-----------------------------------------------------------------------------
+  if (_networkCFO) {
+//-----------------------------------------------------------------------------  
+// set up socket
+//-----------------------------------------------------------------------------
+    _sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (_sock < 0) {
+      TLOG(TLVL_ERROR) << "socket";
+    }
+
+    bzero((char *)&_addr, sizeof(_addr));
+
+    _addr.sin_family      = AF_INET;
+    _addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    _addr.sin_port        = htons(_port);
+
+    if (bind(_sock, (struct sockaddr *) &_addr, sizeof(_addr)) < 0) {        
+      TLOG(TLVL_ERROR) << "bind failed";
+    }    
+
+    _mreq.imr_multiaddr.s_addr = inet_addr("239.0.0.1");         // multicast address
+    _mreq.imr_interface.s_addr = htonl(INADDR_ANY);         
+
+    if (setsockopt(_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&_mreq, sizeof(_mreq)) < 0) {
+      TLOG(TLVL_ERROR) << "setsockopt mreq";
+    } 
+  }
 //-----------------------------------------------------------------------------
 // finally, initialize the environment for the XML-RPC messaging client
 //-----------------------------------------------------------------------------
@@ -511,20 +545,20 @@ void mu2e::TrackerVST::monica_var_pattern_config(DTC* Dtc, int Link) {
 
   dev->write_register(0x91a8,100,0);                            // disable event window marker - set deltaT = 0
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
-
+  
   int tmo_ms    (1500);  // 1500 is OK
-
+  
   auto link = DTC_Link_ID(Link);
   Dtc->WriteROCRegister(link,14,0x01,false,tmo_ms);  // this seems to be a reset
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
-
+  
   Dtc->WriteROCRegister(link, 8,0x10,false,tmo_ms);
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
   Dtc->WriteROCRegister(link,30,0x00,false,tmo_ms);
   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
 
-   if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
+  if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
 }
 
 
@@ -715,15 +749,15 @@ bool mu2e::TrackerVST::readEvent(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
 // send a request for one event, what is the role of requestsAhead ? 
 //-----------------------------------------------------------------------------
-  uint64_t             z(0);
-  DTC_EventWindowTag   zero(z);
+  uint64_t             z                 (0   );
+  DTC_EventWindowTag   zero              (z   );
   bool                 incrementTimestamp(true);
-  int                  requestsAhead     (  0);
-
-  int nev = 1;
+  int                  requestsAhead     (   0);
 //-----------------------------------------------------------------------------
 // duplicating setting the distance btw the two event window markers
+// effectively, request next event
 //-----------------------------------------------------------------------------
+  int nev = 1;
   _cfo->SendRequestsForRange(nev,
                              DTC_EventWindowTag(ev_counter()),
                              incrementTimestamp,
@@ -879,8 +913,25 @@ bool mu2e::TrackerVST::getNext_(artdaq::FragmentPtrs& Frags) {
   _startProcTimer();
 
   TLOG(TLVL_DEBUG) << "event: " << ev_counter() << "after startProcTimer";
+
+  if (_networkCFO) {
+//-----------------------------------------------------------------------------
+// wait for an external 'event window marker', then proceed
+//-----------------------------------------------------------------------------
+    char message[50];
+    uint addrlen = sizeof(_addr);
+    int cnt = recvfrom(_sock, message, sizeof(message), 0, (struct sockaddr *) &_addr, &addrlen);
+    if (cnt < 0) {
+      TLOG(TLVL_ERROR) << "recvfrom";
+    } 
+    else if (cnt == 0) {
+      TLOG(TLVL_ERROR) << "zero bytes";
+    }
+    printf("%s: message = \"%s\"\n", inet_ntoa(_addr.sin_addr), message);
+  }
+
   if (_readoutMode < 100) {
-    rc =readEvent(Frags);
+    rc = readEvent(Frags);
   }
   else {
 //-----------------------------------------------------------------------------

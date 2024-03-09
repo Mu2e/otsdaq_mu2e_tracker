@@ -1,6 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Author: E. Croft, adapted from code by S. Middleton
-// This module (should) produce histograms of data from the straw tracker
+// tracker DQM module
 ///////////////////////////////////////////////////////////////////////////////
 #include "TRACE/tracemf.h"
 #define  TRACE_NAME "TrackerDQM"
@@ -73,10 +72,9 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _minPulseHeight  (conf().minPulseHeight  ()),
   _port            (conf().port            ())
 {
-  //  conf_             (conf()),
-  //  histType_         (conf().histType ()),
-  //diagLevel_        (conf().diag     ()),
-
+  // conf_             (conf()),
+  // histType_         (conf().histType ()),
+  // diagLevel_        (conf().diag     ()),
 //-----------------------------------------------------------------------------
 // for now, assume only one station, but implement data structures handling 
 // full tracker
@@ -199,12 +197,13 @@ void TrackerDQM::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber
 //-----------------------------------------------------------------------------
 // waveform parameters
 //-----------------------------------------------------------------------------
-    Hist->fsample = Dir->make<TH1F>(Form("ch_%02i_fs"    ,I),Form("run %06i: ch %02i first sample"   ,RunNumber,I), 30,-0.5, 29.5);
-    Hist->bline   = Dir->make<TH1F>(Form("ch_%02i_bl"    ,I),Form("run %06i: ch %02i WF baseline"    ,RunNumber,I),200,0,300);
-    Hist->pheight = Dir->make<TH1F>(Form("ch_%02i_ph"    ,I),Form("run %06i: ch %02i WF pulse height",RunNumber,I),500,0,500);
-    Hist->q       = Dir->make<TH1F>(Form("ch_%02i_q"     ,I),Form("run %06i: ch %02i WF charge"      ,RunNumber,I),500,0,500);//
-    Hist->qt      = Dir->make<TH1F>(Form("ch_%02i_qt"    ,I),Form("run %06i: ch %02i WF tail charge" ,RunNumber,I),500,0,500);
-    Hist->qtq     = Dir->make<TH1F>(Form("ch_%02i_qtq"   ,I),Form("run %06i: ch %02i WF Qt/Q"        ,RunNumber,I),200,0,1);
+  Hist->fsample = Dir->make<TH1F>(Form("ch_%02i_fs"    ,I),Form("run %06i: ch %02i first sample"   ,RunNumber,I), 30,-0.5, 29.5);
+  Hist->tmean   = Dir->make<TH1F>(Form("ch_%02i_tm"    ,I),Form("run %06i: ch %02i tmean"          ,RunNumber,I),1500,  0, 30  );
+  Hist->bline   = Dir->make<TH1F>(Form("ch_%02i_bl"    ,I),Form("run %06i: ch %02i WF baseline"    ,RunNumber,I),200,0,300);
+  Hist->pheight = Dir->make<TH1F>(Form("ch_%02i_ph"    ,I),Form("run %06i: ch %02i WF pulse height",RunNumber,I),500,0,500);
+  Hist->q       = Dir->make<TH1F>(Form("ch_%02i_q"     ,I),Form("run %06i: ch %02i WF charge"      ,RunNumber,I),500,0,500);//
+  Hist->qt      = Dir->make<TH1F>(Form("ch_%02i_qt"    ,I),Form("run %06i: ch %02i WF tail charge" ,RunNumber,I),500,0,500);
+  Hist->qtq     = Dir->make<TH1F>(Form("ch_%02i_qtq"   ,I),Form("run %06i: ch %02i WF Qt/Q"        ,RunNumber,I),200,0,1);
 //-----------------------------------------------------------------------------
 // waveform histograms, assume number of samples < 30
 //-----------------------------------------------------------------------------
@@ -441,11 +440,14 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
       Wf[i] = Wf[i]-Wp->bl;
     }
 
-    int tail = 0;
-    Wp->fs   = -1;
-    Wp->q    = 0;
-    Wp->qt   = 0;
-    Wp->ph   = -1;
+    int tail  =  0;
+    Wp->fs    = -1;
+    Wp->q     =  0;
+    Wp->qt    =  0;
+    Wp->ph    = -1;
+    Wp->q_x_i =  0;
+    Wp->ns    =  0;
+
     for (int i=_nSamplesBL; i<nsamples; i++) {
       if (Wf[i] > _minPulseHeight) {
         if (tail == 0) {
@@ -453,6 +455,10 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
           if (Wp->fs < 0) Wp->fs = i;
 
           Wp->q += Wf[i];
+                                        // as integrating the charge, also calculate the time
+          Wp->q_x_i += Wf[i]*i;
+          Wp->ns    += 1;
+
           if (Wf[i] > Wp->ph) {
             Wp->ph = Wf[i];
           }
@@ -465,6 +471,7 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
         if (tail == 1) Wp->qt -= Wf[i];
       }
     }
+    Wp->tm = Wp->q_x_i/(Wp->q+1.e-12);
 //-----------------------------------------------------------------------------
 // done
 //-----------------------------------------------------------------------------
@@ -567,6 +574,7 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
 // reconstructed waveform parameters
 //-----------------------------------------------------------------------------
           hch->fsample->Fill(wpar->fs);
+          hch->tmean->Fill(wpar->tm);
           hch->bline->Fill(wpar->bl);
           hch->pheight->Fill(wpar->ph);
           hch->q->Fill(wpar->q);

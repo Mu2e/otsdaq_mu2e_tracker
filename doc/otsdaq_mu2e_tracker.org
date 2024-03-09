@@ -134,6 +134,31 @@ root [2] .q
 #+end_src
 ** after that can proceed
 * ------------------------------------------------------------------------------
+* tracker VST configurations                                                 
+- all described in tfm/config                          
+** trk_vst_001: one test stand, one DTC, one ROC                             
+** trk_vst_002: two test stands (two ROCs), one DTC                         
+** trk_vst_003: two test stands, two DTCs, two ROCs                          
+- each DTC talking to its own ROC    
+* <2024-02-25 Sun> changes in the ROC initialization (Monica)                
+
+The "var_link_config" command has been split into two:
+
+1) what I still call "var_link_config" which contains a write to register 8 and 29 
+   reg. 30 has become obsolete and can be ignored
+
+2) a roc_reset which consist ONLY in a write to register 14
+
+The new "var_link_config" must be issued BEFORE the find_alignment/read command in the rPi.
+The "roc_reset" has to be issued AFTER the rPi "read" or every time you want 
+to reset to zero the various counters reported by "var_read_all".
+
+In between mu2eUtil commands, a simple "digi_clear" is enough 
+to reset the firmware in a state ready to take new event windows.
+
+Also, I claim that no power cycles are needed now after a DTC_Reset.
+And that no TIMEOUT should be observed on the very first event after a DTC_Reset.
+
 * after mu2edaq09 reboot                                                     
  - source [[file:../scripts/chantsDataTestVst.sh][srcs/otsdaq_mu2e_tracker/scripts/chantsDataTestVst.sh]]
 * powering up the test stands (Vadim):                                       
@@ -416,20 +441,36 @@ corresponding distance between the two consecutive pulses :
 * ROC channel map (Vadim)                                                    
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
 * known DRAC boards                                                          
-** [[file:roc_id_1b561.org][ROC ID: 1b561]] : <2024-02-15 Thu> currently installed at TS1               
-* TS0, TS1, TS2
-** TS1: baud rate claimed to be 57600
+** [[file:roc_id_1b561.org][ROC ID: 1b561]] : currently <2024-02-15 Thu> installed at TS1               
+** [[file:roc_id_805d6.org][ROC ID: 805d6]] : currently <2024-02-25 Sun> installed at TS2
+* TS0, TS1, TS2                                                              
+** TS0: currently unavailable
+** TS1: baud rate 57600                                                      
 <2024-02-23 Fri> 
 readDeviceID
 (13, 52)
 {'BackLevelVer': '0x0000',
- 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52840a',
+# 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52840a', ... previous
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52fd41', <2024-02-25 Sun>
  'DesignVer': '0x0000',
  'DeviceSerial': '0x1b561170e1a31d8ce76538eff83552dc'}
 
 ('DRAC ROC ID #', '1b561')
 
-** TS2: baud rate 115200
+** TS2: baud rate 115200                                                     
+mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 2
+SERIALRATE= 115200
+Waiting for ARM to connect
+==========================
+('Connected to ARM on', '/dev/ttyUSB1')
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f523d42', <2024-02-25 Sun>
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x805d653a1e62bc2ea2257c13224ecbef'}
+
+('DRAC ROC ID #', '805d6')
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file                            
 <2023-12-13 Wed> Monica

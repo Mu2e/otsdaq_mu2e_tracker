@@ -17,7 +17,7 @@ echo rn1=$rn1 rn2=$rn2 doit=$doit
 
 for rn in `seq $rn1 $rn2` ; do
     irn=`printf "%06i" $rn`
-    for f in `ls /scratch/mu2e/$OTS_USER_STUB/$TFM_CONFIG_NAME/data/raw.mu2e.trkvst.annex.${irn}_*` ; do 
+    for f in `ls /scratch/mu2e/$DAQ_USER_STUB/$TFM_CONFIG_NAME/data/raw.mu2e.trkvst.annex.${irn}_*` ; do 
         cmd="scp $f murat@mu2egpvm06:/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/."
         echo "$cmd"
         if [ ".$doit" != "." ] ; then 

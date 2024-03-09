@@ -93,6 +93,7 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         dt1r;               // T1(ich,0)-distance between the two pulses (if more than one)
 
     TH1F*         fsample;
+    TH1F*         tmean;              // mean time
     TH1F*         bline;
     TH1F*         pheight;
     TH1F*         q;                  // waveform charge Q
@@ -161,11 +162,14 @@ class TrackerDQM : public art::EDAnalyzer {
 
 
   struct WfParam_t {
-    int   fs;                         // first sample above _minPulseHeight
-    float bl;                         // baseline
-    float ph;                         // pulse height
-    float q;                          // Q(positive)
-    float qt;                         // Q(tail)
+    int   fs;                           // first sample above _minPulseHeight
+    float bl;                           // baseline
+    float ph;                           // pulse height
+    float q;                            // Q(positive)
+    float qt;                           // Q(tail)
+    float q_x_i;
+    float ns;                           // nsamples in the charge integration
+    float tm;                           // q_x_i/ns
   };
 
   struct PlotWaveform_t {
