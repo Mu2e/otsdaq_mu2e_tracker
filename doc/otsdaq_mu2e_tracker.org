@@ -134,6 +134,12 @@ root [2] .q
 #+end_src
 ** after that can proceed
 * ------------------------------------------------------------------------------
+* tracker VST configurations                                                 
+- all described in tfm/config                          
+** trk_vst_001: one test stand, one DTC, one ROC                             
+** trk_vst_002: two test stands (two ROCs), one DTC                         
+** trk_vst_003: two test stands, two DTCs, two ROCs                          
+- each DTC talking to its own ROC    
 * <2024-02-25 Sun> changes in the ROC initialization (Monica)                
 
 The "var_link_config" command has been split into two:
