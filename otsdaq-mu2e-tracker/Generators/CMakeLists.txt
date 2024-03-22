@@ -1,12 +1,14 @@
 
 include(artdaq::commandableGenerator)
 
-cet_build_plugin(ToySim artdaq::commandableGenerator 
-                 LIBRARIES REG 
-                 artdaq_core_demo::artdaq-core-demo_Overlays otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Generators_ToyHW
-)
+# cet_build_plugin(ToySim artdaq::commandableGenerator 
+#                  LIBRARIES REG 
+#                  artdaq_core_demo::artdaq-core-demo_Overlays otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Generators_ToyHW
+# )
+# cet_build_plugin(ToySim artdaq::commandableGenerator LIBRARIES REG artdaq_core_demo::artdaq-core-demo_Overlays otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Generators_ToyHW )
 
-add_subdirectory(ToyHW)
+
+# add_subdirectory(ToyHW)
 
 install_headers()
 install_source()
