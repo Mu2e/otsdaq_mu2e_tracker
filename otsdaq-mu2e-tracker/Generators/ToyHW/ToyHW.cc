@@ -20,38 +20,33 @@
 // based in C++11 capable of taking advantage of smart pointers, etc.
 
 ToyHW::ToyHW(fhicl::ParameterSet const& ps)
-    : taking_data_(false)
-    , nADCcounts_(ps.get<size_t>("nADCcounts", 40))
-    , maxADCcounts_(ps.get<size_t>("maxADCcounts", 50000000))
-    , change_after_N_seconds_(ps.get<size_t>("change_after_N_seconds", std::numeric_limits<size_t>::max()))
-    , pause_after_N_seconds_(ps.get<size_t>("pause_after_N_seconds", 0))
-    , nADCcounts_after_N_seconds_(ps.get<size_t>("nADCcounts_after_N_seconds", nADCcounts_))
-    , exception_after_N_seconds_(ps.get<bool>("exception_after_N_seconds", false))
-    , exit_after_N_seconds_(ps.get<bool>("exit_after_N_seconds", false))
-    , abort_after_N_seconds_(ps.get<bool>("abort_after_N_seconds", false))
-    , hang_after_N_seconds_(ps.get<bool>("hang_after_N_seconds", false))
-    , fragment_type_(demo::toFragmentType(ps.get<std::string>("fragment_type")))
-    , maxADCvalue_(static_cast<size_t>(pow(2, NumADCBits()) - 1))
-    ,  // MUST be after "fragment_type"
-    throttle_usecs_(ps.get<size_t>("throttle_usecs", 100000))
-    , usecs_between_sends_(ps.get<size_t>("usecs_between_sends", 0))
-  //    , distribution_type_(static_cast<DistributionType>(ps.get<int>("distribution_type")))
-  //    , engine_(ps.get<int64_t>("random_seed", 314159))
-  //    , uniform_distn_(new std::uniform_int_distribution<data_t>(0, maxADCvalue_))
-  //    , gaussian_distn_(new std::normal_distribution<double>(0.5 * maxADCvalue_, 0.1 * maxADCvalue_))
+  : taking_data_(false)
+  , nADCChannels_(ps.get<size_t>("nADCChannels", 40))
+  , maxADCcounts_(ps.get<size_t>("maxADCcounts", 50000000))
+  , change_after_N_seconds_(ps.get<size_t>("change_after_N_seconds", std::numeric_limits<size_t>::max()))
+  , pause_after_N_seconds_(ps.get<size_t>("pause_after_N_seconds", 0))
+  , nADCChannels_after_N_seconds_(ps.get<size_t>("nADCChannels_after_N_seconds", nADCChannels_))
+  , exception_after_N_seconds_(ps.get<bool>("exception_after_N_seconds", false))
+  , exit_after_N_seconds_(ps.get<bool>("exit_after_N_seconds", false))
+  , abort_after_N_seconds_(ps.get<bool>("abort_after_N_seconds", false))
+  , hang_after_N_seconds_(ps.get<bool>("hang_after_N_seconds", false))
+  , fragment_type_(demo::toFragmentType(ps.get<std::string>("fragment_type")))
+  , maxADCvalue_(static_cast<size_t>(pow(2, NumADCBits()) - 1))
+  ,  // MUST be after "fragment_type"
+  throttle_usecs_(ps.get<size_t>("throttle_usecs", 100000))
+  , usecs_between_sends_(ps.get<size_t>("usecs_between_sends", 0))
   , start_time_(fake_time_)
-    , send_calls_(0)
-  //  , serial_number_((*uniform_distn_)(engine_))
+  , send_calls_(0)
 {
-	if (nADCcounts_ > maxADCcounts_ ||
-	    nADCcounts_after_N_seconds_ > maxADCcounts_)
+	if (nADCChannels_ > maxADCcounts_ ||
+	    nADCChannels_after_N_seconds_ > maxADCcounts_)
 	{
 		throw cet::exception("HardwareInterface")  // NOLINT(cert-err60-cpp)
-		    << R"(Either (or both) of "nADCcounts" and "nADCcounts_after_N_seconds")"
+		    << R"(Either (or both) of "nADCChannels" and "nADCChannels_after_N_seconds")"
 		    << " is larger than the \"maxADCcounts\" setting (currently at " << maxADCcounts_ << ")";
 	}
 
-	bool planned_disruption = nADCcounts_after_N_seconds_ != nADCcounts_ || exception_after_N_seconds_ ||
+	bool planned_disruption = nADCChannels_after_N_seconds_ != nADCChannels_ || exception_after_N_seconds_ ||
 	                          exit_after_N_seconds_ || abort_after_N_seconds_;
 
 	if (planned_disruption && change_after_N_seconds_ == std::numeric_limits<size_t>::max())
@@ -91,8 +86,8 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read)
     //nadccounts are the channels
 		if (static_cast<size_t>(elapsed_secs_since_datataking_start) < change_after_N_seconds_ || send_calls_ == 0) {
 			TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to " 
-                           << sizeof(demo::ToyFragment::Header) + nADCcounts_ * sizeof(data_t);
-			*bytes_read = sizeof(demo::ToyFragment::Header) + nADCcounts_ * sizeof(data_t);//data size
+                           << sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);
+			*bytes_read = sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);//data size
 		}
 		else {
 			if (abort_after_N_seconds_) {
@@ -122,8 +117,8 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read)
 					sleep(pause_after_N_seconds_);
 					TLOG(TLVL_DEBUG + 3) << "resuming after pause of " << pause_after_N_seconds_ << " seconds";
 				}
-				TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to " << sizeof(demo::ToyFragment::Header) + nADCcounts_after_N_seconds_ * sizeof(data_t);
-				*bytes_read = sizeof(demo::ToyFragment::Header) + nADCcounts_after_N_seconds_ * sizeof(data_t);
+				TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to " << sizeof(demo::ToyFragment::Header) + nADCChannels_after_N_seconds_ * sizeof(data_t);
+				*bytes_read = sizeof(demo::ToyFragment::Header) + nADCChannels_after_N_seconds_ * sizeof(data_t);
 			}
 		}
 
@@ -139,52 +134,11 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read)
 
 		header->event_size = *bytes_read / sizeof(demo::ToyFragment::Header::data_t);
 		header->trigger_number = 99;
-		// header->distribution_type = static_cast<uint8_t>(distribution_type_);
 
-		TLOG(TLVL_DEBUG + 3) << "FillBuffer: Generating nADCcounts ADC values ranging from 0 to max based on the desired distribution";
+		TLOG(TLVL_DEBUG + 3) << "FillBuffer: Generating nADCChannels ADC values ranging from 0 to max based on the desired distribution";
 
-    // generator;
-//		data_t gen_seed = 0;
-//
-//		switch (distribution_type_)
-//		{
-//			case DistributionType::uniform:
-//				generator = [&]() { return static_cast<data_t>((*uniform_distn_)(engine_)); };
-//				break;
-//
-//			case DistributionType::gaussian:
-//				generator = [&]() {
-//					do {
-//						gen_seed = static_cast<data_t>(std::round((*gaussian_distn_)(engine_)));
-//					} while (gen_seed > maxADCvalue_);//finche 0 è maggiore di 2^n-1???
-//					return gen_seed;
-//				};
-//				break;
-//
-//			case DistributionType::monotonic: {
-//				generator = [&]() {
-//					if (++gen_seed > maxADCvalue_) gen_seed = 0;
-//					return gen_seed;
-//				};
-//			}
-//			break;
-//
-//			case DistributionType::uninitialized:
-//			case DistributionType::uninit2:
-//				break;
-//
-//			default:
-//				throw cet::exception("HardwareInterface") << "Unknown distribution type specified";  // NOLINT(cert-err60-cpp)
-//		}
-//
-//		if (distribution_type_ != DistributionType::uninitialized && distribution_type_ != DistributionType::uninit2) {
-//			TLOG(TLVL_DEBUG + 3) << "FillBuffer: Calling generate_n";
-    // std::generate_n(reinterpret_cast<data_t*>(reinterpret_cast<demo::ToyFragment::Header*>(buffer) + 1),  nADCcounts_, generator); // returns an iterator pointing to the element that follows the last element whose value has been generated.
-      //output operator pointing to the first element of the cointainer., number of elements to assign the value.,a generator function to assign the value
-//		}// NOLINT(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    
     data_t* p = (data_t*) (((demo::ToyFragment::Header*) buffer) + 1);
-    for(size_t i=0; i<nADCcounts_-1; i++) {
+    for(size_t i=0; i<nADCChannels_-1; i++) {
       p[i] = 100;  
     }
 	}
