@@ -25,33 +25,6 @@ unsigned int reverseBits(unsigned int num) {
 }
 
 //-----------------------------------------------------------------------------
-// print 16 bytes per line
-// size - number of bytes to print, even
-//-----------------------------------------------------------------------------
-void print_buffer(const void* ptr, int sz) {
-
-  int     nw  = sz/2;
-  ushort* p16 = (ushort*) ptr;
-  int     n   = 0;
-
-  for (int i=0; i<nw; i++) {
-    if (n == 0) printf(" 0x%08x: ",i*2);
-
-    ushort  word = p16[i];
-    printf("0x%04x ",word);
-
-    n   += 1;
-    if (n == 8) {
-      printf("\n");
-      n = 0;
-    }
-  }
-
-  if (n != 0) printf("\n");
-}
-
-
-//-----------------------------------------------------------------------------
 // read one event, histogram hits
 //-----------------------------------------------------------------------------
 void read_dtc_event(DTC* Dtc, mu2e_databuff_t*& buffer, size_t& NBytes) {
@@ -156,12 +129,12 @@ void read_one_event(int NEvents = 1, int Debug = 0) {
 
   uint16_t  roc_reg[100];
 
-  DTCLib::DTC dtc(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
+  DTCLib::DTC*  dtc = new DTCLib::DTC(DTCLib::DTC_SimMode_NoCFO,-1,0x1,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-  mu2edev* dev = dtc.GetDevice();
+  mu2edev* dev = dtc->GetDevice();
 
-  print_dtc_registers(&dtc);
+  print_dtc_registers(dtc);
 //-----------------------------------------------------------------------------
 // print the ROC registers 11,13,14 - previously used in the readout
 //-----------------------------------------------------------------------------
@@ -169,7 +142,7 @@ void read_one_event(int NEvents = 1, int Debug = 0) {
 //-----------------------------------------------------------------------------
 // now to reading the data
 //-----------------------------------------------------------------------------
-  dtc.SetSequenceNumberDisable(); 
+  dtc->SetSequenceNumberDisable(); 
   auto initTime = dev->GetDeviceTime();
   dev->ResetDeviceTime();
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -182,16 +155,16 @@ void read_one_event(int NEvents = 1, int Debug = 0) {
   bool forceNoDebug     = true;
   bool useCFODRP        = false;
 
-  DTCLib::DTCSoftwareCFO cfo(&dtc,useCFOEmulator,packetCount,
-			     DTCLib::DTC_DebugType_SpecialSequence,
-			     stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
+  DTCLib::DTCSoftwareCFO cfo(dtc,useCFOEmulator,packetCount,
+                             DTCLib::DTC_DebugType_SpecialSequence,
+                             stickyDebugType,quiet,asyncRR,forceNoDebug,useCFODRP);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-  int incrementTimestamp =    1;
-  int heartbeatInterval  =  512; // was 1024;
-  int requestsAhead      =    1;
-  int heartbeatsAfter    =   16;
+  int incrementTimestamp =   1;
+  int heartbeatInterval  = 512; // was 1024;
+  int requestsAhead      =   1;
+  int heartbeatsAfter    =  16;
 
   int tmo_ms             = 100;  // was 1500
 //-----------------------------------------------------------------------------
@@ -199,8 +172,8 @@ void read_one_event(int NEvents = 1, int Debug = 0) {
 // ... double check...
 // definition of a timeout ?
 //-----------------------------------------------------------------------------
-  monica_digi_clear     (&dtc);
-  monica_var_link_config(&dtc);
+  monica_digi_clear     (dtc);
+  monica_var_link_config(dtc);
 //-----------------------------------------------------------------------------
 // back to 25.6 us - the readout doesn't seem to depend on this
 //-----------------------------------------------------------------------------
@@ -223,16 +196,18 @@ void read_one_event(int NEvents = 1, int Debug = 0) {
     printf(" ----------------------------------------------------------------------- reading event %i\n",i);
     
     mu2e_databuff_t* buffer;
-    read_dtc_event(&dtc,buffer,nbytes);
+    read_dtc_event(dtc,buffer,nbytes);
 
     uint16_t* ptr = (uint16_t*) buffer;
-    int offset(0x20);  // 0x40 bytes
+    int offset(0x20);  // 0x40 bytes = 0x20 16-bit words
+
+    int nw = nbytes/2;
 
 		if (Debug > 0) {
-			print_buffer(ptr,nbytes);
+			print_buffer(ptr,nw);
 		}
     
-    analyze(ptr+offset,nbytes/2-offset);
+    analyze(ptr+offset,nw-offset);
   };
 
    dev->release_all(DTC_DMA_Engine_DAQ);

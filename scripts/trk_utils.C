@@ -6,6 +6,7 @@
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 
+#include "print_buffer.C"
 
 int gSleepTimeDTC      =  1000;  // [us]
 int gSleepTimeROC      =  2000;  // [us]
@@ -85,16 +86,12 @@ void reset_roc(int DtcID, int Link) {
 }
 
 //-----------------------------------------------------------------------------
-// this implements Monica's bash DTC_Reset (Hard Reset)
+// this implements the DTC Hard Reset
 //-----------------------------------------------------------------------------
-void monica_dtc_reset(DTCLib::DTC* Dtc) {
+void monica_dtc_hardreset(DTCLib::DTC* Dtc) {
 
   mu2edev* dev = Dtc->GetDevice();
-
-  dev->write_register(0x9100,100,0x80000000);
-  dev->write_register(0x9100,100,0x00008000);
-  dev->write_register(0x9118,100,0xffff00ff);
-  dev->write_register(0x9118,100,0x00000000);
+  dev->write_register(0x9100,100,0x00000001);
 }
 
 //-----------------------------------------------------------------------------
@@ -106,7 +103,6 @@ void monica_dtc_softreset(DTCLib::DTC* Dtc) {
   mu2edev* dev = Dtc->GetDevice();
 
   dev->write_register(0x9100,100,0x80000000);
-  dev->write_register(0x9100,100,0x00008000);
 }
 
 //-----------------------------------------------------------------------------
@@ -128,7 +124,7 @@ void monica_var_link_config_old(DTCLib::DTC* dtc, int Link = 0) {
   // Use with pattern data. Set to zero, ie STATUS=0x55, when taking DIGI data 
   // rocUtil -a 30  -w 0  -l $LINK write_register > /dev/null
 
-  dtc->WriteROCRegister(link,30,0x0000,false,1000);        // configure ROC to read all 4 lanes
+  dtc->WriteROCRegister(link,30,0x0000,false,1000);        // Set to zero, ie STATUS=0x55
   std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
   // echo "Setting packet format version to 1"
@@ -180,32 +176,6 @@ void monica_var_link_config(DTCLib::DTC* dtc, int Link = 0) {
   else {
     printf("trk_utils;:monica_var_link_config ERROR: wrong link : %i\n",Link);
   }
-}
-
-//-----------------------------------------------------------------------------
-// print data starting from ptr , 'nw' 2-byte words
-// printout: 16 bytes per line, grouped in 2-byte words
-//-----------------------------------------------------------------------------
-void print_buffer(const void* ptr, int nw) {
-
-  // int     nw  = nbytes/2;
-  ushort* p16 = (ushort*) ptr;
-  int     n   = 0;
-
-  for (int i=0; i<nw; i++) {
-    if (n == 0) printf(" 0x%08x: ",i*2);
-
-    ushort  word = p16[i];
-    printf("0x%04x ",word);
-
-    n   += 1;
-    if (n == 8) {
-      printf("\n");
-      n = 0;
-    }
-  }
-
-  if (n != 0) printf("\n");
 }
 
 //-----------------------------------------------------------------------------

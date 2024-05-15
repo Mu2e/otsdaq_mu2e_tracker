@@ -441,7 +441,17 @@ corresponding distance between the two consecutive pulses :
 * ROC channel map (Vadim)                                                    
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
 * known DRAC boards                                                          
-** [[file:roc_id_1b561.org][ROC ID: 1b561]] : currently <2024-02-15 Thu> installed at TS1               
+** '7a7fb'
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52840a',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x7a7fb985c50dfbc734685a1212dad384'}
+
+('DRAC ROC ID #', '7a7fb')
+
+** [[file:roc_id_1b561.org][ROC ID: 1b561]] : currently <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID: 805d6]] : currently <2024-02-25 Sun> installed at TS2
 * TS0, TS1, TS2                                                              
 ** TS0: currently unavailable

@@ -209,6 +209,15 @@ void test2_read_data(int LinkMask                ,  // add, as the link can vary
 
   // dev->write_register(0x91a8,100,HBInterval);
 
+//-----------------------------------------------------------------------------
+// emulate timing signals of the next event 
+//-----------------------------------------------------------------------------
+  int nev = 1;
+  cfo.SendRequestsForRange(NEvents,DTCLib::DTC_EventWindowTag(uint64_t(0)),
+                           incrementTimestamp,
+                           HBInterval,requestsAhead,heartbeatsAfter);
+  std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
   for (int i=0; i<NEvents; i++) {
 //-----------------------------------------------------------------------------
 // reset and go back to 25.6 us
@@ -220,14 +229,6 @@ void test2_read_data(int LinkMask                ,  // add, as the link can vary
       }
       dev->write_register(0x91a8,100,HBInterval);
     }
-//-----------------------------------------------------------------------------
-// emulate timing signals of the next event 
-//-----------------------------------------------------------------------------
-    int nev = 1;
-    cfo.SendRequestsForRange(nev,DTCLib::DTC_EventWindowTag(uint64_t(i)),
-                             incrementTimestamp,
-                             HBInterval,requestsAhead,heartbeatsAfter);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
     dev->ResetDeviceTime();
     // cfo.SendRequestForTimestamp(DTCLib::DTC_EventWindowTag(uint64_t(i+1)), heartbeatsAfter);
@@ -243,6 +244,8 @@ void test2_read_data(int LinkMask                ,  // add, as the link can vary
 
     mu2e_databuff_t* buffer = readDTCBuffer(dev, readSuccess, timeout, nbytes);
     //    int sts = dev->read_data(DTC_DMA_Engine_DAQ, (void**) (&buffer), tmo_ms);
+
+    printf("   event %i nbytes: %li\n",i,nbytes);
 
     if (OutputFn) {
       if (readSuccess and (not timeout)) {
