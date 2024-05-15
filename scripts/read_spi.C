@@ -113,38 +113,42 @@ void parse_spi_data(uint16_t* dat, int nw) {
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 //-----------------------------------------------------------------------------
-void read_spi(int Link, int NEvents=1, int ROCSleepTime = 2000, int PrintParsedSPIData = 0) {
+void read_spi(int PcieAddress, int Link, int PrintParsedSPIData = 0, int NEvents=1, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
   auto roc  = DTC_Link_ID(Link);
 
   int roc_mask = 1 << (4*Link);
-  DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
+  DTC* dtc = new DTC(DTC_SimMode_NoCFO,PcieAddress,roc_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  monica_var_link_config(&dtc,roc);
+  monica_var_link_config(dtc,roc);
 
   for (int ievent=0; ievent<NEvents; ievent++) {
-    monica_digi_clear     (&dtc,roc);
+    monica_digi_clear     (dtc,roc);
 //-----------------------------------------------------------------------------
 // after writing into reg 258, sleep for some time, 
 // then wait till reg 128 returns non-zero
 //-----------------------------------------------------------------------------
-    dtc.WriteROCRegister   (roc,258,0x0000,false,100);
+    dtc->WriteROCRegister   (roc,258,0x0000,false,100);
     std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
 
     uint16_t u; 
-    while ((u = dtc.ReadROCRegister(roc,128,100)) == 0) {}; 
+    while ((u = dtc->ReadROCRegister(roc,128,100)) == 0) {}; 
     printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
+// 2024-05-10: is r129 now returning the number of bytes ?
 //-----------------------------------------------------------------------------
-    int nw = dtc.ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+    int nb = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nb);
 
-    nw = nw-4;
+    int nw = nb-4;
+
+    printf("--- nw = %i\n",nw);
+
     vector<uint16_t> spi;
-    dtc.ReadROCBlock(spi,roc,258,nw,false,100);
+    dtc->ReadROCBlock(spi,roc,258,nw,false,100);
 //-----------------------------------------------------------------------------
 // print SPI data in hex 
 //-----------------------------------------------------------------------------
@@ -161,4 +165,5 @@ void read_spi(int Link, int NEvents=1, int ROCSleepTime = 2000, int PrintParsedS
     // std::this_thread::sleep_for(std::chrono::milliseconds(SPISleepTime));
   }
 
+  delete dtc;
 }

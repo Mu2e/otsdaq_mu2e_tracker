@@ -1,5 +1,28 @@
 #+startup:fold   
+<2024-05-09 Thu> change in the firmware version : 
+#+begin_src 
+mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 1 -b 57600
+SERIALRATE= 57600
+Waiting for ARM to connect
+==========================
+('Connected to ARM on', '/dev/ttyUSB0')
+set_digi_rw -s 1
+** Enabling DIGI signals via serial. Remember to disable with -s 0 to let fiber drive them again!!
+(94, 1)
+{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 1}
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f522224',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x1b561170e1a31d8ce76538eff83552dc'}
 
+('DRAC ROC ID #', '1b561')
+set_digi_rw -s 0
+** Disabling DIGI signals via serial, fiber is used by default.
+(94, 1)
+{'Enable/disable DIGI signals via SERIAL/FIBER with -s 1/0. Reading back: ': 0}
+#+end_src 
 <2024-02-15 Thu>                                       
 readDeviceID
 (13, 52)

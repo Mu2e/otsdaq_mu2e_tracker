@@ -3,7 +3,7 @@
 * source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
 * ------------------------------------------------------------------------------
 * control_ROC commands                                                       
-** digi_rw   [-w 1]
+** digi_rw   [-w 1]                                                          
 - it looks that '-w 1' means *write*
 
     - digi_rw -h 2 -a 2
@@ -249,6 +249,22 @@ readSPI
 set_digi_rw -s 0
 #+end_src 
 
+* TODO command implementation over the fiber                                 
+
+| command            | status | comments                                           |
+|--------------------+--------+----------------------------------------------------|
+| digi_rw            |        |                                                    |
+|--------------------+--------+----------------------------------------------------|
+| readSPI            | OK     | implemented                                        |
+| find_alignment     |        | implemented readout, parsing yet to be implemented |
+| set_preamp_thresh  |        |                                                    |
+| measure_thresholds |        |                                                    |
+| pulser_on          |        |                                                    |
+| readDeviceID       |        |                                                    |
+| set_digi_rw        |        | shouldn't need, all goes over the fiber            |
+| rates              |        |                                                    |
+| read               |        |                                                    |
+|--------------------+--------+----------------------------------------------------|
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
@@ -265,13 +281,27 @@ Ctrl-C
 #+end_src 
   exiting at this point is important, otherwise the serial port will not work properly
 
-** 2) run diagnostics, use whatever USB port the ts1 is on                 
+** 2) run diagnostics, use whatever USB port the TS1 is on                 
    example of [[file:settings_pasha.dat]]                          
    - all gains  - at 370
    - thresholds - around 400
 #+begin_src 
-python3 diagnostic.py -m L -f settings_pasha.dat -p /dev/ttyUSB2
-# or , if one neeeds to adjust the thresholds
+mu2e@trackerpi5:~/trackerScripts $ python3 diagnostic.py -m L -f settings_pasha_ts1.dat -p /dev/ttyUSB0 -b 57600
+['/dev/ttyUSB0', '/dev/ttyUSB2', '/dev/ttyUSB1']
+SERIALRATE= 57600
+Waiting for ARM to connect
+==========================
+Connected to ARM on /dev/ttyUSB0
+
+Loading settings ... 
+    Done
+=======================================================
+Ending...
+#+end_src
+
+- or , if thresholds need to be adjusted: 
+
+#+begin_src
 python3 diagnostic.py -m V -tv 30 -f settings_pasha_002.dat -p /dev/ttyUSB0
 #+end_src
 
@@ -282,7 +312,7 @@ measure_thresholds
 # (this should show the CAL thresholds (third column) about between
 # 17-20mV ? there is one channel 28 that is nor working)
 pulser_on -c 4 -d 1000 -y 200
-# -d 1000 50kHz , -d 10000 - 5kHz
+# -d 1000: 50kHz , -d 10000 : 5kHz
 # -y 200 : about 4 us, -y 10 : 200ns 
 # Charge injection works in modulo 8. In other words, '-c 0' will pulse channels 0,8,16,etc. 
 # In the example above, -c 4 will pulse channels 4, 12,20, etc. 
@@ -405,27 +435,7 @@ before next run, clear TDC counters with
 ./DTC_clean.sh
 #+end_src
 
-* 5) annex test stands                                                       
-** Teststand0 is connected to ttuUSB1                                        
-- Power up and down with gpio 25
-- No fiber connected (this can change if we want to)
-- ROC FlashPro S201QNXR6
-- HV DIGI FlashPro:  86129
-- To program use ppd-138181
-** Teststand1 is connected to ttyUSB0                                        
-- Power up and down with gpio 27
-- Fiber 1 connected to DTC 
-- ROC FlashPro: S2001JWC9O
-- CAL DIGI FlashPro: 95232
-- To program use ppd-130027
-** powering up the test stand                                                
-#+begin_src
-gpio mode  27 output         # turn on output mode
-gpio write 27 1              # set pin 27 output level to high
-gpio read  27
-gpio write 27 0              # set output level to low 
-#+end_src
-* 5.5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
+* 5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
 * 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
 
