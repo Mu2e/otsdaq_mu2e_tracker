@@ -20,8 +20,11 @@ cet_cmake_env()
 find_package(artdaq      3.12.07 REQUIRED)
 find_package(artdaq_core 3.09.16 REQUIRED)
 find_package(artdaq_core_demo 1.11.00 REQUIRED EXPORT)
-find_package(artdaq_core_mu2e 1.00.00 REQUIRED EXPORT)
-find_package(mu2e_pcie_utils 1.00.00 REQUIRED)
+find_package(otsdaq_mu2e 1.02.00 REQUIRED)
+
+ # XDAQ Extra setup
+ include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
+link_directories($ENV{XDAQ_LIB})
 
 find_package(Offline 10.00.00 REQUIRED)
 include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})

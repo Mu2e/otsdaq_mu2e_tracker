@@ -37,10 +37,43 @@ public:
 
 	bool emulatorWorkLoop(void) override;
 
-	enum {
-		ADDRESS_FIRMWARE_VERSION = 5,
-		ADDRESS_MYREGISTER = 0x65,
-  	};
+	enum TrackerRegisters
+	{
+
+        ROC_ADDRESS_DDRRESET                 = 14,
+        ROC_ADDRESS_ANALOGRESET              = 13,
+        ROC_ADDRESS_IS_PATTERN               = 8,
+
+        ROC_ADDRESS_ERRCNT                   = 17,
+
+
+  		ROC_ADDRESS_WORKMODE                 = 122,
+
+		//ROC_ADDRESS_EW_LENGHT                = 123,
+		//ROC_ADDRESS_EW_BLIND                 = 124,
+		
+		ROC_ADDRESS_ON_EW_SIZE                = 123,
+		ROC_ADDRESS_ON_EW_BLIND               = 124,	
+		
+		ROC_ADDRESS_OFF_EW_SIZE                = 512,
+		ROC_ADDRESS_OFF_EW_BLIND               = 513,	
+				
+		ROC_ADDRESS_EW_DELAY                 = 125,
+
+		ROC_ADDRESS_MASK_A                   = 120,
+		ROC_ADDRESS_MASK_B                   = 121,
+		ROC_ADDRESS_BASE_THRESHOLD           = 100,
+ 
+		ROC_ADDRESS_IS_COUNTER               = 79,
+		ROC_ADDRESS_COUNTER_IS_FALLING       = 80,
+		ROC_ADDRESS_COUNTER_SIZE             = 81,
+
+		ROC_ADDRESS_IS_LASER                 = 78,
+		ROC_ADDRESS_LASER_DELAY              = 77, 
+
+        ROC_ADDRESS_LOOPBACK_GROSS_DELAY     = 4 
+
+	};
 
   	//	temperature--
   	class Thermometer {
@@ -70,7 +103,10 @@ public:
 		unsigned int event_number_;
 
   public:
-	void ReadTrackerFIFO(__ARGS__);
+	// void 			ReadTrackerFIFO			(__ARGS__);
+
+	void 			ReadROCErrorCounter		(__ARGS__);
+	virtual void 	GetStatus				(__ARGS__) override;
 
 	// clang-format on
 };
