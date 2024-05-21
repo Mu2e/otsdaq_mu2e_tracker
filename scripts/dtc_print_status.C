@@ -11,7 +11,7 @@ void dtc_print_status(int PcieAddress = -1) {
   
   DTC* dtc = dtc_init(PcieAddress);
 
-  printf("-----------------------------------------------------------------\n");
+  cout << Form("-----------------------------------------------------------------\n");
   dtc_print_register(0x9000,"DTC firmware link speed and design version ",PcieAddress);
   dtc_print_register(0x9004,"DTC version                                ",PcieAddress);
   dtc_print_register(0x9008,"Design status                              ",PcieAddress);

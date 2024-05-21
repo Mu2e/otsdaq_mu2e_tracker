@@ -6,9 +6,12 @@
 #include "dtc_init.C"
 
 //-----------------------------------------------------------------------------
+// primary source: ~/test_stand/monica_002/var_read_all.sh
+// last update to that:  May 15 2024, by Monica
+//-----------------------------------------------------------------------------
 void dtc_print_roc_status(int Link, int PcieAddress = -1) {
 
-  cout << Form(">>>>> ROC %i registers:\n",Link);
+  cout << Form("-------------------- ROC %i registers:\n",Link);
 
   DTC* dtc = dtc_init(PcieAddress,Dtc::DefaultSimMode,1<<4*Link);
 
@@ -16,103 +19,180 @@ void dtc_print_roc_status(int Link, int PcieAddress = -1) {
   uint32_t dat;
 
   uint reg = 0;
-  dat = dtc->ReadROCRegister(link,reg,200);
-  cout << Form("register: %3i value: 0x%04x\n",reg, dat);
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : ALWAYS\n",reg, dat);
 
   reg = 8;
-  dat = dtc->ReadROCRegister(link,reg,200);
-  cout << Form("register: %3i value: 0x%04x\n",reg, dat);
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
 
   reg = 18;
-  dat = dtc->ReadROCRegister(link,reg,200);
-  cout << Form("register: %3i value: 0x%04x\n",reg, dat);
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
+
+  reg = 16;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
+
+  reg =  7;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Fiber loss/lock counter\n",reg, dat);
+
+  reg =  6;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Bad Markers counter\n",reg, dat);
+
+  reg =  4;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Loopback coarse delay\n",reg, dat);
 
   uint iw, iw1, iw2;
-  iw1 = dtc->ReadROCRegister(link,23,200);
-  iw2 = dtc->ReadROCRegister(link,24,200);
-  iw  = (iw2 << 16) | iw1;
-  cout << Form("SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]: 0x%08x\n",iw);
 
-  iw1 = dtc->ReadROCRegister(link,25,200);
-  iw2 = dtc->ReadROCRegister(link,26,200);
+  reg = 23;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]: 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]\n",
+               reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,64,200);
-  iw2 = dtc->ReadROCRegister(link,65,200);
+  reg = 25;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. EVM      seen           : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]\n",
+               reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,27,200);
-  iw2 = dtc->ReadROCRegister(link,28,200);
+  reg = 11;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. HB       seen           : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num EWM seen\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,29,200);
-  iw2 = dtc->ReadROCRegister(link,30,200);
+  reg = 64;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. null HB   seen          : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num windows seen\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,31,200);
-  iw2 = dtc->ReadROCRegister(link,32,200);
+  reg = 27;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. HB   on hold            : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num HB seen\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,33,200);
-  iw2 = dtc->ReadROCRegister(link,34,200);
+  reg = 29;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. PREFETCH seen           : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num null HB seen\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,35,200);
-  iw2 = dtc->ReadROCRegister(link,36,200);
+  reg = 31;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. data reqs seen          : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num HB on hold\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,37,200);
-  iw2 = dtc->ReadROCRegister(link,38,200);
+  reg = 33;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. data reqs read from DDR : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num PREFETCH seen\n\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,39,200);
-  iw2 = dtc->ReadROCRegister(link,40,200);
+  reg = 35;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. data reqs sent to DTC   : %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,41,200);
-  iw2 = dtc->ReadROCRegister(link,42,200);
+  reg = 13;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Num skipped DATA REQ\n",reg,dat);
+
+  reg = 37;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("no. data reqs with null data: %10i\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ read from DDR\n", reg+1,reg,iw);
+
+  reg = 39;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw  = (iw2 << 16) | iw1;
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ sent to DTC\n", reg+1,reg,iw);
+
+
+  reg = 41;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw  = (iw2 << 16) | iw1;
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ with null data\n", reg+1,reg,iw);
 
   cout << Form("\n");
   
-  iw1 = dtc->ReadROCRegister(link,43,200);
-  iw2 = dtc->ReadROCRegister(link,44,200);
+  reg = 43;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
   iw  = (iw2 << 16) | iw1;
-  cout << Form("last SPILL tag              : 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last spill tag\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,45,200);
-  iw2 = dtc->ReadROCRegister(link,46,200);
-  iw  = (iw2 << 16) | iw1;
-  cout << Form("last HB tag                 : 0x%08x\n",iw);
+  uint16_t iw3;
 
-  iw1 = dtc->ReadROCRegister(link,48,200);
-  iw2 = dtc->ReadROCRegister(link,49,200);
+  reg = 45;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw3 = dtc->ReadROCRegister(link,reg+2,100);
+  
   iw  = (iw2 << 16) | iw1;
-  cout << Form("last PREFETCH tag           : 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last HB tag\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,51,200);
-  iw2 = dtc->ReadROCRegister(link,52,200);
+  reg = 48;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw3 = dtc->ReadROCRegister(link,reg+2,100);
+  
   iw  = (iw2 << 16) | iw1;
-  cout << Form("last FETCHED tag            : 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last PREFETCH tag\n", reg+1,reg,iw);
+  
+  reg = 51;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw3 = dtc->ReadROCRegister(link,reg+2,100);
+  
+  iw  = (iw2 << 16) | iw1;
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last fetched tag\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,54,200);
-  iw2 = dtc->ReadROCRegister(link,55,200);
+  reg = 54;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw3 = dtc->ReadROCRegister(link,reg+2,100);
+  
   iw  = (iw2 << 16) | iw1;
-  cout << Form("last DATA REQ tag           : 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last DATA REQ tag\n", reg+1,reg,iw);
 
-  iw1 = dtc->ReadROCRegister(link,57,200);
-  iw2 = dtc->ReadROCRegister(link,58,200);
+  reg = 57;
+  iw1 = dtc->ReadROCRegister(link,reg  ,100);
+  iw2 = dtc->ReadROCRegister(link,reg+1,100);
+  iw3 = dtc->ReadROCRegister(link,reg+2,100);
+  
   iw  = (iw2 << 16) | iw1;
-  cout << Form("OFFSET tag                  : 0x%08x\n",iw);
+  cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : OFFSET tag\n", reg+1,reg,iw);
+
+  cout << std::endl;
+
+  reg = 72;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Num HB tag inconsistencies\n",reg, dat);
+
+  reg = 74;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Num HB tag lost\n",reg, dat);
+
+  reg = 73;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Num DREQ tag inconsistencies\n",reg, dat);
+
+  reg = 75;
+  dat = dtc->ReadROCRegister(link,reg,100);
+  cout << Form("reg(%2i)             :     0x%04x : Num DREQ tag lost\n",reg, dat);
 }
 #endif

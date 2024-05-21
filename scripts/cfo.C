@@ -246,7 +246,7 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   int EWMode             = 1;
   int EnableClockMarkers = 0;
   int EnableAutogenDRP   = 1;
-  int SampleEdgeMode     = 2;
+  int SampleEdgeMode     = 0;
 
   dtc->DisableCFOEmulation  ();
   dtc->DisableAutogenDRP();
@@ -269,8 +269,8 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   dtc->ClearCFOEmulationMode();                                // r_0x9100:bit_15 = 0
   // dtc->SetCFOEmulationMode();                                // r_0x9100:bit_15 = 0
 
-  // dtc->DisableCFOEmulation  ();
-  dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
+  dtc->DisableCFOEmulation  ();
+  // dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
 
   dtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
 
@@ -354,7 +354,7 @@ void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int Prin
   cfo_set_run_plan   (RunPlan);
   cfo_launch_run_plan();
 
-  dtc_print_roc_status(0);
+  // dtc_print_roc_status(0);
 
   // printf(" ---- 1\n"); dtc_print_status();
   dtc_read_subevents(dtc,PrintData,FirstTS);

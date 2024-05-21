@@ -335,7 +335,7 @@ void DtcGui::print_dtc_status() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << " DtcGui::ExecuteCommand : cmd: " << "print_status" << std::endl;
 
-  printf("Active TAB ID: %i\n",fActiveDtcID);
+  //  printf("Active TAB ID: %i\n",fActiveDtcID);
 
   if      (fActiveDtcID == 0) {
     try {
@@ -392,7 +392,7 @@ void DtcGui::print_roc_status() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << " DtcGui::ExecuteCommand : cmd: " << "print_roc_status" << std::endl;
 
-  printf("Active TAB ID: %i\n",fActiveDtcID);
+  //  printf("Active TAB ID: %i\n",fActiveDtcID);
 
   int roc = tab->fActiveRocID;
 //-----------------------------------------------------------------------------
@@ -559,7 +559,7 @@ void DtcGui::write_dtc_register() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " << "read_register" << std::endl;
 
-  printf("Active TAB ID: %i\n",fActiveDtcID);
+  //  printf("Active TAB ID: %i\n",fActiveDtcID);
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 // figure out the register to read
@@ -634,20 +634,17 @@ void DtcGui::write_roc_register() {
   //  TString cmd;
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+  RocTabElement_t* rtel = &dtel->fRocTel[roc];
 
-  streambuf* oldCoutStreamBuf = cout.rdbuf();
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
 
   ostringstream strCout;
-  cout.rdbuf( strCout.rdbuf() );
+  cout.rdbuf(strCout.rdbuf());
 
   TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " << "write_roc_register" << std::endl;
-
-  printf("Active TAB ID: %i\n",fActiveDtcID);
-
-  int roc = dtel->fActiveRocID;
-
-  RocTabElement_t* rtel = &dtel->fRocTel[roc];
+  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " 
+             << "write_roc_register DTC:" << fActiveDtcID << " ROC:" << roc << std::endl;
 
   uint reg, val;
   sscanf(rtel->fRegW->GetText(),"0x%x",&reg);
@@ -704,27 +701,19 @@ void DtcGui::DoRocTab(Int_t id) {
 //-----------------------------------------------------------------------------
 void DtcGui::DoDtcTab(Int_t id) {
 
-
   if (id != fActiveDtcID) {
-    int old_active = fActiveDtcID;
-
-    TGTabElement* tel = fDtcTab->GetTabTab(id);
+    int           prev_id = fActiveDtcID;
+    TGTabElement* tel     = fDtcTab->GetTabTab(id);
 
     if (fActiveDtcTab != tel) {
       tel->ChangeBackground(fYellow);
-      fActiveDtcTab->ChangeBackground(fDtcTel[old_active].fColor);
+      fActiveDtcTab->ChangeBackground(fDtcTel[prev_id].fColor);
       fActiveDtcTab = tel;
     }
 
     fActiveDtcID = id;
-    fActiveDtc      = &fDtcData[id];
+    fActiveDtc   = &fDtcData[id];
   }
-
-  // printf("Tab ID: %3i stage: %-15s  %-15s title: %-15s\n",
-  //        id,
-  //        fActiveDtc->fName.Data(),
-  //        fDtcTel[id].fRocTel->fTab->GetText()->Data(),
-  //        fActiveDtcTab->GetText()->Data());
 }
 
 
@@ -796,6 +785,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t*
   
   tb->MoveResize(x0,y0+(dy+5)*3,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "reset_roc()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // ROC register
 //-----------------------------------------------------------------------------
@@ -809,19 +799,16 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t*
 //-----------------------------------------------------------------------------
 // graphics context changes
 //-----------------------------------------------------------------------------
-  TGFont *ufont;         // will reflect user font changes
-  ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
-
-  TGGC   *uGC;           // will reflect user GC changes
+  TGFont* ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
 
   GCValues_t valEntry791;
   valEntry791.fMask = kGCForeground | kGCBackground | kGCFillStyle | kGCFont | kGCGraphicsExposures;
   gClient->GetColorByName("#000000",valEntry791.fForeground);
   gClient->GetColorByName("#e8e8e8",valEntry791.fBackground);
-  valEntry791.fFillStyle = kFillSolid;
-  valEntry791.fFont = ufont->GetFontHandle();
+  valEntry791.fFillStyle         = kFillSolid;
+  valEntry791.fFont              = ufont->GetFontHandle();
   valEntry791.fGraphicsExposures = kFALSE;
-  uGC  = gClient->GetGC(&valEntry791, kTRUE);
+  TGGC* uGC  = gClient->GetGC(&valEntry791, kTRUE); // will reflect user GC changes
 //-----------------------------------------------------------------------------
 // write register  to interact with
 //-----------------------------------------------------------------------------
@@ -870,7 +857,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t*
 // finish composition of the ROC tab element
 //-----------------------------------------------------------------------------
   RocTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
-  group->MoveResize(350,20,450,200);
+  group->MoveResize(350,20,340,160);
 }
 
 //-----------------------------------------------------------------------------
@@ -892,14 +879,14 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   int id = 0;
 
   if (DtcData->fName == "DTC") {
-    DtcTel.fRocTab = new TGTab(group,300,200);
+    DtcTel.fRocTab = new TGTab(group,10,10);
     group->AddFrame(DtcTel.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
     for (int i=0; i<6; i++) {
       BuildRocTabElement(DtcTel.fRocTab,DtcTel.fRocTel[i], &fDtcData->fRocData[i]);
     }
 
-    DtcTel.fRocTab->MoveResize(380,20,500,240);
+    DtcTel.fRocTab->MoveResize(380,20,400,190);
     DtcTel.fRocTab->Connect("Selected(Int_t)", "DtcGui", this, "DoRocTab(Int_t)");
 
     DtcTel.fRocTab->SetTab(id);
@@ -986,6 +973,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0,y0+(dy+5)*3,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "dtc_soft_reset()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 1 raw 5: DTC hard reset 
 //-----------------------------------------------------------------------------
@@ -998,6 +986,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0,y0+(dy+5)*4,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "dtc_hard_reset()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 2 raw 1 : label "register"
 //-----------------------------------------------------------------------------
@@ -1058,7 +1047,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 // resize the DTC group panel
 //-----------------------------------------------------------------------------
   DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
-  group->MoveResize(10,10,980,280);
+  group->MoveResize(10,10,910,250);
 }
 
 
@@ -1083,15 +1072,15 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 //-----------------------------------------------------------------------------
 // add tab holder and multiple tabs (tab elements) for two DTCs or a DTC and a CFO) 
 //-----------------------------------------------------------------------------
-   fDtcTab = new TGTab(fMainFrame,380,500);
+   fDtcTab = new TGTab(fMainFrame,10,10);
    fMainFrame->AddFrame(fDtcTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
    for (int i=0; i<fNDtcs; i++) {
      BuildDtcTabElement(fDtcTab,fDtcTel[i],&fDtcData[i]);
    }
 
-   int y0 = 330;
-   fDtcTab->MoveResize(10,10,1000,310);  // this defines the size of the tab below the tabs line
+   int y0 = 310;
+   fDtcTab->MoveResize(10,10,930,290);  // this defines the size of the tab below the tabs line
    fDtcTab->Connect("Selected(Int_t)", "DtcGui", this, "DoDtcTab(Int_t)");
 //-----------------------------------------------------------------------------
 // common buttons on fMainFrame, they are the same for different DTCs and ROCs
@@ -1132,7 +1121,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 // TextView
 //-----------------------------------------------------------------------------
    fTextView = new TGTextViewostream(fMainFrame,10,10);
-   fTextView->MoveResize(10,y0+button_sy+5,1000,500);
+   fTextView->MoveResize(10,y0+button_sy+5,930,620);
    fMainFrame->AddFrame(fTextView, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 5));
 //-----------------------------------------------------------------------------
 // concluding operations
@@ -1142,7 +1131,6 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
    fMainFrame->Resize(fMainFrame->GetDefaultSize());
 
    fMainFrame->MapRaised();
-   // fMainFrame->Resize(590,y0+4*button_sy);  // window size 
 }
 
 //-----------------------------------------------------------------------------
@@ -1151,6 +1139,6 @@ DtcGui* dtc_gui(int DebugLevel = 0) {
   
   const char* hostname = gSystem->Getenv("HOSTNAME");
 
-  DtcGui* x = new DtcGui(hostname,gClient->GetRoot(),1100,900,DebugLevel);
+  DtcGui* x = new DtcGui(hostname,gClient->GetRoot(),980,1000,DebugLevel);
   return x;
 } 
