@@ -251,7 +251,9 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   dtc->DisableCFOEmulation  ();
   dtc->DisableAutogenDRP();
 
-  dtc->HardReset();                     // write bit 31
+  //  dtc->HardReset();                     // write bit 31
+  dtc->SoftReset();                     // write bit 31
+
   dtc->EnableLink(DTC_Link_0,DTC_LinkEnableMode(true,true));
 
   // dtc->SetCFOEmulationEventWindowInterval(EWLength);  
@@ -264,13 +266,13 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
 
   dtc->EnableAutogenDRP();
 
-  dtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
-
   dtc->ClearCFOEmulationMode();                                // r_0x9100:bit_15 = 0
   // dtc->SetCFOEmulationMode();                                // r_0x9100:bit_15 = 0
 
   // dtc->DisableCFOEmulation  ();
-   dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
+  dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
+
+  dtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
 
 }
 
@@ -284,28 +286,38 @@ void dtc_read_subevents(DTC* dtc, int PrintData, uint64_t FirstTs) {
   bool match_ts = false;
   // std::vector<std::unique_ptr<DTCLib::DTC_Event>> events = dtc->GetData(event_tag, match_ts);
 
+  // do it in the beginning as well - avoid interference with DCS ?
+
+  //  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+
   while(1) {
     DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
-    std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> subevents = dtc->GetSubEventData(event_tag, match_ts);
-    int sz = subevents.size();
+    try {
+      std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> subevents = dtc->GetSubEventData(event_tag, match_ts);
+      int sz = subevents.size();
 
-    printf(">>>> ------------------------------ ts = %li   subevents.size = %i \n", ts,sz);
-    if (sz == 0) break;
-    ts++;
+      cout << Form(">>>> ------------------------------ ts = %li   subevents.size = %i \n", ts,sz);
+      if (sz == 0) break;
+      ts++;
 
-    for (int i=0; i<sz; i++) {
-      DTC_SubEvent* ev = subevents[i].get();
-      // ushort* xdata = (ushort*) ev->GetRawBufferPointer();
-      int nb = ev->GetSubEventByteCount();
-      int nw = nb/2;
+      for (int i=0; i<sz; i++) {
+        DTC_SubEvent* ev = subevents[i].get();
+        // ushort* xdata = (ushort*) ev->GetRawBufferPointer();
+        int nb = ev->GetSubEventByteCount();
+        int nw = nb/2;
       
-      uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
+        uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
 
-      if (PrintData) {
-        printf(">>>> -----------subevent = %i nbytes = %4i ew_tag: %10li\n", i,nb,ew_tag);
-        print_buffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
-        std::this_thread::sleep_for(std::chrono::microseconds(2000));  
+        if (PrintData) {
+          cout << Form(">>>> -----------subevent = %i nbytes = %4i ew_tag: %10li\n", i,nb,ew_tag);
+          print_buffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+          std::this_thread::sleep_for(std::chrono::microseconds(2000));  
+        }
       }
+    }
+    catch (...) {
+      cout << "ERROR reading next event" << std::endl;
+      break;
     }
   }
 
@@ -334,6 +346,7 @@ void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int Prin
 
   dtc_init_external_cfo_mode(dtc);
 
+  cfo->SoftReset();
   cfo->SetMaxDTCNumber(CFO_Link_0,1);
 
   dtc_set_roc_pattern_mode(0x1);
@@ -341,5 +354,9 @@ void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int Prin
   cfo_set_run_plan   (RunPlan);
   cfo_launch_run_plan();
 
+  dtc_print_roc_status(0);
+
+  // printf(" ---- 1\n"); dtc_print_status();
   dtc_read_subevents(dtc,PrintData,FirstTS);
+  // printf(" ---- 2\n"); dtc_print_status();
 }

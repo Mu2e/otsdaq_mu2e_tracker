@@ -3,14 +3,8 @@
 
 #define __CLING__ 1
 
-#include "iostream"
-// #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO.h"
+#include "dtc_globals.hh"
 
-using namespace CFOLib;
-using namespace DTCLib;
-
-CFO* gCfo[2] = {nullptr, nullptr};
 //-----------------------------------------------------------------------------
 // PcieAddress - CFO card index on PCIE bus
 // CFO is initialized in DTC_SimMode_NoCFO mode
@@ -25,10 +19,9 @@ CFO* cfo_init(int PcieAddress = -1) {
     }
   }
 
-  if (gCfo[addr] == nullptr) gCfo[addr] = new CFO(DTC_SimMode_NoCFO,addr,"",true,"UID");
+  if (gCFO[addr] == nullptr) gCFO[addr] = new CFO(DTC_SimMode_NoCFO,addr,"",true,"UID");
 
-  return gCfo[addr];
+  return gCFO[addr];
 }
-
 
 #endif

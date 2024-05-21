@@ -1,14 +1,17 @@
 // Mainframe macro generated from application: root.exe
 // By ROOT version 6.18/04 on 2020-05-11 18:09:54
 
+#include "stdlib.h"
+#include "stdio.h"
+
 #include "TApplication.h"
 
-#ifndef ROOT_TGDockableFrame
-#include "TGDockableFrame.h"
-#endif
-#ifndef ROOT_TGMenu
-#include "TGMenu.h"
-#endif
+// #ifndef ROOT_TGDockableFrame
+// #include "TGDockableFrame.h"
+// #endif
+// #ifndef ROOT_TGMenu
+// #include "TGMenu.h"
+// #endif
 // #ifndef ROOT_TGMdiDecorFrame
 // #include "TGMdiDecorFrame.h"
 // #endif
@@ -138,19 +141,24 @@ public:
 
   struct RocData_t {
     TString fName;         // 
+    int     fLink;
   };
 
   struct DtcData_t {
     TString    fName;         // 
-    
+    int        fPcieIndex;
+
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
 
-    DtcData_t(const char* Name = "") {
-      fName      = Name;
+    DtcData_t(const char* Name = "", int PcieIndex = 0) {
+      fName      = Name; 
+      fPcieIndex = PcieIndex;
+
       fActiveRoc = nullptr;
       for (int i=0;i<6; i++) {
         fRocData[i].fName = Form("ROC%i",i);
+        fRocData[i].fLink = i;
       }
     }
   };
@@ -159,14 +167,25 @@ public:
   struct RocTabElement_t {
     TGCompositeFrame* fFrame;
     TGTabElement*     fTab;             // its own tab element
+
+    TGTextEntry*      fRegW;
+    TGTextEntry*      fRegR;
+    TGTextEntry*      fValW;
+    TGLabel*          fValR;
+
     Pixel_t           fColor;
   };
 
 
   struct DtcTabElement_t {
     TGCompositeFrame* fFrame;
-//    TGTextEntry*      fRoc;
     TGTabElement*     fTab;             // its own tab element
+
+    TGTextEntry*      fRegW;
+    TGTextEntry*      fRegR;
+    TGTextEntry*      fValW;
+    TGLabel*          fValR;
+
     DTC*              fDTC;             // driver interface
     CFO*              fCFO;
     Pixel_t           fColor;
@@ -205,6 +224,7 @@ public:
   Pixel_t             fYellow;		  // active tab tip
   Pixel_t             fDtcTabColor;	// non-active tab tip
   Pixel_t             fSubmittedColor;
+  Pixel_t             fValidatedColor;
 
   int                 fDebugLevel;
   
@@ -249,14 +269,15 @@ DtcGui::DtcGui(const char* Host, const TGWindow *p, UInt_t w, UInt_t h, int Debu
   fSubmittedColor = 16724889;
 
   fNDtcs = 2;  // 0:9
-  fDtcData[0] = DtcData_t("CFO:0");
-  fDtcData[1] = DtcData_t("DTC:1");
+  fDtcData[0] = DtcData_t("CFO",0);
+  fDtcData[1] = DtcData_t("DTC",1);
 
   BuildGui(p,w,h);
 //-----------------------------------------------------------------------------
-// two PCIE cards
+// two PCIE cards - rely on CFOLIB_CFO and DTCLIB_DTC
 //-----------------------------------------------------------------------------
-
+  fDtcTel[0].fCFO = cfo_init();
+  fDtcTel[1].fDTC = dtc_init();
 }
 
 //-----------------------------------------------------------------------------
@@ -438,8 +459,14 @@ void DtcGui::dtc_soft_reset() {
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (fActiveDtcID == 1) {
-    try         { dtc_soft_reset(); }
-    catch (...) { *fTextView << Form("ERROR : coudn't soft reset DTC %i ... BAIL OUT",roc) << std::endl; }
+    try         { 
+      *fTextView << "resetting the DTC" << std::endl; 
+      dtel->fDTC->SoftReset();
+      *fTextView << "done resetting the DTC" << std::endl; 
+    }
+    catch (...) { 
+      *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
+    }
   }
 
   TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("%s DONE",__func__) <<  std::endl;
@@ -463,7 +490,9 @@ void DtcGui::dtc_hard_reset() {
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (fActiveDtcID == 1) {
-    try         { dtc_hard_reset(); }
+    try         { 
+      dtel->fDTC->HardReset();
+    }
     catch (...) { *fTextView << Form("ERROR : coudn't hard reset DTC %i ... BAIL OUT",roc) << std::endl; }
   }
 
@@ -477,26 +506,33 @@ void DtcGui::dtc_hard_reset() {
 void DtcGui::read_dtc_register() {
   //  TString cmd;
 
-  DtcTabElement_t* tab = fDtcTel+fActiveDtcID;
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
 
   streambuf* oldCoutStreamBuf = cout.rdbuf();
 
   ostringstream strCout;
   cout.rdbuf( strCout.rdbuf() );
 
+//-----------------------------------------------------------------------------
+// figure out the register to read
+//-----------------------------------------------------------------------------
+  uint reg;
+  sscanf(dtel->fRegR->GetText(),"0x%x",&reg);
   TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " << "read_register" << std::endl;
-
-  printf("Active TAB ID: %i\n",fActiveDtcID);
-
-  int roc = tab->fActiveRocID;
+  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " 
+             << "read_register DTC ID:" << fActiveDtcID << " text: " << dtel->fRegR->GetText() 
+             << " register: " << reg << std::endl;
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  uint reg = 0x9004;
   if (fActiveDtcID == 1) {
     try {
-      dtc_read_register(reg);
+      *fTextView << Form("%s: reading DTC %i register 0x%08x\n",__func__,fActiveDtcID,reg);
+      int timeout_ms(150);
+      uint32_t val;
+      dtel->fDTC->GetDevice()->read_register(reg,timeout_ms,&val);
+      dtel->fValR->SetText(Form("0x%08x",val));
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't read DTC reg 0x%4x... BAIL OUT",__func__,reg) << std::endl;
@@ -512,9 +548,8 @@ void DtcGui::read_dtc_register() {
 
 //-----------------------------------------------------------------------------
 void DtcGui::write_dtc_register() {
-  //  TString cmd;
 
-  DtcTabElement_t* tab = fDtcTel+fActiveDtcID;
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
 
   streambuf* oldCoutStreamBuf = cout.rdbuf();
 
@@ -527,12 +562,17 @@ void DtcGui::write_dtc_register() {
   printf("Active TAB ID: %i\n",fActiveDtcID);
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
+// figure out the register to read
 //-----------------------------------------------------------------------------
-  uint reg = 0x9004;
+  uint reg, val;
+  sscanf(dtel->fRegW->GetText(),"0x%x",&reg);
+  sscanf(dtel->fValW->GetText(),"0x%x",&val);
+
   if (fActiveDtcID == 1) {
     try {
-      uint val = dtc_read_register(reg);
-      *fTextView << Form("%s: DTC %i reg 0x%4x val: %0x8x",__func__,fActiveDtcID,reg,val) << std::endl;
+      int timeout_ms(150);
+      dtel->fDTC->GetDevice()->write_register(reg,timeout_ms,val);
+      *fTextView << Form("%s: DTC %i reg 0x%8x val: %0x8x",__func__,fActiveDtcID,reg,val) << std::endl;
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't write DTC reg 0x%4x... BAIL OUT",__func__,reg) << std::endl;
@@ -563,15 +603,19 @@ void DtcGui::read_roc_register() {
   printf("Active DTC ID: %i\n",fActiveDtcID);
 
   int roc = dtel->fActiveRocID;
+
+  RocTabElement_t* rtel = &dtel->fRocTel[roc];
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (fActiveDtcID == 1) {
-    uint16_t reg = 0;
+    uint reg;
+    sscanf(rtel->fRegR->GetText(),"0x%x",&reg);
     try {
-      uint16_t val;
-      dtc_read_roc_register(roc,reg,val);
-      *fTextView << Form("%s: roc: %i reg : %0x04x val: 0x%04x",__func__,roc,reg,val) << std::endl;
+      int timeout_ms(150);
+      uint16_t val = dtel->fDTC->ReadROCRegister(DTC_Link_ID(roc),reg,timeout_ms);
+      rtel->fValR->SetText(Form("0x%04x",val));
+      *fTextView << Form("%s: roc: %i reg : 0x%04x val: 0x%04x",__func__,roc,reg,val) << std::endl;
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't read ROC %i ... BAIL OUT",__func__,roc) << std::endl;
@@ -589,7 +633,7 @@ void DtcGui::read_roc_register() {
 void DtcGui::write_roc_register() {
   //  TString cmd;
 
-  DtcTabElement_t* tab = fDtcTel+fActiveDtcID;
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
 
   streambuf* oldCoutStreamBuf = cout.rdbuf();
 
@@ -601,17 +645,23 @@ void DtcGui::write_roc_register() {
 
   printf("Active TAB ID: %i\n",fActiveDtcID);
 
-  int roc = tab->fActiveRocID;
+  int roc = dtel->fActiveRocID;
+
+  RocTabElement_t* rtel = &dtel->fRocTel[roc];
+
+  uint reg, val;
+  sscanf(rtel->fRegW->GetText(),"0x%x",&reg);
+  sscanf(rtel->fValW->GetText(),"0x%x",&val);
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (fActiveDtcID == 1) {
-    uint16_t reg = 0;
     try {
-      dtc_write_roc_register(roc,reg,0);
+      int timeout_ms(150);
+      dtel->fDTC->WriteROCRegister(DTC_Link_ID(roc),reg,val,timeout_ms,false);
     }
     catch (...) {
-      *fTextView << Form("ERROR in %s: coudn't read ROC %i ... BAIL OUT",__func__,roc) << std::endl;
+      *fTextView << Form("ERROR in %s: coudn't write ROC %i ... BAIL OUT",__func__,roc) << std::endl;
     }
   }
 
@@ -670,60 +720,63 @@ void DtcGui::DoDtcTab(Int_t id) {
     fActiveDtc      = &fDtcData[id];
   }
 
-  printf("Tab ID: %3i stage: %-15s  %-15s title: %-15s\n",
-         id,
-         fActiveDtc->fName.Data(),
-         fDtcTel[id].fRocTel->fTab->GetText()->Data(),
-         fActiveDtcTab->GetText()->Data());
+  // printf("Tab ID: %3i stage: %-15s  %-15s title: %-15s\n",
+  //        id,
+  //        fActiveDtc->fName.Data(),
+  //        fDtcTel[id].fRocTel->fTab->GetText()->Data(),
+  //        fActiveDtcTab->GetText()->Data());
 }
 
 
 //-----------------------------------------------------------------------------
 // Tab here is the list of ROC tabs
 //-----------------------------------------------------------------------------
-void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocData_t* RocData) {
+void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t* RocData) {
 
   const char* device_name = RocData->fName.Data();
 
   //  printf("[DtcGui::BuildTabElement] title: %s\n",title);
 
-  TabElement.fFrame = Tab->AddTab(device_name);
+  RocTel.fFrame = Tab->AddTab(device_name);
   int ntabs         = Tab->GetNumberOfTabs();
 
   // TabElement.fFrame->SetLayoutManager(new TGVerticalLayout(TabElement.fFrame));
 
-  TabElement.fTab   = Tab->GetTabTab(ntabs-1);
-  TabElement.fColor = TabElement.fTab->GetBackground();
+  RocTel.fTab   = Tab->GetTabTab(ntabs-1);
+  RocTel.fColor = RocTel.fTab->GetBackground();
 
-  TGGroupFrame* group = new TGGroupFrame(TabElement.fFrame,Form("%s",device_name));
+  TGGroupFrame* group = new TGGroupFrame(RocTel.fFrame,Form("%s",device_name));
   group->SetLayoutBroken(kTRUE);
 //-----------------------------------------------------------------------------
 // 1st column: commands : a) ROC status, b) write c) read
 //-----------------------------------------------------------------------------
   TGTextButton* tb;
 
+  int x0, y0, dx, dy;
+  x0 = 10; y0 = 20; dx = 60; dy = 25; 
+
   tb = new TGTextButton(group,"status",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
 
-  int x0, y0, dx, dy;
-  x0 = 10; y0 = 20; dx = 60; dy = 25; 
-
   tb->MoveResize(x0,y0,dx,dy);
-  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "print_roc_status()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // ROC read/write register 
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"write",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0,y0+dy+5,dx,dy);
-  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "write_roc_register()");
+  tb->ChangeBackground(fValidatedColor);
 
   tb = new TGTextButton(group,"read",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -733,6 +786,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocDat
   
   tb->MoveResize(x0,y0+(dy+5)*2,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "read_roc_register()");
+  tb->ChangeBackground(fValidatedColor);
 
   tb = new TGTextButton(group,"reset",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -745,7 +799,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocDat
 //-----------------------------------------------------------------------------
 // ROC register
 //-----------------------------------------------------------------------------
-  int dx2 = 70;
+  int dx2 = dx;
   TGLabel* lab = new TGLabel(group,"register");
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
@@ -778,6 +832,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocDat
   // wr->Resize(160,reg->GetDefaultHeight());
   group->AddFrame(wr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   wr->MoveResize(x0+dx+10,y0+dy+5,dx2,dy);
+  RocTel.fRegW = wr;
 
   TGTextEntry*  rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   rr->SetMaxLength(4096);
@@ -785,6 +840,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocDat
   rr->SetText("0x0000");
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   rr->MoveResize(x0+dx+10,y0+(dy+5)*2,dx2,dy);
+  RocTel.fRegR = rr;
 //-----------------------------------------------------------------------------
 // 3rd column: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
@@ -793,68 +849,72 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocDat
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  lab->MoveResize(x0+dx+10+dx2+10, y0        ,dx2,dy);
+  lab->MoveResize(x0+dx+10+dx2+10, y0        ,dx,dy);
 
   TGTextEntry*  wval = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   wval->SetMaxLength(4096);
   wval->SetAlignment(kTextLeft);
   wval->SetText("0x0000");
   group->AddFrame(wval, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  wval->MoveResize(x0+dx+10+dx2+10,y0+(dy+5) ,dx2,dy);
+  wval->MoveResize(x0+dx+10+dx2+10,y0+(dy+5) ,dx,dy);
+  RocTel.fValW = wval;
  
   lab = new TGLabel(group,"0x0000");
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx2,dy);
+  lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx,dy);
+  RocTel.fValR = lab;
 //-----------------------------------------------------------------------------
 // finish composition of the ROC tab element
 //-----------------------------------------------------------------------------
-  TabElement.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
+  RocTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
   group->MoveResize(350,20,450,200);
 }
+
 //-----------------------------------------------------------------------------
-void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData) {
+void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t* DtcData) {
 
   const char* device_name = DtcData->fName.Data();
 
-  //  printf("[DtcGui::BuildTabElement] title: %s\n",title);
+  DtcTel.fFrame = Tab->AddTab(Form("%s:%i", DtcData->fName.Data(),DtcData->fPcieIndex));
+  int ntabs     = Tab->GetNumberOfTabs();
+  DtcTel.fFrame->SetLayoutManager(new TGVerticalLayout(DtcTel.fFrame));
+  DtcTel.fTab   = Tab->GetTabTab(ntabs-1);
+  DtcTel.fColor = DtcTel.fTab->GetBackground();
 
-  TabElement.fFrame = Tab->AddTab(device_name);
-  int ntabs         = Tab->GetNumberOfTabs();
-  TabElement.fFrame->SetLayoutManager(new TGVerticalLayout(TabElement.fFrame));
-  TabElement.fTab   = Tab->GetTabTab(ntabs-1);
-  TabElement.fColor = TabElement.fTab->GetBackground();
-
-  TGGroupFrame* group = new TGGroupFrame(TabElement.fFrame,Form("%s : %s",fHost.Data(),device_name));
+  TGGroupFrame* group = new TGGroupFrame(DtcTel.fFrame,Form("%s : %s",fHost.Data(),device_name));
   group->SetLayoutBroken(kTRUE);
+//-----------------------------------------------------------------------------
+// DTC's have ROCs, CFO's - do not
+//-----------------------------------------------------------------------------
+  int id = 0;
 
-  //  TabElement.fRocTab = new TGTab(TabElement.fFrame,300,200);
-  //  TabElement.fFrame->AddFrame(TabElement.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  if (DtcData->fName == "DTC") {
+    DtcTel.fRocTab = new TGTab(group,300,200);
+    group->AddFrame(DtcTel.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
-  TabElement.fRocTab = new TGTab(group,300,200);
-  group->AddFrame(TabElement.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+    for (int i=0; i<6; i++) {
+      BuildRocTabElement(DtcTel.fRocTab,DtcTel.fRocTel[i], &fDtcData->fRocData[i]);
+    }
 
-  for (int i=0; i<6; i++) {
-    BuildRocTabElement(TabElement.fRocTab,TabElement.fRocTel[i], &fDtcData->fRocData[i]);
-  }
+    DtcTel.fRocTab->MoveResize(380,20,500,240);
+    DtcTel.fRocTab->Connect("Selected(Int_t)", "DtcGui", this, "DoRocTab(Int_t)");
 
-  TabElement.fRocTab->MoveResize(380,20,500,240);
-  TabElement.fRocTab->Connect("Selected(Int_t)", "DtcGui", this, "DoRocTab(Int_t)");
+    DtcTel.fRocTab->SetTab(id);
+
 //-----------------------------------------------------------------------------
 // set active ROC tab
 //-----------------------------------------------------------------------------
-  int id = 0;
-  TabElement.fActiveRocID  = id;
-  // TabElement.fActiveRoc    = &fRocData[id];
-  TabElement.fRocTab->SetTab(id);
+    DtcTel.fActiveRocID  = id;
 
-  TabElement.fActiveRocTel = &TabElement.fRocTel[id];
-  TabElement.fRocTabColor  = TabElement.fActiveRocTel->fTab->GetBackground();
-
-  TabElement.fActiveRocTel->fTab->ChangeBackground(fYellow);
-  //------------------------------------------------------------------------------
+    DtcTel.fActiveRocTel = &DtcTel.fRocTel[id];
+    DtcTel.fRocTabColor  = DtcTel.fActiveRocTel->fTab->GetBackground();
+    
+    DtcTel.fActiveRocTel->fTab->ChangeBackground(fYellow);
+  }
+//------------------------------------------------------------------------------
 // a) graphics context changes
 //-----------------------------------------------------------------------------
   TGFont *ufont;         // will reflect user font changes
@@ -876,7 +936,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   TGTextButton* tb;
   int x0, y0, dx, dy;
 
-  x0 = 20; y0 = 30; dx = 80; dy = 30; 
+  x0 = 20; y0 = 30; dx = 70; dy = 30; 
 
   tb = new TGTextButton(group,"status",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -887,11 +947,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   
   tb->MoveResize(x0,y0,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "print_dtc_status()");
-
-  ULong_t ucolor;        // will reflect user color changes
-  //  gClient->GetColorByName("#ffffcc",ucolor);
-  gClient->GetColorByName("#ccffcc",ucolor);  // light green
-  tb->ChangeBackground(ucolor);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // DTC write register 
 //-----------------------------------------------------------------------------
@@ -904,6 +960,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
  
   tb->MoveResize(x0,y0+dy+5,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "write_dtc_register()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 1 raw 3: DTC read register 
 //-----------------------------------------------------------------------------
@@ -916,6 +973,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   
   tb->MoveResize(x0,y0+(dy+5)*2,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "read_dtc_register()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 1 raw 4: DTC soft reset 
 //-----------------------------------------------------------------------------
@@ -941,8 +999,6 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   tb->MoveResize(x0,y0+(dy+5)*4,dx,dy);
   tb->Connect("Pressed()", "DtcGui", this, "dtc_hard_reset()");
 //-----------------------------------------------------------------------------
-// second column
-//-----------------------------------------------------------------------------
 // column 2 raw 1 : label "register"
 //-----------------------------------------------------------------------------
   int dx2 = 80;
@@ -961,6 +1017,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   wr->SetAlignment(kTextLeft);
   wr->SetText("0x0000");
   wr->MoveResize(x0+dx+10,y0+dy+5,dx2,dy);
+  DtcTel.fRegW = wr;
 //-----------------------------------------------------------------------------
 // read register  to interact with
 //-----------------------------------------------------------------------------
@@ -970,39 +1027,47 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcDat
   rr->SetAlignment(kTextLeft);
   rr->SetText("0x0000");
   rr->MoveResize(x0+dx+10,y0+2*(dy+5),dx2,dy);
+  DtcTel.fRegR = rr;
 //-----------------------------------------------------------------------------
 // 3rd column: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
+  int dx3 = 100;
   lab = new TGLabel(group,"value");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
-  lab->MoveResize(x0+dx+10+dx2+10, y0        ,dx2,dy);
+  lab->MoveResize(x0+dx+10+dx2+10, y0        ,dx3,dy);
 
   TGTextEntry*  wval = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   group->AddFrame(wval, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   wval->SetMaxLength(4096);
   wval->SetAlignment(kTextLeft);
-  wval->SetText("0x0000");
-  wval->MoveResize(x0+dx+10+dx2+10,y0+(dy+5) ,dx2,dy);
+  wval->SetText("0x00000000");
+  wval->MoveResize(x0+dx+10+dx2+10,y0+(dy+5) ,dx3,dy);
+  DtcTel.fValW = wval;
  
-  lab = new TGLabel(group,"0x0000");
+  lab = new TGLabel(group,"0x00000000");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
-  lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx2,dy);
+  lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx3,dy);
+  DtcTel.fValR = lab;
 //-----------------------------------------------------------------------------
-// resize the group panel
+// resize the DTC group panel
 //-----------------------------------------------------------------------------
-  TabElement.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
-  group->MoveResize(10,10,1080,280);
+  DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
+  group->MoveResize(10,10,980,280);
 }
 
 
 //-----------------------------------------------------------------------------
 void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
+
+  ULong_t ucolor;        // will reflect user color changes
+  //  gClient->GetColorByName("#ffffcc",ucolor);
+  gClient->GetColorByName("#ccffcc",fValidatedColor);  // light green
 //-----------------------------------------------------------------------------
 // main frame
 //-----------------------------------------------------------------------------
@@ -1026,7 +1091,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
    }
 
    int y0 = 330;
-   fDtcTab->MoveResize(10,10,1100,310);  // this defines the size of the tab below the tabs line
+   fDtcTab->MoveResize(10,10,1000,310);  // this defines the size of the tab below the tabs line
    fDtcTab->Connect("Selected(Int_t)", "DtcGui", this, "DoDtcTab(Int_t)");
 //-----------------------------------------------------------------------------
 // common buttons on fMainFrame, they are the same for different DTCs and ROCs
@@ -1067,7 +1132,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 // TextView
 //-----------------------------------------------------------------------------
    fTextView = new TGTextViewostream(fMainFrame,10,10);
-   fTextView->MoveResize(10,y0+button_sy+5,1100,500);
+   fTextView->MoveResize(10,y0+button_sy+5,1000,500);
    fMainFrame->AddFrame(fTextView, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 5));
 //-----------------------------------------------------------------------------
 // concluding operations
@@ -1086,6 +1151,6 @@ DtcGui* dtc_gui(int DebugLevel = 0) {
   
   const char* hostname = gSystem->Getenv("HOSTNAME");
 
-  DtcGui* x = new DtcGui(hostname,gClient->GetRoot(),1200,900,DebugLevel);
+  DtcGui* x = new DtcGui(hostname,gClient->GetRoot(),1100,900,DebugLevel);
   return x;
 } 

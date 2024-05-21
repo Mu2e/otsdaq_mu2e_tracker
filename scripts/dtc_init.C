@@ -3,24 +3,14 @@
 
 #define __CLING__ 1
 
-#include "iostream"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO.h"
 
-using namespace CFOLib;
-using namespace DTCLib;
-
-DTC* gDTC[2] = {nullptr, nullptr};
-
-namespace Dtc {
-  DTC_SimMode DefaultSimMode = DTC_SimMode_NoCFO;
-};
+#include "dtc_globals.hh"
 
 //-----------------------------------------------------------------------------
 // PcieAddress - DTC card index on PCIE bus
 // by default, leave Link=0
 //-----------------------------------------------------------------------------
-DTC* dtc_init(int PcieAddress, DTC_SimMode Mode = Dtc::DefaultSimMode, uint LinkMask = 0x1) {
+DTC* dtc_init(int PcieAddress = -1, DTC_SimMode Mode = Dtc::DefaultSimMode, uint LinkMask = 0x1) {
   int addr = PcieAddress;
   if (addr < 0) {
     if (gSystem->Getenv("DTCLIB_DTC") != nullptr) addr = atoi(gSystem->Getenv("DTCLIB_DTC"));
