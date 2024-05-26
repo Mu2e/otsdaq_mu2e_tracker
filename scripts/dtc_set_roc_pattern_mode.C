@@ -13,10 +13,11 @@ namespace trk_daq {
 
 //-----------------------------------------------------------------------------
 // rely on DTCLIB_DTC
+// handle LinkMask in the future
 //-----------------------------------------------------------------------------
 void dtc_set_roc_pattern_mode(int LinkMask, int PcieAddress=-1) {
 
-  DTC* dtc = dtc_init(PcieAddress,Dtc::DefaultSimMode,LinkMask);
+  DTC* dtc = dtc_init(PcieAddress);
 
   for (int i=0; i<6; i++) {
     int used = (LinkMask >> 4*i) & 0x1;

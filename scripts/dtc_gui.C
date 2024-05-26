@@ -269,8 +269,12 @@ DtcGui::DtcGui(const char* Host, const TGWindow *p, UInt_t w, UInt_t h, int Debu
   fSubmittedColor = 16724889;
 
   fNDtcs = 2;  // 0:9
-  fDtcData[0] = DtcData_t("CFO",0);
-  fDtcData[1] = DtcData_t("DTC",1);
+
+  int cfo_pcie_address = atoi(gSystem->Getenv("CFOLIB_CFO"));
+  int dtc_pcie_address = atoi(gSystem->Getenv("DTCLIB_DTC"));
+
+  fDtcData[0] = DtcData_t("CFO",cfo_pcie_address);
+  fDtcData[1] = DtcData_t("DTC",dtc_pcie_address);
 
   BuildGui(p,w,h);
 //-----------------------------------------------------------------------------
@@ -390,7 +394,7 @@ void DtcGui::print_roc_status() {
   cout.rdbuf( strCout.rdbuf() );
 
   TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::ExecuteCommand : cmd: " << "print_roc_status" << std::endl;
+  *fTextView << x1.AsSQLString() << "DtcGui:: : " << __func__ << ": START" << std::endl;
 
   //  printf("Active TAB ID: %i\n",fActiveDtcID);
 
@@ -399,20 +403,17 @@ void DtcGui::print_roc_status() {
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (fActiveDtcID == 1) {
-    try { dtc_print_roc_status(roc); }
+    try         { dtc_print_roc_status(roc); }
     catch (...) { *fTextView << Form("ERROR : coudn't read ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 
   TDatime x2;
-  *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::ExecuteCommand : DONE " <<  std::endl;
-
+  *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ 
+             << ": DONE; OK=reg(75) printed" << std::endl;
   fTextView->ShowBottom();
 
   // Restore old cout.
   cout.rdbuf( oldCoutStreamBuf );
-
-  //  ExecuteCommand(cmd.Data(),fDebugLevel);
-  //  tab->fColor = fSubmittedColor;
 }
 
 //-----------------------------------------------------------------------------
@@ -572,7 +573,7 @@ void DtcGui::write_dtc_register() {
     try {
       int timeout_ms(150);
       dtel->fDTC->GetDevice()->write_register(reg,timeout_ms,val);
-      *fTextView << Form("%s: DTC %i reg 0x%8x val: %0x8x",__func__,fActiveDtcID,reg,val) << std::endl;
+      *fTextView << Form("%s: DTC %i reg 0x%8x val: 0x%8x",__func__,fActiveDtcID,reg,val) << std::endl;
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't write DTC reg 0x%4x... BAIL OUT",__func__,reg) << std::endl;
@@ -600,7 +601,7 @@ void DtcGui::read_roc_register() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " << "read_roc_register" << std::endl;
 
-  printf("Active DTC ID: %i\n",fActiveDtcID);
+  if (fDebugLevel > 1) printf("DtcGui::%s : Active DTC ID: %i\n",__func__,fActiveDtcID);
 
   int roc = dtel->fActiveRocID;
 

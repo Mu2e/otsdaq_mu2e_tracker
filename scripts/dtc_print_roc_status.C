@@ -13,7 +13,7 @@ void dtc_print_roc_status(int Link, int PcieAddress = -1) {
 
   cout << Form("-------------------- ROC %i registers:\n",Link);
 
-  DTC* dtc = dtc_init(PcieAddress,Dtc::DefaultSimMode,1<<4*Link);
+  DTC* dtc = dtc_init(PcieAddress);
 
   DTC_Link_ID link = DTC_Link_ID(Link);
   uint32_t dat;
@@ -194,5 +194,7 @@ void dtc_print_roc_status(int Link, int PcieAddress = -1) {
   reg = 75;
   dat = dtc->ReadROCRegister(link,reg,100);
   cout << Form("reg(%2i)             :     0x%04x : Num DREQ tag lost\n",reg, dat);
+
+  cout << "------------------------------------------------------------------------\n";
 }
 #endif
