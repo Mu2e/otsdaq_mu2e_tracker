@@ -35,6 +35,9 @@ namespace trkdaq {
     DTCLib::DTC* Dtc() { return fDtc; }
 
     void PrintRocStatus(int Link);
+
+    void ConfigureReadingRocPatterns(int Link);
+
   };
 
 };

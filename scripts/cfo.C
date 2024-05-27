@@ -281,14 +281,8 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
 //-----------------------------------------------------------------------------
 void dtc_read_subevents(DTC* dtc, int PrintData, uint64_t FirstTs) {
 
-  uint64_t ts = FirstTs;
-  
-  bool match_ts = false;
-  // std::vector<std::unique_ptr<DTCLib::DTC_Event>> events = dtc->GetData(event_tag, match_ts);
-
-  // do it in the beginning as well - avoid interference with DCS ?
-
-  //  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+  uint64_t ts       = FirstTs;
+  bool     match_ts = false;
 
   while(1) {
     DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
