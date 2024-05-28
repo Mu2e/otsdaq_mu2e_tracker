@@ -36,7 +36,9 @@ namespace trkdaq {
 
     void PrintRocStatus(int Link);
 
-    void ConfigureReadingRocPatterns(int Link);
+    void RocPatternConfig(int LinkMask);
+
+    void LaunchRunPlan   (int NEvents );
 
   };
 

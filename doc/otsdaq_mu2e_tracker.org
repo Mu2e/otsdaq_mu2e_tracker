@@ -134,6 +134,7 @@ root [2] .q
 #+end_src
 ** after that can proceed
 * ------------------------------------------------------------------------------
+* [[file:tracker_roc_registers.org][tracker ROC registers]]  
 * tracker VST configurations                                                 
 - all described in tfm/config                          
 ** trk_vst_001: one test stand, one DTC, one ROC                             
@@ -440,8 +441,9 @@ corresponding distance between the two consecutive pulses :
 
 * ROC channel map (Vadim)                                                    
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
-* known DRAC boards                                                          
-** ROC ID  7a7fb : <2024-05-21 Tue> installed at TS1                         
+* known DRAC boards                                                       
+  https://docs.google.com/spreadsheets/d/1Be0-MM15hAwAviW3qs6o4NHJdIhIUzkZw7NRErRmwds/edit#gid=0
+** ROC ID 7a7fb : <2024-05-21 Tue> installed at TS1                          
 
 -----------------  <2024-05-21 Tue>                
 readDeviceID
@@ -462,8 +464,8 @@ readDeviceID
  'DeviceSerial': '0x7a7fb985c50dfbc734685a1212dad384'}
 
 ('DRAC ROC ID #', '7a7fb')
-** [[file:roc_id_1b561.org][ROC ID: 1b561]] : <2024-05-09 Thu> installed at TS1               
-** [[file:roc_id_805d6.org][ROC ID: 805d6]] : <2024-02-25 Sun> installed at TS2
+** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
+** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
 * TS0, TS1, TS2                                                              
 ** TS0: currently unavailable
 ** TS1: baud rate 57600                                                      
@@ -519,8 +521,9 @@ Note that a directory-with-the-same-name-as-the-job-file will be created in that
 Next time around, you can just select "Open" under Job Project, navigate to the .pro file you will find in the 
 directory-with-the-same-name-as-the-job-file, and skip to step 6).
 
-NB: Sometimes, when you select "New" and the directory-with-the-same-name-as-the-job-file is present, an error message will appear in the
- "Create New Job Project" window window.  Either select "Open" or delete the directory-with-the-same-name-as-the-job-file before selecting New.
+NB: Sometimes, when you select "New" and the directory-with-the-same-name-as-the-job-file is present, 
+    an error message will appear in the "Create New Job Project" window window.  
+    Either select "Open" or delete the directory-with-the-same-name-as-the-job-file before selecting New.
 
 Enjoy!
 Monica

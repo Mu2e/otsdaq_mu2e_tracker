@@ -3,6 +3,7 @@
 // mixes high- and low-level commands
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
+// most repeats Ryan's code, but w/o dependency on xdaq, GUI-based UI, and otsdaq everything
 //-----------------------------------------------------------------------------
 #ifndef __trkdaq_cfo_interface_cc__
 #define __trkdaq_cfo_interface_cc__
@@ -61,7 +62,60 @@ namespace trkdaq {
     }
     else return fgInstance;
   }
+
+
+//-----------------------------------------------------------------------------
+// looks that it is only for the off-spill
+//-----------------------------------------------------------------------------
+  void CfoInterface::LaunchRunPlan() {
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+
+    fCfo->SoftReset();
+    usleep(10);	
+
+    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+  }
   
+//-----------------------------------------------------------------------------
+  void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn) {
+    CFOLib::CFO_Compiler compiler;
+
+    std::string fn1(InputFn );
+    std::string fn2(OutputFn);
+    
+    compiler.processFile(fn1,fn2);
+  }
+
+//-----------------------------------------------------------------------------
+// TODO
+//-----------------------------------------------------------------------------
+  void CfoInterface::SetOffspillRunPlan(int NEvents, int EWLength) {
+    printf("ERROR: %s not implemented yet",__func__);
+  }
+
+//-----------------------------------------------------------------------------
+// first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
+// (sizeof(mu2e_databuff_t)
+//-----------------------------------------------------------------------------
+  void CfoInterface::SetRunPlan(const char* Fn) {
+
+    std::ifstream file(Fn, std::ios::binary | std::ios::ate);
+
+    // read binary file
+    mu2e_databuff_t inputData;
+    auto inputSize = file.tellg();
+    uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
+    file.seekg(0, std::ios::beg);
+
+    memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
+    file.read((char*) (&inputData[8]), inputSize);
+    file.close();
+
+    fCfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
+    usleep(10);	
+  }
+
 };
 
 #endif

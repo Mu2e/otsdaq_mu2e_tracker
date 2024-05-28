@@ -14,7 +14,14 @@
 
 using namespace DTCLib;
 
+namespace {
+  int gSleepTimeDTC      =  1000;  // [us]
+  int gSleepTimeROC      =  2000;  // [us]
+  int gSleepTimeROCReset =  4000;  // [us]
+};
+
 namespace trkdaq {
+
 
   DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
 
@@ -247,6 +254,35 @@ namespace trkdaq {
   }
 
 
+//-----------------------------------------------------------------------------
+  void DtcInterface::RocPatternConfig(int LinkMask) {
+  for (int i=0; i<6; i++) {
+    int used = (LinkMask >> 4*i) & 0x1;
+    if (used != 0) {
+      auto link = DTC_Link_ID(i);
+      fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
+
+      // the delay should be hidden in the ROC firmware
+      std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+
+      fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
+      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+
+      fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
+      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+
+      fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
+      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+    }
+  }
+    
+    
+  }
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::LaunchRunPlan(int NEvents) {
+    
+  }
 
 };
 

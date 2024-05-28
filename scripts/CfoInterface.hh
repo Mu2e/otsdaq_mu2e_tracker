@@ -32,6 +32,21 @@ namespace trkdaq {
 
     int          PcieAddr() { return fPcieAddr; }
     CFOLib::CFO* Cfo     () { return fCfo     ; }
+
+    void         LaunchRunPlan();
+    void         SetRunPlan    (const char* Fn);
+//-----------------------------------------------------------------------------
+// input file is a .txt file
+// output file is a binary file with precompiled instructions
+//-----------------------------------------------------------------------------
+    void         CompileRunPlan(const char* InputFn, const char* OutputFn);
+//-----------------------------------------------------------------------------
+// TODO: need one more function which would 
+// 1. generate off-spill run plan for N evens, 
+// 2. compile and load it
+// 'EWLength' in units of 25 ns (40 MHz clock ticks)
+//-----------------------------------------------------------------------------
+    void         SetOffspillRunPlan(int NEvents, int EWLength);
   };
 
 };
