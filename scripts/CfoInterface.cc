@@ -116,6 +116,41 @@ namespace trkdaq {
     usleep(10);	
   }
 
+//-----------------------------------------------------------------------------
+  uint32_t CfoInterface::ReadRegister(uint16_t Register) {
+
+    uint32_t data;
+    int      timeout(150);
+    
+    mu2edev* dev = fCfo->GetDevice();
+    dev->read_register(Register,timeout,&data);
+    
+    return data;
+  }
+
+
+//-----------------------------------------------------------------------------
+  void CfoInterface::PrintRegister(uint16_t Register, const char* Title) {
+    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
+  }
+
+//-----------------------------------------------------------------------------
+  void CfoInterface::PrintStatus() {
+    PrintRegister(0x9108,"SERDES loopback enable                     ");
+    PrintRegister(0x9114,"CFO link enable                            ");
+    PrintRegister(0x9128,"CFO PLL locked                             ");
+    PrintRegister(0x9140,"SERDES RX CDR lock                         ");
+    PrintRegister(0x9144,"Beam On Timer Preset                       ");
+    PrintRegister(0x9148,"Enable Beam On Mode                        ");
+    PrintRegister(0x914c,"Enable Beam Off Mode                       ");
+    PrintRegister(0x918c,"Number of DTCs                             ");
+    
+    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
+    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
+    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
+    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+  }
+
 };
 
 #endif

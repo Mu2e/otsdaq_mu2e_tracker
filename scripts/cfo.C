@@ -1,7 +1,12 @@
 //
 #define __CLING__ 1
 
+
 #include "iostream"
+
+#include "TH1.h"
+
+
 #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
 #include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO.h"
 #include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO_Compiler.hh"
@@ -37,8 +42,10 @@ enum {
 //-----------------------------------------------------------------------------
 void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 
-  CFO* cfo = cfo_init(PcieAddress); 
-  if (cfo == nullptr) return;
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
+  if (cfo_i == nullptr) return;
+
+  CFO* cfo = cfo_i->Cfo();
 
 	cfo->ResetDelayRegister();	                 // reset 0x9380
 	cfo->DisableLinks();	                       // reset 0x9114
@@ -61,8 +68,8 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 
 //-----------------------------------------------------------------------------
 void cfo_soft_reset(int PcieAddress = -1) {
-  CFO* cfo = cfo_init(PcieAddress);
-  cfo->SoftReset();
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
+  cfo_i->Cfo()->SoftReset();
 }
 
 //-----------------------------------------------------------------------------
@@ -80,7 +87,7 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
 // (the sizeof(mu2e_databuff_t) 0
 //-----------------------------------------------------------------------------
 void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1) {
-  CFO* cfo = cfo_init(PcieAddress);
+  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
 	std::ifstream file(Fn, std::ios::binary | std::ios::ate);
 
@@ -100,7 +107,7 @@ void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 void cfo_reset_run_plan(int PcieAddress = -1) {
-  CFO* cfo = cfo_init(PcieAddress);
+  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
   cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
   cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
@@ -110,7 +117,7 @@ void cfo_reset_run_plan(int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 void cfo_launch_run_plan(int PcieAddress = -1) {
-  CFO* cfo = cfo_init(PcieAddress);
+  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
   cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
   cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
@@ -122,70 +129,77 @@ void cfo_launch_run_plan(int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 void dtc_write_register(uint16_t Register, uint32_t Data, int PcieAddress = -1) {
+  int tmo_ms(150);
 
-  int timeout(150);
-
-  DTC*     dtc = dtc_init(PcieAddress);
-  mu2edev* dev = dtc->GetDevice();
-
-  dev->write_register(Register,timeout,Data);
+  mu2edev* dev = DtcInterface::Instance(PcieAddress)->Dtc()->GetDevice();
+  dev->write_register(Register,tmo_ms,Data);
 }
 
 //-----------------------------------------------------------------------------
 void dtc_write_roc_register(int Roc, uint16_t Register, uint16_t Data, int PcieAddress = -1) {
+  int tmo_ms(150);
 
-  int timeout(150);
-
-  DTC*     dtc = dtc_init(PcieAddress);
-
-  dtc->WriteROCRegister(DTC_Link_ID(Roc),Register,Data,timeout,false);
+  DTC*     dtc = DtcInterface::Instance(PcieAddress)->Dtc();
+  dtc->WriteROCRegister(DTC_Link_ID(Roc),Register,Data,tmo_ms,false);
 }
 
 //-----------------------------------------------------------------------------
 void dtc_read_roc_register(int Roc, uint16_t Register, uint16_t& Data, int PcieAddress = -1) {
-
   int timeout(150);
 
-  DTC*     dtc = dtc_init(PcieAddress);
+  DTC*     dtc = DtcInterface::Instance(PcieAddress)->Dtc();
 
   Data = dtc->ReadROCRegister(DTC_Link_ID(Roc),Register,timeout);
 }
 
 //-----------------------------------------------------------------------------
 void dtc_hard_reset(int PcieAddress = -1) {
-  DTC* dtc = dtc_init(PcieAddress);
-  dtc->HardReset();
+  DtcInterface::Instance(PcieAddress)->Dtc()->HardReset();
+}
+
+//-----------------------------------------------------------------------------
+// current ROC link mask for different online machines
+// this is a part of the configuration
+//-----------------------------------------------------------------------------
+int dtc_init_link_mask() {
+
+  char buf[100], host[100];
+
+  TString cmd = "hostname -s";
+  FILE* pipe = gSystem->OpenPipe(cmd,"r");
+  while (fgets(buf,100,pipe)) { 
+    sscanf(buf,"%s",host);
+  }
+  gSystem->ClosePipe(pipe);
+
+  TString hostname = host;
+
+  int linkmask = 0x111111; // all links enabled
+
+  if      (hostname == "mu2edaq07") { // TS2 connected as ROC1
+    linkmask = 0x10;
+  }
+  else if (hostname == "mu2edaq09") { // TS1 connected as ROC0
+    linkmask = 0x01;
+  }
+  else if (hostname == "mu2edaq22") {
+    linkmask = 0x011;
+  }
+
+  return linkmask;
 }
 
 //-----------------------------------------------------------------------------
 void dtc_soft_reset(int PcieAddress = -1) {
-  DTC* dtc = dtc_init(PcieAddress);
-  dtc->SoftReset();
+  DtcInterface::Instance(PcieAddress)->Dtc()->SoftReset();
 }
 
 //-----------------------------------------------------------------------------
 // CFOEmulationMode: 1:emulation, 0:external
 //-----------------------------------------------------------------------------
 void dtc_setup_cfo_interface(int PcieAddress, int CFOEmulationMode, int ForceCFOEdge, int EnableCFORxTx, int EnableAutogenDRP) {
-  DTC* dtc = dtc_init(PcieAddress);
-
-  if (CFOEmulationMode == 0) dtc->ClearCFOEmulationMode();
-  else                       dtc->SetCFOEmulationMode  ();
-
-  dtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
-
-  if (EnableCFORxTx == 0) {
-    dtc->DisableReceiveCFOLink ();
-    dtc->DisableTransmitCFOLink();
-  }
-  else {
-    dtc->EnableReceiveCFOLink  ();
-    dtc->EnableTransmitCFOLink ();
-  }
-
-  if (EnableAutogenDRP == 0) dtc->DisableAutogenDRP();
-  else                       dtc->EnableAutogenDRP ();
-
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddress);
+  dtc_i->SetupCfoInterface(CFOEmulationMode,ForceCFOEdge,EnableCFORxTx,EnableAutogenDRP);
 }
 
 //-----------------------------------------------------------------------------
@@ -212,12 +226,14 @@ void dtc_set_bit(DTC* Dtc, int Register, int Bit, int Value) {
 void dtc_init_emulated_cfo_mode(DTC* dtc, int EWLength, int NMarkers, int FirstEWTag) { 
   //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
+  
+
   int EWMode             = 1;
   int EnableClockMarkers = 0;
   int EnableAutogenDRP   = 1;
 
-	dtc->DisableCFOEmulation();
-	dtc->DisableAutogenDRP();
+	// dtc->DisableCFOEmulation();
+	// dtc->DisableAutogenDRP();
 
   dtc->SoftReset();                     // write bit 31
 
@@ -227,7 +243,6 @@ void dtc_init_emulated_cfo_mode(DTC* dtc, int EWLength, int NMarkers, int FirstE
   dtc->SetCFOEmulationEventMode          (EWMode);
   dtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
-  // dtc_set_bit(dtc,0x9100,kAutogenDRPBit,EnableAutogenDRP);
   dtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
   dtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1 
   dtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1 
@@ -240,6 +255,9 @@ void dtc_init_emulated_cfo_mode(DTC* dtc, int EWLength, int NMarkers, int FirstE
 // write value 0x00004141 to register 0x9114
 // write value 0x10800244 to register 0x9100
 
+// DTC doesn' know about an external CFO, so it should only prepare itself to receive 
+// EVMs/HBs from the outside
+//-----------------------------------------------------------------------------
 void dtc_init_external_cfo_mode(DTC* dtc) { 
   //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
@@ -248,13 +266,11 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   int EnableAutogenDRP   = 1;
   int SampleEdgeMode     = 0;
 
-  dtc->DisableCFOEmulation  ();
-  dtc->DisableAutogenDRP();
+  // dtc->DisableCFOEmulation  ();
+  // dtc->DisableAutogenDRP();
 
-  dtc->HardReset();                        // write bit 31
+  // dtc->HardReset();                        // write bit 0
   // dtc->SoftReset();                     // write bit 31
-
-  dtc->EnableLink(DTC_Link_0,DTC_LinkEnableMode(true,true));
 
   // dtc->SetCFOEmulationEventWindowInterval(EWLength);  
   // dtc->SetCFOEmulationNumHeartbeats      (NMarkers);
@@ -273,90 +289,190 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   // dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
 
   dtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
-
 }
 
 //-----------------------------------------------------------------------------
 // a read should always end with releasing  buffers
 //-----------------------------------------------------------------------------
-void dtc_read_subevents(DTC* dtc, int PrintData, uint64_t FirstTs) {
+void dtc_read_subevents(DtcInterface* Dtc_i, 
+                        std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& ListOfSubevents, 
+                        uint64_t FirstTs, int PrintData) {
 
   uint64_t ts       = FirstTs;
   bool     match_ts = false;
 
-  while(1) {
-    DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
-    try {
-      std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> subevents = dtc->GetSubEventData(event_tag, match_ts);
-      int sz = subevents.size();
+  int nevents = 0;
 
-      cout << Form(">>>> ------------------------------ ts = %5li N(DTCs):%3i", ts,sz);
-      if (sz == 0) {
-        cout << std::endl;
-        break;
-      }
-      ts++;
+  Dtc_i->ReadSubevents(ListOfSubevents,FirstTs,PrintData);
 
-      for (int i=0; i<sz; i++) {
-        DTC_SubEvent* ev = subevents[i].get();
-        // ushort* xdata = (ushort*) ev->GetRawBufferPointer();
-        int nb = ev->GetSubEventByteCount();
-        int nw = nb/2;
+  int rs[6]; // roc status, for printout
+
+  int nbtot = 0;
+  for (int i=0; i<(int)ListOfSubevents.size(); i++) {
+    //    DaqEvent_t evt;
+
+    DTC_SubEvent* ev = ListOfSubevents[i].get();
+    int nb = ev->GetSubEventByteCount();
+
+    int nw = nb/2;
+
+    nbtot += nb;
       
-        uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
+    uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
 
-        cout << Form(" DTC: %2i EW tag: %10li nbytes = %4i",i,ew_tag,nb);
-        if (PrintData) {
-          cout << std::endl;
-          print_buffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
-          std::this_thread::sleep_for(std::chrono::microseconds(2000));  
-        }
-      }
-      cout << std::endl;
+    char* data = (char*) ev->GetRawBufferPointer();
+
+    char* roc_data = data+0x30;
+
+    for (int roc=0; roc<6; roc++) {
+      int nb    = *((ushort*) roc_data);
+      rs[roc]   = *((ushort*)(roc_data+0x0c));
+      roc_data += nb;
     }
-    catch (...) {
-      cout << "ERROR reading next event" << std::endl;
-      break;
+        
+    if (PrintData > 0) {
+      cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
+                   i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
+    }
+
+    if (PrintData > 1) {
+      cout << std::endl;
+      print_buffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
     }
   }
 
-  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+  if (PrintData > 0) cout << std::endl;
 }
-
 
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0) {
 
-  DTC* dtc = dtc_init();
+  DtcInterface* dtc_i = DtcInterface::Instance(-1); // assume already initialized
 
-  dtc_set_roc_pattern_mode(0x1);
-  dtc_init_emulated_cfo_mode(dtc,68,NEvents+1,0);
-  std::this_thread::sleep_for(std::chrono::microseconds(2000));  
-  dtc_read_subevents(dtc,PrintData,FirstTS);
+  dtc_i->InitEmulatedCFOMode(68,NEvents+1,0);
+
+  int linkmask = dtc_init_link_mask();  // node-specific
+
+  dtc_i->RocPatternConfig(linkmask);
+
+  //  dtc_read_subevents(dtc,PrintData,FirstTS,&vev);
+  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData);
 }
 
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, uint64_t FirstTS=0) {
+void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1) {
 
-  CFO* cfo = cfo_init();
-  DTC* dtc = dtc_init();
+  CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
+  CFO* cfo = cfo_i->Cfo();
 
-  dtc->HardReset();
-  dtc_init_external_cfo_mode(dtc);
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
 
-  // cfo->SoftReset();
-  cfo->SetMaxDTCNumber(CFO_Link_0,1);
+  dtc_i->Dtc()->SoftReset();
+  cfo->SoftReset();
 
-  dtc_set_roc_pattern_mode(0x1);
+  dtc_i->InitExternalCFOMode();
+
+  cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
+
+  cfo->SetMaxDTCNumber(CFO_Link_0,2);
+
+  int linkmask = dtc_init_link_mask();
+  dtc_i->RocPatternConfig(linkmask);
 
   cfo_set_run_plan   (RunPlan);
   cfo_launch_run_plan();
 
-  // dtc_print_roc_status(0);
+  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
-  // printf(" ---- 1\n"); dtc_print_status();
-  dtc_read_subevents(dtc,PrintData,FirstTS);
+  uint64_t firstTS = 0;
+  //  dtc_read_subevents(dtc,PrintData,firstTS,&vev);
+  dtc_i->ReadSubevents(list_of_subevents,firstTS,PrintData);
+  // printf(" ---- 2\n"); dtc_print_status();
+}
+
+struct DaqEvent_t {
+  int ts {0};
+  int n_subevents{0};      // 
+  int nbtot{0};
+  int rs[6]{0,0,0,0,0,0};  // ROC status
+};
+
+struct Hist_t {
+  TH1F* nev;
+  TH1F* roc_status[6];
+} Hist;
+
+//-----------------------------------------------------------------------------
+void dtc_buffer_test_external_cfo_1(int N) {
+
+  CfoInterface* cfo_i = CfoInterface::Instance(-1);
+  CFO* cfo = cfo_i->Cfo();
+
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
+
+  Hist.nev        = new TH1F("nev","nev",200,0,200);
+
+  for (int i=0; i<6; i++) {
+    Hist.roc_status[i] = new TH1F(Form("roc_status_%i",i),Form("roc_status[%i]",i),2000,0,2000);
+  }
+
+  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
+
+  for (int i=0; i<N; i++) {
+    printf(" ------------- loop # %3i\n",i);
+
+    dtc_i->Dtc()->SoftReset();
+    cfo->SoftReset();
+
+    dtc_i->InitExternalCFOMode();
+
+    cfo->EnableLink     (CFO_Link_0,DTC_LinkEnableMode(true,true),1);
+    cfo->SetMaxDTCNumber(CFO_Link_0,1);
+
+    int linkmask = dtc_init_link_mask();
+
+    dtc_i->RocPatternConfig(linkmask);
+
+    cfo_set_run_plan   ("run_066.bin");
+    cfo_launch_run_plan();
+
+    uint64_t firstTS    = 0;
+    int      print_data = 1;
+
+    list_of_subevents.clear();
+    dtc_i->ReadSubevents(list_of_subevents,firstTS,print_data);
+//-----------------------------------------------------------------------------
+// analysis part
+//-----------------------------------------------------------------------------
+    int nev = list_of_subevents.size();
+    int rs[6];  // roc status word
+
+    for (int iev=0; iev<nev; iev++) {
+      DTC_SubEvent* ev = list_of_subevents[iev].get();
+
+      char* data = (char*) ev->GetRawBufferPointer();
+
+      char* roc_data = data+0x30;
+
+      for (int roc=0; roc<6; roc++) {
+        int nb    = *((ushort*)(roc_data     ));
+        rs[roc]   = *((ushort*)(roc_data+0x0c));
+        roc_data += nb;
+      }
+
+
+      Hist.nev->Fill(nev);
+
+      for (int k=0; k<6; k++) {
+        Hist.roc_status[k]->Fill(rs[k]);
+      }
+    }
+  }
+
+  Hist.nev->Draw();
+
   // printf(" ---- 2\n"); dtc_print_status();
 }

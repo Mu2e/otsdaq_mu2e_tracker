@@ -441,8 +441,18 @@ corresponding distance between the two consecutive pulses :
 
 * ROC channel map (Vadim)                                                    
   https://github.com/vlrusu/ROC/blob/f8de12e250585317e4ef082cf9a7a6602be15082/utils.c#L20
-* known DRAC boards                                                       
+* known DRAC boards                                                          
   https://docs.google.com/spreadsheets/d/1Be0-MM15hAwAviW3qs6o4NHJdIhIUzkZw7NRErRmwds/edit#gid=0
+** ROC ID b5e1f : <2024-05-29 Wed> installed at TS2                          
+readDeviceID
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f52840a',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0xb5e1f75f896156070a1cd2af48a397bb'}
+
+('DRAC ROC ID #', 'b5e1f')
+
 ** ROC ID 7a7fb : <2024-05-21 Tue> installed at TS1                          
 
 -----------------  <2024-05-21 Tue>                
@@ -468,7 +478,8 @@ readDeviceID
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
 * TS0, TS1, TS2                                                              
 ** TS0: currently unavailable
-** TS1: baud rate 57600                                                      
+** TS1: serial baud rate 57600                                               
+- use '-b 57600'
 <2024-02-23 Fri> 
 readDeviceID
 (13, 52)
@@ -480,8 +491,8 @@ readDeviceID
 
 ('DRAC ROC ID #', '1b561')
 
-** TS2: baud rate 115200                                                     
-mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 2
+** TS2: serial baud rate 115200                                              
+mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 2 -b 115200
 SERIALRATE= 115200
 Waiting for ARM to connect
 ==========================
@@ -495,7 +506,7 @@ readDeviceID
 
 ('DRAC ROC ID #', '805d6')
 * ------------------------------------------------------------------------------
-* how to download firmware to DRAC from .job file                            
+* how to download firmware to DRAC from .job file (Monica)                   
 <2023-12-13 Wed> Monica
 
 1) Login to ppd-130027.fnal.gov

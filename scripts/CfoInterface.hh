@@ -34,7 +34,11 @@ namespace trkdaq {
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 
     void         LaunchRunPlan();
-    void         SetRunPlan    (const char* Fn);
+    void         SetRunPlan   (const char* Fn);
+
+    void         PrintRegister(uint16_t Register, const char* Title = "") ;
+    void         PrintStatus  ();
+    uint32_t     ReadRegister (uint16_t Register);
 //-----------------------------------------------------------------------------
 // input file is a .txt file
 // output file is a binary file with precompiled instructions

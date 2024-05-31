@@ -5,6 +5,7 @@
 
 #include "dtc_init.C"
 
+using namespace trkdaq;
 //-----------------------------------------------------------------------------
 // primary source: ~/test_stand/monica_002/var_read_all.sh
 // last update to that:  May 15 2024, by Monica
@@ -13,7 +14,7 @@ void dtc_print_roc_status(int Link, int PcieAddress = -1) {
 
   cout << Form("-------------------- ROC %i registers:\n",Link);
 
-  DTC* dtc = dtc_init(PcieAddress);
+  DTC* dtc = trkdaq::DtcInterface::Instance(PcieAddress)->Dtc();
 
   DTC_Link_ID link = DTC_Link_ID(Link);
   uint32_t dat;

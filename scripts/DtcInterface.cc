@@ -256,33 +256,231 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
   void DtcInterface::RocPatternConfig(int LinkMask) {
-  for (int i=0; i<6; i++) {
-    int used = (LinkMask >> 4*i) & 0x1;
-    if (used != 0) {
-      auto link = DTC_Link_ID(i);
-      fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        auto link = DTC_Link_ID(i);
+        fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
 
-      // the delay should be hidden in the ROC firmware
-      std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+        // the delay should be hidden in the ROC firmware
+        std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
 
-      fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
-      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+        fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
+        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
 
-      fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
-      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+        fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
+        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
 
-      fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
-      // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+        fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
+        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+      }
     }
+                                        // not sure if this is needed, later...
+    std::this_thread::sleep_for(std::chrono::microseconds(2000));  
   }
-    
-    
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::InitEmulatedCFOMode(int EWLength, int NMarkers, int FirstEWTag) {
+    //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
+
+    int EWMode             = 1;
+    int EnableClockMarkers = 0;
+    // int EnableAutogenDRP   = 1;
+
+    fDtc->SoftReset();                     // write bit 31
+
+    fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
+    fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
+    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
+    fDtc->SetCFOEmulationEventMode          (EWMode);
+    fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
+
+    fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
+
+    fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1 
+    fDtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1 
+    fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
   }
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::InitExternalCFOMode() {
+
+    // which ROC links should be enabled ? - all active ?
+    int EnableClockMarkers = 0; //for now
+    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_0,EnableClockMarkers);
+
+    int SampleEdgeMode     = 0;
+    fDtc->SetExternalCFOSampleEdgeMode(SampleEdgeMode);
+    
+    fDtc->EnableAutogenDRP();
+
+    fDtc->ClearCFOEmulationMode();                                // r_0x9100:bit_15 = 0
+    // dtc->SetCFOEmulationMode();                               // r_0x9100:bit_15 = 1
+
+    fDtc->DisableCFOEmulation  ();                                // r_0x9100:bit_30 = 0
+    // dtc->EnableCFOEmulation();                                // r_0x9100:bit_30 = 1 
+
+    fDtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
+}
 
 //-----------------------------------------------------------------------------
   void DtcInterface::LaunchRunPlan(int NEvents) {
     
   }
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintRegister(uint16_t Register, const char* Title) {
+    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
+  }
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintStatus() {
+    cout << Form("-----------------------------------------------------------------\n");
+    PrintRegister(0x9000,"DTC firmware link speed and design version ");
+    PrintRegister(0x9004,"DTC version                                ");
+    PrintRegister(0x9008,"Design status                              ");
+    PrintRegister(0x900c,"Vivado version                             ");
+    PrintRegister(0x9100,"DTC control register                       ");
+    PrintRegister(0x9104,"DMA transfer length                        ");
+    PrintRegister(0x9108,"SERDES loopback enable                     ");
+    PrintRegister(0x9110,"ROC Emulation enable                       ");
+    PrintRegister(0x9114,"Link Enable                                ");
+    PrintRegister(0x9128,"SERDES PLL Locked                          ");
+    PrintRegister(0x9140,"SERDES RX CDR lock (locked fibers)         ");
+    PrintRegister(0x9144,"DMA Timeout Preset                         ");
+    PrintRegister(0x9148,"ROC reply timeout                          ");
+    PrintRegister(0x914c,"ROC reply timeout error                    ");
+    PrintRegister(0x9158,"Event Builder Configuration                ");
+    PrintRegister(0x91a8,"CFO Emulation Heartbeat Interval           ");
+    PrintRegister(0x91ac,"CFO Emulation Number of HB Packets         ");
+    PrintRegister(0x91bc,"CFO Emulation Number of Null HB Packets    ");
+    PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ");
+    PrintRegister(0x91f8,"CFO Marker Enables                         ");
+
+    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
+    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
+    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
+    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+
+    PrintRegister(0x9218,"Receive  Byte   Count CFO                  ");
+    PrintRegister(0x9238,"Receive  Packet Count CFO                  ");
+    PrintRegister(0x9258,"Transmit Byte   Count CFO                  ");
+    PrintRegister(0x9278,"Transmit Packet Count CFO                  ");
+  }
+
+//-----------------------------------------------------------------------------
+  uint32_t DtcInterface::ReadRegister(uint16_t Register) {
+
+    uint32_t data;
+    int      timeout(150);
+    
+    mu2edev* dev = fDtc->GetDevice();
+    dev->read_register(Register,timeout,&data);
+    
+    return data;
+  }
+
+//-----------------------------------------------------------------------------
+// ROC reset : write 0x1 to register 14
+//-----------------------------------------------------------------------------
+  void DtcInterface::ResetRoc(int Link) {
+    int tmo_ms(1000);
+    fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);  // 1 --> r14: reset ROC
+  }
+
+
+//-----------------------------------------------------------------------------
+// ROC reset : write 0x1 to register 14
+//-----------------------------------------------------------------------------
+  void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
+                                   ulong FirstTS,
+                                   int  PrintData) {
+    ulong    ts       = FirstTS;
+    bool     match_ts = false;
+    int      nevents  = 0;
+
+    while(1) {
+
+      DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
+      try {
+        VSub = fDtc->GetSubEventData(event_tag, match_ts);
+        int sz = VSub.size();
+        
+        if (PrintData > 0) {
+          cout << Form(">>>> ------- ts = %5li NDTCs:%2i",ts,sz);
+          if (sz == 0) {
+            cout << std::endl;
+            break;
+          }
+        }
+        
+        ts++;
+        int rs[6];
+        for (int i=0; i<sz; i++) {
+          DTC_SubEvent* ev = VSub[i].get();
+          int nb = ev->GetSubEventByteCount();
+
+          int nw = nb/2;
+
+          uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
+
+          char* data = (char*) ev->GetRawBufferPointer();
+
+          char* roc_data = data+0x30;
+
+          for (int roc=0; roc<6; roc++) {
+            int nb    = *((ushort*) roc_data);
+            rs[roc]   = *((ushort*)(roc_data+0x0c));
+            roc_data += nb;
+          }
+        
+          if (PrintData > 0) {
+            cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
+                         i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
+          }
+          
+          if (PrintData > 1) {
+            cout << std::endl;
+            print_buffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+          }
+        }
+        if (PrintData > 0) cout << std::endl;
+        
+      }
+      catch (...) {
+        cout << "ERROR reading ts = %i" << ts << std::endl;
+        break;
+      }
+    }
+
+    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+  }
+
+
+//-----------------------------------------------------------------------------
+// configure itself to use a CFO
+//-----------------------------------------------------------------------------
+  void DtcInterface::SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge, int EnableCFORxTx, int EnableAutogenDRP) {
+    int tmo_ms(150);
+
+    if (CFOEmulationMode == 0) fDtc->ClearCFOEmulationMode();
+    else                       fDtc->SetCFOEmulationMode  ();
+
+    fDtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
+
+    if (EnableCFORxTx == 0) {
+      fDtc->DisableReceiveCFOLink ();
+      fDtc->DisableTransmitCFOLink();
+    }
+    else {
+      fDtc->EnableReceiveCFOLink  ();
+      fDtc->EnableTransmitCFOLink ();
+    }
+    
+    if (EnableAutogenDRP == 0) fDtc->DisableAutogenDRP();
+    else                       fDtc->EnableAutogenDRP ();
+  }
+
 
 };
 

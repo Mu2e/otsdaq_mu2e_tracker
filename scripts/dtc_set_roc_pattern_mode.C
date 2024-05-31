@@ -17,12 +17,18 @@ namespace trk_daq {
 //-----------------------------------------------------------------------------
 void dtc_set_roc_pattern_mode(int LinkMask, int PcieAddress=-1) {
 
-  DTC* dtc = dtc_init(PcieAddress);
+  printf("%s : LinkMask = 0x%08x\n",__func__,LinkMask);
+
+  DTC* dtc = trkdaq::DtcInterface::Instance(PcieAddress,LinkMask)->Dtc();
 
   for (int i=0; i<6; i++) {
     int used = (LinkMask >> 4*i) & 0x1;
+    printf("dtc_set_roc_pattern_mode: link=%i, used = %i\n",i,used);
     if (used != 0) {
       auto link = DTC_Link_ID(i);
+
+      dtc->EnableLink(link,DTC_LinkEnableMode(true,true));
+
       dtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
       std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROCReset));
 
@@ -36,6 +42,8 @@ void dtc_set_roc_pattern_mode(int LinkMask, int PcieAddress=-1) {
       // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
     }
   }
+
+  printf("%s : DONE\n",__func__);
 }
 
 

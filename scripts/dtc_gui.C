@@ -186,8 +186,8 @@ public:
     TGTextEntry*      fValW;
     TGLabel*          fValR;
 
-    DTC*              fDTC;             // driver interface
-    CFO*              fCFO;
+    DtcInterface*     fDTC_i;           // driver interface
+    CfoInterface*     fCFO_i;
     Pixel_t           fColor;
 
     TGTab*            fRocTab;
@@ -270,18 +270,41 @@ DtcGui::DtcGui(const char* Host, const TGWindow *p, UInt_t w, UInt_t h, int Debu
 
   fNDtcs = 2;  // 0:9
 
-  int cfo_pcie_address = atoi(gSystem->Getenv("CFOLIB_CFO"));
-  int dtc_pcie_address = atoi(gSystem->Getenv("DTCLIB_DTC"));
+  uint32_t val;
 
-  fDtcData[0] = DtcData_t("CFO",cfo_pcie_address);
-  fDtcData[1] = DtcData_t("DTC",dtc_pcie_address);
+  if (fDebugLevel > 0) printf("DtcGui::%s : start\n",__func__);
 
+  for (int pcie_addr=0; pcie_addr<2; pcie_addr++) {
+    DTC dtc(DTC_SimMode_Disabled,pcie_addr,0x11);
+
+    dtc.GetDevice()->read_register(0x9004,100,&val);
+    if      ((val >> 28) == 0xd) { 
+      fDtcData[pcie_addr] = DtcData_t("DTC" ,pcie_addr);
+    }
+    else if ((val >> 28) == 0xc) {
+      fDtcData[pcie_addr] = DtcData_t("CFO" ,pcie_addr);
+    }
+    else {
+      fDtcData[pcie_addr] = DtcData_t("NONE",pcie_addr);
+    }
+  }
+
+  if (fDebugLevel > 0) printf("DtcGui::%s : before BuildGui\n",__func__);
   BuildGui(p,w,h);
+  if (fDebugLevel > 0) printf("DtcGui::%s : after  BuildGui\n",__func__);
 //-----------------------------------------------------------------------------
 // two PCIE cards - rely on CFOLIB_CFO and DTCLIB_DTC
 //-----------------------------------------------------------------------------
-  fDtcTel[0].fCFO = cfo_init();
-  fDtcTel[1].fDTC = dtc_init();
+  for (int pcie_addr=0; pcie_addr<2; pcie_addr++) {
+    if      (fDtcData[pcie_addr].fName == "DTC") {
+      fDtcTel[pcie_addr].fDTC_i = DtcInterface::Instance(pcie_addr);
+    }
+    else if (fDtcData[pcie_addr].fName == "CFO") {
+      fDtcTel[pcie_addr].fCFO_i = CfoInterface::Instance(pcie_addr);
+    }
+  }
+
+  if (fDebugLevel > 0) printf("DtcGui::%s : all done, EXIT\n", __func__);
 }
 
 //-----------------------------------------------------------------------------
@@ -329,6 +352,9 @@ void DtcGui::ExecuteCommand(const char* Cmd, int PrintOnly) {
 // report DTC/CFO status
 //-----------------------------------------------------------------------------
 void DtcGui::print_dtc_status() {
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+
   TString cmd;
 
   streambuf* oldCoutStreamBuf = cout.rdbuf();
@@ -341,17 +367,17 @@ void DtcGui::print_dtc_status() {
 
   //  printf("Active TAB ID: %i\n",fActiveDtcID);
 
-  if      (fActiveDtcID == 0) {
+  if      (dtel->fData->fName == "CFO") {
     try {
-      cfo_print_status();
+      dtel->fCFO_i->PrintStatus();
     }
     catch (...) {
       *fTextView << Form("ERROR : coudn't read CFO") << std::endl;
     }
   }
-  else if (fActiveDtcID == 1) {
+  else if (dtel->fData->fName == "DTC") {
     try {
-      dtc_print_status();
+      dtel->fDTC_i->PrintStatus();
     }
     catch (...) {
       *fTextView << Form("ERROR : coudn't read DTC") << std::endl;
@@ -386,7 +412,8 @@ void DtcGui::exit() {
 void DtcGui::print_roc_status() {
   //  TString cmd;
 
-  DtcTabElement_t* tab = fDtcTel+fActiveDtcID;
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int              roc  = dtel->fActiveRocID;
 
   streambuf* oldCoutStreamBuf = cout.rdbuf();
 
@@ -396,14 +423,11 @@ void DtcGui::print_roc_status() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << "DtcGui:: : " << __func__ << ": START" << std::endl;
 
-  //  printf("Active TAB ID: %i\n",fActiveDtcID);
-
-  int roc = tab->fActiveRocID;
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
-    try         { dtc_print_roc_status(roc); }
+  if (dtel->fData->fName == "DTC") {
+    try         { dtel->fDTC_i->PrintRocStatus(roc); }
     catch (...) { *fTextView << Form("ERROR : coudn't read ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 
@@ -431,8 +455,8 @@ void DtcGui::reset_roc() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
-    try         { dtc_reset_roc(roc); }
+  if (dtel->fData->fName == "DTC") {
+    try         { dtel->fDTC_i->ResetRoc(roc); }
     catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 
@@ -459,10 +483,10 @@ void DtcGui::dtc_soft_reset() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     try         { 
       *fTextView << "resetting the DTC" << std::endl; 
-      dtel->fDTC->SoftReset();
+      dtel->fDTC_i->Dtc()->SoftReset();
       *fTextView << "done resetting the DTC" << std::endl; 
     }
     catch (...) { 
@@ -490,9 +514,9 @@ void DtcGui::dtc_hard_reset() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     try         { 
-      dtel->fDTC->HardReset();
+      dtel->fDTC_i->Dtc()->HardReset();
     }
     catch (...) { *fTextView << Form("ERROR : coudn't hard reset DTC %i ... BAIL OUT",roc) << std::endl; }
   }
@@ -527,12 +551,12 @@ void DtcGui::read_dtc_register() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     try {
       *fTextView << Form("%s: reading DTC %i register 0x%08x\n",__func__,fActiveDtcID,reg);
       int timeout_ms(150);
       uint32_t val;
-      dtel->fDTC->GetDevice()->read_register(reg,timeout_ms,&val);
+      dtel->fDTC_i->Dtc()->GetDevice()->read_register(reg,timeout_ms,&val);
       dtel->fValR->SetText(Form("0x%08x",val));
     }
     catch (...) {
@@ -569,10 +593,10 @@ void DtcGui::write_dtc_register() {
   sscanf(dtel->fRegW->GetText(),"0x%x",&reg);
   sscanf(dtel->fValW->GetText(),"0x%x",&val);
 
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     try {
       int timeout_ms(150);
-      dtel->fDTC->GetDevice()->write_register(reg,timeout_ms,val);
+      dtel->fDTC_i->Dtc()->GetDevice()->write_register(reg,timeout_ms,val);
       *fTextView << Form("%s: DTC %i reg 0x%8x val: 0x%8x",__func__,fActiveDtcID,reg,val) << std::endl;
     }
     catch (...) {
@@ -609,12 +633,12 @@ void DtcGui::read_roc_register() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     uint reg;
     sscanf(rtel->fRegR->GetText(),"0x%x",&reg);
     try {
       int timeout_ms(150);
-      uint16_t val = dtel->fDTC->ReadROCRegister(DTC_Link_ID(roc),reg,timeout_ms);
+      uint16_t val = dtel->fDTC_i->Dtc()->ReadROCRegister(DTC_Link_ID(roc),reg,timeout_ms);
       rtel->fValR->SetText(Form("0x%04x",val));
       *fTextView << Form("%s: roc: %i reg : 0x%04x val: 0x%04x",__func__,roc,reg,val) << std::endl;
     }
@@ -653,10 +677,10 @@ void DtcGui::write_roc_register() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (fActiveDtcID == 1) {
+  if (dtel->fData->fName == "DTC") {
     try {
       int timeout_ms(150);
-      dtel->fDTC->WriteROCRegister(DTC_Link_ID(roc),reg,val,timeout_ms,false);
+      dtel->fDTC_i->Dtc()->WriteROCRegister(DTC_Link_ID(roc),reg,val,timeout_ms,false);
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't write ROC %i ... BAIL OUT",__func__,roc) << std::endl;
@@ -864,6 +888,8 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t*
 //-----------------------------------------------------------------------------
 void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t* DtcData) {
 
+  DtcTel.fData = DtcData;
+
   const char* device_name = DtcData->fName.Data();
 
   DtcTel.fFrame = Tab->AddTab(Form("%s:%i", DtcData->fName.Data(),DtcData->fPcieIndex));
@@ -1005,7 +1031,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   group->AddFrame(wr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   wr->SetMaxLength(4096);
   wr->SetAlignment(kTextLeft);
-  wr->SetText("0x0000");
+  wr->SetText("0x9114");
   wr->MoveResize(x0+dx+10,y0+dy+5,dx2,dy);
   DtcTel.fRegW = wr;
 //-----------------------------------------------------------------------------
@@ -1015,7 +1041,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
-  rr->SetText("0x0000");
+  rr->SetText("0x9100");
   rr->MoveResize(x0+dx+10,y0+2*(dy+5),dx2,dy);
   DtcTel.fRegR = rr;
 //-----------------------------------------------------------------------------

@@ -24,22 +24,40 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   private:
-    DtcInterface(int PcieAddr = -1, uint LinkMask = 0x1);
+    DtcInterface(int PcieAddr, uint LinkMask);
   public:
     virtual ~DtcInterface();
 
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x1);
+    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11);
 
     int PcieAddr() { return fPcieAddr; }
 
     DTCLib::DTC* Dtc() { return fDtc; }
 
-    void PrintRocStatus(int Link);
+                                        // EWLength - in 25 ns ticks
+    void         InitEmulatedCFOMode(int EWLength, int NMarkers, int FirstEWTag);
+    void         InitExternalCFOMode();
+                                        // launch "run plan" in emulated mode...
+    void         LaunchRunPlan (int NEvents );
 
-    void RocPatternConfig(int LinkMask);
+    void         PrintRegister (uint16_t Register, const char* Title = "");
+    void         PrintRocStatus(int Link);
+    void         PrintStatus   ();
 
-    void LaunchRunPlan   (int NEvents );
+    uint32_t     ReadRegister    (uint16_t Register);
+    void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+                                  ulong      FirstTS,
+                                  int        PrintData );
 
+    void         ResetRoc        (int Link);
+    void         RocPatternConfig(int LinkMask);
+
+    void         SetupCfoInterface(int CFOEmulationMode, 
+                                   int ForceCFOEdge    , 
+                                   int EnableCFORxTx   , 
+                                   int EnableAutogenDRP);
+
+    
   };
 
 };
