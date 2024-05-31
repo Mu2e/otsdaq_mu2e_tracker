@@ -18,5 +18,14 @@ cet_build_plugin(TrackerVST artdaq::commandableGenerator
                  mu2e_pcie_utils::DTCInterface
                  ${XMLRPC_LIBRARIES}
 )
+
+cet_build_plugin(TrackerBR artdaq::commandableGenerator 
+                 LIBRARIES REG 
+                 artdaq_core_mu2e::artdaq-core-mu2e_Overlays 
+                 canvas::canvas 
+                 mu2e_pcie_utils::DTCInterface
+                 ${XMLRPC_LIBRARIES}
+)
+
 target_include_directories(otsdaq-mu2e-tracker_Generators_TrackerVST_generator
   PRIVATE ${XMLRPC_INCLUDE_DIRS})

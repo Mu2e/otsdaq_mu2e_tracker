@@ -8,7 +8,6 @@
 
 using namespace DTCLib;
 
-
 //-----------------------------------------------------------------------------
 void parse_fi_output(char* Data, int NBytes) {
   vector<int> val;
@@ -52,7 +51,7 @@ void parse_fi_output(char* Data, int NBytes) {
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 //-----------------------------------------------------------------------------
-void find_alignment(int PcieAddress, int Link, int ROCSleepTime = 2000) {
+void find_alignment(int Link, int PcieAddress, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -73,7 +72,6 @@ void find_alignment(int PcieAddress, int Link, int ROCSleepTime = 2000) {
   int16_t  chan_num         (-1);
   int16_t  adc_num          (-1);
   uint16_t chan_mask[6] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-
 
   vector<uint16_t> vec;
   vec.push_back(eye_monitor_width);
@@ -112,12 +110,8 @@ void find_alignment(int PcieAddress, int Link, int ROCSleepTime = 2000) {
   print_buffer(v2.data(),nw);
 
   int nbytes = nw*2;
-
 //-----------------------------------------------------------------------------
 // parse output  
 //-----------------------------------------------------------------------------
   parse_fi_output(v2.data(),nw*2)
-// sleep
-//-----------------------------------------------------------------------------
-  // std::this_thread::sleep_for(std::chrono::milliseconds(SPISleepTime));
 }

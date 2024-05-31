@@ -11,7 +11,7 @@ import dtcInterfaceLib
 
 class Dtc:
     def __init__(self):
-        self.dtc = dtcInterfaceLib.DTC()
+        self.dtc = dtcInterfaceLib.DTC(DTC_SimMode_NoCFO)
 
     def read_register(self,register):
         data = self.dtc.GetDevice().read_register(register,150)
