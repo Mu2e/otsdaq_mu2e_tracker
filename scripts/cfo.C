@@ -87,22 +87,26 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
 // (the sizeof(mu2e_databuff_t) 0
 //-----------------------------------------------------------------------------
 void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1) {
-  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
-	std::ifstream file(Fn, std::ios::binary | std::ios::ate);
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
+  cfo_i->SetRunPlan(Fn);
 
-                                        // read binary file
-	mu2e_databuff_t inputData;
-	auto inputSize = file.tellg();
-	uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
-	file.seekg(0, std::ios::beg);
+  // CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
-	memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
-	file.read((char*) (&inputData[8]), inputSize);
-	file.close();
+	// std::ifstream file(Fn, std::ios::binary | std::ios::ate);
 
-  cfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
-	usleep(10);	
+  //                                       // read binary file
+	// mu2e_databuff_t inputData;
+	// auto inputSize = file.tellg();
+	// uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
+	// file.seekg(0, std::ios::beg);
+
+	// memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
+	// file.read((char*) (&inputData[8]), inputSize);
+	// file.close();
+
+  // cfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
+	// usleep(10);	
 }
 
 //-----------------------------------------------------------------------------
@@ -361,38 +365,80 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 }
 
 //-----------------------------------------------------------------------------
-//
+// for now, assume just one line
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1) {
+void cfo_init_readout(const char* RunPlan = "commands.bin", int CfoLink = 0, int NDtcs = 1) {
 
   CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
   CFO* cfo = cfo_i->Cfo();
 
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);
-
-  dtc_i->Dtc()->SoftReset();
   cfo->SoftReset();
 
-  dtc_i->InitExternalCFOMode();
+  CFO_Link_ID link = CFO_Link_ID(CfoLink);
 
-  cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
+  cfo->EnableLink(link,DTC_LinkEnableMode(true,true),1);
 
-  cfo->SetMaxDTCNumber(CFO_Link_0,2);
+  cfo->SetMaxDTCNumber(link,NDtcs);
 
-  int linkmask = dtc_init_link_mask();
-  dtc_i->RocPatternConfig(linkmask);
-
-  cfo_set_run_plan   (RunPlan);
-  cfo_launch_run_plan();
-
-  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-
-  uint64_t firstTS = 0;
-  //  dtc_read_subevents(dtc,PrintData,firstTS,&vev);
-  dtc_i->ReadSubevents(list_of_subevents,firstTS,PrintData);
-  // printf(" ---- 2\n"); dtc_print_status();
+  cfo_i->SetRunPlan   (RunPlan);
+  // cfo_launch_run_plan();
 }
 
+//-----------------------------------------------------------------------------
+// to be executed on each node with the DTC
+// 'dtc_init_link_mask' defines node-specific link mask
+//-----------------------------------------------------------------------------
+void dtc_init_readout_external_cfo() {
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
+  dtc_i->Dtc()->SoftReset();
+  dtc_i->InitExternalCFOMode();
+  int linkmask = dtc_init_link_mask();
+  dtc_i->RocPatternConfig(linkmask);
+}
+
+//-----------------------------------------------------------------------------
+// to be executed on each node with a DTC, after the CFO run plan was launched
+//-----------------------------------------------------------------------------
+int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1) {
+  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
+
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData);
+  return list_of_subevents.size();
+}
+
+//-----------------------------------------------------------------------------
+//
+//-----------------------------------------------------------------------------
+void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1) {
+
+  int cfo_link = 0;
+  int ndtcs    = 2;
+  cfo_init_readout(RunPlan,cfo_link,ndtcs);
+
+  // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
+  // CFO* cfo = cfo_i->Cfo();
+  // cfo->SoftReset();
+  // cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
+  // cfo->SetMaxDTCNumber(CFO_Link_0,2);
+  // cfo_set_run_plan   (RunPlan);
+
+  dtc_init_readout_external_cfo();
+
+  // DtcInterface* dtc_i = DtcInterface::Instance(-1);
+  // dtc_i->Dtc()->SoftReset();
+  // dtc_i->InitExternalCFOMode();
+
+  // int linkmask = dtc_init_link_mask();
+  // dtc_i->RocPatternConfig(linkmask);
+
+  cfo_launch_run_plan();
+
+  uint64_t firstTS = 0;
+  dtc_read_events(firstTS,PrintData);
+}
+
+//-----------------------------------------------------------------------------
 struct DaqEvent_t {
   int ts {0};
   int n_subevents{0};      // 
