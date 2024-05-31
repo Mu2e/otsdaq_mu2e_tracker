@@ -17,10 +17,11 @@ cet_cmake_env()
 #------------------------------------------------------------------------------
 # it looks that these packages should be looked for only after cet_cmake_env
 #------------------------------------------------------------------------------
-find_package(artdaq      3.12.07 REQUIRED)
-find_package(artdaq_core 3.09.16 REQUIRED)
+find_package(artdaq           3.12.07 REQUIRED)
+find_package(artdaq_core      3.09.16 REQUIRED)
 find_package(artdaq_core_demo 1.11.00 REQUIRED EXPORT)
-find_package(otsdaq_mu2e 1.02.00 REQUIRED)
+find_package(otsdaq_mu2e      1.02.00 REQUIRED)
+find_package(mu2e_pcie_utils  3.01.00 REQUIRED)
 
  # XDAQ Extra setup
  include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
