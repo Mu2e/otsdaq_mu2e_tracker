@@ -18,7 +18,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  // int gSleepTimeROC      =  2000;  // [us]
+  int gSleepTimeROC      =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -298,7 +298,7 @@ namespace trkdaq {
         // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
 
         fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
-        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+        std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
       }
     }
                                         // not sure if this is needed, later...
@@ -306,7 +306,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitEmulatedCFOMode(int EWLength, int NMarkers, int FirstEWTag) {
+  void DtcInterface::InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag) {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
     int EWMode             = 1;
@@ -329,7 +329,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitExternalCFOMode() {
+  void DtcInterface::InitExternalCFOReadoutMode() {
 
     // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0; //for now
@@ -507,6 +507,43 @@ namespace trkdaq {
     else                       fDtc->EnableAutogenDRP ();
   }
 
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintFireflyTemp() {
+    int tmo_ms(50);
+
+//-----------------------------------------------------------------------------
+// read RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    uint data, rx_temp, txrx_temp;
+
+    fDtc->GetDevice()->read_register(0x9288,tmo_ms,&data);
+    rx_temp = data & 0xff;
+//-----------------------------------------------------------------------------
+// read TX/RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    fDtc->GetDevice()->read_register(0x92a8,tmo_ms,&data);
+    txrx_temp = data & 0xff;
+
+    cout << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
+  }
 
 };
 

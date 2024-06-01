@@ -27,40 +27,50 @@
 //
 //
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
+#include "otsdaq-mu2e-tracker/ui/DtcInterface.hh"
 
-#include "dtc_init.C"
+// #include "dtc_init.C"
+
 
 using namespace DTCLib;
+using namespace trkdaq;
 
 void dtc_print_firefly_temp(int PcieAddr) {
-  int tmo_ms(500);
+  int tmo_ms(50);
 
-  DTC dtc(DTC_SimMode_Disabled,PcieAddr);
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  DTC* dtc = dtc_i->Dtc();
 //-----------------------------------------------------------------------------
 // read RX firefly temp
 //------------------------------------------------------------------------------
-  dtc.GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
-  dtc.GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
-  dtc.GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
-  dtc.GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+  dtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
 
   uint data, rx_temp, txrx_temp;
 
-  usleep(1000);
-
-  dtc.GetDevice()->read_register(0x9288,tmo_ms,&data);
+  dtc->GetDevice()->read_register(0x9288,tmo_ms,&data);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
   rx_temp = data & 0xff;
 //-----------------------------------------------------------------------------
 // read TX/RX firefly temp
 //------------------------------------------------------------------------------
-  dtc.GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
-  dtc.GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
-  dtc.GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
-  dtc.GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
-  usleep(1000);
+  dtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+  dtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
 
-  dtc.GetDevice()->read_register(0x92a8,tmo_ms,&data);
+  dtc->GetDevice()->read_register(0x92a8,tmo_ms,&data);
+  std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
   txrx_temp = data & 0xff;
 
   printf("rx_temp: %3i  txrx_temp: %3i\n",rx_temp, txrx_temp);

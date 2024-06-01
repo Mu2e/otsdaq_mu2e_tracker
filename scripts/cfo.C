@@ -16,20 +16,25 @@ using namespace DTCLib;
 
 #include "print_buffer.C"
 
-#include "cfo_init.C"
-#include "cfo_read_register.C"
-#include "cfo_print_register.C"
-#include "cfo_print_status.C"
-#include "cfo_write_register.C"
+// #include "cfo_init.C"
+// #include "cfo_read_register.C"
+// #include "cfo_print_register.C"
+// #include "cfo_print_status.C"
+// #include "cfo_write_register.C"
 
-#include "dtc_init.C"
-#include "dtc_print_roc_status.C"
-#include "dtc_print_status.C"
+// #include "dtc_init.C"
+// #include "dtc_print_roc_status.C"
+// #include "dtc_print_status.C"
 
-#include "dtc_read_register.C"
-#include "dtc_reset_roc.C"
+// #include "dtc_read_register.C"
+// #include "dtc_reset_roc.C"
 
-#include "dtc_set_roc_pattern_mode.C"
+// #include "dtc_set_roc_pattern_mode.C"
+
+#include "otsdaq-mu2e-tracker/ui/CfoInterface.hh"
+#include "otsdaq-mu2e-tracker/ui/DtcInterface.hh"
+
+using namespace trkdaq;
 
 // DTC control register : 0x9100 
 enum { 
@@ -110,6 +115,8 @@ void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1) {
 }
 
 //-----------------------------------------------------------------------------
+// doesn't seem to be needed - launch does this anyway
+//-----------------------------------------------------------------------------
 void cfo_reset_run_plan(int PcieAddress = -1) {
   CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
 
@@ -121,14 +128,17 @@ void cfo_reset_run_plan(int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 void cfo_launch_run_plan(int PcieAddress = -1) {
-  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
+  CfoInterface::Instance(PcieAddress)->LaunchRunPlan(); 
 
-  cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-  cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  cfo->SoftReset();
+//-----------------------------------------------------------------------------
+// this is what it really is
+//-----------------------------------------------------------------------------
+  // cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+  // cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  // cfo->SoftReset();
 
-	usleep(10);	
-	cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+	// usleep(10);	
+	// cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
 }
 
 //-----------------------------------------------------------------------------
@@ -265,10 +275,7 @@ void dtc_init_emulated_cfo_mode(DTC* dtc, int EWLength, int NMarkers, int FirstE
 void dtc_init_external_cfo_mode(DTC* dtc) { 
   //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
-  int EWMode             = 1;
-  int EnableClockMarkers = 0;
-  int EnableAutogenDRP   = 1;
-  int SampleEdgeMode     = 0;
+  // int EnableAutogenDRP   = 1;
 
   // dtc->DisableCFOEmulation  ();
   // dtc->DisableAutogenDRP();
@@ -279,9 +286,14 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   // dtc->SetCFOEmulationEventWindowInterval(EWLength);  
   // dtc->SetCFOEmulationNumHeartbeats      (NMarkers);
   // dtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
+
+  //  int EWMode             = 1;
   // dtc->SetCFOEmulationEventMode          (EWMode);
 
+  int EnableClockMarkers = 0;
   dtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_0,EnableClockMarkers);
+
+  int SampleEdgeMode     = 0;
   dtc->SetExternalCFOSampleEdgeMode      (SampleEdgeMode);
 
   dtc->EnableAutogenDRP();
@@ -293,6 +305,22 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   // dtc->EnableCFOEmulation();                                 // r_0x9100:bit_30 = 1 
 
   dtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
+}
+
+//-----------------------------------------------------------------------------
+// to be executed on each node with the DTC
+// 'dtc_init_link_mask' defines node-specific link mask
+//-----------------------------------------------------------------------------
+void dtc_init_external_cfo_readout_mode() {
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
+  dtc_i->Dtc()->SoftReset();
+
+  dtc_i->InitExternalCFOReadoutMode();
+
+  int linkmask = dtc_init_link_mask();
+  dtc_i->RocPatternConfig(linkmask);
+
+  //  dtc_i->fDtc->SetCFOEmulationMode();
 }
 
 //-----------------------------------------------------------------------------
@@ -353,11 +381,10 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 
   DtcInterface* dtc_i = DtcInterface::Instance(-1); // assume already initialized
 
-  dtc_i->InitEmulatedCFOMode(68,NEvents+1,0);
-
   int linkmask = dtc_init_link_mask();  // node-specific
-
   dtc_i->RocPatternConfig(linkmask);
+
+  dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,0);
 
   //  dtc_read_subevents(dtc,PrintData,FirstTS,&vev);
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
@@ -385,18 +412,6 @@ void cfo_init_readout(const char* RunPlan = "commands.bin", int CfoLink = 0, int
 }
 
 //-----------------------------------------------------------------------------
-// to be executed on each node with the DTC
-// 'dtc_init_link_mask' defines node-specific link mask
-//-----------------------------------------------------------------------------
-void dtc_init_readout_external_cfo() {
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);
-  dtc_i->Dtc()->SoftReset();
-  dtc_i->InitExternalCFOMode();
-  int linkmask = dtc_init_link_mask();
-  dtc_i->RocPatternConfig(linkmask);
-}
-
-//-----------------------------------------------------------------------------
 // to be executed on each node with a DTC, after the CFO run plan was launched
 //-----------------------------------------------------------------------------
 int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1) {
@@ -410,11 +425,10 @@ int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1) {
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1) {
+void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1) {
 
   int cfo_link = 0;
-  int ndtcs    = 2;
-  cfo_init_readout(RunPlan,cfo_link,ndtcs);
+  cfo_init_readout(RunPlan,cfo_link,NDtcs);
 
   // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
   // CFO* cfo = cfo_i->Cfo();
@@ -423,14 +437,14 @@ void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int Prin
   // cfo->SetMaxDTCNumber(CFO_Link_0,2);
   // cfo_set_run_plan   (RunPlan);
 
-  dtc_init_readout_external_cfo();
 
   // DtcInterface* dtc_i = DtcInterface::Instance(-1);
-  // dtc_i->Dtc()->SoftReset();
-  // dtc_i->InitExternalCFOMode();
-
+  // dtc_i->Dtc()->SoftReset();                         // soft reset here seems to be critical
+  // dtc_i->InitExternalCFOReadoutMode();
   // int linkmask = dtc_init_link_mask();
   // dtc_i->RocPatternConfig(linkmask);
+
+  dtc_init_external_cfo_readout_mode();
 
   cfo_launch_run_plan();
 
@@ -473,7 +487,7 @@ void dtc_buffer_test_external_cfo_1(int N) {
     dtc_i->Dtc()->SoftReset();
     cfo->SoftReset();
 
-    dtc_i->InitExternalCFOMode();
+    dtc_i->InitExternalCFOReadoutMode();
 
     cfo->EnableLink     (CFO_Link_0,DTC_LinkEnableMode(true,true),1);
     cfo->SetMaxDTCNumber(CFO_Link_0,1);

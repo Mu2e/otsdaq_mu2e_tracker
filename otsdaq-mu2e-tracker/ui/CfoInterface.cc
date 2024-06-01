@@ -138,6 +138,11 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
   void CfoInterface::PrintStatus() {
+    std::cout << Form("-----------------------------------------------------------------\n");
+    PrintRegister(0x9004,"CFO version                                ");
+    PrintRegister(0x9030,"Kernel driver version                      ");
+    PrintRegister(0x9100,"CFO control register                       ");
+    PrintRegister(0x9104,"DMA Transfer Length                        ");
     PrintRegister(0x9108,"SERDES loopback enable                     ");
     PrintRegister(0x9114,"CFO link enable                            ");
     PrintRegister(0x9128,"CFO PLL locked                             ");
