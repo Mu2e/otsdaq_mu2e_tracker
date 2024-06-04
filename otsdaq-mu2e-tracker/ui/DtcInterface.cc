@@ -18,7 +18,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  // int gSleepTimeROC      =  2000;  // [us]
+  int gSleepTimeROC      =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -298,7 +298,7 @@ namespace trkdaq {
         // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
 
         fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
-        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+        std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
       }
     }
                                         // not sure if this is needed, later...
@@ -306,7 +306,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitEmulatedCFOMode(int EWLength, int NMarkers, int FirstEWTag) {
+  void DtcInterface::InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag) {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
     int EWMode             = 1;
@@ -329,7 +329,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitExternalCFOMode() {
+  void DtcInterface::InitExternalCFOReadoutMode() {
 
     // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0; //for now
@@ -419,17 +419,41 @@ namespace trkdaq {
 // ROC reset : write 0x1 to register 14
 //-----------------------------------------------------------------------------
   void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
-                                   ulong FirstTS,
-                                   int  PrintData) {
+                                   ulong       FirstTS  ,
+                                   int         PrintData, 
+                                   const char* Fn       ) {
     ulong    ts       = FirstTS;
     bool     match_ts = false;
     // int      nevents  = 0;
 
+    FILE*    file(nullptr);
+    if (Fn != nullptr) {
+//-----------------------------------------------------------------------------
+// open output file
+//-----------------------------------------------------------------------------
+      if((file = fopen(Fn,"r")) != NULL) {
+        // file exists
+        fclose(file);
+        cout << "ERROR in " << __func__ << " : file " << Fn << " already exists, BAIL OUT" << endl;
+        return;
+      }
+      else {
+        file = fopen(Fn,"w");
+        if (file == nullptr) {
+          cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
+          return;
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// always read an event into the same external buffer (VSub), 
+// so no problem with the memory management
+//-----------------------------------------------------------------------------
     while(1) {
-
       DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
       try {
-        VSub = fDtc->GetSubEventData(event_tag, match_ts);
+        // VSub.clear();
+        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
         int sz = VSub.size();
         
         if (PrintData > 0) {
@@ -444,15 +468,24 @@ namespace trkdaq {
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
-          int nb = ev->GetSubEventByteCount();
-
-          // int nw = nb/2;
-
+          int      nb     = ev->GetSubEventByteCount();
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
+          char*    data   = (char*) ev->GetRawBufferPointer();
 
-          char* data = (char*) ev->GetRawBufferPointer();
+          if (file) {
+//-----------------------------------------------------------------------------
+// write event to output file
+//-----------------------------------------------------------------------------
+            int nbb = fwrite(data,1,nb,file);
+            if (nbb == 0) {
+              cout << "ERROR in " << __func__ << " : failed to write event " << ew_tag 
+                   << " , close file and BAIL OUT" << endl;
+              fclose(file);
+              return;
+            }
+          }
 
-          char* roc_data = data+0x30;
+          char* roc_data  = data+0x30;
 
           for (int roc=0; roc<6; roc++) {
             int nb    = *((ushort*) roc_data);
@@ -480,6 +513,13 @@ namespace trkdaq {
     }
 
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// to simplify first steps, assume that in a file writing mode all events 
+// are read at once, so close the file on exit
+//-----------------------------------------------------------------------------
+    if (file) {
+      fclose(file);
+    }
   }
 
 
@@ -507,6 +547,43 @@ namespace trkdaq {
     else                       fDtc->EnableAutogenDRP ();
   }
 
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintFireflyTemp() {
+    int tmo_ms(50);
+
+//-----------------------------------------------------------------------------
+// read RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    uint data, rx_temp, txrx_temp;
+
+    fDtc->GetDevice()->read_register(0x9288,tmo_ms,&data);
+    rx_temp = data & 0xff;
+//-----------------------------------------------------------------------------
+// read TX/RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    fDtc->GetDevice()->read_register(0x92a8,tmo_ms,&data);
+    txrx_temp = data & 0xff;
+
+    cout << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
+  }
 
 };
 

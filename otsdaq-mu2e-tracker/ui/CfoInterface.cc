@@ -90,6 +90,61 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// launch is a separate step, could be repeated multiple times
+// this is a one-time initialization
+//-----------------------------------------------------------------------------
+  void CfoInterface::InitReadout(const char* RunPlan, int CfoLink, int NDtcs) {
+
+    CFO_Link_ID cfo_link = CFO_Link_ID(CfoLink);
+
+    fCfo->SoftReset();
+    fCfo->EnableLink     (cfo_link,DTC_LinkEnableMode(true,true),NDtcs);
+    // fCfo->SetMaxDTCNumber(cfo_link,NDtcs); // done in EnableLink
+    SetRunPlan   (RunPlan);
+  // cfo_launch_run_plan();
+  }
+
+//-----------------------------------------------------------------------------
+  uint32_t CfoInterface::ReadRegister(uint16_t Register) {
+
+    uint32_t data;
+    int      timeout(150);
+    
+    mu2edev* dev = fCfo->GetDevice();
+    dev->read_register(Register,timeout,&data);
+    
+    return data;
+  }
+
+
+//-----------------------------------------------------------------------------
+  void CfoInterface::PrintRegister(uint16_t Register, const char* Title) {
+    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
+  }
+
+//-----------------------------------------------------------------------------
+  void CfoInterface::PrintStatus() {
+    std::cout << Form("-----------------------------------------------------------------\n");
+    PrintRegister(0x9004,"CFO version                                ");
+    PrintRegister(0x9030,"Kernel driver version                      ");
+    PrintRegister(0x9100,"CFO control register                       ");
+    PrintRegister(0x9104,"DMA Transfer Length                        ");
+    PrintRegister(0x9108,"SERDES loopback enable                     ");
+    PrintRegister(0x9114,"CFO link enable                            ");
+    PrintRegister(0x9128,"CFO PLL locked                             ");
+    PrintRegister(0x9140,"SERDES RX CDR lock                         ");
+    PrintRegister(0x9144,"Beam On Timer Preset                       ");
+    PrintRegister(0x9148,"Enable Beam On Mode                        ");
+    PrintRegister(0x914c,"Enable Beam Off Mode                       ");
+    PrintRegister(0x918c,"Number of DTCs                             ");
+    
+    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
+    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
+    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
+    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+  }
+
+//-----------------------------------------------------------------------------
 // TODO
 //-----------------------------------------------------------------------------
   void CfoInterface::SetOffspillRunPlan(int NEvents, int EWLength) {
@@ -116,41 +171,6 @@ namespace trkdaq {
 
     fCfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
     usleep(10);	
-  }
-
-//-----------------------------------------------------------------------------
-  uint32_t CfoInterface::ReadRegister(uint16_t Register) {
-
-    uint32_t data;
-    int      timeout(150);
-    
-    mu2edev* dev = fCfo->GetDevice();
-    dev->read_register(Register,timeout,&data);
-    
-    return data;
-  }
-
-
-//-----------------------------------------------------------------------------
-  void CfoInterface::PrintRegister(uint16_t Register, const char* Title) {
-    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
-  }
-
-//-----------------------------------------------------------------------------
-  void CfoInterface::PrintStatus() {
-    PrintRegister(0x9108,"SERDES loopback enable                     ");
-    PrintRegister(0x9114,"CFO link enable                            ");
-    PrintRegister(0x9128,"CFO PLL locked                             ");
-    PrintRegister(0x9140,"SERDES RX CDR lock                         ");
-    PrintRegister(0x9144,"Beam On Timer Preset                       ");
-    PrintRegister(0x9148,"Enable Beam On Mode                        ");
-    PrintRegister(0x914c,"Enable Beam Off Mode                       ");
-    PrintRegister(0x918c,"Number of DTCs                             ");
-    
-    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
-    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
-    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
-    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
   }
 
 };

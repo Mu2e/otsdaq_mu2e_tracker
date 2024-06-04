@@ -64,7 +64,6 @@ namespace mu2e {
     std::string                           _tfmHost;                // used to send xmlrpc messages to
 
     uint                                  _rocMask;
-    int                                   _sleepTimeMs;            // introduce sleep time (ms) to throttle the input event rate
     int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
     int                                   _sleepTimeDTC;           // sleep time (ms) after register writes
     int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
@@ -72,7 +71,7 @@ namespace mu2e {
 
     int                                   _readData;               // 1: read data, 0: save empty fragment
     int                                   _resetROC;               // 1: clear digis 2: also reset ROC every event
-    int                                   _saveDTCRegisters;       // 
+    int                                   _readDTCRegisters;       // 1: read and save the DTC registers
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
@@ -164,7 +163,7 @@ namespace mu2e {
 std::vector<uint16_t> mu2e::TrackerBR::fragmentIDs() {
   std::vector<uint16_t> v;
   v.push_back(0);
-  if (_saveDTCRegisters) v.push_back(FragmentType::TRKDTC);
+  if (_readDTCRegisters) v.push_back(FragmentType::TRKDTC);
   //  if (_saveSPI)          v.push_back(FragmentType::TRKSPI);
   
   return v;
@@ -186,17 +185,16 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
   // , _request_delay     (ps.get<size_t>                  ("delay_between_requests_ticks", 20000))
   // , _heartbeatsAfter   (ps.get<size_t>                  ("heartbeatsAfter"                    )) 
   // , _heartbeatInterval (ps.get<int>                     ("heartbeatInterval"                  ))
-  , _pcieAddr             (ps.get<int>                     ("dtcId"                 ,          -1)) 
+  , _pcieAddr             (ps.get<int>                     ("pcieAddr"                 ,          -1)) 
   , _activeLinks       (ps.get<std::vector<int>>        ("activeLinks"                        )) 
   , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
-  , _sleepTimeMs       (ps.get<int>                     ("sleepTimeMs"           ,          -1))  // 0   milliseconds
   , _sleepTimeDMA      (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
   , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
   , _sleepTimeROC      (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
   , _sleepTimeROCReset (ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
   , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
   , _resetROC          (ps.get<int>                     ("resetROC"              ,           1))  // 
-  , _saveDTCRegisters  (ps.get<int>                     ("saveDTCRegisters"      ,           1))  // 
+  , _readDTCRegisters  (ps.get<int>                     ("readDTCRegisters"      ,           1))  // 
   , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
@@ -220,7 +218,6 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
 // the BR interface should not be changing any settings, just read events
 //-----------------------------------------------------------------------------
   _dtc      = new DTC(DTC_SimMode_Disabled,_pcieAddr,_rocMask,"",false,"");
-
   _device   = _dtc->GetDevice();
 
   for (int i=0; i<_nActiveLinks; i++) {
@@ -510,12 +507,12 @@ int mu2e::TrackerBR::readDTCRegisters(artdaq::Fragment* Frag, uint16_t* Reg, int
 //-----------------------------------------------------------------------------
 int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, double TStamp) {
 
-  int    rc(-1);                        // return code, negative if error
-  bool   timeout(false);
+  int    rc         (-1);                        // return code, negative if error
+  bool   timeout    (false);
   bool   readSuccess(false);
+  bool   match_ts   (false);
+  int    nbytes     (0);
   // auto   tmo_ms(1500);
-  bool   match_ts(false);
-  int    nbytes(0);
 
   DTC_EventWindowTag event_tag = DTC_EventWindowTag(TStamp);
 
@@ -644,15 +641,16 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
     // printf("%s: fake data\n",__func__);
     // printBuffer(f1->dataBegin(),4);
   }
+
+  if (_readDTCRegisters) {
 //-----------------------------------------------------------------------------
 // read DTC registers
 // add one more fragment of debug type with the diagnostics registers: 8 bytes per register - (register number, value)
 // for simplicity, keep both 4-byte integers
 //-----------------------------------------------------------------------------
-  artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,tstamp);
-	auto              metadata = TrkDtcFragment::create_metadata();
-  f2->setMetadata(metadata);
-  if (_saveDTCRegisters) {
+    artdaq::Fragment* f2 = new artdaq::Fragment(ev_counter(),_fragment_ids[1],FragmentType::TRKDTC,tstamp);
+    auto              metadata = TrkDtcFragment::create_metadata();
+    f2->setMetadata(metadata);
 
     readDTCRegisters(f2,_reg,_nreg);
     if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
@@ -660,25 +658,28 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
       int nb_dtc = 4+8*_nreg;
       printBuffer(f2->dataBegin(),nb_dtc);
     }
+    Frags.emplace_back(f2);
   }
-  Frags.emplace_back(f2);
 //-----------------------------------------------------------------------------
-// release the DMA channel
-//-----------------------------------------------------------------------------
-  _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ,1);
+// not sure if releasing the DMA channel explicitly is needed here - it may be done 
+// elsewhere
+// //-----------------------------------------------------------------------------
+// // release the DMA channel
+// //-----------------------------------------------------------------------------
+//   _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ,1);
 
-  if (_sleepTimeDMA > 0) {
-    std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDMA));
-  }
+  // if (_sleepTimeDMA > 0) {
+  //   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDMA));
+  // }
 
-  if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
-    int      rc;
-    uint32_t res;
-    rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
-    rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
-  }
+  // if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
+  //   int      rc;
+  //   uint32_t res;
+  //   rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
+  //   rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
+  // }
 
-  _dtc->GetDevice()->release_all(DTC_DMA_Engine_DAQ);
+  _dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
   return true;
 }
 
@@ -746,13 +747,6 @@ bool mu2e::TrackerBR::getNext_(artdaq::FragmentPtrs& Frags) {
   if (ev_counter() == 1) {
     std::string msg = "TrackerBR::getNext: " + std::to_string(ev_counter());
     message("info",msg);
-  }
-
-//-----------------------------------------------------------------------------
-// throttle the input rate
-//-----------------------------------------------------------------------------
-  if (_sleepTimeMs > 0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(_sleepTimeMs));
   }
 
   if (should_stop()) return false;
