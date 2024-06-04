@@ -33,6 +33,8 @@ namespace trkdaq {
     int          PcieAddr() { return fPcieAddr; }
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 
+    void         InitReadout(const char* RunPlan, int Link = 0, int NDtcs = 1);
+
     void         LaunchRunPlan();
     void         SetRunPlan   (const char* Fn);
 

@@ -419,17 +419,41 @@ namespace trkdaq {
 // ROC reset : write 0x1 to register 14
 //-----------------------------------------------------------------------------
   void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
-                                   ulong FirstTS,
-                                   int  PrintData) {
+                                   ulong       FirstTS  ,
+                                   int         PrintData, 
+                                   const char* Fn       ) {
     ulong    ts       = FirstTS;
     bool     match_ts = false;
     // int      nevents  = 0;
 
+    FILE*    file(nullptr);
+    if (Fn != nullptr) {
+//-----------------------------------------------------------------------------
+// open output file
+//-----------------------------------------------------------------------------
+      if((file = fopen(Fn,"r")) != NULL) {
+        // file exists
+        fclose(file);
+        cout << "ERROR in " << __func__ << " : file " << Fn << " already exists, BAIL OUT" << endl;
+        return;
+      }
+      else {
+        file = fopen(Fn,"w");
+        if (file == nullptr) {
+          cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
+          return;
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// always read an event into the same external buffer (VSub), 
+// so no problem with the memory management
+//-----------------------------------------------------------------------------
     while(1) {
-
       DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
       try {
-        VSub = fDtc->GetSubEventData(event_tag, match_ts);
+        // VSub.clear();
+        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
         int sz = VSub.size();
         
         if (PrintData > 0) {
@@ -444,15 +468,24 @@ namespace trkdaq {
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
-          int nb = ev->GetSubEventByteCount();
-
-          // int nw = nb/2;
-
+          int      nb     = ev->GetSubEventByteCount();
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
+          char*    data   = (char*) ev->GetRawBufferPointer();
 
-          char* data = (char*) ev->GetRawBufferPointer();
+          if (file) {
+//-----------------------------------------------------------------------------
+// write event to output file
+//-----------------------------------------------------------------------------
+            int nbb = fwrite(data,1,nb,file);
+            if (nbb == 0) {
+              cout << "ERROR in " << __func__ << " : failed to write event " << ew_tag 
+                   << " , close file and BAIL OUT" << endl;
+              fclose(file);
+              return;
+            }
+          }
 
-          char* roc_data = data+0x30;
+          char* roc_data  = data+0x30;
 
           for (int roc=0; roc<6; roc++) {
             int nb    = *((ushort*) roc_data);
@@ -480,6 +513,13 @@ namespace trkdaq {
     }
 
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// to simplify first steps, assume that in a file writing mode all events 
+// are read at once, so close the file on exit
+//-----------------------------------------------------------------------------
+    if (file) {
+      fclose(file);
+    }
   }
 
 

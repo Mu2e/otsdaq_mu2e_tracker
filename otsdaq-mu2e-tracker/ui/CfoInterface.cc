@@ -90,32 +90,18 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// TODO
+// launch is a separate step, could be repeated multiple times
+// this is a one-time initialization
 //-----------------------------------------------------------------------------
-  void CfoInterface::SetOffspillRunPlan(int NEvents, int EWLength) {
-    printf("ERROR: %s not implemented yet",__func__);
-  }
+  void CfoInterface::InitReadout(const char* RunPlan, int CfoLink, int NDtcs) {
 
-//-----------------------------------------------------------------------------
-// first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
-// (sizeof(mu2e_databuff_t)
-//-----------------------------------------------------------------------------
-  void CfoInterface::SetRunPlan(const char* Fn) {
+    CFO_Link_ID cfo_link = CFO_Link_ID(CfoLink);
 
-    std::ifstream file(Fn, std::ios::binary | std::ios::ate);
-
-    // read binary file
-    mu2e_databuff_t inputData;
-    auto inputSize = file.tellg();
-    uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
-    file.seekg(0, std::ios::beg);
-
-    memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
-    file.read((char*) (&inputData[8]), inputSize);
-    file.close();
-
-    fCfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
-    usleep(10);	
+    fCfo->SoftReset();
+    fCfo->EnableLink     (cfo_link,DTC_LinkEnableMode(true,true),NDtcs);
+    // fCfo->SetMaxDTCNumber(cfo_link,NDtcs); // done in EnableLink
+    SetRunPlan   (RunPlan);
+  // cfo_launch_run_plan();
   }
 
 //-----------------------------------------------------------------------------
@@ -156,6 +142,35 @@ namespace trkdaq {
     PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
     PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
     PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+  }
+
+//-----------------------------------------------------------------------------
+// TODO
+//-----------------------------------------------------------------------------
+  void CfoInterface::SetOffspillRunPlan(int NEvents, int EWLength) {
+    printf("ERROR: %s not implemented yet",__func__);
+  }
+
+//-----------------------------------------------------------------------------
+// first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
+// (sizeof(mu2e_databuff_t)
+//-----------------------------------------------------------------------------
+  void CfoInterface::SetRunPlan(const char* Fn) {
+
+    std::ifstream file(Fn, std::ios::binary | std::ios::ate);
+
+    // read binary file
+    mu2e_databuff_t inputData;
+    auto inputSize = file.tellg();
+    uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
+    file.seekg(0, std::ios::beg);
+
+    memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
+    file.read((char*) (&inputData[8]), inputSize);
+    file.close();
+
+    fCfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
+    usleep(10);	
   }
 
 };

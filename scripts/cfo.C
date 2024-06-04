@@ -414,11 +414,11 @@ void cfo_init_readout(const char* RunPlan = "commands.bin", int CfoLink = 0, int
 //-----------------------------------------------------------------------------
 // to be executed on each node with a DTC, after the CFO run plan was launched
 //-----------------------------------------------------------------------------
-int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1) {
+int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1, const char* OutputFn = nullptr) {
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
   DtcInterface* dtc_i = DtcInterface::Instance(-1);
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData);
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,OutputFn);
   return list_of_subevents.size();
 }
 

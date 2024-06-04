@@ -47,9 +47,11 @@ namespace trkdaq {
     void         PrintStatus     ();
 
     uint32_t     ReadRegister    (uint16_t Register);
+
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
-                                  ulong      FirstTS,
-                                  int        PrintData );
+                                  ulong       FirstTS,
+                                  int         PrintData,
+                                  const char* OutputFn = nullptr);
 
     void         ResetRoc        (int Link);
     void         RocPatternConfig(int LinkMask);

@@ -150,15 +150,17 @@ public:
   };
 
   struct DtcData_t {
-    TString    fName;         // 
-    int        fPcieIndex;
+    TString    fName;         //expect fName to be uppercased
+    int        fPcieAddr;
+    int        fLinkMask;
+    int        fNLinkedDtcs;  // for CFO only - NDTC's in a time chain
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
 
-    DtcData_t(const char* Name = "", int PcieIndex = 0) {
-      fName      = Name; 
-      fPcieIndex = PcieIndex;
+    DtcData_t(const char* Name = "", int PcieAddr = 0) {
+      fName     = Name; 
+      fPcieAddr = PcieAddr;
 
       fActiveRoc = nullptr;
       for (int i=0;i<6; i++) {
@@ -166,6 +168,9 @@ public:
         fRocData[i].fLink = i;
       }
     }
+
+    int IsDtc() { return fName == "DTC"; }
+    int IsCfo() { return fName == "CFO"; }
   };
 
 
@@ -181,7 +186,6 @@ public:
     Pixel_t           fColor;
   };
 
-
   struct DtcTabElement_t {
     TGCompositeFrame* fFrame;
     TGTabElement*     fTab;             // its own tab element
@@ -190,9 +194,13 @@ public:
     TGTextEntry*      fRegR;
     TGTextEntry*      fValW;
     TGLabel*          fValR;
+    TGTextEntry*      fTimeChainLink;   // CFO only
+    TGTextEntry*      fNDtcs;           // CFO only
+    TGTextEntry*      fRunPlan;         // CFO only
 
-    trkdaq::DtcInterface*     fDTC_i;           // driver interface
-    trkdaq::CfoInterface*     fCFO_i;
+    trkdaq::DtcInterface* fDTC_i;           // driver interface
+    trkdaq::CfoInterface* fCFO_i;
+
     Pixel_t           fColor;
 
     TGTab*            fRocTab;
@@ -203,18 +211,22 @@ public:
     DtcData_t*        fData;
   };
 
+  trkdaq::CfoInterface* fCFO_i;
+
   TGMainFrame*        fMainFrame;
   TGTab*              fDtcTab ;
   TGTextViewostream*  fTextView;
   TGVerticalFrame*    fContents;
 
-  TString             fHost;
+  TString             fHostname;
 
   TString             fDevice;
   TString             fIStage;
   TString             fTime;
 
-  int                 fNDtcs;
+  int                 fNDtcs;             // on a machine
+  int                 fNTimeChainedDtcs;  // N(DTCs) in a time chain
+
   DtcTabElement_t     fDtcTel[2];
 
   TGTabElement*       fActiveDtcTab;
@@ -233,18 +245,21 @@ public:
 
   int                 fDebugLevel;
   
-  DtcGui(const char* Hostname, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
+  DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
   virtual ~DtcGui();
 
   void     DoDtcTab          (Int_t id);
   void     DoRocTab          (Int_t id);
 
+  void     BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
   void     BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
   void     BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocData_t* RocData);
 
   void     BuildGui          (const TGWindow *Parent, UInt_t Width, UInt_t Height);
 
   void     ExecuteCommand(const char* Cmd, int PrintOnly = 0);
+
+  int      InitRunConfiguration(const char* Project);
 
   void     cfo_launch_run_plan();
 
@@ -256,6 +271,7 @@ public:
   void     exit               ();
 
   void     init_external_cfo_readout_mode();
+  void     cfo_init_readout   ();
 
   void     print_firefly_temp ();
   void     print_dtc_status   ();
@@ -263,6 +279,7 @@ public:
 
   void     read_dtc_register  ();
   void     read_roc_register  ();
+  void     read_subevents     ();
   void     reset_roc          ();
 
   void     write_dtc_register ();
