@@ -333,8 +333,8 @@ void DtcGui::init_external_cfo_readout_mode() {
     try         { 
       dtel->fDTC_i->Dtc()->SoftReset();
       dtel->fDTC_i->InitExternalCFOReadoutMode();
-      int linkmask = dtel->fData->fLinkMask;
-      dtel->fDTC_i->RocPatternConfig(linkmask);
+      // int linkmask = dtel->fData->fLinkMask;
+      dtel->fDTC_i->RocPatternConfig();
     }
     catch (...) { *fTextView << Form("ERROR : filed  BAIL OUT") << std::endl; }
   }

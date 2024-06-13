@@ -20,6 +20,7 @@ namespace trkdaq {
 
     DTCLib::DTC*         fDtc;
     int                  fPcieAddr;
+    int                  fLinkMask;     // int is OK, bit 31 is never used for arithmetics
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -34,11 +35,18 @@ namespace trkdaq {
 
     DTCLib::DTC* Dtc() { return fDtc; }
 
+                                        // clock source=0: internal, clock=1: RTF (RJ45)
+    
+    int          ConfigureJA(int ClockSource, int Reset = 1);
+
                                         // EWLength - in 25 ns ticks
     void         InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag);
     void         InitExternalCFOReadoutMode();
+    
                                         // launch "run plan" in emulated mode...
-    void         LaunchRunPlan (int NEvents );
+    void         LaunchRunPlan (int NEvents);
+
+    int          GetLinkMask() { return fLinkMask; }
 
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
@@ -54,7 +62,7 @@ namespace trkdaq {
                                   const char* OutputFn = nullptr);
 
     void         ResetRoc        (int Link);
-    void         RocPatternConfig(int LinkMask);
+    void         RocPatternConfig();
 
     void         SetupCfoInterface(int CFOEmulationMode, 
                                    int ForceCFOEdge    , 
