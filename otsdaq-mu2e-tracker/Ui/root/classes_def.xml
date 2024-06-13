@@ -1,0 +1,6 @@
+<lcgdict>
+
+  <class name="trkdaq::CfoInterface" />
+  <class name="trkdaq::DtcInterface" />
+
+</lcgdict>

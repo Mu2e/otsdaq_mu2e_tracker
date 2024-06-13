@@ -7,9 +7,9 @@
 #include "TH1.h"
 
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO.h"
-#include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO_Compiler.hh"
+#include "dtcInterfaceLib/DTC.h"
+#include "cfoInterfaceLib/CFO.h"
+#include "cfoInterfaceLib/CFO_Compiler.hh"
 
 using namespace CFOLib;
 using namespace DTCLib;
@@ -31,8 +31,8 @@ using namespace DTCLib;
 
 // #include "dtc_set_roc_pattern_mode.C"
 
-#include "otsdaq-mu2e-tracker/ui/CfoInterface.hh"
-#include "otsdaq-mu2e-tracker/ui/DtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/CfoInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 using namespace trkdaq;
 

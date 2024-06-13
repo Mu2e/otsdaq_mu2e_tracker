@@ -1,5 +1,5 @@
 add_subdirectory(FEInterfaces)
 add_subdirectory(Generators)
 add_subdirectory(ArtModules)
-add_subdirectory(ui)
-add_subdirectory(gui)
+add_subdirectory(Ui)
+add_subdirectory(Gui)

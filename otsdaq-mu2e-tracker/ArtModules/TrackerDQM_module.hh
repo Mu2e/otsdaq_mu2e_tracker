@@ -21,10 +21,10 @@
 #include "TApplication.h"
 #include "TBrowser.h"
 
-#include "Offline/RecoDataProducts/inc/StrawDigi.hh"
-#include "Offline/TrkHitReco/inc/PeakFit.hh"
+// #include "Offline/RecoDataProducts/inc/StrawDigi.hh"
+// #include "Offline/TrkHitReco/inc/PeakFit.hh"
 #include "Offline/DataProducts/inc/StrawId.hh"
-#include "Offline/DataProducts/inc/TrkTypes.hh"
+// #include "Offline/DataProducts/inc/TrkTypes.hh"
 
 #include "artdaq-core/Data/Fragment.hh"
 

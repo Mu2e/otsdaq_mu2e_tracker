@@ -1,5 +1,5 @@
 
-#include "otsdaq-mu2e-tracker/gui/DtcGui.hh"
+#include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 using namespace trkdaq;
 using namespace std;

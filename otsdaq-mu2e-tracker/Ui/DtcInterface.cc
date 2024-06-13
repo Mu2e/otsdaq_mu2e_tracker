@@ -317,7 +317,7 @@ namespace trkdaq {
 
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
+    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((const uint64_t) FirstEWTag));
     fDtc->SetCFOEmulationEventMode          (EWMode);
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
