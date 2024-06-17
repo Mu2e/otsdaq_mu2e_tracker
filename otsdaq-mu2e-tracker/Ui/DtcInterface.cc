@@ -319,6 +319,9 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
+// would be cached for the next time
+//-----------------------------------------------------------------------------
   void DtcInterface::InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag) {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
@@ -326,6 +329,9 @@ namespace trkdaq {
     int EnableClockMarkers = 0;
     // int EnableAutogenDRP   = 1;
 
+    fDtc->DisableCFOEmulation();
+    fDtc->DisableAutogenDRP();
+    
     fDtc->SoftReset();                     // write bit 31
 
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
