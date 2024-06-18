@@ -35,6 +35,7 @@ namespace trkdaq {
     std::string uid             ("");
       
     fPcieAddr = PcieAddr;
+    fLinkMask = LinkMask;
     fDtc      = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,
                         skip_init,sim_file,uid);
   }
@@ -66,6 +67,18 @@ namespace trkdaq {
     else return fgInstance[pcie_addr];
   }
 
+
+//-----------------------------------------------------------------------------
+// Source=0: sync to internal clock ; 1: RTF
+// on success, returns 1
+//-----------------------------------------------------------------------------
+  int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
+    fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
+    int rc = fDtc->ReadJitterAttenuatorLocked();            // in case of success, returns true
+    fDtc->FormatJitterAttenuatorCSR();
+
+    return rc;
+  }
 
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintBuffer(const void* ptr, int nw) {
@@ -179,11 +192,17 @@ namespace trkdaq {
     iw  = (iw2 << 16) | iw1;
     cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num PREFETCH seen\n\n", reg+1,reg,iw);
 
+    reg =  9;
+    iw1 = dtc->ReadROCRegister(link,reg  ,100);
+    iw2 = dtc->ReadROCRegister(link,reg+1,100);
+    iw  = (iw2 << 16) | iw1;
+    cout << Form("reg(%2i)<<16+reg(%2i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
+
     reg = 35;
     iw1 = dtc->ReadROCRegister(link,reg  ,100);
     iw2 = dtc->ReadROCRegister(link,reg+1,100);
     iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
+    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ written to DDR\n", reg+1,reg,iw);
 
     reg = 13;
     dat = dtc->ReadROCRegister(link,reg,100);
@@ -281,9 +300,9 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocPatternConfig(int LinkMask) {
+  void DtcInterface::RocPatternConfig() {
     for (int i=0; i<6; i++) {
-      int used = (LinkMask >> 4*i) & 0x1;
+      int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
         auto link = DTC_Link_ID(i);
         fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
@@ -306,6 +325,9 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
+// would be cached for the next time
+//-----------------------------------------------------------------------------
   void DtcInterface::InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag) {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
@@ -313,11 +335,14 @@ namespace trkdaq {
     int EnableClockMarkers = 0;
     // int EnableAutogenDRP   = 1;
 
+    fDtc->DisableCFOEmulation();
+    fDtc->DisableAutogenDRP();
+    
     fDtc->SoftReset();                     // write bit 31
 
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
+    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((const uint64_t) FirstEWTag));
     fDtc->SetCFOEmulationEventMode          (EWMode);
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
@@ -429,7 +454,7 @@ namespace trkdaq {
     FILE*    file(nullptr);
     if (Fn != nullptr) {
 //-----------------------------------------------------------------------------
-// open output file
+// check if Fn exists 
 //-----------------------------------------------------------------------------
       if((file = fopen(Fn,"r")) != NULL) {
         // file exists
@@ -438,6 +463,9 @@ namespace trkdaq {
         return;
       }
       else {
+//-----------------------------------------------------------------------------
+// Fn doesn't exist, open it 
+//-----------------------------------------------------------------------------
         file = fopen(Fn,"w");
         if (file == nullptr) {
           cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
@@ -507,7 +535,7 @@ namespace trkdaq {
         
       }
       catch (...) {
-        cout << "ERROR reading ts = %i" << ts << std::endl;
+        cout << "ERROR reading ts = " << ts << std::endl;
         break;
       }
     }

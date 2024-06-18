@@ -4,7 +4,7 @@
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
-#include "otsdaq-mu2e-tracker/gui/DtcGui.hh"
+#include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 int init_run_configuration(DtcGui* X) {
   int rc(0);

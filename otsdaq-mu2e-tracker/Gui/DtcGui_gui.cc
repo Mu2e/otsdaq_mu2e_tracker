@@ -1,5 +1,5 @@
 
-#include "otsdaq-mu2e-tracker/gui/DtcGui.hh"
+#include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 #include "TROOT.h"
 
@@ -38,11 +38,13 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   for (int i=0; i<2; i++) {
     DtcTabElement_t* dtel = &fDtcTel[i];
     int pcie_addr = fDtcData[i].fPcieAddr;
-    if      (fDtcData[i].IsDtc()) dtel->fDTC_i = DtcInterface::Instance(pcie_addr);
-    else if (fDtcData[i].IsCfo()) { 
+    if      (fDtcData[i].IsDtc()) {
+      dtel->fDTC_i  = DtcInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
+    }
+    else if (fDtcData[i].IsCfo()) {
       dtel->fCFO_i = CfoInterface::Instance(pcie_addr);
 //-----------------------------------------------------------------------------
-// and also initialize the CFO pointers - for now, it duplicates the tab, 
+// there is only one CFO, so initialize the CFO pointer - by copying it from the tab
 //-----------------------------------------------------------------------------
       fCFO_i = CfoInterface::Instance(pcie_addr);
     }
@@ -63,7 +65,12 @@ int DtcGui::InitRunConfiguration(const char* Config) {
   TInterpreter* cint = gROOT->GetInterpreter();
 
   TInterpreter::EErrorCode irc;
-  cint->LoadMacro(Form("srcs/otsdaq_mu2e_tracker/config/%s/%s.C",Config,fHostname.Data()), &irc);
+
+  TString macro = Form("tdaq-v3_01_00/otsdaq-mu2e-tracker/config/%s/%s.C",Config,fHostname.Data());
+
+  if (fDebugLevel > 0) printf("DtcGui::%s : loading %s\n",__func__,macro.Data());
+  
+  cint->LoadMacro(macro.Data(), &irc);
 
   if (rc == 0) {
     TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx)",(long int) this);

@@ -67,6 +67,18 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
+// Source=0: sync to internal clock ; 1: RTF
+// on success, returns 1
+//-----------------------------------------------------------------------------
+  int CfoInterface::ConfigureJA(int ClockSource, int Reset) {
+    fCfo->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
+    int rc = fCfo->ReadJitterAttenuatorLocked();            // in case of success, returns true
+    fCfo->FormatJitterAttenuatorCSR();
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
 // looks that it is only for the off-spill
 //-----------------------------------------------------------------------------
   void CfoInterface::LaunchRunPlan() {

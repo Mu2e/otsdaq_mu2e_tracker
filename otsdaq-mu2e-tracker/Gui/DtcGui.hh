@@ -130,8 +130,8 @@
 // #endif
 
 // #include "scripts/cfo.C"
-#include "otsdaq-mu2e-tracker/ui/CfoInterface.hh"
-#include "otsdaq-mu2e-tracker/ui/DtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/CfoInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 //-----------------------------------------------------------------------------
 class DtcGui {
@@ -152,7 +152,7 @@ public:
   struct DtcData_t {
     TString    fName;         //expect fName to be uppercased
     int        fPcieAddr;
-    int        fLinkMask;
+    int        fLinkMask;     // active links
     int        fNLinkedDtcs;  // for CFO only - NDTC's in a time chain
 
     RocData_t  fRocData[6];

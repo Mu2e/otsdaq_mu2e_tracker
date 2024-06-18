@@ -6,30 +6,12 @@
 #  buildtool
 # ======================================================================
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
-
-# these are minimum required versions, not the actual product versions
-find_package(cetmodules  3.16.00 REQUIRED)
+find_package(cetmodules)
 
 project(otsdaq_mu2e_tracker VERSION 3.01.00)
 
 include(CetCMakeEnv)
 cet_cmake_env()
-#------------------------------------------------------------------------------
-# it looks that these packages should be looked for only after cet_cmake_env
-#------------------------------------------------------------------------------
-find_package(artdaq           3.12.07 REQUIRED)
-find_package(artdaq_core      3.09.16 REQUIRED)
-find_package(artdaq_core_demo 1.11.00 REQUIRED EXPORT)
-find_package(otsdaq_mu2e      1.02.00 REQUIRED)
-find_package(mu2e_pcie_utils  3.01.00 REQUIRED)
-
- # XDAQ Extra setup
- include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
-link_directories($ENV{XDAQ_LIB})
-
-find_package(Offline 10.00.00 REQUIRED)
-include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
-link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 cet_set_compiler_flags(
         DIAGS VIGILANT
@@ -37,6 +19,22 @@ cet_set_compiler_flags(
         NO_UNDEFINED
         EXTRA_FLAGS -pedantic -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
 )
+#------------------------------------------------------------------------------
+# it looks that these packages are looked for only after cet_cmake_env
+#------------------------------------------------------------------------------
+find_package(artdaq            3.12.07 REQUIRED EXPORT)
+find_package(artdaq_core       3.09.16 REQUIRED EXPORT)
+find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
+find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
+find_package(mu2e_pcie_utils   3.01.00 REQUIRED EXPORT)
+
+ # XDAQ Extra setup
+include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
+# link_directories($ENV{XDAQ_LIB})
+
+find_package(Offline           10.00.00 REQUIRED)
+# include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
+# link_directories   ($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )
@@ -54,6 +52,7 @@ cet_set_compiler_flags(
 #set(ART_HEX_VERSION 0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION})
 #add_definitions(-DART_HEX_VERSION=0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION})
 
+include(ArtDictionary)
 include(BuildPlugins)
 
 # Code

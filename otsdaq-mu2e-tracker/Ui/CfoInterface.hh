@@ -26,18 +26,21 @@ namespace trkdaq {
   private:
     CfoInterface(int PcieAddr = -1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled);
   public:
+    
     virtual ~CfoInterface();
 
     static CfoInterface* Instance(int PcieAddr = -1);
 
-    int          PcieAddr() { return fPcieAddr; }
     CFOLib::CFO* Cfo     () { return fCfo     ; }
+
+    int          ConfigureJA(int ClockSource, int Reset = 1);
 
     void         InitReadout(const char* RunPlan, int Link = 0, int NDtcs = 1);
 
     void         LaunchRunPlan();
     void         SetRunPlan   (const char* Fn);
 
+    int          PcieAddr     () { return fPcieAddr; }
     void         PrintRegister(uint16_t Register, const char* Title = "") ;
     void         PrintStatus  ();
     uint32_t     ReadRegister (uint16_t Register);
