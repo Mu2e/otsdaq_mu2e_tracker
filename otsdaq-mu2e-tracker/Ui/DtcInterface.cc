@@ -192,11 +192,17 @@ namespace trkdaq {
     iw  = (iw2 << 16) | iw1;
     cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num PREFETCH seen\n\n", reg+1,reg,iw);
 
+    reg =  9;
+    iw1 = dtc->ReadROCRegister(link,reg  ,100);
+    iw2 = dtc->ReadROCRegister(link,reg+1,100);
+    iw  = (iw2 << 16) | iw1;
+    cout << Form("reg(%2i)<<16+reg(%2i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
+
     reg = 35;
     iw1 = dtc->ReadROCRegister(link,reg  ,100);
     iw2 = dtc->ReadROCRegister(link,reg+1,100);
     iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
+    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ written to DDR\n", reg+1,reg,iw);
 
     reg = 13;
     dat = dtc->ReadROCRegister(link,reg,100);

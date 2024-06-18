@@ -13,14 +13,16 @@
 |       06 | Bad Marker counter                                                 |      |
 |       07 | Fiber loss/lock counter, can't be reset in the software            |      |
 |       08 | 1: internal pattern generation mode                                |      |
+|       09 | r10<<16+r09 : num data requests seen                               |      |
+|       10 |                                                                    |      |
 |----------+--------------------------------------------------------------------+------|
 |       11 | r12<<16+r11 : Num EWM seen                                         |      |
 |       12 |                                                                    |      |
 |----------+--------------------------------------------------------------------+------|
 |       13 | Num skipped DATA REQ                                               |      |
 |       14 | reset, write 1 to this register to reset the ROC                   |      |
-|       16 |                                                                    |      |
-|       18 |                                                                    |      |
+|       16 | unused                                                             |      |
+|       18 | unused                                                             |      |
 |----------+--------------------------------------------------------------------+------|
 |       23 | r24<<16+r23 : SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0] |      |
 |       24 |                                                                    |      |
@@ -41,7 +43,7 @@
 |       33 | r34<<16+r33 :                                                      |      |
 |       34 |                                                                    |      |
 |----------+--------------------------------------------------------------------+------|
-|       35 | r36<<16+r35 :                                                      |      |
+|       35 | r36<<16+r35 : Num DATA REQ written to DDR                          |      |
 |       36 |                                                                    |      |
 |----------+--------------------------------------------------------------------+------|
 |       37 | r38<<16+r37 : Num DATA REQ read from DDR                           |      |
@@ -84,10 +86,10 @@
 |       64 | r65<<16+r64 : Num windows seen        ?? see r11,12                |      |
 |       65 |                                                                    |      |
 |----------+--------------------------------------------------------------------+------|
-|       72 | Num HB   tag inconsistencies                                       |      |
-|       73 | Num DREQ tag inconsistencies                                       |      |
-|       74 | Num HB   tag lost                                                  |      |
-|       75 | Num DREQ tag lost                                                  |      |
+|       72 | Num HB   tag inconsistencies  (8 bits)                             |      |
+|       73 | Num DREQ tag inconsistencies  (8 bits)                             |      |
+|       74 | Num HB   tag lost (8 bits)                                         |      |
+|       75 | Num DREQ tag lost (8 bits)                                         |      |
 |----------+--------------------------------------------------------------------+------|
 * --------------------------------------------------------------------------------------
 * back to [[file:otsdaq_mu2e_tracker.org][otsdaq_mu2e_tracker.org]]
