@@ -90,8 +90,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 //-----------------------------------------------------------------------------
 // main frame
 //-----------------------------------------------------------------------------
-  fMainFrame = new TGMainFrame(gClient->GetRoot(),Width,Height,kMainFrame | kVerticalFrame);
-  fMainFrame->SetLayoutBroken(kTRUE);
+  fMainFrame = new TGMainFrame(gClient->GetRoot(),Width,Height,kMainFrame | kVerticalFrame); // ,kMainFrame | kVerticalFrame);
+  // fMainFrame->SetLayoutBroken(kTRUE);
   fMainFrame->SetWindowName(Form("%s",fHostname.Data()));
   fMainFrame->SetName("MainFrame");
 
@@ -111,51 +111,54 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
     }
   }
 
-  int y0 = 310;
   fDtcTab->MoveResize(10,10,930,290);  // this defines the size of the tab below the tabs line
   fDtcTab->Connect("Selected(Int_t)", "DtcGui", this, "DoDtcTab(Int_t)");
 //-----------------------------------------------------------------------------
 // common buttons on fMainFrame, they are the same for different DTCs and ROCs
 //-----------------------------------------------------------------------------
+  fButtonsFrame = new TGHorizontalFrame(fMainFrame);
+  fMainFrame->AddFrame(fButtonsFrame, new TGLayoutHints(kLHintsTop | kLHintsExpandX, 0, 0, 0, 0));
+
   TGTextButton* tb;
 
+  int y0        = 10;
   int button_dx = 150;
   int button_sx = 150+10;          // includes 10 pixes between the buttons
   int button_sy =  30;
 //-----------------------------------------------------------------------------
 // 1. clear
 //-----------------------------------------------------------------------------
-  tb = new TGTextButton(fMainFrame,"clear",-1,TGTextButton::GetDefaultGC()(),
+  tb = new TGTextButton(fButtonsFrame,"clear",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
   tb->MoveResize(10,y0,button_dx,25);
-  fMainFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "clear_output()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // 2. exit
 //-----------------------------------------------------------------------------
-  tb = new TGTextButton(fMainFrame,"exit",-1,TGTextButton::GetDefaultGC()(),
+  tb = new TGTextButton(fButtonsFrame,"exit",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
   tb->MoveResize(10+button_sx,y0,button_dx,25);
-  fMainFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "exit()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// 2. exit
+// 3. launch
 //-----------------------------------------------------------------------------
-  tb = new TGTextButton(fMainFrame,"launch",-1,TGTextButton::GetDefaultGC()(),
+  tb = new TGTextButton(fButtonsFrame,"launch",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
   tb->MoveResize(10+button_sx*2,y0,button_dx,25);
-  fMainFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
@@ -172,9 +175,9 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 //-----------------------------------------------------------------------------
 // TextView
 //-----------------------------------------------------------------------------
-  fTextView = new TGTextViewostream(fMainFrame,10,10);
-  fTextView->MoveResize(10,y0+button_sy+5,930,620);
-  fMainFrame->AddFrame(fTextView, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 5));
+  fTextView = new TGTextViewostream(fMainFrame,930,620);
+  // fTextView->MoveResize(10,y0+button_sy+5,930,620);
+  fMainFrame->AddFrame(fTextView, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 0));
 //-----------------------------------------------------------------------------
 // concluding operations
 //-----------------------------------------------------------------------------

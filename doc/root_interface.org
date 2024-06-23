@@ -1,0 +1,34 @@
+#+startup:fold -*- buffer-read-only: t -*-
+* ------------------------------------------------------------------------------
+* ROOT interface how-to                                                      
+- initialization (to be done just once):
+#+begin_src
+cp tdaq-v3_01_00/otsdaq-mu2e-tracker/scripts/.rootrc .
+cp tdaq-v3_01_00/otsdaq-mu2e-tracker/scripts/rootlogon.C .
+#+end_src
+- make sure DTCLIB_DTC and CFOLIB_CFO are defined 
+#+begin_src
+export CFOLIB_CFO=0
+export DTCLIB_DTC=1
+#+end_src
+- start GUI:
+#+begin_src
+root.exe
+.L daq_scripts.C
+x = dtc_gui("test",1)
+#+end_src
+- run interactively
+#+begin_src
+root.exe
+.L daq_scripts.C
+dtc_buffer_test_emulated_cfo(66,1)
+// or 
+dtc_buffer_test_external_cfo("../cfo_run_plans/run_066.bin",1,1)
+#+end_src
+* navigation with emacs (to see all functions defined in daq_scripts.C)      
+- open [[file:../scripts/daq_scripts.C][otsdaq_mu2e_tracker/scripts/daq_scripts.C]]
+- Alt-X speedbar
+- click on "+" , click more as needed
+* ------------------------------------------------------------------------------
+* back to file:otsdaq_mu2e_tracker.org
+* ------------------------------------------------------------------------------

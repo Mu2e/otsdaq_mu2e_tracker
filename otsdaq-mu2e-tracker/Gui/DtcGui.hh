@@ -211,10 +211,11 @@ public:
     DtcData_t*        fData;
   };
 
-  trkdaq::CfoInterface* fCFO_i;
+  trkdaq::CfoInterface* fCFO_i;         // need  one accessible from here
 
   TGMainFrame*        fMainFrame;
   TGTab*              fDtcTab ;
+  TGHorizontalFrame*  fButtonsFrame;
   TGTextViewostream*  fTextView;
   TGVerticalFrame*    fContents;
 
