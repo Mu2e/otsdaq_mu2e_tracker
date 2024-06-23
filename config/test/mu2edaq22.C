@@ -3,6 +3,7 @@
 // ---------
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
+// this is an example of why one can't just use DTCLIB_DTC - there are two of them
 ///////////////////////////////////////////////////////////////////////////////
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
@@ -24,6 +25,7 @@ int init_run_configuration(DtcGui* X) {
   dat[1].fPcieAddr    = 1;
   dat[1].fLinkMask    = 0x1;  // 
   dat[1].fNLinkedDtcs = 2;
+  gSystem->Setenv("DTCLIB_DTC","1");
 
   return rc;
 }

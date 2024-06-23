@@ -3,7 +3,7 @@
 
 #define __CLING__ 1
 
-#include "DtcInterface.cc"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.cc"
 //-----------------------------------------------------------------------------
 // PcieAddress - DTC card index on PCIE bus
 // by default, leave Link=0

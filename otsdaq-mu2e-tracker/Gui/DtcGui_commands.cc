@@ -332,7 +332,7 @@ void DtcGui::init_external_cfo_readout_mode() {
   if (dtel->fData->fName == "DTC") {
     try         { 
       dtel->fDTC_i->Dtc()->SoftReset();
-      dtel->fDTC_i->InitExternalCFOReadoutMode();
+      dtel->fDTC_i->InitExternalCFOReadoutMode(0);
       // int linkmask = dtel->fData->fLinkMask;
       dtel->fDTC_i->RocPatternConfig();
     }

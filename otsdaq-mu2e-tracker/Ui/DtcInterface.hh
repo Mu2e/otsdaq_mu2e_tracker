@@ -41,7 +41,12 @@ namespace trkdaq {
 
                                         // EWLength - in 25 ns ticks
     void         InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag);
-    void         InitExternalCFOReadoutMode();
+
+                                        // SampleEdgeMode=0: force rising  edge
+                                        //                1: force falling edge
+                                        //                2: auto
+
+    void         InitExternalCFOReadoutMode(int SampleEdgeMode);
     
                                         // launch "run plan" in emulated mode...
     void         LaunchRunPlan (int NEvents);
@@ -63,7 +68,13 @@ namespace trkdaq {
 
     void         ResetRoc        (int Link);
     void         RocPatternConfig();
-
+                                        // 'Value' : 0 or 1
+    void         SetBit(int Register, int Bit, int Value);
+    //-----------------------------------------------------------------------------
+// ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
+// bit_6: 1:force       0:auto
+// bit_5: 0:rising edge 1:falling edge
+//-----------------------------------------------------------------------------    
     void         SetupCfoInterface(int CFOEmulationMode, 
                                    int ForceCFOEdge    , 
                                    int EnableCFORxTx   , 

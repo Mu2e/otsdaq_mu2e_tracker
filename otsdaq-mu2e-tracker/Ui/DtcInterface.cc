@@ -74,10 +74,19 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
     fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
-    int rc = fDtc->ReadJitterAttenuatorLocked();            // in case of success, returns true
+    usleep(100000);
+    int ok(0);
+    for (int i=0; i<3; i++) {
+      ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
+      usleep(100000);
+      if (ok == 1) break;
+    }
+    
     fDtc->FormatJitterAttenuatorCSR();
 
-    return rc;
+    if (ok == 0) printf("ERROR in DtcInterface::%s: failed to setup JA\n",__func__); 
+
+    return ok;
   }
 
 //-----------------------------------------------------------------------------
@@ -354,24 +363,25 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitExternalCFOReadoutMode() {
+  void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
 
-    // which ROC links should be enabled ? - all active ?
-    int EnableClockMarkers = 0; //for now
+    fDtc->SoftReset();                  // write 0x9100:bit_31=1
+
+                                        // which ROC links should be enabled ? - all active ?
+    int EnableClockMarkers = 0;         // for now
     fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_0,EnableClockMarkers);
 
-    int SampleEdgeMode     = 0;
     fDtc->SetExternalCFOSampleEdgeMode(SampleEdgeMode);
     
     fDtc->EnableAutogenDRP();
 
-    fDtc->ClearCFOEmulationMode();                                // r_0x9100:bit_15 = 0
-    // dtc->SetCFOEmulationMode();                               // r_0x9100:bit_15 = 1
+    fDtc->ClearCFOEmulationMode();      // r_0x9100:bit_15 = 0
+    // dtc->SetCFOEmulationMode();      // r_0x9100:bit_15 = 1
 
-    fDtc->DisableCFOEmulation  ();                                // r_0x9100:bit_30 = 0
-    // dtc->EnableCFOEmulation();                                // r_0x9100:bit_30 = 1 
+    fDtc->DisableCFOEmulation  ();      // r_0x9100:bit_30 = 0
+    // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
 
-    fDtc->EnableReceiveCFOLink ();                                // r_0x9114:bit_14 = 1
+    fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
 }
 
 //-----------------------------------------------------------------------------
@@ -417,6 +427,8 @@ namespace trkdaq {
     PrintRegister(0x9238,"Receive  Packet Count CFO                  ");
     PrintRegister(0x9258,"Transmit Byte   Count CFO                  ");
     PrintRegister(0x9278,"Transmit Packet Count CFO                  ");
+
+    PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
   }
 
 //-----------------------------------------------------------------------------
@@ -550,6 +562,20 @@ namespace trkdaq {
     }
   }
 
+//-----------------------------------------------------------------------------
+// configure itself to use a CFO
+//-----------------------------------------------------------------------------
+  void DtcInterface::SetBit(int Register, int Bit, int Value) {
+    int tmo_ms(100);
+
+    uint32_t data;
+    fDtc->GetDevice()->read_register(Register,tmo_ms,&data);
+    
+    uint32_t w = (1 << Bit);
+    
+    data = (data ^ w) | (Value << Bit);
+    fDtc->GetDevice()->write_register(Register,tmo_ms,data);
+  }
 
 //-----------------------------------------------------------------------------
 // configure itself to use a CFO
@@ -560,6 +586,13 @@ namespace trkdaq {
     if (CFOEmulationMode == 0) fDtc->ClearCFOEmulationMode();
     else                       fDtc->SetCFOEmulationMode  ();
 
+// ForceCFOEdge: defines bit_6 and bit_5 of the control register 0x9100
+// bit_6: 1:force       0:auto
+// bit_5: 0:rising edge 1:falling edge
+// ForceCFOEdge = 0 : force use of the rising  edge
+//              = 1 : force use of the falling edge
+//              = 2 : auto
+    
     fDtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
 
     if (EnableCFORxTx == 0) {

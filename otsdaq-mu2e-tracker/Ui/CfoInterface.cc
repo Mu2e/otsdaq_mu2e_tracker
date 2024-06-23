@@ -69,13 +69,23 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // Source=0: sync to internal clock ; 1: RTF
 // on success, returns 1
+// CFO JA CSR :0x9500
 //-----------------------------------------------------------------------------
   int CfoInterface::ConfigureJA(int ClockSource, int Reset) {
     fCfo->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
-    int rc = fCfo->ReadJitterAttenuatorLocked();            // in case of success, returns true
+    usleep(100000);
+    int ok(0);
+    for (int i=0; i<3; i++) {
+      ok = fCfo->ReadJitterAttenuatorLocked();              // in case of success, returns true
+      usleep(100000);
+      if (ok == 1) break;
+    }
+    
     fCfo->FormatJitterAttenuatorCSR();
 
-    return rc;
+    if (ok == 0) printf("ERROR in DtcInterface::%s: failed to setup JA\n",__func__); 
+
+    return ok;
   }
 
 //-----------------------------------------------------------------------------
@@ -111,9 +121,7 @@ namespace trkdaq {
 
     fCfo->SoftReset();
     fCfo->EnableLink     (cfo_link,DTC_LinkEnableMode(true,true),NDtcs);
-    // fCfo->SetMaxDTCNumber(cfo_link,NDtcs); // done in EnableLink
     SetRunPlan   (RunPlan);
-  // cfo_launch_run_plan();
   }
 
 //-----------------------------------------------------------------------------
@@ -154,6 +162,8 @@ namespace trkdaq {
     PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
     PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
     PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+
+    PrintRegister(0x9500,"CFO Jitter Attenuator CSR                  ");  // CFO_Register_JitterAttenuatorCSR = 0x9500,
   }
 
 //-----------------------------------------------------------------------------

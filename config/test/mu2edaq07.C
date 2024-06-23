@@ -17,8 +17,9 @@ int init_run_configuration(DtcGui* X) {
 
   dat[0].fName        = "DTC";
   dat[0].fPcieAddr    = 1;
-  dat[0].fLinkMask    = 0x10; // ROC1
-  dat[1].fNLinkedDtcs = 0;   // doesn't matter for a DTC
+  dat[0].fLinkMask    = 0x10;           // ROC1
+  dat[1].fNLinkedDtcs = 0;              // doesn't matter for a DTC
+  gSystem->Setenv("DTCLIB_DTC","1");
   
   return rc;
 }

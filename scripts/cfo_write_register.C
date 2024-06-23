@@ -4,8 +4,7 @@
 #define __CLING__ 1
 
 #include "iostream"
-// #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/cfoInterfaceLib/CFO.h"
+#include "cfoInterfaceLib/CFO.h"
 
 #include "cfo_init.C"
 
