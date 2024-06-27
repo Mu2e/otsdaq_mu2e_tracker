@@ -66,7 +66,7 @@ int DtcGui::InitRunConfiguration(const char* Config) {
 
   TInterpreter::EErrorCode irc;
 
-  TString macro = Form("tdaq-v3_01_00/otsdaq-mu2e-tracker/config/%s/%s.C",Config,fHostname.Data());
+  TString macro = Form("%s/otsdaq-mu2e-tracker/config/%s/%s.C",gSystem->Getenv("SPACK_ENV"),Config,fHostname.Data());
 
   if (fDebugLevel > 0) printf("DtcGui::%s : loading %s\n",__func__,macro.Data());
   

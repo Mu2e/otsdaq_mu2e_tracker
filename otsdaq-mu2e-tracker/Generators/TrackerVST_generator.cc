@@ -428,6 +428,9 @@ int mu2e::TrackerVST::message(const std::string& msg_type, const std::string& me
 
   xmlrpc_client_call(&_env, _xmlrpcUrl.data(), "message","(ss)", msg_type.data(), 
                      (artdaq::Globals::app_name_+":"+message).data());
+
+  TLOG(TLVL_INFO)  << "trying to send XML-RPC message ... msg_type: " << msg_type << " message: " << message;
+
   if (_env.fault_occurred) {
     TLOG(TLVL_ERROR) << "XML-RPC rc=" << _env.fault_code << " " << _env.fault_string;
     return -1;

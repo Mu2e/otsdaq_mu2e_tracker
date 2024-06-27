@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// mu2edaq09 : 
+// mu2edaq09 : TS1
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ int init_run_configuration(DtcGui* X) {
 
   dat[1].fName        = "DTC";
   dat[1].fPcieAddr    = 1;
-  dat[1].fLinkMask    = 0x10;           // ROC1
+  dat[1].fLinkMask    = 0x1;           // ROC0 
   dat[1].fNLinkedDtcs = 0;              // irrelevant for a DTC
   gSystem->Setenv("DTCLIB_DTC","1");
 

@@ -113,13 +113,13 @@ void cfo_launch_run_plan(int PcieAddress = -1) {
 //-----------------------------------------------------------------------------
 // for convenience (CLI)
 //-----------------------------------------------------------------------------
-void cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  CfoInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
+  return CfoInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
 }
 
 //-----------------------------------------------------------------------------
-void dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
+  return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
 }
 
 //-----------------------------------------------------------------------------
@@ -323,20 +323,6 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1,
                                   const char* OutputFn = nullptr) {
-  int cfo_link = 0;
-  
-  CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  
-  cfo_i->InitReadout(RunPlan,cfo_link,NDtcs);
-
-  // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
-  // CFO* cfo = cfo_i->Cfo();
-  // cfo->SoftReset();
-  // cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
-  // cfo->SetMaxDTCNumber(CFO_Link_0,2);
-  // cfo_set_run_plan   (RunPlan);
-
-
   // DtcInterface* dtc_i = DtcInterface::Instance(-1);
   // dtc_i->Dtc()->SoftReset();                         // soft reset here seems to be critical
   // dtc_i->InitExternalCFOReadoutMode();
@@ -345,6 +331,18 @@ void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int Prin
   // dtc_init_external_cfo_readout_mode();
   DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
+
+  int cfo_link = 0;
+  
+  CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
+  cfo_i->InitReadout(RunPlan,cfo_link,NDtcs);
+
+  // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
+  // CFO* cfo = cfo_i->Cfo();
+  // cfo->SoftReset();
+  // cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
+  // cfo->SetMaxDTCNumber(CFO_Link_0,2);
+  // cfo_set_run_plan   (RunPlan);
 
   cfo_i->LaunchRunPlan();
 //-----------------------------------------------------------------------------

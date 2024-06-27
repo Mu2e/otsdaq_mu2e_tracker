@@ -369,7 +369,7 @@ namespace trkdaq {
 
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
-    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_0,EnableClockMarkers);
+    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_ALL,EnableClockMarkers);
 
     fDtc->SetExternalCFOSampleEdgeMode(SampleEdgeMode);
     
