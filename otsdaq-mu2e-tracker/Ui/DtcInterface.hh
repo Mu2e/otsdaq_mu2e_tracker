@@ -67,7 +67,8 @@ namespace trkdaq {
                                   const char* OutputFn = nullptr);
 
     void         ResetRoc        (int Link);
-    void         RocPatternConfig();
+    void         RocPatternConfig(int LinkMask);
+    
                                         // 'Value' : 0 or 1
     void         SetBit(int Register, int Bit, int Value);
     //-----------------------------------------------------------------------------

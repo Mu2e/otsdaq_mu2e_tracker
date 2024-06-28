@@ -124,7 +124,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   int y0        = 10;
   int button_dx = 150;
   int button_sx = 150+10;          // includes 10 pixes between the buttons
-  int button_sy =  30;
+  //  int button_sy =  30;
 //-----------------------------------------------------------------------------
 // 1. clear
 //-----------------------------------------------------------------------------

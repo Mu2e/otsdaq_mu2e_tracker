@@ -115,12 +115,15 @@ namespace trkdaq {
 // launch is a separate step, could be repeated multiple times
 // this is a one-time initialization
 //-----------------------------------------------------------------------------
-  void CfoInterface::InitReadout(const char* RunPlan, int CfoLink, int NDtcs) {
-
-    CFO_Link_ID cfo_link = CFO_Link_ID(CfoLink);
+  void CfoInterface::InitReadout(const char* RunPlan, int* NDtcs) {
 
     fCfo->SoftReset();
-    fCfo->EnableLink     (cfo_link,DTC_LinkEnableMode(true,true),NDtcs);
+
+    for (int i=0; i<8; i++) {
+      if (NDtcs[i] > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),NDtcs[i]);
+      else              fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
+    }
+    
     SetRunPlan   (RunPlan);
   }
 

@@ -28,7 +28,8 @@ enum {
 };
 
 namespace daq_scripts {
-  int EdgeMode = 0;
+  int EdgeMode    = 0x0;                // two bits
+  int CFOLinkMask = 0x1;
 };
 
 //-----------------------------------------------------------------------------
@@ -123,20 +124,6 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 }
 
 //-----------------------------------------------------------------------------
-// Value: 0 or 1
-//-----------------------------------------------------------------------------
-// void dtc_set_bit(DTC* Dtc, int Register, int Bit, int Value) {
-//   int timeout(100);
-
-//   uint32_t data;
-//   Dtc->GetDevice()->read_register(Register,timeout,&data);
-
-//   uint32_t w = (1 << Bit);
-//   data = (data ^ w) | (Value << Bit);
-//   Dtc->GetDevice()->write_register(Register,timeout,data);
-// }
-
-//-----------------------------------------------------------------------------
 // EW length         : in units of 25 ns (clock)
 // EWMOde            : 1 for buffer test
 // EnableClockMarkers: set to 0
@@ -188,10 +175,6 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   // dtc->HardReset();                        // write bit 0
   // dtc->SoftReset();                     // write bit 31
 
-  // dtc->SetCFOEmulationEventWindowInterval(EWLength);  
-  // dtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-  // dtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
-
   //  int EWMode             = 1;
   // dtc->SetCFOEmulationEventMode          (EWMode);
 
@@ -205,8 +188,8 @@ void dtc_init_external_cfo_mode(DTC* dtc) {
   dtc->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
   // dtc->SetCFOEmulationMode();        // r_0x9100:bit_15 = 1
 
-  // dtc->DisableCFOEmulation  ();
-  // dtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1 
+  // dtc->DisableCFOEmulation();
+  // dtc->EnableCFOEmulation ();        // r_0x9100:bit_30 = 1 
 
   dtc->EnableReceiveCFOLink ();         // r_0x9114:bit_14 = 1
 }
@@ -220,7 +203,7 @@ void dtc_init_external_cfo_readout_mode() {
 
   dtc_i->Dtc()->SoftReset();
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-  dtc_i->RocPatternConfig();            // DtcInterface knows its link mask
+  dtc_i->RocPatternConfig(dtc_i->fLinkMask);            // DtcInterface knows its link mask
 
   //  dtc_i->fDtc->SetCFOEmulationMode();
 }
@@ -306,12 +289,13 @@ int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1, const char* OutputF
   return list_of_subevents.size();
 }
 
+
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0, const char* OutputFn = nullptr) {
 
-  DtcInterface* dtc_i = DtcInterface::Instance(-1); // assume already initialized
-  dtc_i->RocPatternConfig();
-                                        // 68x25ns = 1700 ns
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
+  dtc_i->RocPatternConfig(dtc_i->fLinkMask);         // readout ROC patterns
+                                                     // 68x25ns = 1700 ns
   
   dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,0);
 
@@ -323,19 +307,17 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1,
                                   const char* OutputFn = nullptr) {
-  // DtcInterface* dtc_i = DtcInterface::Instance(-1);
-  // dtc_i->Dtc()->SoftReset();                         // soft reset here seems to be critical
-  // dtc_i->InitExternalCFOReadoutMode();
-  // dtc_i->RocPatternConfig();
 
-  // dtc_init_external_cfo_readout_mode();
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);         // assume already initialized
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-
-  int cfo_link = 0;
+  dtc_i->RocPatternConfig(dtc_i->fLinkMask);
+//-----------------------------------------------------------------------------
+// for now, assume only one time chain, but provide for future
+//-----------------------------------------------------------------------------
+  int ndtcs[8] = {NDtcs,0,0,0,0,0,0,0};
   
   CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  cfo_i->InitReadout(RunPlan,cfo_link,NDtcs);
+  cfo_i->InitReadout(RunPlan,ndtcs);
 
   // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
   // CFO* cfo = cfo_i->Cfo();

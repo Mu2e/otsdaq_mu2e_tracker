@@ -309,9 +309,9 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocPatternConfig() {
+  void DtcInterface::RocPatternConfig(int LinkMask) {
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
+      int used = (LinkMask >> 4*i) & 0x1;
       if (used != 0) {
         auto link = DTC_Link_ID(i);
         fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC

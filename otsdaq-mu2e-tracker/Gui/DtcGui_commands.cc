@@ -105,21 +105,20 @@ void DtcGui::cfo_init_readout() {
   if (dtel->fData->fName == "CFO") {
     try         { 
 //-----------------------------------------------------------------------------
-// extract parameters
+// extract parameters, assume only one time chain
 //-----------------------------------------------------------------------------
-      int time_chain_link, ndtcs;
+      int ndtcs[8] = {0,0,0,0,0,0,0,0};
 
-      sscanf(dtel->fTimeChainLink->GetText(),"%i",&time_chain_link);
-      sscanf(dtel->fNDtcs->GetText()        ,"%i",&ndtcs);
+      // sscanf(dtel->fTimeChainLink->GetText(),"%i",&time_chain_link);
+      sscanf(dtel->fNDtcs->GetText()        ,"%i",&ndtcs[0]);
 
       const char* run_plan = dtel->fRunPlan->GetText();
 
       if (fDebugLevel > 0) {
-        *fTextView << Form("run_pan, time_chain_link, ndtcs: %s %i %i",
-                           run_plan,time_chain_link,ndtcs) << std::endl; 
+        *fTextView << Form("run_pan, ndtcs[0]: %s %i",run_plan,ndtcs[0]) << std::endl; 
       }
-      
-      dtel->fCFO_i->InitReadout(run_plan,time_chain_link,ndtcs); 
+
+      dtel->fCFO_i->InitReadout(run_plan,ndtcs); 
     }
     catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT") << std::endl; }
   }
@@ -333,8 +332,8 @@ void DtcGui::init_external_cfo_readout_mode() {
     try         { 
       dtel->fDTC_i->Dtc()->SoftReset();
       dtel->fDTC_i->InitExternalCFOReadoutMode(0);
-      // int linkmask = dtel->fData->fLinkMask;
-      dtel->fDTC_i->RocPatternConfig();
+      int linkmask = dtel->fDTC_i->fLinkMask;
+      dtel->fDTC_i->RocPatternConfig(linkmask);
     }
     catch (...) { *fTextView << Form("ERROR : filed  BAIL OUT") << std::endl; }
   }
