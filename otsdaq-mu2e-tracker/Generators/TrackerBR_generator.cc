@@ -55,19 +55,15 @@ namespace mu2e {
     std::chrono::steady_clock::time_point lastReportTime_;
     std::chrono::steady_clock::time_point procStartTime_;
     uint8_t                               _board_id;
-    std::vector<uint16_t>                 _fragment_ids;    // handled by CommandableGenerator, but not a data member there
-    bool                                  sendEmpties_;
+    std::vector<uint16_t>                 _fragment_ids;           // handled by CommandableGenerator, but not a data member there
     int                                   _debugLevel;
     size_t                                _nEventsDbg;
     int                                   _pcieAddr;
-    std::vector<int>                      _activeLinks;            // active links - connected ROCs
     std::string                           _tfmHost;                // used to send xmlrpc messages to
 
-    uint                                  _rocMask;
-    int                                   _sleepTimeDMA;           // sleep time (us) after DMA release
-    int                                   _sleepTimeDTC;           // sleep time (ms) after register writes
-    int                                   _sleepTimeROC;           // sleep time (ms) after ROC register writes
-    int                                   _sleepTimeROCReset;      // sleep time (ms) after ROC reset register write
+    int                                   _linkMask;
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
+                                                                   // 101:simulate data internally, DTC not used; default:0
 
     int                                   _readData;               // 1: read data, 0: save empty fragment
     int                                   _resetROC;               // 1: clear digis 2: also reset ROC every event
@@ -75,12 +71,9 @@ namespace mu2e {
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
-    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
-                                                                   // 101:simulate data internally, DTC not used; default:0
+
     DTCLib::DTC*                          _dtc;
     mu2edev*                              _device;
-                                                                   // 6 ROCs per DTC max
-    int                                   _nActiveLinks;
 
     uint16_t                              _reg[200];               // DTC registers to be saved
     int                                   _nreg;                   // their number
@@ -103,11 +96,9 @@ namespace mu2e {
 
     bool sendEmpty_   (artdaq::FragmentPtrs& output);
 
-    void start() override {}
-
+    void start      () override {}
     void stopNoMutex() override {}
-    
-    void stop() override;
+    void stop       () override;
     
     void print_dtc_registers(DTC* Dtc, const char* Header);
     void printBuffer        (const void* ptr, int sz);
@@ -116,13 +107,6 @@ namespace mu2e {
 // also do not pass strings by value
 //-----------------------------------------------------------------------------
     int  message(const std::string& msg_type, const std::string& message);
-//-----------------------------------------------------------------------------
-// clones of Monica's scripts
-//-----------------------------------------------------------------------------
-    void monica_digi_clear         (DTC* Dtc, int Link);
-    void monica_var_link_config    (DTC* Dtc, int Link);
-    void monica_var_pattern_config (DTC* Dtc, int Link);
-
                                         // read functions
 
     int  readData        (artdaq::FragmentPtrs& Frags, double Timestamp);
@@ -175,23 +159,12 @@ std::vector<uint16_t> mu2e::TrackerBR::fragmentIDs() {
 mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentGenerator(ps)
   , fragment_type_     (toFragmentType("MU2E"))
   , lastReportTime_    (std::chrono::steady_clock::now())
-  , _board_id          (static_cast<uint8_t>(ps.get<int>("board_id"                    ,     0)))
   , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"          , std::vector<uint16_t>()))  // 
-  // , _rawOutputEnable   (ps.get<bool>                    ("rawOutputEnable"                    ))
-  // , rawOutputFile_     (ps.get<std::string>             ("raw_output_file"             , "/tmp/TrackerBR.bin"))
-  , sendEmpties_       (ps.get<bool>                    ("sendEmpties"                        ))
   , _debugLevel        (ps.get<int>                     ("debugLevel"                  ,     0))
   , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"                  ,   100))
-  // , _request_delay     (ps.get<size_t>                  ("delay_between_requests_ticks", 20000))
-  // , _heartbeatsAfter   (ps.get<size_t>                  ("heartbeatsAfter"                    )) 
-  // , _heartbeatInterval (ps.get<int>                     ("heartbeatInterval"                  ))
-  , _pcieAddr             (ps.get<int>                     ("pcieAddr"                 ,          -1)) 
-  , _activeLinks       (ps.get<std::vector<int>>        ("activeLinks"                        )) 
+  , _pcieAddr          (ps.get<int>                     ("pcieAddr"                 ,          -1)) 
+  , _linkMask          (stoi(ps.get<std::string>        ("linkMask"                           ),0,16)) // 
   , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
-  , _sleepTimeDMA      (ps.get<int>                     ("sleepTimeDMA"          ,         100))  // 100 microseconds
-  , _sleepTimeDTC      (ps.get<int>                     ("sleepTimeDTC"          ,         200))  // 200 microseconds
-  , _sleepTimeROC      (ps.get<int>                     ("sleepTimeROC"          ,        2500))  // 2.5 milliseconds
-  , _sleepTimeROCReset (ps.get<int>                     ("sleepTimeROCReset"     ,        4000))  // 4.0 milliseconds
   , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
   , _resetROC          (ps.get<int>                     ("resetROC"              ,           1))  // 
   , _readDTCRegisters  (ps.get<int>                     ("readDTCRegisters"      ,           1))  // 
@@ -199,33 +172,18 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
   , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
   , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           1))  // 
-  //  , _port              (ps.get<int>                     ("port"                  ,        3133))  // 
   
 {
     
   TLOG(TLVL_INFO) << "TrackerBR_generator CONSTRUCTOR (1) readData:" << _readData;
   printf("TrackerBR::TrackerBR readData=%i\n",_readData);
 //-----------------------------------------------------------------------------
-// initialize the links
-//-----------------------------------------------------------------------------
-  _nActiveLinks = _activeLinks.size();
-  _rocMask      = 0;
-  for (int i=0; i<_nActiveLinks; i++) {
-    int link = _activeLinks[i];
-    _rocMask |= (1 << 4*link);
-  }
-//-----------------------------------------------------------------------------
 // the BR interface should not be changing any settings, just read events
+// DTC is already initialized by the frontend, don't change anything !
 //-----------------------------------------------------------------------------
-  _dtc      = new DTC(DTC_SimMode_Disabled,_pcieAddr,_rocMask,"",false,"");
+//  _dtc      = new DTC(DTC_SimMode_NoCFO,_pcieAddr,_linkMask,"",false,"");
+  _dtc      = new DTC(DTC_SimMode_Disabled,_pcieAddr,_linkMask,"",false,"");
   _device   = _dtc->GetDevice();
-
-  for (int i=0; i<_nActiveLinks; i++) {
-    monica_digi_clear     (_dtc,_activeLinks[i]);
-    
-    if      (_readoutMode == kReadDigis  ) monica_var_link_config   (_dtc,_activeLinks[i]);
-    else if (_readoutMode == kReadPattern) monica_var_pattern_config(_dtc,_activeLinks[i]);
-  }
 //-----------------------------------------------------------------------------
 // DTC registers to save - zero those labeled as counters at begin run ! 
 //-----------------------------------------------------------------------------
@@ -301,7 +259,7 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
 // flag=1 : a counter, reset counters
 // according to Rick, to clear a counter one writes 0xffffffff to it
 //-----------------------------------------------------------------------------
-    if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
+//    if (flag != 0) _dtc->GetDevice()->write_register(r,100,0xffffffff);
     _reg[_nreg] = r;
     _nreg      += 1;
     i          += 1;
@@ -330,13 +288,14 @@ int mu2e::TrackerBR::message(const std::string& msg_type, const std::string& mes
     TLOG(TLVL_ERROR) << "XML-RPC rc=" << _env.fault_code << " " << _env.fault_string;
     return -1;
   }
+  else {
+    TLOG(TLVL_DBG+1) << "message successfully sent. type:" << msg_type << " message" << message;
+  }
   return 0;
 }
 
 //-----------------------------------------------------------------------------
 mu2e::TrackerBR::~TrackerBR() {
-  // delete _cfo;
-  // delete _dtc;
 }
 
 //-----------------------------------------------------------------------------
@@ -353,101 +312,6 @@ void mu2e::TrackerBR::print_dtc_registers(DTC* Dtc, const char* Header) {
   rc = _device->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
   rc = _device->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
 }
-
-//-----------------------------------------------------------------------------
-void mu2e::TrackerBR::monica_digi_clear(DTCLib::DTC* Dtc, int Link) {
-//-----------------------------------------------------------------------------
-//  Monica's digi_clear
-//  this will proceed in 3 steps each for HV and CAL DIGIs:
-// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
-// 2) write TWI INIT high
-// 3) write TWI INIT low
-//-----------------------------------------------------------------------------
-  auto link = DTC_Link_ID(Link);
-
-  Dtc->WriteROCRegister(link,28,0x10,false,1000); // 
-
-  // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
-
-  Dtc->WriteROCRegister(link,27,0x00,false,1000); // write 0 
-  Dtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
-  Dtc->WriteROCRegister(link,26,0x00,false,1000); // 
-
-  Dtc->WriteROCRegister(link,27,0x01,false,1000); //  write 1 
-  Dtc->WriteROCRegister(link,26,0x01,false,1000); //  toggle INIT
-  Dtc->WriteROCRegister(link,26,0x00,false,1000); // 
-
-  // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
-  Dtc->WriteROCRegister(link,25,0x10,false,1000); // 
-
-  Dtc->WriteROCRegister(link,24,0x00,false,1000); // write 0
-  Dtc->WriteROCRegister(link,23,0x01,false,1000); // toggle INIT
-  Dtc->WriteROCRegister(link,23,0x00,false,1000); // 
-
-  Dtc->WriteROCRegister(link,24,0x01,false,1000); // write 1
-  Dtc->WriteROCRegister(link,23,0x01,false,1000); // toggle INIT
-  Dtc->WriteROCRegister(link,23,0x00,false,1000); // 
-}
-
-//-----------------------------------------------------------------------------
-void mu2e::TrackerBR::monica_var_link_config(DTCLib::DTC* Dtc, int Link) {
-  mu2edev* dev = Dtc->GetDevice();
-
-  dev->write_register(0x91a8,100,0);                                     // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
-
-  auto link = DTC_Link_ID(Link);
-  Dtc->WriteROCRegister(link,14,     1,false,1000);        // reset ROC
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
-
-  Dtc->WriteROCRegister(link, 8,0x030f,false,1000);        // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
-
-  // added register for selecting kind of data to report in DTC status bits
-  // Use with pattern data. Set to zero, ie STATUS=0x55, when taking DIGI data 
-  // rocUtil -a 30  -w 0  -l $LINK write_register > /dev/null
-
-  Dtc->WriteROCRegister(link,30,0x0000,false,1000);        // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
-
-  // echo "Setting packet format version to 1"
-  // rocUtil -a 29  -w 1  -l $LINK write_register > /dev/null
-
-  Dtc->WriteROCRegister(link,29,0x0001,false,1000);        // configure ROC to read all 4 lanes
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
-}
-
-
-//-----------------------------------------------------------------------------
-void mu2e::TrackerBR::monica_var_pattern_config(DTC* Dtc, int Link) {
-  TLOG(TLVL_DEBUG) << "---------------------------------- operation \"var_patern_config\"" << std::endl;
-
-  //  auto startTime = std::chrono::steady_clock::now();
-
-  if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 001");  // debug
-
-  mu2edev* dev = Dtc->GetDevice();
-
-  dev->ResetDeviceTime();
-
-  dev->write_register(0x91a8,100,0);                            // disable event window marker - set deltaT = 0
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDTC));
-  
-  int tmo_ms    (1500);  // 1500 is OK
-  
-  auto link = DTC_Link_ID(Link);
-  Dtc->WriteROCRegister(link,14,0x01,false,tmo_ms);  // this seems to be a reset
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROCReset));
-  
-  Dtc->WriteROCRegister(link, 8,0x10,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
-
-  Dtc->WriteROCRegister(link,30,0x00,false,tmo_ms);
-  std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeROC));
-
-  if (_debugLevel > 0) print_dtc_registers(Dtc,"var_pattern_config 002");  // debug
-}
-
 
 //-----------------------------------------------------------------------------
 // print 16 bytes per line
@@ -474,7 +338,6 @@ void mu2e::TrackerBR::printBuffer(const void* ptr, int sz) {
 
   if (n != 0) printf("\n");
 }
-
 
 //-----------------------------------------------------------------------------
 // read SPI data from ROC, in 16-bit words
@@ -514,19 +377,23 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, double TStamp) {
   int    nbytes     (0);
   // auto   tmo_ms(1500);
 
+  TLOG(TLVL_DBG+1) << "------------- START TStamp=" << TStamp;
+
   DTC_EventWindowTag event_tag = DTC_EventWindowTag(TStamp);
 
   try {
+//------------------------------------------------------------------------------
+// sz: 1 (or 0, if nothing has been read out)
+//-----------------------------------------------------------------------------
     std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> subevents = _dtc->GetSubEventData(event_tag,match_ts);
     int sz = subevents.size();
-
-    cout << ">>>> ------------- ts = " << setw(5) << TStamp << " N(DTCs):" << setw(3) << sz << endl;
 //-----------------------------------------------------------------------------
 // each subevent (a block of data corresponding to a single DTC) becomes an artdaq fragment
 //-----------------------------------------------------------------------------
     for (int i=0; i<sz; i++) {
       DTC_SubEvent* ev = subevents[i].get();
       int           nb = ev->GetSubEventByteCount();
+      TLOG(TLVL_DBG+1) << "DTC block nbytes: " << nb;
       nbytes += nb;
       if (nb > 0) {
         artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, TStamp);
@@ -579,14 +446,16 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, double TStamp) {
       }
     }
     if (_debugLevel > 0) std::cout << std::endl;
+
+    TLOG(TLVL_DBG+1) << "read data , NDTCs=" << sz << " nbytes=" << nbytes;
   }
   catch (...) {
-    std::cout << "ERROR reading next event" << std::endl;
+    TLOG(TLVL_ERROR) << "ERROR reading data";
   }
   
   int print_event = (ev_counter() % _printFreq) == 0;
   if (print_event) {
-    printf(" event: %10lu readSuccess : %1i timeout: %1i nbytes=%i\n",ev_counter(),readSuccess,timeout,nbytes);
+    TLOG(TLVL_ERROR) << printf(" event: %10lu readSuccess : %1i timeout: %1i nbytes=%i\n",ev_counter(),readSuccess,timeout,nbytes);
   }
 
   return rc;
@@ -603,16 +472,6 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
 // _resetROC = 1: only clear DIGI FPGAs
 // _resetROC = 2: in addition, reset the ROC
 //-----------------------------------------------------------------------------
-  if (_resetROC != 0) {
-    for (int i=0; i<_nActiveLinks; i++) {
-      monica_digi_clear     (_dtc,_activeLinks[i]);
-      if (_resetROC == 2) {
-        monica_var_link_config(_dtc,_activeLinks[i]);
-      }
-    }
-    // _dtc->GetDevice()->write_register(0x91a8,100,_heartbeatInterval);
-  }
-
   _dtc->GetDevice()->ResetDeviceTime();
 //-----------------------------------------------------------------------------
 // a hack : reduce the PMT logfile size 
@@ -660,24 +519,6 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
     }
     Frags.emplace_back(f2);
   }
-//-----------------------------------------------------------------------------
-// not sure if releasing the DMA channel explicitly is needed here - it may be done 
-// elsewhere
-// //-----------------------------------------------------------------------------
-// // release the DMA channel
-// //-----------------------------------------------------------------------------
-//   _dtc->GetDevice()->read_release(DTC_DMA_Engine_DAQ,1);
-
-  // if (_sleepTimeDMA > 0) {
-  //   std::this_thread::sleep_for(std::chrono::microseconds(_sleepTimeDMA));
-  // }
-
-  // if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
-  //   int      rc;
-  //   uint32_t res;
-  //   rc = _dtc->GetDevice()->read_register(0x9100,100,&res); printf("DTC status       : 0x%08x rc:%i\n",res,rc); // expect: 0x40808404
-  //   rc = _dtc->GetDevice()->read_register(0x91c8,100,&res); printf("debug packet type: 0x%08x rc:%i\n",res,rc); // expect: 0x00000000
-  // }
 
   _dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
   return true;
@@ -791,7 +632,6 @@ bool mu2e::TrackerBR::getNext_(artdaq::FragmentPtrs& Frags) {
 
   return rc;
 }
-
 
 //-----------------------------------------------------------------------------
 bool mu2e::TrackerBR::sendEmpty_(artdaq::FragmentPtrs& Frags) {

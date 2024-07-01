@@ -231,7 +231,8 @@ void DtcGui::reset_roc() {
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (dtel->fData->fName == "DTC") {
-    try         { dtel->fDTC_i->ResetRoc(roc); }
+    int mask = 1<<4*roc;
+    try         { dtel->fDTC_i->RocReset(mask); }
     catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 
@@ -333,7 +334,7 @@ void DtcGui::init_external_cfo_readout_mode() {
       dtel->fDTC_i->Dtc()->SoftReset();
       dtel->fDTC_i->InitExternalCFOReadoutMode(0);
       int linkmask = dtel->fDTC_i->fLinkMask;
-      dtel->fDTC_i->RocPatternConfig(linkmask);
+      dtel->fDTC_i->RocConfigurePatternMode(linkmask);
     }
     catch (...) { *fTextView << Form("ERROR : filed  BAIL OUT") << std::endl; }
   }

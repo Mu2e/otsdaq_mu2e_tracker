@@ -8,7 +8,10 @@ using namespace trkdaq;
 
 //------------------------------------------------------------------------------
 void roc_read_errors(int Link, uint16_t Reg) {
-  DTC* dtc = DtcInterface::Instance(1)->Dtc();
+
+  printf("aaaaaaaa\n");
+  
+  DTC* dtc = DtcInterface::Instance(-1)->Dtc();
 
   auto link = DTC_Link_ID(Link);
   dtc->WriteROCRegister(link,17,Reg,false,1000);

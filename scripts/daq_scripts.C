@@ -28,6 +28,7 @@ enum {
 };
 
 namespace daq_scripts {
+  int EWLength    = 68;                 // in units of 25 ns, = 1700 ns
   int EdgeMode    = 0x0;                // two bits
   int CFOLinkMask = 0x1;
 };
@@ -59,11 +60,13 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 
 }
 
-// //-----------------------------------------------------------------------------
-// void cfo_soft_reset(int PcieAddress = -1) {
-//   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
-//   cfo_i->Cfo()->SoftReset();
-// }
+//-----------------------------------------------------------------------------
+// ROOT CLI
+//-----------------------------------------------------------------------------
+void cfo_soft_reset(int PcieAddress = -1) {
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
+  cfo_i->Cfo()->SoftReset();
+}
 
 //-----------------------------------------------------------------------------
 void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
@@ -73,6 +76,30 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
   std::string fn2(OutputFn);
 
   compiler.processFile(fn1,fn2);
+}
+
+//-----------------------------------------------------------------------------
+// assume one timing chain
+//-----------------------------------------------------------------------------
+void cfo_init_readout_ext(const char* RunPlan, int NDtcs) {
+  int ndtcs[8] = {NDtcs,0,0,0,0,0,0,0};
+  
+  CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
+  cfo_i->InitReadout(RunPlan,ndtcs);
+}
+
+//-----------------------------------------------------------------------------
+void cfo_launch_run_plan(int PcieAddress = -1) {
+  CfoInterface::Instance(PcieAddress)->LaunchRunPlan(); 
+//-----------------------------------------------------------------------------
+// this is what it really is
+//-----------------------------------------------------------------------------
+  // cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+  // cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  // cfo->SoftReset();
+
+	// usleep(10);	
+	// cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
 }
 
 //-----------------------------------------------------------------------------
@@ -94,21 +121,6 @@ void cfo_reset_run_plan(int PcieAddress = -1) {
   cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
   cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
   cfo->SoftReset();
-}
-
-
-//-----------------------------------------------------------------------------
-void cfo_launch_run_plan(int PcieAddress = -1) {
-  CfoInterface::Instance(PcieAddress)->LaunchRunPlan(); 
-//-----------------------------------------------------------------------------
-// this is what it really is
-//-----------------------------------------------------------------------------
-  // cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-  // cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  // cfo->SoftReset();
-
-	// usleep(10);	
-	// cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
 }
 
 //-----------------------------------------------------------------------------
@@ -203,7 +215,7 @@ void dtc_init_external_cfo_readout_mode() {
 
   dtc_i->Dtc()->SoftReset();
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-  dtc_i->RocPatternConfig(dtc_i->fLinkMask);            // DtcInterface knows its link mask
+  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);            // DtcInterface knows its link mask
 
   //  dtc_i->fDtc->SetCFOEmulationMode();
 }
@@ -261,80 +273,61 @@ void dtc_read_subevents(DtcInterface* Dtc_i,
   if (PrintData > 0) cout << std::endl;
 }
 
-// //-----------------------------------------------------------------------------
-// // for now, assume just one line
-// //-----------------------------------------------------------------------------
-// void cfo_init_readout(const char* RunPlan = "commands.bin", int CfoLink = 0, int NDtcs = 1) {
-
-//   CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
-//   CFO* cfo = cfo_i->Cfo();
-
-//   cfo->SoftReset();
-
-//   CFO_Link_ID link = CFO_Link_ID(CfoLink);
-
-//   cfo->EnableLink(link,DTC_LinkEnableMode(true,true),NDtcs);
-
-//   cfo_i->SetRunPlan   (RunPlan);
-// }
+//-----------------------------------------------------------------------------
+int dtc_init_external_readout(int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);         // assume already initialized
+  dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
+  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);  // readout ROC patterns
+  return 0;
+}
 
 //-----------------------------------------------------------------------------
 // to be executed on each node with a DTC, after the CFO run plan was launched
 //-----------------------------------------------------------------------------
-int dtc_read_events(uint64_t FirstTS = 0, int PrintData = 1, const char* OutputFn = nullptr) {
+int dtc_read_subevents(uint64_t FirstTS = 0, int PrintData = 1, int PcieAddr = -1, const char* OutputFn = nullptr) {
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,OutputFn);
   return list_of_subevents.size();
 }
 
 
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0, const char* OutputFn = nullptr) {
-
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
-  dtc_i->RocPatternConfig(dtc_i->fLinkMask);         // readout ROC patterns
-                                                     // 68x25ns = 1700 ns
+void dtc_buffer_test_emulated_cfo(int NEvents=3, uint64_t FirstTS=0, int PrintData = 1, const char* OutputFn = nullptr) {
+  int pcie_addr(-1);                                 // assume initialized
   
-  dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,0);
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
+  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);  // readout ROC patterns
 
-  //  dtc_read_subevents(dtc,PrintData,FirstTS,&vev);
-  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,OutputFn);
+                                                     // 68x25ns = 1700 ns
+
+                                                     // this call actually sends EWMs
+  
+  dtc_i->InitEmulatedCFOReadoutMode(daq_scripts::EWLength,NEvents+1,0);
+
+                                                    // in emulated mode, always read after 
+
+  dtc_read_subevents(FirstTS,PrintData,pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1,
                                   const char* OutputFn = nullptr) {
+  int pcie_addr = -1; // assume initialized
 
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);         // assume already initialized
-  dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-  dtc_i->RocPatternConfig(dtc_i->fLinkMask);
+  dtc_init_external_readout(pcie_addr);
 //-----------------------------------------------------------------------------
 // for now, assume only one time chain, but provide for future
 //-----------------------------------------------------------------------------
-  int ndtcs[8] = {NDtcs,0,0,0,0,0,0,0};
-  
-  CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  cfo_i->InitReadout(RunPlan,ndtcs);
+  cfo_init_readout_ext(RunPlan,NDtcs);      // for now, assume one time chain
 
-  // CfoInterface* cfo_i = CfoInterface::Instance(-1);  // assume already initialized
-  // CFO* cfo = cfo_i->Cfo();
-  // cfo->SoftReset();
-  // cfo->EnableLink(CFO_Link_0,DTC_LinkEnableMode(true,true),1);
-  // cfo->SetMaxDTCNumber(CFO_Link_0,2);
-  // cfo_set_run_plan   (RunPlan);
-
-  cfo_i->LaunchRunPlan();
+  cfo_launch_run_plan();
 //-----------------------------------------------------------------------------
 // read events
 //-----------------------------------------------------------------------------
-  //  dtc_read_events(firstTS,PrintData,OutputFn);
-  uint64_t firstTS = 0;
-  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-
-  dtc_i->ReadSubevents(list_of_subevents,firstTS,PrintData,OutputFn);
+  uint64_t first_ts = 0;
+  dtc_read_subevents(first_ts,PrintData,pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------

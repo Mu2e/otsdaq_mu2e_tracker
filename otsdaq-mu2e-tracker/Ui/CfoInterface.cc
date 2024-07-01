@@ -23,14 +23,13 @@ namespace trkdaq {
   CfoInterface* CfoInterface::fgInstance = nullptr;
 
 //-----------------------------------------------------------------------------
-  CfoInterface::CfoInterface(int PcieAddr, DTC_SimMode SimMode) {
+  CfoInterface::CfoInterface(int PcieAddr, DTC_SimMode SimMode, bool SkipInit) {
     std::string expected_version("");              // dont check
-    bool        skip_init       (false);
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
 
     fPcieAddr = PcieAddr;
-    fCfo      = new CFO(SimMode,PcieAddr,expected_version,skip_init,uid);
+    fCfo      = new CFO(SimMode,PcieAddr,expected_version,SkipInit,uid);
   }
 
 //-----------------------------------------------------------------------------
@@ -88,6 +87,14 @@ namespace trkdaq {
     return ok;
   }
 
+//-----------------------------------------------------------------------------
+// really ? 
+//-----------------------------------------------------------------------------
+  void CfoInterface::Halt() {
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  }
+  
 //-----------------------------------------------------------------------------
 // looks that it is only for the off-spill
 //-----------------------------------------------------------------------------
