@@ -121,11 +121,15 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // launch is a separate step, could be repeated multiple times
 // this is a one-time initialization
+// CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
   void CfoInterface::InitReadout(const char* RunPlan, int* NDtcs) {
 
     fCfo->SoftReset();
 
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    
     for (int i=0; i<8; i++) {
       if (NDtcs[i] > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),NDtcs[i]);
       else              fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
