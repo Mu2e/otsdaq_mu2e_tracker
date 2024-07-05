@@ -40,24 +40,25 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
   if (cfo_i == nullptr) return;
 
-  CFO* cfo = cfo_i->Cfo();
+  // comment out , for now 
+  // CFO* cfo = cfo_i->Cfo();
 
-	cfo->ResetDelayRegister();	                 // reset 0x9380
-	cfo->DisableLinks();	                       // reset 0x9114
-	                                             // configure the DTC (to configure the ROC in a loop)
-	cfo->EnableLink(xLink, DTC_LinkEnableMode(true, true)); // enable Tx and Rx
-	cfo->EnableDelayMeasureMode(xLink);
-	cfo->EnableDelayMeasureNow(xLink);
+	// cfo->ResetDelayRegister();	                 // reset 0x9380
+	// cfo->DisableLinks();	                       // reset 0x9114
+	//                                              // configure the DTC (to configure the ROC in a loop)
+	// cfo->EnableLink(xLink, DTC_LinkEnableMode(true, true)); // enable Tx and Rx
+	// cfo->EnableDelayMeasureMode(xLink);
+	// cfo->EnableDelayMeasureNow(xLink);
 
-	uint32_t delay = cfo->ReadCableDelayValue(xLink);	// read delay
+	// uint32_t delay = cfo->ReadCableDelayValue(xLink);	// read delay
 
-	cout << "Delay measured: " << delay << " (ns) on link: " <<  xLink << std::endl;
+	// cout << "Delay measured: " << delay << " (ns) on link: " <<  xLink << std::endl;
 
-	// reset registers
-	cfo->ResetDelayRegister();
-	cfo->DisableLinks();
+	// // reset registers
+	// cfo->ResetDelayRegister();
+	// cfo->DisableLinks();
 
-	printf(" delay = %ui\n",delay);
+  // 	printf(" delay = %ui\n",delay);
 
 }
 
@@ -499,7 +500,7 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
   timer.Start();
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr); // assume already initialized
-  dtc_i->RocPatternConfig();
+  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);
                                         // 68x25ns = 1700 ns
   
   dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,FirstTS);
@@ -507,7 +508,7 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
   dtc_read_and_validate(NEvents,PrintData,FirstTS,PcieAddr);
 
   timer.Stop();
-  print(" timing: RT=%7.3f s, Cpu=%7.3f s\n",timer.RealTime(),timer.CpuTime());
+  printf(" timing: RT=%7.3f s, Cpu=%7.3f s\n",timer.RealTime(),timer.CpuTime());
   
 }
 
