@@ -14,18 +14,19 @@ int init_run_configuration(DtcGui* X) {
 
   DtcGui::DtcData_t* dat = (DtcGui::DtcData_t*) X->fDtcData;
 
-  X->fNDtcs           = 2;              // installed on a machine
+  X->fNDtcs           = 1;              // installed on a machine
 
   dat[0].fName        = "DTC";
   dat[0].fPcieAddr    = 0;
   dat[0].fLinkMask    = 0x1;            // 
   dat[0].fNLinkedDtcs = 0;              // irrelevant for a DTC
 
-  dat[1].fName        = "DTC";
-  dat[1].fPcieAddr    = 1;
-  dat[1].fLinkMask    = 0x1;  // 
-  dat[1].fNLinkedDtcs = 2;
-  gSystem->Setenv("DTCLIB_DTC","1");
+  // dat[1].fName        = "DTC";
+  // dat[1].fPcieAddr    = 1;
+  // dat[1].fLinkMask    = 0x1;  // 
+  // dat[1].fNLinkedDtcs = 2;
+
+  gSystem->Setenv("DTCLIB_DTC","0");
 
   return rc;
 }

@@ -23,14 +23,13 @@ namespace trkdaq {
   CfoInterface* CfoInterface::fgInstance = nullptr;
 
 //-----------------------------------------------------------------------------
-  CfoInterface::CfoInterface(int PcieAddr, DTC_SimMode SimMode) {
+  CfoInterface::CfoInterface(int PcieAddr, DTC_SimMode SimMode, bool SkipInit) {
     std::string expected_version("");              // dont check
-    bool        skip_init       (false);
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
 
     fPcieAddr = PcieAddr;
-    fCfo      = new CFO(SimMode,PcieAddr,expected_version,skip_init,uid);
+    fCfo      = new CFO(SimMode,PcieAddr,expected_version,SkipInit,uid);
   }
 
 //-----------------------------------------------------------------------------
@@ -89,6 +88,14 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// really ? 
+//-----------------------------------------------------------------------------
+  void CfoInterface::Halt() {
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  }
+  
+//-----------------------------------------------------------------------------
 // looks that it is only for the off-spill
 //-----------------------------------------------------------------------------
   void CfoInterface::LaunchRunPlan() {
@@ -114,13 +121,20 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // launch is a separate step, could be repeated multiple times
 // this is a one-time initialization
+// CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  void CfoInterface::InitReadout(const char* RunPlan, int CfoLink, int NDtcs) {
-
-    CFO_Link_ID cfo_link = CFO_Link_ID(CfoLink);
+  void CfoInterface::InitReadout(const char* RunPlan, int* NDtcs) {
 
     fCfo->SoftReset();
-    fCfo->EnableLink     (cfo_link,DTC_LinkEnableMode(true,true),NDtcs);
+
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    
+    for (int i=0; i<8; i++) {
+      if (NDtcs[i] > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),NDtcs[i]);
+      else              fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
+    }
+    
     SetRunPlan   (RunPlan);
   }
 

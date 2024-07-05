@@ -24,7 +24,7 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   private:
-    CfoInterface(int PcieAddr = -1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled);
+    CfoInterface(int PcieAddr = -1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled, bool SkipInit = false);
   public:
     
     virtual ~CfoInterface();
@@ -35,8 +35,9 @@ namespace trkdaq {
 
     int          ConfigureJA(int ClockSource, int Reset = 1);
 
-    void         InitReadout(const char* RunPlan, int Link = 0, int NDtcs = 1);
+    void         InitReadout(const char* RunPlan, int* NDtcs);
 
+    void         Halt();
     void         LaunchRunPlan();
     void         SetRunPlan   (const char* Fn);
 

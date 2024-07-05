@@ -10,7 +10,7 @@ using namespace trkdaq;
 //------------------------------------------------------------------------------
 void plot_roc_read_error_rate(int Link, uint16_t Reg, int Clock, int NExp = 10, int Debug = 0) {
 
-  DtcInterface* dtc_i = DtcInterface::Instance(1);
+  DtcInterface* dtc_i = DtcInterface::Instance(-1);
   DTC* dtc = dtc_i->Dtc();
 
   dtc_i->ConfigureJA(Clock,1);
@@ -40,8 +40,8 @@ void plot_roc_read_error_rate(int Link, uint16_t Reg, int Clock, int NExp = 10, 
       catch (...) { ne += 1; }
     }
 
-    h_nr->Fill(iexp+1,nr);
-    h_ne->Fill(iexp+1,ne);
+    h_nr->Fill(iexp,nr);
+    h_ne->Fill(iexp,ne);
     
     if (Debug > 0) printf("nreads: %5i nerrors: %5i\n",nr, ne);
 

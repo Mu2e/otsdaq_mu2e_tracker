@@ -66,7 +66,7 @@ int DtcGui::InitRunConfiguration(const char* Config) {
 
   TInterpreter::EErrorCode irc;
 
-  TString macro = Form("tdaq-v3_01_00/otsdaq-mu2e-tracker/config/%s/%s.C",Config,fHostname.Data());
+  TString macro = Form("%s/otsdaq-mu2e-tracker/config/%s/%s.C",gSystem->Getenv("SPACK_ENV"),Config,fHostname.Data());
 
   if (fDebugLevel > 0) printf("DtcGui::%s : loading %s\n",__func__,macro.Data());
   
@@ -124,7 +124,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   int y0        = 10;
   int button_dx = 150;
   int button_sx = 150+10;          // includes 10 pixes between the buttons
-  int button_sy =  30;
+  //  int button_sy =  30;
 //-----------------------------------------------------------------------------
 // 1. clear
 //-----------------------------------------------------------------------------

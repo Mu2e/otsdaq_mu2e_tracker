@@ -18,7 +18,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  int gSleepTimeROC      =  2000;  // [us]
+  //  int gSleepTimeROC      =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -28,23 +28,24 @@ namespace trkdaq {
   DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
 
 //-----------------------------------------------------------------------------
-  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask) {
+  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
     std::string expected_version("");              // dont check
-    bool        skip_init       (false);
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
       
     fPcieAddr = PcieAddr;
     fLinkMask = LinkMask;
     fDtc      = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,
-                        skip_init,sim_file,uid);
+                        SkipInit,sim_file,uid);
+    fDtc->ClearCFOEmulationMode();
+    fDtc->SoftReset();
   }
 
 //-----------------------------------------------------------------------------
   DtcInterface::~DtcInterface() { }
 
 //-----------------------------------------------------------------------------
-  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask) {
+  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, bool SkipInit) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
 //-----------------------------------------------------------------------------
@@ -57,7 +58,7 @@ namespace trkdaq {
       }
     }
 
-    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask);
+    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask, SkipInit);
     
     if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
       printf (" ERROR: DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -127,7 +128,7 @@ namespace trkdaq {
 
     reg = 8;
     dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
+    cout << Form("reg(%2i)             :     0x%04x : ROC pattern mode ?? \n",reg, dat);
 
     reg = 18;
     dat = dtc->ReadROCRegister(link,reg,100);
@@ -309,31 +310,6 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocPatternConfig() {
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        auto link = DTC_Link_ID(i);
-        fDtc->WriteROCRegister(link,14,     1,false,1000);                // 1 --> r14: reset ROC
-
-        // the delay should be hidden in the ROC firmware
-        std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
-
-        fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
-        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
-
-        fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
-        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
-
-        fDtc->WriteROCRegister(link,29,0x0001,false,1000);                // r29: data version, currently 1
-        std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
-      }
-    }
-                                        // not sure if this is needed, later...
-    std::this_thread::sleep_for(std::chrono::microseconds(2000));  
-  }
-
-//-----------------------------------------------------------------------------
 // according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
 // would be cached for the next time
 //-----------------------------------------------------------------------------
@@ -351,7 +327,7 @@ namespace trkdaq {
 
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((const uint64_t) FirstEWTag));
+    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
     fDtc->SetCFOEmulationEventMode          (EWMode);
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
@@ -369,7 +345,7 @@ namespace trkdaq {
 
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
-    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_0,EnableClockMarkers);
+    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_ALL,EnableClockMarkers);
 
     fDtc->SetExternalCFOSampleEdgeMode(SampleEdgeMode);
     
@@ -418,17 +394,36 @@ namespace trkdaq {
     PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ");
     PrintRegister(0x91f8,"CFO Marker Enables                         ");
 
-    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
-    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
-    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
-    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+    // PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
+    // PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
+    // PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
+    // PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
 
-    PrintRegister(0x9218,"Receive  Byte   Count CFO                  ");
-    PrintRegister(0x9238,"Receive  Packet Count CFO                  ");
-    PrintRegister(0x9258,"Transmit Byte   Count CFO                  ");
-    PrintRegister(0x9278,"Transmit Packet Count CFO                  ");
+    // PrintRegister(0x9218,"Receive  Byte   Count CFO                  ");
+    // PrintRegister(0x9238,"Receive  Packet Count CFO                  ");
+    // PrintRegister(0x9258,"Transmit Byte   Count CFO                  ");
+    // PrintRegister(0x9278,"Transmit Packet Count CFO                  ");
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
+
+    PrintRegister(0x9630,"TX Data Request Packet Count Link 0        ");
+    PrintRegister(0x9631,"TX Data Request Packet Count Link 1        ");
+
+    PrintRegister(0x9650,"TX Heartbeat    Packet Count Link 0        ");
+    PrintRegister(0x9651,"TX Heartbeat    Packet Count Link 1        ");
+
+    PrintRegister(0x9670,"RX Data Header  Packet Count Link 0        ");
+    PrintRegister(0x9671,"RX Data Header  Packet Count Link 1        ");
+
+    PrintRegister(0x9690,"RX Data         Packet Count Link 0        ");
+    PrintRegister(0x9691,"RX Data         Packet Count Link 1        ");
+
+    PrintRegister(0xa400,"TX Event Window Marker Count Link 0        ");
+    PrintRegister(0xa404,"TX Event Window Marker Count Link 0        ");
+
+    PrintRegister(0xa420,"RX Data Header Timeout Count Link 0        ");
+    PrintRegister(0xa424,"RX Data Header Timeout Count Link 0        ");
+
   }
 
 //-----------------------------------------------------------------------------
@@ -444,13 +439,56 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// ROC reset : write 0x1 to register 14
-//-----------------------------------------------------------------------------
-  void DtcInterface::ResetRoc(int Link) {
-    int tmo_ms(1000);
-    fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);  // 1 --> r14: reset ROC
+// 
+  void DtcInterface::RocConfigurePatternMode(int LinkMask) {
+
+    RocReset(LinkMask);
+
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        auto link = DTC_Link_ID(i);
+
+        fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
+        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+
+        // fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
+        // // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+      }
+    }
+
+    RocSetDataVersion(LinkMask,1); // Version --> R29
+                                         // not sure if this is needed, later...
+    std::this_thread::sleep_for(std::chrono::microseconds(2000));  
   }
 
+//-----------------------------------------------------------------------------
+// ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
+//-----------------------------------------------------------------------------
+  void DtcInterface::RocReset(int LinkMask) {
+    int tmo_ms(100);
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->WriteROCRegister(DTC_Link_ID(i),14,1,false,tmo_ms);  // 1 --> r14: reset ROC
+      }
+    }
+    
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCReset));
+  }
+
+//-----------------------------------------------------------------------------
+// Version --> R29 
+//-----------------------------------------------------------------------------
+  void DtcInterface::RocSetDataVersion(int LinkMask, int Version) {
+    int tmo_ms(100);
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
+      }
+    }
+  }
 
 //-----------------------------------------------------------------------------
 // ROC reset : write 0x1 to register 14
@@ -580,7 +618,8 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
-  void DtcInterface::SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge, int EnableCFORxTx, int EnableAutogenDRP) {
+  void DtcInterface::SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge,
+                                       int EnableCFORxTx   , int EnableAutogenDRP) {
     // int tmo_ms(150);
 
     if (CFOEmulationMode == 0) fDtc->ClearCFOEmulationMode();
