@@ -13,6 +13,9 @@
 #include "DtcInterface.hh"
 #include "TString.h"
 
+#include "TRACE/tracemf.h"
+#define TRACE_NAME "DtcInterface"
+
 using namespace DTCLib;
 using namespace std;
 
@@ -442,10 +445,12 @@ namespace trkdaq {
 // 
   void DtcInterface::RocConfigurePatternMode(int LinkMask) {
 
-    RocReset(LinkMask);
+    if (LinkMask != 0) fLinkMask = LinkMask;
+    
+    RocReset(0);
 
     for (int i=0; i<6; i++) {
-      int used = (LinkMask >> 4*i) & 0x1;
+      int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
         auto link = DTC_Link_ID(i);
 
@@ -466,9 +471,11 @@ namespace trkdaq {
 // ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
 //-----------------------------------------------------------------------------
   void DtcInterface::RocReset(int LinkMask) {
+    if (LinkMask != 0) fLinkMask = LinkMask;
+    
     int tmo_ms(100);
     for (int i=0; i<6; i++) {
-      int used = (LinkMask >> 4*i) & 0x1;
+      int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
         fDtc->WriteROCRegister(DTC_Link_ID(i),14,1,false,tmo_ms);  // 1 --> r14: reset ROC
       }
@@ -480,10 +487,12 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // Version --> R29 
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocSetDataVersion(int LinkMask, int Version) {
+  void DtcInterface::RocSetDataVersion(int Version, int LinkMask) {
+    if (LinkMask != 0) fLinkMask = LinkMask;
+    
     int tmo_ms(100);
     for (int i=0; i<6; i++) {
-      int used = (LinkMask >> 4*i) & 0x1;
+      int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
         fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
       }
@@ -542,7 +551,6 @@ namespace trkdaq {
           }
         }
         
-        ts++;
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
@@ -583,9 +591,10 @@ namespace trkdaq {
         }
         if (PrintData > 0) cout << std::endl;
         
+        ts++;
       }
       catch (...) {
-        cout << "ERROR reading ts = " << ts << std::endl;
+        TLOG(TLVL_ERROR) << "ERROR reading event_tag:" << event_tag.GetEventWindowTag(true) << " ts:" << ts << std::endl;
         break;
       }
     }
@@ -684,6 +693,123 @@ namespace trkdaq {
 
     cout << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
   }
+
+struct RocData_t {
+  ushort  nb;
+  ushort  header;
+  ushort  n_data_packets;  // n data packets, 16 bytes each
+  ushort  ewt[3];
+  ushort  status;
+  ushort  xxx2;
+  ushort  data; // array, use it just for memory mapping
+};
+  
+//-----------------------------------------------------------------------------
+// returns number of found errors in the payload data
+// assume ROC pattern generation
+// 'Offset' is the
+// PrintLevel =  0: print nothing
+//            =  1: print all about errors
+//            > 10: full printout 
+//-----------------------------------------------------------------------------
+int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel) {
+
+  int nhits[64] = {
+    1,   2,  3,  0,  0,  0,  7,  8,
+    9,  10, 11, 12, 13, 14, 15, 16,
+    0,  20, 21, 22, 12, 13, 11, 12,
+    0,   0,  8,  4, 12, 11, 12, 13,
+    16,  6,  3,  1, 12,  0, 16, 17,
+    18, 19, 12,  1, 12, 12, 11, 11,
+     0,  0,  0,  0, 13, 14, 10, 13,
+    11, 14, 14, 15,  8,  9, 10, 32
+  };
+
+//-----------------------------------------------------------------------------
+// check consistency of the lengths
+// 1. total number of 2-byte words
+//
+//-----------------------------------------------------------------------------
+  int ewt    = EwTag % 64 ;
+  int nb_dtc = *Data;
+
+  RocData_t* roc = (RocData_t*) (Data+0x18);
+
+  int nb_rocs = 0;
+  for (int i=0; i<6; i++) {
+    int nb   = roc->nb;
+    nb_rocs += nb;
+    roc      = (RocData_t*) ( ((char*) roc) + roc->nb);
+  }
+
+  int nerr     = 0;
+
+  if (nb_dtc != nb_rocs+0x30) {
+    if (PrintLevel > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x 0x%04x\n",nb_dtc,nb_rocs);
+    nerr += 1;
+  }
+//-----------------------------------------------------------------------------
+// event length checks out, check ROC payload
+// check the ROC payload, assume a hit = 2 packets
+//-----------------------------------------------------------------------------
+  roc = (RocData_t*) (Data+0x18);
+  for (int i=0; i<6; i++) {
+    int nb = roc->nb;
+//-----------------------------------------------------------------------------
+// validate ROC header
+//-----------------------------------------------------------------------------
+    // ... TODO
+    ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
+
+    if (ewtag_roc != EwTag) {
+      if (PrintLevel > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx 0x%08lx\n",i,EwTag,ewtag_roc);
+      nerr += 1;
+    }
+    
+    if (roc->nb > 0x10) { 
+//-----------------------------------------------------------------------------
+// non-zero payload
+//-----------------------------------------------------------------------------
+      uint*   pattern  = (uint*) &roc->data;
+      if (PrintLevel > 10) printf("data[0]  = nb = 0x%04x\n",pattern[0]);
+ 
+      int npackets     = roc->n_data_packets;
+      int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number is stored somewhere)
+
+      if (npackets != npackets_exp) {
+        if (PrintLevel > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
+                                  EwTag,i,npackets,npackets_exp);
+        nerr += 1;
+      }
+      
+      if (PrintLevel > 10) {
+        printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i %10lu\n",
+               EwTag,  ewt, npackets, npackets_exp, *Offset);
+      }
+
+      uint nw      = npackets*4;        // N 4-byte words
+    
+      for (uint i=0; i<nw; i++) {
+        uint exp_pattern = (i+*Offset) & 0xffffffff;
+    
+        if (pattern[i] != exp_pattern) {
+          nerr += 1;
+          if (PrintLevel > 0) {
+            printf("ERROR: EwTag, ewt i  offset payload[i]  exp_word: %10lu %3i %3i 0x%08x 0x%08x\n",
+                   EwTag, ewt, i, *Offset,pattern[i],exp_pattern);
+          }
+        }
+      }
+    }
+    roc = (RocData_t*) (((char*) roc) + roc->nb);
+  }
+  
+  *Offset += 2*4*nhits[ewt];
+
+  if (PrintLevel > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i\n",EwTag,nb_dtc,nerr);
+
+  return nerr;
+}
 
 };
 

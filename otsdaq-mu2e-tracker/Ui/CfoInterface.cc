@@ -23,13 +23,23 @@ namespace trkdaq {
   CfoInterface* CfoInterface::fgInstance = nullptr;
 
 //-----------------------------------------------------------------------------
-  CfoInterface::CfoInterface(int PcieAddr, DTC_SimMode SimMode, bool SkipInit) {
+  CfoInterface::CfoInterface(int PcieAddr, uint DtcMask, DTC_SimMode SimMode, bool SkipInit) {
     std::string expected_version("");              // dont check
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
 
     fPcieAddr = PcieAddr;
     fCfo      = new CFO(SimMode,PcieAddr,expected_version,SkipInit,uid);
+//-----------------------------------------------------------------------------
+// init DTC mask, less 16 DTCs per tine chain
+//-----------------------------------------------------------------------------
+    fDtcMask  = DtcMask;
+    int link_mask = 0;
+    for (int i=0; i<8; i++) {
+      int ndtcs = (fDtcMask >> 4*i) & 0xf;
+      if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true ,true ),ndtcs);
+      else           fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(false,false));
+    }
   }
 
 //-----------------------------------------------------------------------------
@@ -41,7 +51,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  CfoInterface* CfoInterface::Instance(int PcieAddr) {
+  CfoInterface* CfoInterface::Instance(int PcieAddr, uint DtcMask) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
 //-----------------------------------------------------------------------------
@@ -54,7 +64,7 @@ namespace trkdaq {
       }
     }
 
-    if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,DTC_SimMode_NoCFO);
+    if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,DtcMask,DTC_SimMode_NoCFO);
       
     if (fgInstance->PcieAddr() != pcie_addr) {
       printf (" ERROR: CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -123,19 +133,21 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  void CfoInterface::InitReadout(const char* RunPlan, int* NDtcs) {
-
-    fCfo->SoftReset();
+  void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
 
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     
-    for (int i=0; i<8; i++) {
-      if (NDtcs[i] > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),NDtcs[i]);
-      else              fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
-    }
-    
+    fCfo->SoftReset();
+
     SetRunPlan   (RunPlan);
+
+    if (DtcMask != -1) fDtcMask = DtcMask;
+    for (int i=0; i<8; i++) {
+      int ndtcs = (fDtcMask >> 4*i) & 0xf;
+      if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
+      else           fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
+    }
   }
 
 //-----------------------------------------------------------------------------

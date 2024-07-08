@@ -40,24 +40,25 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
   if (cfo_i == nullptr) return;
 
-  CFO* cfo = cfo_i->Cfo();
+  // comment out , for now 
+  // CFO* cfo = cfo_i->Cfo();
 
-	cfo->ResetDelayRegister();	                 // reset 0x9380
-	cfo->DisableLinks();	                       // reset 0x9114
-	                                             // configure the DTC (to configure the ROC in a loop)
-	cfo->EnableLink(xLink, DTC_LinkEnableMode(true, true)); // enable Tx and Rx
-	cfo->EnableDelayMeasureMode(xLink);
-	cfo->EnableDelayMeasureNow(xLink);
+	// cfo->ResetDelayRegister();	                 // reset 0x9380
+	// cfo->DisableLinks();	                       // reset 0x9114
+	//                                              // configure the DTC (to configure the ROC in a loop)
+	// cfo->EnableLink(xLink, DTC_LinkEnableMode(true, true)); // enable Tx and Rx
+	// cfo->EnableDelayMeasureMode(xLink);
+	// cfo->EnableDelayMeasureNow(xLink);
 
-	uint32_t delay = cfo->ReadCableDelayValue(xLink);	// read delay
+	// uint32_t delay = cfo->ReadCableDelayValue(xLink);	// read delay
 
-	cout << "Delay measured: " << delay << " (ns) on link: " <<  xLink << std::endl;
+	// cout << "Delay measured: " << delay << " (ns) on link: " <<  xLink << std::endl;
 
-	// reset registers
-	cfo->ResetDelayRegister();
-	cfo->DisableLinks();
+	// // reset registers
+	// cfo->ResetDelayRegister();
+	// cfo->DisableLinks();
 
-	printf(" delay = %ui\n",delay);
+  // 	printf(" delay = %ui\n",delay);
 
 }
 
@@ -82,11 +83,9 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
 //-----------------------------------------------------------------------------
 // assume one timing chain
 //-----------------------------------------------------------------------------
-void cfo_init_readout_ext(const char* RunPlan, int NDtcs) {
-  int ndtcs[8] = {NDtcs,0,0,0,0,0,0,0};
-  
+void cfo_init_readout_ext(const char* RunPlan, uint DtcMask) {
   CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  cfo_i->InitReadout(RunPlan,ndtcs);
+  cfo_i->InitReadout(RunPlan,DtcMask);
 }
 
 //-----------------------------------------------------------------------------
@@ -465,7 +464,8 @@ int dtc_read_and_validate(uint64_t NEvents, int PrintData = 1, uint64_t FirstTS 
       }
 
       int rc(0);
-      rc = validate_dtc_block(tag,data,&offset,PrintData);
+      // rc = validate_dtc_block(tag,data,&offset,PrintData);
+      rc = dtc_i->ValidateDtcBlock(data,tag,&offset,PrintData);
 
       if ((rc > 0) and (PrintData > 0)) {
         dtc_i->PrintBuffer(data,nb/2);
@@ -499,7 +499,7 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
   timer.Start();
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr); // assume already initialized
-  dtc_i->RocPatternConfig();
+  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);
                                         // 68x25ns = 1700 ns
   
   dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,FirstTS);
@@ -507,7 +507,7 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
   dtc_read_and_validate(NEvents,PrintData,FirstTS,PcieAddr);
 
   timer.Stop();
-  print(" timing: RT=%7.3f s, Cpu=%7.3f s\n",timer.RealTime(),timer.CpuTime());
+  printf(" timing: RT=%7.3f s, Cpu=%7.3f s\n",timer.RealTime(),timer.CpuTime());
   
 }
 
@@ -530,15 +530,17 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 }
 
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1,
-                                  const char* OutputFn = nullptr) {
+void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
+                                  int         PrintData = 1             ,
+                                  uint        DtcMask   = 0x1           ,
+                                  const char* OutputFn  = nullptr       ) {
   int pcie_addr = -1; // assume initialized
 
   dtc_init_external_readout(pcie_addr);
 //-----------------------------------------------------------------------------
 // for now, assume only one time chain, but provide for future
 //-----------------------------------------------------------------------------
-  cfo_init_readout_ext(RunPlan,NDtcs);      // for now, assume one time chain
+  cfo_init_readout_ext(RunPlan,DtcMask);      // for now, assume one time chain
 
   cfo_launch_run_plan();
 //-----------------------------------------------------------------------------

@@ -73,12 +73,13 @@ namespace trkdaq {
                                   const char* OutputFn = nullptr);
 //-----------------------------------------------------------------------------
 // ROC functions
+// if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
     int          RocReadoutMode()  { return fReadoutMode; }
     
-    void         RocReset               (int LinkMask);
-    void         RocConfigurePatternMode(int LinkMask);
-    void         RocSetDataVersion      (int LinkMask, int Version);
+    void         RocReset               (int LinkMask = 0);
+    void         RocConfigurePatternMode(int LinkMask = 0);
+    void         RocSetDataVersion      (int Version, int LinkMask=0);
 
     void         SetRocReadoutMode      (int Mode) { fReadoutMode = Mode; }
     
@@ -93,8 +94,10 @@ namespace trkdaq {
                                    int ForceCFOEdge    , 
                                    int EnableCFORxTx   , 
                                    int EnableAutogenDRP);
-
-    
+//-----------------------------------------------------------------------------
+// return number of found errors
+//-----------------------------------------------------------------------------
+    int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel);
   };
 
 };

@@ -20,22 +20,24 @@ namespace trkdaq {
 
     CFOLib::CFO*         fCfo;
     int                  fPcieAddr;
+    uint                 fDtcMask;      // DTC mask, 4 bits per N(DTCs)
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
   private:
-    CfoInterface(int PcieAddr = -1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled, bool SkipInit = false);
+    CfoInterface(int PcieAddr = -1, uint DtcMask = 0x1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled,
+                 bool SkipInit = false);
   public:
     
     virtual ~CfoInterface();
 
-    static CfoInterface* Instance(int PcieAddr = -1);
+    static CfoInterface* Instance(int PcieAddr = -1, uint DtcMask = 0x1);
 
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 
     int          ConfigureJA(int ClockSource, int Reset = 1);
 
-    void         InitReadout(const char* RunPlan, int* NDtcs);
+    void         InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
 
     void         Halt();
     void         LaunchRunPlan();
