@@ -8,6 +8,7 @@
 #include "stdio.h"
 
 #include "TApplication.h"
+#include "TThread.h"
 
 // #ifndef ROOT_TGDockableFrame
 // #include "TGDockableFrame.h"
@@ -152,8 +153,7 @@ public:
   struct DtcData_t {
     TString    fName;         //expect fName to be uppercased
     int        fPcieAddr;
-    int        fLinkMask;     // active links
-    int        fNLinkedDtcs;  // for CFO only - NDTC's in a time chain
+    int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
@@ -238,14 +238,41 @@ public:
 
   int                 fNRocs;
 
+  TGNumberEntry*      fNEvents;         // DTC , CFO emulation
+  TGNumberEntry*      fEWLength;        // DTC , CFO emulation
+  TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
+  TGNumberEntry*      fSleepMS;         // DTC , CFO emulation, used by the CFO thread
+  TGNumberEntry*      fPrintFreq;       // DTC , CFO emulation, used by the DTC reading thread
+
+  int                 fValidate;
+
   Pixel_t             fGreen;		    // completed stage tab tip
   Pixel_t             fYellow;		  // active tab tip
   Pixel_t             fDtcTabColor;	// non-active tab tip
   Pixel_t             fSubmittedColor;
   Pixel_t             fValidatedColor;
+  Pixel_t             fRunningColor;
+  Pixel_t             fStoppedColor;
 
   int                 fDebugLevel;
+//-----------------------------------------------------------------------------
+// threads
+//-----------------------------------------------------------------------------
+  struct ThreadContext_t {
+    TThread*         fTp;     // thread pointer
+    DtcTabElement_t* fDtel;
+    int              fRunning; // 0: stopped 1:running
+    int              fStop;   // end marker
+    int              fCmd;    // command
+    int              fPrintLevel;
+  };
   
+  ThreadContext_t  fEmuCfoTC;
+  ThreadContext_t  fExtCfoTC;
+  ThreadContext_t  fReaderTC;
+//-----------------------------------------------------------------------------
+//
+//-----------------------------------------------------------------------------
   DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
   virtual ~DtcGui();
 
@@ -262,7 +289,17 @@ public:
 
   int      InitRunConfiguration(const char* Project);
 
+  static   void* ReaderThread(void* Context);
+  static   void* EmuCfoThread(void* Context);
+  static   void* ExtCfoThread(void* Context);
+
+  int      manage_read_thread   ();
+  int      manage_emu_cfo_thread();
+  int      manage_ext_cfo_thread();
+
   void     cfo_launch_run_plan();
+
+  void     configure_roc_pattern_mode();
 
   void     clear_output       ();
 

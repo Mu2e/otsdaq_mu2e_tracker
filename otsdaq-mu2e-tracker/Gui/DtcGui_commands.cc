@@ -107,18 +107,16 @@ void DtcGui::cfo_init_readout() {
 //-----------------------------------------------------------------------------
 // extract parameters, assume only one time chain
 //-----------------------------------------------------------------------------
-      int ndtcs[8] = {0,0,0,0,0,0,0,0};
-
-      // sscanf(dtel->fTimeChainLink->GetText(),"%i",&time_chain_link);
-      sscanf(dtel->fNDtcs->GetText()        ,"%i",&ndtcs[0]);
+      uint dtc_mask;
+      sscanf(dtel->fTimeChainLink->GetText(),"%x",&dtc_mask);
 
       const char* run_plan = dtel->fRunPlan->GetText();
 
       if (fDebugLevel > 0) {
-        *fTextView << Form("run_pan, ndtcs[0]: %s %i",run_plan,ndtcs[0]) << std::endl; 
+        *fTextView << Form("run_plan, dtc_mask: %s 0x%08x",run_plan,dtc_mask) << std::endl; 
       }
 
-      dtel->fCFO_i->InitReadout(run_plan,ndtcs); 
+      dtel->fCFO_i->InitReadout(run_plan,dtc_mask); 
     }
     catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT") << std::endl; }
   }
@@ -150,6 +148,26 @@ void DtcGui::cfo_launch_run_plan() {
 //-----------------------------------------------------------------------------
 void DtcGui::clear_output() {
   fTextView->Clear();
+}
+
+//-----------------------------------------------------------------------------
+// assume DtcInterface is initialized, prepare to read out ROC-regenerated patterns
+//-----------------------------------------------------------------------------
+void DtcGui::configure_roc_pattern_mode() {
+
+  streambuf* oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf( strCout.rdbuf() );
+
+  TDatime t1; *fTextView << t1.AsSQLString() << " DtcGui::" << __func__ << ": START" << std::endl;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  dtel->fDTC_i->RocConfigurePatternMode();
+  
+  TDatime t2; *fTextView << t1.AsSQLString() << " DtcGui::" << __func__ << ": DONE" << std::endl;
+  fTextView->ShowBottom();
+                                        // Restore old cout.
+  cout.rdbuf( oldCoutStreamBuf );
 }
 
 //-----------------------------------------------------------------------------
@@ -236,7 +254,7 @@ void DtcGui::reset_roc() {
     catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("%s DONE",__func__) <<  std::endl;
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE",__func__) <<  std::endl;
   fTextView->ShowBottom();
 
   // Restore old cout.

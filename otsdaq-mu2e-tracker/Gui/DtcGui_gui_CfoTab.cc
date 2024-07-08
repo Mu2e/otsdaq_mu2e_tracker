@@ -193,6 +193,34 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx3,dy);
   DtcTel.fValR = lab;
 //-----------------------------------------------------------------------------
+// column 3 row 4: manage_cfo_thread
+//-----------------------------------------------------------------------------
+  // tb = new TGTextButton(group,"Emultd CT",-1,TGTextButton::GetDefaultGC()(),
+  //                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  // group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+  // tb->SetTextJustify(36);
+  // tb->SetMargins(0,0,0,0);
+  // tb->SetWrapLength(-1);
+  
+  // tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*3,dx3,dy);
+  // tb->Connect("Pressed()", "DtcGui", this, "manage_emu_cfo_thread()");
+  // tb->ChangeBackground(fValidatedColor);  // not yet
+//-----------------------------------------------------------------------------
+// column 3 row 5: manage_external_cfo_thread
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"Extrnl CT",-1,TGTextButton::GetDefaultGC()(),
+                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*4,dx3,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "manage_ext_cfo_thread()");
+  // tb->ChangeBackground(fValidatedColor);  // not yet
+//-----------------------------------------------------------------------------
 // column 4 row 1: label: CFO timing chain link 
 //-----------------------------------------------------------------------------
   int c4_dx = x0+dx+10+dx2+10+dx3+10;

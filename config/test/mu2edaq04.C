@@ -17,8 +17,7 @@ int init_run_configuration(DtcGui* X) {
 
   dat[0].fName        = "CFO";
   dat[0].fPcieAddr    = 0;
-  dat[0].fLinkMask    = 0x1;            // timing chain link
-  dat[0].fNLinkedDtcs = 1;
+  dat[0].fLinkMask    = 0x11;            // link0:CRV, link1:tracker
   gSystem->Setenv("CFOLIB_CFO","0");
 
   

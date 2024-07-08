@@ -8,6 +8,7 @@ cet_make_library(
   DtcGui_gui_DtcTab.cc
   DtcGui_gui_RocTab.cc
   DtcGui_commands.cc  
+  DtcGui_threads.cc  
   LIBRARIES PUBLIC
   otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Ui
   ROOT::Gui

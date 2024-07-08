@@ -83,11 +83,9 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
 //-----------------------------------------------------------------------------
 // assume one timing chain
 //-----------------------------------------------------------------------------
-void cfo_init_readout_ext(const char* RunPlan, int NDtcs) {
-  int ndtcs[8] = {NDtcs,0,0,0,0,0,0,0};
-  
+void cfo_init_readout_ext(const char* RunPlan, uint DtcMask) {
   CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  cfo_i->InitReadout(RunPlan,ndtcs);
+  cfo_i->InitReadout(RunPlan,DtcMask);
 }
 
 //-----------------------------------------------------------------------------
@@ -466,7 +464,8 @@ int dtc_read_and_validate(uint64_t NEvents, int PrintData = 1, uint64_t FirstTS 
       }
 
       int rc(0);
-      rc = validate_dtc_block(tag,data,&offset,PrintData);
+      // rc = validate_dtc_block(tag,data,&offset,PrintData);
+      rc = dtc_i->ValidateDtcBlock(data,tag,&offset,PrintData);
 
       if ((rc > 0) and (PrintData > 0)) {
         dtc_i->PrintBuffer(data,nb/2);
@@ -531,15 +530,17 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 }
 
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_external_cfo(const char* RunPlan = "commands.bin", int PrintData = 1, int NDtcs = 1,
-                                  const char* OutputFn = nullptr) {
+void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
+                                  int         PrintData = 1             ,
+                                  uint        DtcMask   = 0x1           ,
+                                  const char* OutputFn  = nullptr       ) {
   int pcie_addr = -1; // assume initialized
 
   dtc_init_external_readout(pcie_addr);
 //-----------------------------------------------------------------------------
 // for now, assume only one time chain, but provide for future
 //-----------------------------------------------------------------------------
-  cfo_init_readout_ext(RunPlan,NDtcs);      // for now, assume one time chain
+  cfo_init_readout_ext(RunPlan,DtcMask);      // for now, assume one time chain
 
   cfo_launch_run_plan();
 //-----------------------------------------------------------------------------

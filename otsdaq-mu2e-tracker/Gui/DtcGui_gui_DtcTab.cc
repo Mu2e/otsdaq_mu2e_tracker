@@ -24,31 +24,28 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
   int id = 0;
 
-  if (DtcData->fName == "DTC") {
-    DtcTel.fRocTab = new TGTab(group,10,10);
-    group->AddFrame(DtcTel.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  DtcTel.fRocTab = new TGTab(group,10,10);
+  group->AddFrame(DtcTel.fRocTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
-    for (int i=0; i<6; i++) {
-      BuildRocTabElement(DtcTel.fRocTab,DtcTel.fRocTel[i], &fDtcData->fRocData[i]);
-    }
+  for (int i=0; i<6; i++) {
+    BuildRocTabElement(DtcTel.fRocTab,DtcTel.fRocTel[i], &fDtcData->fRocData[i]);
+  }
 //-----------------------------------------------------------------------------
 // position the ROC tab inside the DTC tab
 //-----------------------------------------------------------------------------
-    DtcTel.fRocTab->MoveResize(520,20,360,190);
-    DtcTel.fRocTab->Connect("Selected(Int_t)", "DtcGui", this, "DoRocTab(Int_t)");
+  DtcTel.fRocTab->MoveResize(520,10,360,190);
+  DtcTel.fRocTab->Connect("Selected(Int_t)", "DtcGui", this, "DoRocTab(Int_t)");
 
-    DtcTel.fRocTab->SetTab(id);
-
+  DtcTel.fRocTab->SetTab(id);
 //-----------------------------------------------------------------------------
 // set active ROC tab
 //-----------------------------------------------------------------------------
-    DtcTel.fActiveRocID  = id;
+  DtcTel.fActiveRocID  = id;
 
-    DtcTel.fActiveRocTel = &DtcTel.fRocTel[id];
-    DtcTel.fRocTabColor  = DtcTel.fActiveRocTel->fTab->GetBackground();
+  DtcTel.fActiveRocTel = &DtcTel.fRocTel[id];
+  DtcTel.fRocTabColor  = DtcTel.fActiveRocTel->fTab->GetBackground();
     
-    DtcTel.fActiveRocTel->fTab->ChangeBackground(fYellow);
-  }
+  DtcTel.fActiveRocTel->fTab->ChangeBackground(fYellow);
 //------------------------------------------------------------------------------
 // a) graphics context changes
 //-----------------------------------------------------------------------------
@@ -172,53 +169,48 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   rr->SetText("0x9100");
   rr->MoveResize(x0+dx+10,y0+2*(dy+5),dx2,dy);
   DtcTel.fRegR = rr;
-
-  if (DtcData->fName == "DTC") {
 //-----------------------------------------------------------------------------
 // column 2 raw 4 : print DTC Firefly temp, different for CFO
 //-----------------------------------------------------------------------------
-    tb = new TGTextButton(group,"FF temp",-1,TGTextButton::GetDefaultGC()(),
-                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-    group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  tb = new TGTextButton(group,"FF temp",-1,TGTextButton::GetDefaultGC()(),
+                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
-    tb->SetTextJustify(36);
-    tb->SetMargins(0,0,0,0);
-    tb->SetWrapLength(-1);
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
   
-    tb->MoveResize(x0+dx+10,y0+(dy+5)*3,dx2,dy);
-    tb->Connect("Pressed()", "DtcGui", this, "print_firefly_temp()");
-    tb->ChangeBackground(fValidatedColor);
+  tb->MoveResize(x0+dx+10,y0+(dy+5)*3,dx2,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "print_firefly_temp()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 2 raw 5 : init readout mode with the external CFO
 //-----------------------------------------------------------------------------
-    tb = new TGTextButton(group,"init ext CFO",-1,TGTextButton::GetDefaultGC()(),
-                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-    group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-
-    tb->SetTextJustify(36);
-    tb->SetMargins(0,0,0,0);
-    tb->SetWrapLength(-1);
+  tb = new TGTextButton(group,"init ext CFO",-1,TGTextButton::GetDefaultGC()(),
+                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   
-    tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
-    tb->Connect("Pressed()", "DtcGui", this, "init_external_cfo_readout_mode()");
-    tb->ChangeBackground(fValidatedColor);
-  }
-  else if (DtcData->fName == "CFO") {
-//-----------------------------------------------------------------------------
-// column 2 raw 4 : launch current run plan
-//-----------------------------------------------------------------------------
-    tb = new TGTextButton(group,"launch",-1,TGTextButton::GetDefaultGC()(),
-                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-    group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-
-    tb->SetTextJustify(36);
-    tb->SetMargins(0,0,0,0);
-    tb->SetWrapLength(-1);
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
   
-    tb->MoveResize(x0+dx+10,y0+(dy+5)*3,dx2,dy);
-    tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
-    tb->ChangeBackground(fValidatedColor);
-  }
+  tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "init_external_cfo_readout_mode()");
+  tb->ChangeBackground(fValidatedColor);
+//-----------------------------------------------------------------------------
+// column 2 raw 6 : configure ROC pattern mode readout
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"ROC pattrn",-1,TGTextButton::GetDefaultGC()(),
+                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "configure_roc_pattern_mode()");
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 3 row 1: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
@@ -251,23 +243,37 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   lab->SetWrapLength(-1);
   lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx3,dy);
   DtcTel.fValR = lab;
-
-  if (DtcData->fName == "DTC") {
-    tb = new TGTextButton(group,"read D",-1,TGTextButton::GetDefaultGC()(),
+//-----------------------------------------------------------------------------
+// column 3 row 4: "Start RT" - manage_read_thread
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"Start Read",-1,TGTextButton::GetDefaultGC()(),
                           TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-    group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 
-    tb->SetTextJustify(36);
-    tb->SetMargins(0,0,0,0);
-    tb->SetWrapLength(-1);
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
   
-    tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*3,dx3,dy);
-    tb->Connect("Pressed()", "DtcGui", this, "read_subevents()");
-    // tb->ChangeBackground(fValidatedColor);  // not yet
-  }
+  tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*3,dx3,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "manage_read_thread()");
+  // tb->ChangeBackground(fValidatedColor);  // not yet
+//-----------------------------------------------------------------------------
+// column 3 row 5: Start CT - manage_emu_cfo_thread
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"Start emuCFO",-1,TGTextButton::GetDefaultGC()(),
+                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*4,dx3,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "manage_emu_cfo_thread()");
+  // tb->ChangeBackground(fValidatedColor);  // not yet
 //-----------------------------------------------------------------------------
 // resize the DTC group panel
 //-----------------------------------------------------------------------------
   DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
-  group->MoveResize(10,10,910,250);
+  group->MoveResize(10,10,900,230);
 }
