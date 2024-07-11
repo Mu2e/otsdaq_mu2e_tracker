@@ -198,7 +198,7 @@ public:
     TGTextEntry*      fNDtcs;           // CFO only
     TGTextEntry*      fRunPlan;         // CFO only
 
-    trkdaq::DtcInterface* fDTC_i;           // driver interface
+    trkdaq::DtcInterface* fDTC_i;       // driver interface
     trkdaq::CfoInterface* fCFO_i;
 
     Pixel_t           fColor;
@@ -207,7 +207,7 @@ public:
     RocTabElement_t   fRocTel[6];
     RocTabElement_t*  fActiveRocTel;
     int               fActiveRocID;
-    Pixel_t           fRocTabColor;	// non-active roc tab tip
+    Pixel_t           fRocTabColor;    	// non-active roc tab tip
     DtcData_t*        fData;
   };
 
@@ -243,6 +243,7 @@ public:
   TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
   TGNumberEntry*      fSleepMS;         // DTC , CFO emulation, used by the CFO thread
   TGNumberEntry*      fPrintFreq;       // DTC , CFO emulation, used by the DTC reading thread
+  int                 fCfoPrintFreq;
 
   int                 fValidate;
 

@@ -31,7 +31,7 @@ namespace trkdaq {
     
     virtual ~CfoInterface();
 
-    static CfoInterface* Instance(int PcieAddr = -1, uint DtcMask = 0x1);
+    static CfoInterface* Instance(int PcieAddr = -1, uint DtcMask = 0);
 
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 

@@ -70,7 +70,8 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   fReaderTC.fRunning    = 0;
   fReaderTC.fPrintLevel = 1;
 
-  fValidate = 0;
+  fValidate             = 0;
+  fCfoPrintFreq         = 1;
 
   if (fDebugLevel > 0) printf("DtcGui::%s : all done, EXIT\n", __func__);
 }

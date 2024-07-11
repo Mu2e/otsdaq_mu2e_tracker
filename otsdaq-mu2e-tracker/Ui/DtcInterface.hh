@@ -70,6 +70,7 @@ namespace trkdaq {
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                   ulong       FirstTS,
                                   int         PrintData,
+                                  int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
 //-----------------------------------------------------------------------------
 // ROC functions

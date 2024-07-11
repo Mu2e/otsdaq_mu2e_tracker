@@ -277,18 +277,19 @@ void dtc_read_subevents(DtcInterface* Dtc_i,
 int dtc_init_external_readout(int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);         // assume already initialized
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);  // readout ROC patterns
+  dtc_i->RocConfigurePatternMode();                               // readout ROC patterns
   return 0;
 }
 
 //-----------------------------------------------------------------------------
 // to be executed on each node with a DTC, after the CFO run plan was launched
+// don't validate
 //-----------------------------------------------------------------------------
-int dtc_read_subevents(uint64_t FirstTS = 0, int PrintData = 1, int PcieAddr = -1, const char* OutputFn = nullptr) {
+int dtc_read_subevents(uint64_t FirstTS = 0, int PrintData = 1, int Validate = 0, int PcieAddr = -1, const char* OutputFn = nullptr) {
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,OutputFn);
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,Validate,OutputFn);
   
   return list_of_subevents.size();
 }
@@ -499,7 +500,7 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
   timer.Start();
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr); // assume already initialized
-  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);
+  dtc_i->RocConfigurePatternMode();
                                         // 68x25ns = 1700 ns
   
   dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,FirstTS);
@@ -512,11 +513,11 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstT
 }
 
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0, const char* OutputFn = nullptr) {
+void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
   int pcie_addr(-1);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
-  dtc_i->RocConfigurePatternMode(dtc_i->fLinkMask);  // readout ROC patterns
+  dtc_i->RocConfigurePatternMode();                  // readout ROC patterns
 
                                                      // 68x25ns = 1700 ns
 
@@ -526,7 +527,7 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
 
                                                     // in emulated mode, always read after 
 
-  dtc_read_subevents(FirstTS,PrintData,pcie_addr,OutputFn);
+  dtc_read_subevents(FirstTS,PrintData,Validate, pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------
@@ -547,7 +548,7 @@ void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
 // read events
 //-----------------------------------------------------------------------------
   uint64_t first_ts = 0;
-  dtc_read_subevents(first_ts,PrintData,pcie_addr,OutputFn);
+  dtc_read_subevents(first_ts,PrintData,0,pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------

@@ -56,16 +56,19 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
       if (getenv("DTCLIB_DTC") != nullptr) pcie_addr = atoi(getenv("DTCLIB_DTC"));
       else {
-        printf (" ERROR: PcieAddr < 0 and $DTCLIB_DTC is not defined. BAIL out\n");
+        TLOG(TLVL_ERROR) << Form("PcieAddr < 0 and $DTCLIB_DTC is not defined. BAIL out\n");
         return nullptr;
       }
     }
 
+    TLOG(TLVL_INFO) << "pcie_addr:" << pcie_addr << " LinkMask:" << std::hex << LinkMask << std::dec
+                    << " SkipInit:" << SkipInit << std::endl;
+    
     if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask, SkipInit);
     
     if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
-      printf (" ERROR: DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
-              fgInstance[pcie_addr]->PcieAddr());
+      TLOG(TLVL_ERROR) << Form("DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
+                               fgInstance[pcie_addr]->PcieAddr());
       return nullptr;
     }
     else return fgInstance[pcie_addr];
@@ -73,7 +76,7 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-// Source=0: sync to internal clock ; 1: RTF
+// Source=0: sync to internal clock ; =1: RTF
 // on success, returns 1
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
@@ -462,7 +465,7 @@ namespace trkdaq {
       }
     }
 
-    RocSetDataVersion(LinkMask,1); // Version --> R29
+    RocSetDataVersion(1); // Version --> R29
                                          // not sure if this is needed, later...
     std::this_thread::sleep_for(std::chrono::microseconds(2000));  
   }
@@ -504,11 +507,14 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
                                    ulong       FirstTS  ,
-                                   int         PrintData, 
+                                   int         PrintLevel,
+                                   int         Validate ,
                                    const char* Fn       ) {
     ulong    ts       = FirstTS;
     bool     match_ts = false;
-    // int      nevents  = 0;
+    int      nerr_tot(0);
+    ulong    offset  (0);      // used in validation mode
+    //    int      print_level(1);
 
     FILE*    file(nullptr);
     if (Fn != nullptr) {
@@ -543,20 +549,29 @@ namespace trkdaq {
         VSub   = fDtc->GetSubEventData(event_tag, match_ts);
         int sz = VSub.size();
         
-        if (PrintData > 0) {
+        if (PrintLevel > 0) {
           cout << Form(">>>> ------- ts = %5li NDTCs:%2i",ts,sz);
           if (sz == 0) {
             cout << std::endl;
             break;
           }
         }
-        
+//-----------------------------------------------------------------------------
+// a subevent contains data of a single DTC
+//-----------------------------------------------------------------------------
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
           int      nb     = ev->GetSubEventByteCount();
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
           char*    data   = (char*) ev->GetRawBufferPointer();
+
+          int nerr(0);
+          
+          if (Validate > 0) {
+            nerr = ValidateDtcBlock((ushort*)data,ew_tag,&offset,PrintLevel);
+          }
+          nerr_tot += nerr;
 
           if (file) {
 //-----------------------------------------------------------------------------
@@ -579,17 +594,17 @@ namespace trkdaq {
             roc_data += nb;
           }
         
-          if (PrintData > 0) {
+          if (PrintLevel > 0) {
             cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
                          i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
           }
           
-          if (PrintData > 1) {
+          if (PrintLevel > 1) {
             cout << std::endl;
             PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
           }
         }
-        if (PrintData > 0) cout << std::endl;
+        if (PrintLevel > 0) cout << std::endl;
         
         ts++;
       }
@@ -742,10 +757,10 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
     roc      = (RocData_t*) ( ((char*) roc) + roc->nb);
   }
 
-  int nerr     = 0;
+  int nerr   = 0;
 
   if (nb_dtc != nb_rocs+0x30) {
-    if (PrintLevel > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x 0x%04x\n",nb_dtc,nb_rocs);
+    if (PrintLevel > 0) printf("ERROR: EWtag, nb_dtc, nb_rocs : %10lu 0x%04x 0x%04x\n",EwTag,nb_dtc,nb_rocs);
     nerr += 1;
   }
 //-----------------------------------------------------------------------------
@@ -753,8 +768,13 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 // check the ROC payload, assume a hit = 2 packets
 //-----------------------------------------------------------------------------
   roc = (RocData_t*) (Data+0x18);
-  for (int i=0; i<6; i++) {
-    int nb = roc->nb;
+  for (int iroc=0; iroc<6; iroc++) {
+    if (PrintLevel > 10) printf("  ---- roc # %i\n",iroc);
+//-----------------------------------------------------------------------------
+// offsets are the same for all non-emty ROC's in the DTC data block
+//-----------------------------------------------------------------------------
+    ulong offset = *Offset;
+    //    int   nb     = roc->nb;
 //-----------------------------------------------------------------------------
 // validate ROC header
 //-----------------------------------------------------------------------------
@@ -762,7 +782,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
     ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
 
     if (ewtag_roc != EwTag) {
-      if (PrintLevel > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx 0x%08lx\n",i,EwTag,ewtag_roc);
+      if (PrintLevel > 0) printf("ERROR: EwTag ewtag_roc roc : 0x%08lx 0x%08lx %i\n",EwTag,ewtag_roc,iroc);
       nerr += 1;
     }
     
@@ -778,25 +798,25 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 
       if (npackets != npackets_exp) {
         if (PrintLevel > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
-                                  EwTag,i,npackets,npackets_exp);
+                                  EwTag,iroc,npackets,npackets_exp);
         nerr += 1;
       }
       
       if (PrintLevel > 10) {
-        printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i %10lu\n",
-               EwTag,  ewt, npackets, npackets_exp, *Offset);
+        printf("EwTag, ewt, roc, npackets, npackets_exp,  offset: %10lu %3i %i %2i %2i %10lu\n",
+               EwTag,  ewt, iroc, npackets, npackets_exp,  offset);
       }
 
       uint nw      = npackets*4;        // N 4-byte words
     
       for (uint i=0; i<nw; i++) {
-        uint exp_pattern = (i+*Offset) & 0xffffffff;
+        uint exp_pattern = (i+offset) & 0xffffffff;
     
         if (pattern[i] != exp_pattern) {
           nerr += 1;
           if (PrintLevel > 0) {
-            printf("ERROR: EwTag, ewt i  offset payload[i]  exp_word: %10lu %3i %3i 0x%08x 0x%08x\n",
-                   EwTag, ewt, i, *Offset,pattern[i],exp_pattern);
+            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %3i 0x%08x 0x%08x\n",
+                   EwTag, ewt, iroc, i, offset,pattern[i],exp_pattern);
           }
         }
       }

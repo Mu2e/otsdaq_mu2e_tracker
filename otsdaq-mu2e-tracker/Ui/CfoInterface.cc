@@ -135,19 +135,21 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
 
-    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    // fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    // fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     
     fCfo->SoftReset();
 
     SetRunPlan   (RunPlan);
 
-    if (DtcMask != -1) fDtcMask = DtcMask;
+    if (DtcMask != 0) fDtcMask = DtcMask;
     for (int i=0; i<8; i++) {
       int ndtcs = (fDtcMask >> 4*i) & 0xf;
       if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
       else           fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
     }
+
+    fCfo->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
   }
 
 //-----------------------------------------------------------------------------
@@ -216,9 +218,11 @@ namespace trkdaq {
     memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
     file.read((char*) (&inputData[8]), inputSize);
     file.close();
-
-    fCfo->GetDevice()->write_data(DTC_DMA_Engine_DAQ, inputData, sizeof(inputData));
-    usleep(10);	
+    // this was the change from previos version
+    mu2edev* dev = fCfo->GetDevice();
+    dev->begin_dcs_transaction();
+    dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
+    dev->end_dcs_transaction(); // 
   }
 
 };
