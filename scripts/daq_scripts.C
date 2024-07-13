@@ -530,6 +530,24 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int PrintData = 1, uint64_t Fir
   dtc_read_subevents(FirstTS,PrintData,Validate, pcie_addr,OutputFn);
 }
 
+// //-----------------------------------------------------------------------------
+// void dtc_buffer_test_emulated_cfo_digis(int NEvents=3, int PrintData = 1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
+//   int pcie_addr(-1);                                 // assume initialized
+  
+//   DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
+//   dtc_i->RocConfigureDigiMode();                  // readout ROC patterns
+
+//                                                      // 68x25ns = 1700 ns
+
+//                                                      // this call actually sends EWMs
+  
+//   dtc_i->InitEmulatedCFOReadoutMode(daq_scripts::EWLength,NEvents+1,0);
+
+//                                                     // in emulated mode, always read after 
+
+//   dtc_read_subevents(FirstTS,PrintData,Validate, pcie_addr,OutputFn);
+// }
+
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
                                   int         PrintData = 1             ,
@@ -560,3 +578,10 @@ DtcGui* dtc_gui(const char* Project = "test", int DebugLevel = 0) {
   DtcGui* x = new DtcGui(Project,gClient->GetRoot(),950,1000,DebugLevel);
   return x;
 } 
+
+void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link) {
+  auto dtc_i = DtcInterface::Instance(dtc_pcie);
+  auto dtc = dtc_i->Dtc();
+  dtc->WriteROCRegister(DTC_Link_ID(roc_link), 8, 0x30F, false, 100);
+  dtc->WriteROCRegister(DTC_Link_ID(roc_link), 29, 1, false, 100);
+}

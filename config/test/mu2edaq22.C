@@ -14,19 +14,15 @@ int init_run_configuration(DtcGui* X) {
 
   DtcGui::DtcData_t* dtc = (DtcGui::DtcData_t*) X->fDtcData;
 
-  X->fNDtcs           = 1;              // installed on a machine
+  X->fNDtcs           = 2;              // installed on a machine
 
   dtc[0].fName        = "DTC";
   dtc[0].fPcieAddr    = 0;
-  //  dtc[0].fLinkMask    = 0x111;            // all three ROCs
-  // dtc[0].fLinkMask    = 0x101;            // ROC0
-  dtc[0].fLinkMask    = 0x111;            // ROC0+ROC2
-  // dtc[0].fLinkMask    = 0x1;            // ROC0
-  // dtc[0].fLinkMask    = 0x010;            // ROC1
+  dtc[0].fLinkMask    = 0x11;            // ROC0
 
-  // dtc[1].fName        = "DTC";
-  // dtc[1].fPcieAddr    = 1;
-  // dtc[1].fLinkMask    = 0x1;  // 
+  dtc[1].fName        = "DTC";
+  dtc[1].fPcieAddr    = 1;
+  dtc[1].fLinkMask    = 0x1;  // 
 
   gSystem->Setenv("DTCLIB_DTC","0");
 

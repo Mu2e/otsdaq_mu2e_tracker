@@ -180,6 +180,7 @@ physics: {
 #------------------------------------------------------------------------------
             dataHeaderOffset    : 32
             dumpDTCRegisters    :  0
+            plotWaveforms       : []
 #------------------------------------------------------------------------------
 # reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
 # reference channel number is run-dependent
@@ -208,5 +209,5 @@ physics: {
 }
 
 #------------------------------------------------------------------------------
-services.TFileService.fileName : "/scratch/mu2e/mu2etrk_pasha_020/vst_001/mu2e_trackerDQM_%#.root"
+services.TFileService.fileName : "/scratch/mu2e/mu2etrk_pasha_029/dqm/mu2e_trackerDQM_%#.root"
 services.scheduler.wantSummary : true

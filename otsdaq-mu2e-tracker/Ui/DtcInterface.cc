@@ -543,6 +543,7 @@ namespace trkdaq {
 // so no problem with the memory management
 //-----------------------------------------------------------------------------
     while(1) {
+      // sleep(1);
       DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
       try {
         // VSub.clear();
