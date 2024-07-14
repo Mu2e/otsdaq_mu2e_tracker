@@ -294,6 +294,15 @@ int dtc_read_subevents(uint64_t FirstTS = 0, int PrintData = 1, int Validate = 0
   return list_of_subevents.size();
 }
 
+//-----------------------------------------------------------------------------
+// LinkMask : hex digit per link, i.e. 0x111 for links 0,1,2
+//-----------------------------------------------------------------------------
+int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ResetRoc(LinkMask);
+  return 0;
+}
+
 
 struct RocData_t {
   ushort  nb;
@@ -492,6 +501,16 @@ int dtc_read_and_validate(uint64_t NEvents, int PrintData = 1, uint64_t FirstTS 
 
   printf("[%s]: n_read_events nerrors :  %10lu %10i\n",__func__,n_read_events,nerrors);
   return nerrors;
+}
+
+//-----------------------------------------------------------------------------
+// do this per ROC
+//-----------------------------------------------------------------------------
+void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
+  vector<uint16_t>   spi_data;
+
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ReadSpiData(Link,spi_data,PrintLevel);
 }
 
 //-----------------------------------------------------------------------------

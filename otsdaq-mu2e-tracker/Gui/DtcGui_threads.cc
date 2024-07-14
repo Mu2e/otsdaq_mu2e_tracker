@@ -79,30 +79,27 @@ void* DtcGui::ReaderThread(void* Context) {
           }
 
           if (tstamp % print_freq == 0) {
-            float ct = timer.CpuTime();
-            float rt = timer.RealTime();
-            timer.Continue();
+            if (tc->fPrintLevel > 1) {
+              float ct = timer.CpuTime();
+              float rt = timer.RealTime();
+              timer.Continue();
               cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
                            ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
                    << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+              if (tc->fPrintLevel > 10) {
+                dtc_i->PrintBuffer(dtc_block->GetRawBufferPointer(),dtc_block->GetSubEventByteCount()/2);
+              }
+            }
           }
           else if (dtc_gui->fValidate > 0) {
             if ((nerr > 0) or (tc->fPrintLevel > 1)) {
             float ct = timer.CpuTime();
             float rt = timer.RealTime();
             timer.Continue();
-              cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                           ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                   << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+            cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
+                         ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                 << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
             }
-          }
-          else if (tc->fPrintLevel > 1) {
-            float ct = timer.CpuTime();
-            float rt = timer.RealTime();
-            timer.Continue();
-              cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                           ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                   << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
           }
         }
 

@@ -9,8 +9,11 @@
 
 #define __CLING__ 1
 
+#include <vector>
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
+
+#include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
 
 namespace trkdaq {
 
@@ -45,7 +48,11 @@ namespace trkdaq {
 
     int          EmulatesCfo() { return fEmulatesCfo; }
 
+
+    int          MonicaDigiClear(int LinkMask);
+
                                         // EWLength - in 25 ns ticks
+    
     void         InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag);
 
                                         // SampleEdgeMode=0: force rising  edge
@@ -54,11 +61,11 @@ namespace trkdaq {
 
     void         InitExternalCFOReadoutMode(int SampleEdgeMode);
     
-                                        // launch "run plan" in emulated mode...
-    void         LaunchRunPlan (int NEvents);
-
     int          GetLinkMask() { return fLinkMask; }
 
+    int          ConvertSpiData  (const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
+
+    // assume that printed are uint16_t words , in hex
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
     void         PrintRegister   (uint16_t Register, const char* Title = "");
@@ -66,6 +73,8 @@ namespace trkdaq {
     void         PrintStatus     ();
 
     uint32_t     ReadRegister    (uint16_t Register);
+
+    int          ReadSpiData     (int Link, std::vector<uint16_t>& SpiRawData, int PrintLevel = 0);
 
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                   ulong       FirstTS,
@@ -76,9 +85,10 @@ namespace trkdaq {
 // ROC functions
 // if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
-    int          RocReadoutMode()  { return fReadoutMode; }
+    void         ResetRoc               (int LinkMask = 0);
+
+    int          RocReadoutMode         ()  { return fReadoutMode; }
     
-    void         RocReset               (int LinkMask = 0);
     void         RocConfigurePatternMode(int LinkMask = 0);
     void         RocSetDataVersion      (int Version, int LinkMask=0);
 
@@ -86,6 +96,8 @@ namespace trkdaq {
     
                                         // 'Value' : 0 or 1
     void         SetBit(int Register, int Bit, int Value);
+
+    void         SetLinkMask(int Mask);
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
@@ -99,6 +111,16 @@ namespace trkdaq {
 // return number of found errors
 //-----------------------------------------------------------------------------
     int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel);
+
+//-----------------------------------------------------------------------------
+// ROC has 4 lanes: 2 CAl lanes (0x5) and 2 HV lanes (0xa)
+//-----------------------------------------------------------------------------
+    int          MonicaVarLinkConfig   (int LinkMask = 0, int LaneMask = 0xf);
+//-----------------------------------------------------------------------------
+// VarPatternConfig = RocConfigurePatternMode
+//-----------------------------------------------------------------------------
+    
+    int          MonicaVarPatternConfig(int LinkMask = 0);
   };
 
 };

@@ -14,14 +14,14 @@
 #include "TString.h"
 
 #include "TRACE/tracemf.h"
-#define TRACE_NAME "DtcInterface"
+#define  TRACE_NAME "DtcInterface"
 
 using namespace DTCLib;
 using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  //  int gSleepTimeROC      =  2000;  // [us]
+  int gSleepTimeROC      =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -103,6 +103,7 @@ namespace trkdaq {
     ushort* p16 = (ushort*) ptr;
     int     n   = 0;
     
+    std::cout << Form("-------- nw = %i\n",nw) << std::endl;
     for (int i=0; i<nw; i++) {
       if (n == 0) cout << Form(" 0x%08x: ",i*2);
       
@@ -367,10 +368,126 @@ namespace trkdaq {
 }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::LaunchRunPlan(int NEvents) {
+//  Monica's digi_clear from Feb 2024 (~/test_stand/monica_002/digi_clear.sh)
+//  this will proceed in 3 steps each for HV and CAL DIGIs:
+// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
+// 2) write TWI INIT high
+// 3) write TWI INIT low
+//-----------------------------------------------------------------------------
+  int DtcInterface::MonicaDigiClear(int LinkMask) {
+    if (LinkMask != 0) SetLinkMask(LinkMask);
+
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (not used)                                           continue;
+//-----------------------------------------------------------------------------
+// link is active
+//-----------------------------------------------------------------------------
+      auto link = DTCLib::DTC_Link_ID(i);
+
+      // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
+      fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
+
+      // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+      // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
+      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
+      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
+      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
     
+
+      // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
+      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+    
+      // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+      // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
+      fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
+    
+      // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
+      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+
+      // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
+      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+    }
+    return 0;
   }
 
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel) {
+    const char* keys[] = {
+      "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
+      "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
+      "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
+      "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
+      "CAL_RAIL_1V(mV)","CAL_RAIL_1.8V(mV)","CAL_RAIL_2.5V(mV)","CAL_TEMP(CELSIUS)",
+      "HV_RAIL_1V(mV)","HV_RAIL_1.8V(mV)","HV_RAIL_2.5V(mV)","HV_TEMP(CELSIUS)"
+    };
+//-----------------------------------------------------------------------------
+// primary source : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
+//-----------------------------------------------------------------------------
+    struct constants_t {
+      float iconst  = 3.3 /(4096*0.006*20);
+      float iconst5 = 3.25/(4096*0.500*20);
+      float iconst1 = 3.25/(4096*0.005*20);
+      float toffset = 0.509;
+      float tslope  = 0.00645;
+      float tconst  = 0.000806;
+      float tlm45   = 0.080566;  
+    } constants;
+
+    int nw = Data.size();
+    
+    float* val = (float*) Spi;
+
+    for (int i=0; i<nw; i++) {
+      if (i==20 or i==21 or i==22) {
+        val[i] = Data[i]*constants.tlm45;
+      }
+      else if (i==0 or i==1 or i==2 or i==12 or i==13) {
+        val[i] = Data[i]*constants.iconst;
+      }
+      else if (i==3 or i==14) {
+        val[i] = Data[i]*constants.iconst5 ;
+      }
+      else if (i==4 or i==5 or i==6 or i==7 or i==16 or i==17 or i==18 or i==19) {
+        val[i] = Data[i]*3.3*2/4096 ; 
+      }
+      else if (i==15) {
+        val[i] = Data[i]*3.3/4096;
+      }
+      else if (i==23) {
+        val[i] = Data[i]*3.3/4096;
+      }
+      else if (i==8 or i==9 or i==10 or i==11) {
+        val[i] = Data[i];
+      }
+      else if (i > 23) {
+        if   ((i%4) < 3) val[i] = Data[i]/8.;
+        else             val[i] = Data[i]/16.-273.15;
+      }
+      
+      if (PrintLevel > 0) {
+        printf("%-20s : %10.3f\n",keys[i],val[i]);
+      }
+    }
+
+    return 0;
+  }
+    
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRegister(uint16_t Register, const char* Title) {
     std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
@@ -445,35 +562,83 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// 
-  void DtcInterface::RocConfigurePatternMode(int LinkMask) {
-
-    if (LinkMask != 0) fLinkMask = LinkMask;
+  int DtcInterface::ReadSpiData(int Link, vector<uint16_t>& SpiRawData, int PrintLevel) {
+    int rc(0);
+//-----------------------------------------------------------------------------
+// is this really needed ?
+//-----------------------------------------------------------------------------
+    MonicaVarLinkConfig(Link);
+    MonicaDigiClear(Link);
+//-----------------------------------------------------------------------------
+// after writing into reg 258, sleep for some time, 
+// then wait till reg 128 returns non-zero
+//-----------------------------------------------------------------------------
+    DTC_Link_ID rlink = DTC_ROC_Links[Link];
     
-    RocReset(0);
+    fDtc->WriteROCRegister   (rlink,258,0x0000,false,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
 
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        auto link = DTC_Link_ID(i);
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+// 2024-05-10: is r129 now returning the number of bytes ?
+//-----------------------------------------------------------------------------
+    int nb = fDtc->ReadROCRegister(rlink,129,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nb);
 
-        fDtc->WriteROCRegister(link, 8,0x0010,false,1000);              // configure ROC to send patterns
-        // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
+    int nw = nb-4;
 
-        // fDtc->WriteROCRegister(link,30,0x0000,false,1000);                // r30: mode, write 0 into it 
-        // // std::this_thread::sleep_for(std::chrono::microseconds(10*trk_daq::gSleepTimeROC));
-      }
+    if (nw != TrkSpiRawData_t::nWords()) {
+      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiRawData_t::nWords() << " , reported nw=" << nw;
+      rc = -1;
     }
 
-    RocSetDataVersion(1); // Version --> R29
-                                         // not sure if this is needed, later...
-    std::this_thread::sleep_for(std::chrono::microseconds(2000));  
+    fDtc->ReadROCBlock(SpiRawData,rlink,258,nw,false,100); // 
+//-----------------------------------------------------------------------------
+// print SPI data in hex 
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x1) != 0) {
+      PrintBuffer(SpiRawData.data(),nw);
+    }
+//-----------------------------------------------------------------------------
+// parse SPI data and print them
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x2) != 0) {
+      struct TrkSpiData_t spi;
+      ConvertSpiData(SpiRawData,&spi,PrintLevel);  // &spi[0]
+    }
+
+    return 0;
+  }
+
+//-----------------------------------------------------------------------------
+// preserve historic naming convention- Monica named her script 'var_pattern_config'
+//-----------------------------------------------------------------------------
+  void DtcInterface::RocConfigurePatternMode(int LinkMask) {
+    MonicaVarPatternConfig(LinkMask);
+    // if (LinkMask != 0) fLinkMask = LinkMask;
+    
+    // ResetRoc();                                     // use fLinkMask
+
+    // for (int i=0; i<6; i++) {
+    //   int used = (fLinkMask >> 4*i) & 0x1;
+    //   if (used != 0) {
+    //     fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
+    //   }
+    // }
+
+    // int version = 1;
+    // RocSetDataVersion(version); // Version --> R29
+    // //                                      // not sure if this is needed, later...
+    // // std::this_thread::sleep_for(std::chrono::microseconds(2000));  
   }
 
 //-----------------------------------------------------------------------------
 // ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocReset(int LinkMask) {
+  void DtcInterface::ResetRoc(int LinkMask) {
     if (LinkMask != 0) fLinkMask = LinkMask;
     
     int tmo_ms(100);
@@ -638,6 +803,21 @@ namespace trkdaq {
     
     data = (data ^ w) | (Value << Bit);
     fDtc->GetDevice()->write_register(Register,tmo_ms,data);
+  }
+
+//-----------------------------------------------------------------------------
+// configure itself to use a CFO
+//-----------------------------------------------------------------------------
+  void DtcInterface::SetLinkMask(int Mask) {
+    if (Mask == 0) return;
+    fLinkMask = Mask;
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->EnableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
+      }
+    }
   }
 
 //-----------------------------------------------------------------------------
@@ -831,6 +1011,61 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 
   return nerr;
 }
+
+//-----------------------------------------------------------------------------
+// LaneMask bits:
+//           0x1 : CAL lane 0
+//           0x2 : HV  lane 0
+//           0x4 : CAL lane 1
+//           0x8 : HV  lane 1
+//
+// origin: ~mu2etrk/test_stand/monica_002/var_link_config.sh from Mar 12 2024
+//
+//  -rwxr-xr-x  1 mu2etrk mu2e      1553 Mar 12 10:11 var_link_config.sh
+//-----------------------------------------------------------------------------
+  int DtcInterface::MonicaVarLinkConfig(int LinkMask, int LaneMask) {
+
+    if (LinkMask != 0) SetLinkMask(LinkMask);
+    ResetRoc();                                     // use fLinkMask
+
+    int lane_mask = 0x300 | LaneMask;
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // configure ROC to send patterns
+      }
+    }
+
+    int data_version = 1;
+    RocSetDataVersion(data_version); // Version --> R29
+    //                                      // not sure if this is needed, later...
+    // std::this_thread::sleep_for(std::chrono::microseconds(2000));
+    return 0;
+  }
+
+//-----------------------------------------------------------------------------
+// origin: test_stand/monica_002/var_pattern_config.sh from Feb 14 2024
+//
+//  -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
+//-----------------------------------------------------------------------------
+  int DtcInterface::MonicaVarPatternConfig(int LinkMask) {
+
+    if (LinkMask != 0) SetLinkMask(LinkMask);
+    ResetRoc();                                     // use fLinkMask
+
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
+      }
+    }
+
+    int version = 1;
+    RocSetDataVersion(version); // Version --> R29
+
+    return 0;
+  }
 
 };
 
