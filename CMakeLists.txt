@@ -17,7 +17,7 @@ cet_set_compiler_flags(
         DIAGS VIGILANT
         WERROR  
         NO_UNDEFINED
-        EXTRA_FLAGS -pedantic -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
+        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
 )
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env
@@ -28,13 +28,10 @@ find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
 find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 
- # XDAQ Extra setup
+# XDAQ Extra setup
 include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
-# link_directories($ENV{XDAQ_LIB})
 
 find_package(Offline           10.00.00 REQUIRED)
-# include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
-# link_directories   ($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )
@@ -44,8 +41,6 @@ find_package(Offline           10.00.00 REQUIRED)
 #cet_report_compiler_flags()
 
 #string(REGEX MATCHALL "[0-9][0-9]?[0-9]?" ART_VERSION_LIST "$ENV{ART_VERSION}")
-#list(GET ART_VERSION_LIST 0 ART_MAJOR_VERSION)
-#list(GET ART_VERSION_LIST 1 ART_MINOR_VERSION)
 #list(GET ART_VERSION_LIST 2 ART_PATCH_VERSION)
 
 #message("-DART_HEX_VERSION=0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION}")

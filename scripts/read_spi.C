@@ -1,12 +1,15 @@
 //
 #define __CLING__ 1
 
-#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+#include "dtcInterfaceLib/DTC.h"
+#include "dtcInterfaceLib/DTCSoftwareCFO.h"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+#include "print_buffer.C"
+#include "trk_utils.C"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 using namespace DTCLib;
+using namespace trkdaq;
 
 struct TrkSpiData_t {
   uint16_t  I3_3;
@@ -113,57 +116,56 @@ void parse_spi_data(uint16_t* dat, int nw) {
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 //-----------------------------------------------------------------------------
-void read_spi(int PcieAddress, int Link, int PrintParsedSPIData = 0, int NEvents=1, int ROCSleepTime = 2000) {
+void read_spi(int Link, int PcieAddr = -1, int PrintParsedSPIData = 0, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
   auto roc  = DTC_Link_ID(Link);
 
   int roc_mask = 1 << (4*Link);
-  DTC* dtc = new DTC(DTC_SimMode_NoCFO,PcieAddress,roc_mask,"");
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  monica_var_link_config(dtc,roc);
+  monica_var_link_config(roc,PcieAddr);
 
-  for (int ievent=0; ievent<NEvents; ievent++) {
-    monica_digi_clear     (dtc,roc);
+  monica_digi_clear     (roc,PcieAddr);
 //-----------------------------------------------------------------------------
 // after writing into reg 258, sleep for some time, 
 // then wait till reg 128 returns non-zero
 //-----------------------------------------------------------------------------
-    dtc->WriteROCRegister   (roc,258,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
+  DTC* dtc            = dtc_i->Dtc();
 
-    uint16_t u; 
-    while ((u = dtc->ReadROCRegister(roc,128,100)) == 0) {}; 
-    printf("reg:%03i val:0x%04x\n",128,u);
+  dtc->WriteROCRegister   (roc,258,0x0000,false,100);
+  std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
+
+  uint16_t u; 
+  while ((u = dtc->ReadROCRegister(roc,128,100)) == 0) {}; 
+  printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 // 2024-05-10: is r129 now returning the number of bytes ?
 //-----------------------------------------------------------------------------
-    int nb = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nb);
+  int nb = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nb);
 
-    int nw = nb-4;
+  int nw = nb-4;
 
-    printf("--- nw = %i\n",nw);
+  printf("--- nw = %i\n",nw);
 
-    vector<uint16_t> spi;
-    dtc->ReadROCBlock(spi,roc,258,nw,false,100);
+  vector<uint16_t> spi;
+  dtc->ReadROCBlock(spi,roc,258,nw,false,100);
 //-----------------------------------------------------------------------------
 // print SPI data in hex 
 //-----------------------------------------------------------------------------
+  if (PrintParsedSPIData > 0) {
     print_buffer(spi.data(),nw);
+  }
 //-----------------------------------------------------------------------------
 // parse SPI data and print them
 //-----------------------------------------------------------------------------
-    if (PrintParsedSPIData) {
-      parse_spi_data(spi.data(),nw);  // &spi[0]
-    }
+  if (PrintParsedSPIData > 1) {
+    parse_spi_data(spi.data(),nw);  // &spi[0]
+  }
 //-----------------------------------------------------------------------------
 // sleep
 //-----------------------------------------------------------------------------
     // std::this_thread::sleep_for(std::chrono::milliseconds(SPISleepTime));
-  }
-
-  delete dtc;
 }

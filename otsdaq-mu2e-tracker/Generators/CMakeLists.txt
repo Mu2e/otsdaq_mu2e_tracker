@@ -3,7 +3,8 @@ include(artdaq::commandableGenerator)
 
 cet_build_plugin(ToySim artdaq::commandableGenerator 
                  LIBRARIES REG 
-                 artdaq_core_demo::artdaq-core-demo_Overlays otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Generators_ToyHW
+                 artdaq_core_demo::artdaq-core-demo_Overlays
+                 otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Generators_ToyHW
 )
 
 add_subdirectory(ToyHW)
@@ -20,7 +21,8 @@ cet_build_plugin(TrackerVST artdaq::commandableGenerator
 )
 
 cet_build_plugin(TrackerBR artdaq::commandableGenerator 
-                 LIBRARIES REG 
+                 LIBRARIES REG
+                 otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Ui
                  artdaq_core_mu2e::artdaq-core-mu2e_Overlays 
                  canvas::canvas 
                  mu2e_pcie_utils::DTCInterface

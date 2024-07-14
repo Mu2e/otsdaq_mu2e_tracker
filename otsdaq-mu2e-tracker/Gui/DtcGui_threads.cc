@@ -5,10 +5,13 @@ using namespace trkdaq;
 using namespace std;
 
 #include "TThread.h"
+#include "TStopwatch.h"
 
 #include "tracemf.h"
 
 #define TRACE_NAME "DtcGui_threads"
+
+using namespace CFOLib;
 
 //-----------------------------------------------------------------------------
 void* DtcGui::ReaderThread(void* Context) {
@@ -24,8 +27,8 @@ void* DtcGui::ReaderThread(void* Context) {
   ThreadContext_t* tc      = &dtc_gui->fReaderTC;
   ulong            tstamp  = dtc_gui->fFirstTS->GetIntNumber();
 
-  DtcInterface*    dtc_i = tc->fDtel->fDTC_i;
-  DTC*             dtc   = dtc_i->Dtc();
+  DtcInterface*    dtc_i   = tc->fDtel->fDTC_i;
+  DTC*             dtc     = dtc_i->Dtc();
 
   int              print_freq = dtc_gui->fPrintFreq->GetIntNumber();
   
@@ -34,6 +37,9 @@ void* DtcGui::ReaderThread(void* Context) {
 // reset connected ROC's - event tag issue
 //-----------------------------------------------------------------------------
   ulong ew_tag        =  dtc_gui->fFirstTS->GetNumberEntry()->GetIntNumber();
+
+  TStopwatch timer;
+  timer.Start();
 
   while (tc->fStop == 0) {
 
@@ -73,21 +79,27 @@ void* DtcGui::ReaderThread(void* Context) {
           }
 
           if (tstamp % print_freq == 0) {
-              cout << Form(">>> ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                           tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+            if (tc->fPrintLevel > 1) {
+              float ct = timer.CpuTime();
+              float rt = timer.RealTime();
+              timer.Continue();
+              cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
+                           ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
                    << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+              if (tc->fPrintLevel > 10) {
+                dtc_i->PrintBuffer(dtc_block->GetRawBufferPointer(),dtc_block->GetSubEventByteCount()/2);
+              }
+            }
           }
           else if (dtc_gui->fValidate > 0) {
             if ((nerr > 0) or (tc->fPrintLevel > 1)) {
-              cout << Form(">>> ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                           tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                   << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
-            }
-          }
-          else if (tc->fPrintLevel > 1) {
-            cout << Form(">>> ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
-                         tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+            float ct = timer.CpuTime();
+            float rt = timer.RealTime();
+            timer.Continue();
+            cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
+                         ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
                  << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+            }
           }
         }
 
@@ -111,11 +123,9 @@ void* DtcGui::ReaderThread(void* Context) {
       break;
     }
   }
-                                        // do we really need this ?
-  // TThread::Lock();
-  // dtc_gui->fFirstTS->SetNumber(ew_tag);
-  // TThread::UnLock();
 
+  timer.Stop();
+  
   TLOG(TLVL_INFO) << "END , nerr_tot: " << nerr_tot << std::endl;
   return nullptr;
 }
@@ -132,15 +142,23 @@ void* DtcGui::EmuCfoThread(void* Context) {
   ulong nevents            = dtc_gui->fNEvents->GetIntNumber();
   ulong first_ts           = dtc_gui->fFirstTS->GetIntNumber();
   int   sleep_ms           = dtc_gui->fSleepMS->GetIntNumber();
-  
+
   printf("%s: START ew_length: %5i nevents: %10lu first_tx:%10lu sleep_ms:%5i\n",__func__,ew_length,nevents,first_ts,sleep_ms);
+
+  int t0 = first_ts/dtc_gui->fCfoPrintFreq;
+
+  dtc_i->RocConfigurePatternMode();
 
   while (tc->fStop == 0) {
     gSystem->Sleep(sleep_ms);
     
     dtc_i->InitEmulatedCFOReadoutMode(ew_length,nevents+1,first_ts);
     first_ts = first_ts+nevents;
-    printf("%s: first_ts: %10lu\n",__func__,first_ts);
+    int t1 = first_ts/dtc_gui->fCfoPrintFreq;
+    if (t1 > t0) {
+      printf("%s: first_ts: %10lu\n",__func__,first_ts);
+      t0 = t1;
+    }
   }
 
   printf("%s: END\n",__func__);
@@ -148,34 +166,49 @@ void* DtcGui::EmuCfoThread(void* Context) {
 }
 
 //-----------------------------------------------------------------------------
+// assume that the jitter attenuator is configured
+//-----------------------------------------------------------------------------
 void* DtcGui::ExtCfoThread(void* Context) {
   // int rc(0);
 
   DtcGui*          dtc_gui = (DtcGui*) Context;
+         
   ThreadContext_t* tc      = &dtc_gui->fExtCfoTC;
-  // DtcInterface*    dtc_i   = tc->fDtel->fDTC_i;
+  CfoInterface*    cfo_i   = dtc_gui->fCFO_i;
+  CFOLib::CFO*     cfo     = cfo_i->Cfo();
 
+  DtcTabElement_t* dtel = dtc_gui->fDtcTel+dtc_gui->fActiveDtcID;
+
+  printf("%s: START run_plan: %s \n",__func__,dtel->fRunPlan->GetText());
+
+  ulong first_ts = dtc_gui->fFirstTS->GetIntNumber();
+  int  sleep_ms  = dtc_gui->fSleepMS->GetIntNumber();
+  int  t0        = first_ts/dtc_gui->fCfoPrintFreq;
+  ulong nevents            = dtc_gui->fNEvents->GetIntNumber();
+
+  cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); 
+  cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);  
+  cfo->SoftReset();
+  
+  cfo_i->SetRunPlan(dtel->fRunPlan->GetText());
+  cfo->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
+  
   while (tc->fStop == 0) {
-    gSystem->Sleep(200);
-    
-    if (tc->fCmd) {
-      
-      TThread::Lock();
-      // TGButton* btn = (TGButton*) gTQSender;
-      // btn->ChangeBackground(dtc->fSubmittedColor);
-      TThread::UnLock();
+//-----------------------------------------------------------------------------
+// execute the run plan once
+//-----------------------------------------------------------------------------
+    cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+    cfo->SoftReset();
+    cfo->DisableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
 
-      // if (tc->fCmd == kSTART_NEW_RUN) {
-      //   rc = dtc->run();
-      // }
-//-----------------------------------------------------------------------------
-// mark command as executed
-// in case of failure, leave fCommand != 0
-//-----------------------------------------------------------------------------
-      TThread::Lock();
-      // dtc->fCommand = 0;
-      TThread::UnLock();
+    first_ts = first_ts+nevents;
+    int t1 = first_ts/dtc_gui->fCfoPrintFreq;
+    if (t1 > t0) {
+      printf("%s: first_ts: %10lu\n",__func__,first_ts);
+      t0 = t1;
     }
+    // sleep in the end
+    gSystem->Sleep(sleep_ms);
   }
   return nullptr;
 }
@@ -247,7 +280,7 @@ int DtcGui::manage_ext_cfo_thread() {
     fExtCfoTC.fRunning = 1;
     fExtCfoTC.fStop    = 0;
     fExtCfoTC.fCmd     = 0;
-    fExtCfoTC.fTp      = new TThread("cfo_thread",DtcGui::ExtCfoThread,this);
+    fExtCfoTC.fTp      = new TThread("ext_cfo_thread",DtcGui::ExtCfoThread,this);
     fExtCfoTC.fTp->Run();
     rc = 0;
     TThread::Lock();

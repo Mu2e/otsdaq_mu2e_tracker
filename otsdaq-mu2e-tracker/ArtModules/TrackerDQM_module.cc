@@ -5,6 +5,7 @@
 #define  TRACE_NAME "TrackerDQM"
 
 #include "TSystem.h"
+#include "TROOT.h"
 
 #include "otsdaq-mu2e-tracker/ArtModules/TrackerDQM_module.hh"
 //-----------------------------------------------------------------------------
@@ -303,17 +304,19 @@ void TrackerDQM::book_histograms(int RunNumber) {
 void TrackerDQM::beginJob() {
   TLOG(TLVL_INFO) << "starting";
 
-  int           tmp_argc(2);
+  //  int           tmp_argc(2);
+  int           tmp_argc(0);
   char**        tmp_argv;
 
-  tmp_argv    = new char*[2];
-  tmp_argv[0] = new char[100];
-  tmp_argv[1] = new char[100];
+  // tmp_argv    = new char*[2];
+  // tmp_argv[0] = new char[100];
+  // tmp_argv[1] = new char[100];
 
-  strcpy(tmp_argv[0],"-b");
-  strcpy(tmp_argv[1],Form("--web=server:%d",_port));
+  // strcpy(tmp_argv[0],"-b");
+  // strcpy(tmp_argv[1],Form("--web=server:%d",_port));
 
   _app = new TApplication("TrackerDQM", &tmp_argc, tmp_argv);
+  gROOT->SetWebDisplay(Form("server:%d",_port));
 
   // app->Run()
   // app_->Run(true);
