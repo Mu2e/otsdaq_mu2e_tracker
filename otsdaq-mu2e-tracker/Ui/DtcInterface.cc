@@ -21,7 +21,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  int gSleepTimeROC      =  2000;  // [us]
+  int gSleepTimeRocWrite =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -36,11 +36,18 @@ namespace trkdaq {
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
       
-    fPcieAddr = PcieAddr;
-    fLinkMask = LinkMask;
-    fDtc      = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,
-                        SkipInit,sim_file,uid);
+    TLOG(TLVL_INFO) << "CONSTRUCT DTC: pcie_addr:" << PcieAddr << " LinkMask:" << std::hex << LinkMask << std::dec
+                    << " SkipInit:" << SkipInit << std::endl;
+
+    fPcieAddr       = PcieAddr;
+    fLinkMask       = LinkMask;
+    fReadoutMode    = 0;                   // for now, assume patterns are the default
+    fSampleEdgeMode = 1;
+    fEmulatesCfo    = 0;
+    
+    fDtc      = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
     fDtc->ClearCFOEmulationMode();
+                                        // constructor performs soft reset
     fDtc->SoftReset();
   }
 
@@ -330,7 +337,7 @@ namespace trkdaq {
     fDtc->DisableCFOEmulation();
     fDtc->DisableAutogenDRP();
     
-    fDtc->SoftReset();                     // write bit 31
+    fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
 
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
@@ -338,6 +345,7 @@ namespace trkdaq {
     fDtc->SetCFOEmulationEventMode          (EWMode);
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
+    fDtc->EnableCFOEmulatorDRP();                                  // r_0x9100:bit_24 = 1
     fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
 
     fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1 
@@ -346,17 +354,31 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// example
+// write value 0x10800244 to register 0x9100 - disable emulated CFO bits
+// write value 0x00004141 to register 0x9114 - set link mask
+// DTC doesn' know about an external CFO, so it should only prepare itself to receive 
+// EVMs/HBs from the outside
+//-----------------------------------------------------------------------------
   void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
 
+    if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
+
+    fDtc->DisableCFOEmulation();
+    fDtc->DisableAutogenDRP  ();
+
+    fDtc->HardReset();                  // write 0x9100:bit_00=1
     fDtc->SoftReset();                  // write 0x9100:bit_31=1
+
+    
 
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
     fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_ALL,EnableClockMarkers);
 
-    fDtc->SetExternalCFOSampleEdgeMode(SampleEdgeMode);
+    fDtc->SetExternalCFOSampleEdgeMode(fSampleEdgeMode);
     
-    fDtc->EnableAutogenDRP();
+    fDtc->EnableAutogenDRP();           // r_0x9100:bit_23
 
     fDtc->ClearCFOEmulationMode();      // r_0x9100:bit_15 = 0
     // dtc->SetCFOEmulationMode();      // r_0x9100:bit_15 = 1
@@ -368,64 +390,20 @@ namespace trkdaq {
 }
 
 //-----------------------------------------------------------------------------
-//  Monica's digi_clear from Feb 2024 (~/test_stand/monica_002/digi_clear.sh)
-//  this will proceed in 3 steps each for HV and CAL DIGIs:
-// 1) pass TWI address and data toTWI controller (fiber is enabled by default)
-// 2) write TWI INIT high
-// 3) write TWI INIT low
+// fReadoutMode is supposed to be already set, don't reinitialize
+// fReadoutMode = 0: read ROC-renerated patterns
+//              = 1: read digis
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaDigiClear(int LinkMask) {
-    if (LinkMask != 0) SetLinkMask(LinkMask);
-
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (not used)                                           continue;
-//-----------------------------------------------------------------------------
-// link is active
-//-----------------------------------------------------------------------------
-      auto link = DTCLib::DTC_Link_ID(i);
-
-      // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
-      fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
-
-      // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
-      // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
-      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
-      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
-      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
-    
-
-      // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
-      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
-    
-      // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
-      // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
-      fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
-    
-      // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
-      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
-
-      // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
-      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+  void DtcInterface::InitRocReadoutMode() {
+    if (fReadoutMode == 0) {
+      MonicaVarPatternConfig();                  // readout ROC patterns
     }
-    return 0;
+    else {
+      MonicaVarLinkConfig();                      // readout ROC digis
+      MonicaDigiClear();                          //
+    }
   }
-
-
+    
 //-----------------------------------------------------------------------------
   int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel) {
     const char* keys[] = {
@@ -496,6 +474,8 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintStatus() {
     cout << Form("-----------------------------------------------------------------\n");
+    cout << Form(" PCIE address: %i link mask: 0x%04x SampleEdgeMode: %i ReadoutMode: %i\n",
+                 fPcieAddr,fLinkMask,fSampleEdgeMode,fReadoutMode);
     PrintRegister(0x9000,"DTC firmware link speed and design version ");
     PrintRegister(0x9004,"DTC version                                ");
     PrintRegister(0x9008,"Design status                              ");
@@ -576,7 +556,7 @@ namespace trkdaq {
     DTC_Link_ID rlink = DTC_ROC_Links[Link];
     
     fDtc->WriteROCRegister   (rlink,258,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
 
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
@@ -618,28 +598,14 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::RocConfigurePatternMode(int LinkMask) {
     MonicaVarPatternConfig(LinkMask);
-    // if (LinkMask != 0) fLinkMask = LinkMask;
-    
-    // ResetRoc();                                     // use fLinkMask
-
-    // for (int i=0; i<6; i++) {
-    //   int used = (fLinkMask >> 4*i) & 0x1;
-    //   if (used != 0) {
-    //     fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
-    //   }
-    // }
-
-    // int version = 1;
-    // RocSetDataVersion(version); // Version --> R29
-    // //                                      // not sure if this is needed, later...
-    // // std::this_thread::sleep_for(std::chrono::microseconds(2000));  
   }
 
 //-----------------------------------------------------------------------------
 // ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
+// by default, don't redefine the link mask
 //-----------------------------------------------------------------------------
-  void DtcInterface::ResetRoc(int LinkMask) {
-    if (LinkMask != 0) fLinkMask = LinkMask;
+  void DtcInterface::ResetRoc(int LinkMask, int SetNewMask) {
+    if ((LinkMask != 0) and (SetNewMask != 0)) fLinkMask = LinkMask;
     
     int tmo_ms(100);
     for (int i=0; i<6; i++) {
@@ -653,7 +619,9 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// Version --> R29 
+// Version --> R29
+// as thre is no point inhaving different ROCs with different data versions, assume
+// that specifying the mask means that we want it to be redefined
 //-----------------------------------------------------------------------------
   void DtcInterface::RocSetDataVersion(int Version, int LinkMask) {
     if (LinkMask != 0) fLinkMask = LinkMask;
@@ -665,6 +633,7 @@ namespace trkdaq {
         fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
       }
     }
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
   }
 
 //-----------------------------------------------------------------------------
@@ -780,7 +749,7 @@ namespace trkdaq {
       }
     }
 
-    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
 //-----------------------------------------------------------------------------
 // to simplify first steps, assume that in a file writing mode all events 
 // are read at once, so close the file on exit
@@ -809,8 +778,7 @@ namespace trkdaq {
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
   void DtcInterface::SetLinkMask(int Mask) {
-    if (Mask == 0) return;
-    fLinkMask = Mask;
+    if (Mask != 0) fLinkMask = Mask;
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
@@ -1013,6 +981,58 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 }
 
 //-----------------------------------------------------------------------------
+  int DtcInterface::MonicaDigiClear(int LinkMask) {
+    if (LinkMask != 0) SetLinkMask(LinkMask);
+
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (not used)                                           continue;
+//-----------------------------------------------------------------------------
+// link is active
+//-----------------------------------------------------------------------------
+      auto link = DTCLib::DTC_Link_ID(i);
+
+      // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
+      fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
+
+      // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+      // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
+      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
+      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
+      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+    
+
+      // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
+      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+    
+      // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+      // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
+      fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
+    
+      // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
+      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+
+      // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
+      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+      fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+    }
+    return 0;
+  }
+
+//-----------------------------------------------------------------------------
 // LaneMask bits:
 //           0x1 : CAL lane 0
 //           0x2 : HV  lane 0
@@ -1023,10 +1043,15 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 //
 //  -rwxr-xr-x  1 mu2etrk mu2e      1553 Mar 12 10:11 var_link_config.sh
 //-----------------------------------------------------------------------------
+// configure_ROC 'read' command should be followed by ROC reset
+//-----------------------------------------------------------------------------
+    // to be added 
+//-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarLinkConfig(int LinkMask, int LaneMask) {
 
+    fReadoutMode = 1;                            // 1: read digis
     if (LinkMask != 0) SetLinkMask(LinkMask);
-    ResetRoc();                                     // use fLinkMask
+    ResetRoc();                         // use fLinkMask
 
     int lane_mask = 0x300 | LaneMask;
     
@@ -1036,11 +1061,12 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // configure ROC to send patterns
       }
     }
+    
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
 
     int data_version = 1;
-    RocSetDataVersion(data_version); // Version --> R29
-    //                                      // not sure if this is needed, later...
-    // std::this_thread::sleep_for(std::chrono::microseconds(2000));
+    RocSetDataVersion(data_version);    // Version --> R29
+    //    ResetRoc();                         // use fLinkMask
     return 0;
   }
 
@@ -1051,6 +1077,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 //-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarPatternConfig(int LinkMask) {
 
+    fReadoutMode = 0;                                // 0 = read patterns
     if (LinkMask != 0) SetLinkMask(LinkMask);
     ResetRoc();                                     // use fLinkMask
 
@@ -1060,9 +1087,11 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
       }
     }
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
 
     int version = 1;
     RocSetDataVersion(version); // Version --> R29
+    //    ResetRoc();                                     // use fLinkMask
 
     return 0;
   }

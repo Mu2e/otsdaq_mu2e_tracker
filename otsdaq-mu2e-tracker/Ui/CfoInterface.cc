@@ -15,6 +15,9 @@
 #include "CfoInterface.hh"
 #include "cfoInterfaceLib/CFO_Compiler.hh"
 
+#include "TRACE/tracemf.h"
+#define  TRACE_NAME "CfoInterface"
+
 using namespace CFOLib;
 using namespace DTCLib;
 
@@ -34,7 +37,7 @@ namespace trkdaq {
 // init DTC mask, less 16 DTCs per tine chain
 //-----------------------------------------------------------------------------
     fDtcMask  = DtcMask;
-    int link_mask = 0;
+    //    int link_mask = 0;
     for (int i=0; i<8; i++) {
       int ndtcs = (fDtcMask >> 4*i) & 0xf;
       if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true ,true ),ndtcs);
@@ -59,7 +62,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
       if (getenv("CFOLIB_CFO") != nullptr) pcie_addr = atoi(getenv("CFOLIB_CFO"));
       else {
-        printf (" ERROR: PcieAddr < 0 and $CFOLIB_CFO is not defined. BAIL out\n");
+        TLOG(TLVL_ERROR) << Form("PcieAddr < 0 and $CFOLIB_CFO is not defined. BAIL out\n");
         return nullptr;
       }
     }
@@ -67,8 +70,8 @@ namespace trkdaq {
     if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,DtcMask,DTC_SimMode_NoCFO);
       
     if (fgInstance->PcieAddr() != pcie_addr) {
-      printf (" ERROR: CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
-              fgInstance->PcieAddr());
+      TLOG(TLVL_ERROR) << Form("CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
+                               fgInstance->PcieAddr());
       return nullptr;
     }
     else return fgInstance;
@@ -92,7 +95,7 @@ namespace trkdaq {
     
     fCfo->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) printf("ERROR in DtcInterface::%s: failed to setup JA\n",__func__); 
+    if (ok == 0) TLOG(TLVL_ERROR) << "failed to setup CFO JA\n" << std::endl; 
 
     return ok;
   }
@@ -107,6 +110,7 @@ namespace trkdaq {
   
 //-----------------------------------------------------------------------------
 // looks that it is only for the off-spill
+// [at this point] disabling the BeamOn mode may be an overkill, but...
 //-----------------------------------------------------------------------------
   void CfoInterface::LaunchRunPlan() {
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
@@ -135,21 +139,25 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
 
-    // fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-    // fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
     
+    fCfo->DisableLinks();                                    // Ryan says this is important
+    fCfo->DisableEmbeddedClockMarker();
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     fCfo->SoftReset();
 
     SetRunPlan   (RunPlan);
-
+    usleep(10);
+//-----------------------------------------------------------------------------
+// in the end, re-initialize the time chains defined by the DTC mask
+//-----------------------------------------------------------------------------
     if (DtcMask != 0) fDtcMask = DtcMask;
     for (int i=0; i<8; i++) {
       int ndtcs = (fDtcMask >> 4*i) & 0xf;
       if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
-      else           fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(true,true));
     }
-
-    fCfo->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    TLOG(TLVL_INFO) << Form("Done\n");
   }
 
 //-----------------------------------------------------------------------------
@@ -207,6 +215,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void CfoInterface::SetRunPlan(const char* Fn) {
 
+    TLOG(TLVL_INFO) << Form("START, run plan: %s\n",Fn);
     std::ifstream file(Fn, std::ios::binary | std::ios::ate);
 
     // read binary file
@@ -223,6 +232,8 @@ namespace trkdaq {
     dev->begin_dcs_transaction();
     dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
     dev->end_dcs_transaction(); // 
+
+    TLOG(TLVL_INFO) << Form("DONE\n");
   }
 
 };

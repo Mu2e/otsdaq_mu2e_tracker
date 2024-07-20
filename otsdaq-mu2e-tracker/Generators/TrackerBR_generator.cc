@@ -64,7 +64,6 @@ namespace mu2e {
     std::string                           _tfmHost;                // used to send xmlrpc messages to
 
     int                                   _linkMask;
-    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
                                                                    // 101:simulate data internally, DTC not used; default:0
 
     int                                   _readData;               // 1: read data, 0: save empty fragment
@@ -73,6 +72,7 @@ namespace mu2e {
     int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
 
     trkdaq::DtcInterface*                 _dtc_i;
     DTCLib::DTC*                          _dtc;

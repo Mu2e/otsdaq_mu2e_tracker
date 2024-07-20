@@ -465,7 +465,8 @@ readDeviceID
 ('DRAC ROC ID #', '7a7fb')
 ** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
-* test stands TS0, TS1, TS2                                                              
+* test stands TS0, TS1, TS2
+** last update <2024-07-15 Mon>
 ** powering up the test stands (Vadim):                                      
   https://docs.google.com/document/d/1theA9NIRA5XeUUPVuFGVhU7NddPljgaGznR9aMu-Fv8/edit?usp=sharing
 #+begin_src                           
@@ -504,6 +505,17 @@ readDeviceID
  'DeviceSerial': '0x805d653a1e62bc2ea2257c13224ecbef'}
 
 ('DRAC ROC ID #', '805d6')
+* DRAC Tower6
+- new PI ...  mu2e@ ... (local)
+  - window 1: cd ~/LVHVBox/GServer/build
+              sudo ~/Server
+              response: Pico 1 will be used
+  - window 2: cd ~/LVHVBox/Client
+              python3 Client.py
+    - Commands:
+      - powerOn  1       # [or 2 or 3 ... 0=all)
+      - powerOff 1       # same semantics
+      - readMonI6 .. readMonI48 .. readMonV6 .. readMonV48
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file (Monica)                   
 <2023-12-13 Wed> Monica

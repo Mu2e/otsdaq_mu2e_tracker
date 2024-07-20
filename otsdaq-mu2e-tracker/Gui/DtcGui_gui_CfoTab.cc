@@ -161,6 +161,34 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
+// column 2 raw 5 : enable beam off
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"EnableBmOff",-1,TGTextButton::GetDefaultGC()(),
+                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "cfo_enable_beam_off()");
+  //  tb->ChangeBackground(fValidatedColor);
+//-----------------------------------------------------------------------------
+// column 2 raw 6 : disable beam off
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"DisableBmOff",-1,TGTextButton::GetDefaultGC()(),
+                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x0+dx+10,y0+(dy+5)*5,dx2,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "cfo_disable_beam_off()");
+  //  tb->ChangeBackground(fValidatedColor);
+//-----------------------------------------------------------------------------
 // column 3 row 1: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
   int dx3 = 100;
@@ -225,23 +253,22 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
   int c4_dx = x0+dx+10+dx2+10+dx3+10;
 
-  lab = new TGLabel(group,"CFO link");
-  group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  lab->SetTextJustify(36);
-  lab->SetMargins(0,0,0,0);
-  lab->SetWrapLength(-1);
-  lab->MoveResize(c4_dx,y0,dx3,dy);
+  // lab = new TGLabel(group,"CFO link");
+  // group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  // lab->SetTextJustify(36);
+  // lab->SetMargins(0,0,0,0);
+  // lab->SetWrapLength(-1);
+  // lab->MoveResize(c4_dx,y0,dx3,dy);
   //  DtcTel.fCfoLink = lab;
 //-----------------------------------------------------------------------------
 // column 4 row 2: label: N(DTCs) in the timing chain 
 //-----------------------------------------------------------------------------
-  lab = new TGLabel(group,"N(DTCs)");
+  lab = new TGLabel(group,"DTC mask)");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   lab->MoveResize(c4_dx,y0+(dy+5),dx3,dy);
-  //  DtcTel.fNDtcs = lab;
 //-----------------------------------------------------------------------------
 // column 4 row 3: label: run plan
 //-----------------------------------------------------------------------------
@@ -255,26 +282,27 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 // column 5 row 1: input field: CFO timing chain link 
 //-----------------------------------------------------------------------------
   int c5_dx = c4_dx+dx3+10;
+  int dx5   = 150;
 
+  // rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
+  //                      ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
+  // group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  // rr->SetMaxLength(4096);
+  // rr->SetAlignment(kTextLeft);
+  // rr->SetText("1");
+  // rr->MoveResize(c5_dx,y0,dx5,dy);
+  // DtcTel.fTimeChainLink = rr;
+//-----------------------------------------------------------------------------
+// column 5 row 2: input field: DTC mask
+//-----------------------------------------------------------------------------
   rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                        ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
-  rr->SetText("1");
-  rr->MoveResize(c5_dx,y0,dx3,dy);
-  DtcTel.fTimeChainLink = rr;
-//-----------------------------------------------------------------------------
-// column 5 row 2: input field: N(DTCs)
-//-----------------------------------------------------------------------------
-  rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
-                       ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
-  group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  rr->SetMaxLength(4096);
-  rr->SetAlignment(kTextLeft);
-  rr->SetText("1");
-  rr->MoveResize(c5_dx,y0+(dy+5),dx3,dy);
-  DtcTel.fNDtcs = rr;
+  rr->SetText("0x00000001");
+  rr->MoveResize(c5_dx,y0+(dy+5),dx5,dy);
+  DtcTel.fDtcMask = rr;
 //-----------------------------------------------------------------------------
 // column 5 row 3: input field: N(DTCs)
 //-----------------------------------------------------------------------------
@@ -284,7 +312,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
   rr->SetText("run_066.bin");
-  rr->MoveResize(c5_dx,y0+2*(dy+5),dx3,dy);
+  rr->MoveResize(c5_dx,y0+2*(dy+5),dx5,dy);
   DtcTel.fRunPlan = rr;
 //-----------------------------------------------------------------------------
 // column (4+5) raw 4 : "Init Run Plan" for given CFO time link and N(DTCs
@@ -297,7 +325,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
   
-  tb->MoveResize(c4_dx,y0+3*(dy+5),dx3+10+dx3,dy);
+  tb->MoveResize(c4_dx,y0+3*(dy+5),dx3+10+dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_init_readout()");
   // tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------

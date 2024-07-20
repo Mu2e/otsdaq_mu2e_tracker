@@ -42,6 +42,8 @@ if(DictCompileOptions)
 	set_target_properties(${dict_name} PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
 endif()
 
+cet_add_compiler_flags("-g -O0")
+
 # if($ENV{BUILD_ROOT_INTERFACE})
 #   message(-- otsdaq_mu2e_tracker/otsdaq-mu2e-tracker/gui::BUILD_ROOT_INTERFACE=$ENV{BUILD_ROOT_INTERFACE})
 #   add_subdirectory(root)
