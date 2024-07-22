@@ -49,7 +49,7 @@ namespace trkdaq {
     int          EmulatesCfo() { return fEmulatesCfo; }
 
 
-    int          MonicaDigiClear(int LinkMask);
+    int          MonicaDigiClear(int LinkMask=0);
 
                                         // EWLength - in 25 ns ticks
     
