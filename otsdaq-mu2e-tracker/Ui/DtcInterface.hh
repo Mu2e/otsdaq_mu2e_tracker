@@ -9,10 +9,14 @@
 
 #define __CLING__ 1
 
+#include <string>
 #include <vector>
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 
+#include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
+#include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
 
 namespace trkdaq {
@@ -98,6 +102,9 @@ namespace trkdaq {
     void         SetBit(int Register, int Bit, int Value);
 
     void         SetLinkMask(int Mask);
+
+    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
+    void         FindAlignments(bool print=false, int LinkMask=0);
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
