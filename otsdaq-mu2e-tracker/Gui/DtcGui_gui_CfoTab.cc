@@ -98,7 +98,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0,y0+(dy+5)*3,dx,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "dtc_soft_reset()");
+  tb->Connect("Pressed()", "DtcGui", this, "cfo_soft_reset()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 1 raw 5: hard reset 
@@ -283,15 +283,6 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
   int c5_dx = c4_dx+dx3+10;
   int dx5   = 150;
-
-  // rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
-  //                      ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
-  // group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  // rr->SetMaxLength(4096);
-  // rr->SetAlignment(kTextLeft);
-  // rr->SetText("1");
-  // rr->MoveResize(c5_dx,y0,dx5,dy);
-  // DtcTel.fTimeChainLink = rr;
 //-----------------------------------------------------------------------------
 // column 5 row 2: input field: DTC mask
 //-----------------------------------------------------------------------------
@@ -311,7 +302,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
-  rr->SetText("run_066.bin");
+  rr->SetText("run_00001_hz.bin");
   rr->MoveResize(c5_dx,y0+2*(dy+5),dx5,dy);
   DtcTel.fRunPlan = rr;
 //-----------------------------------------------------------------------------
@@ -326,7 +317,9 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(c4_dx,y0+3*(dy+5),dx3+10+dx5,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "cfo_init_readout()");
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
+  TString* cmd = new TString("cfo_init_readout");
+  tb->SetUserData(cmd);
   // tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // resize the DTC group panel
