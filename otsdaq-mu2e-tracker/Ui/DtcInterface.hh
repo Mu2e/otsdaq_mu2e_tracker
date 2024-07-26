@@ -29,7 +29,7 @@ namespace trkdaq {
     int                  fPcieAddr;
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
-    int                  fReadoutMode;    // 0: patterns 1:data
+    int                  fReadoutMode;    // 0: patterns 1:digis
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulatesCfo;    // 1: this DTC operated in the emulated CFO mode
 //-----------------------------------------------------------------------------
@@ -52,9 +52,6 @@ namespace trkdaq {
 
     int          EmulatesCfo() { return fEmulatesCfo; }
 
-
-    int          MonicaDigiClear(int LinkMask=0);
-
                                         // EWLength - in 25 ns ticks
     
     void         InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag);
@@ -62,8 +59,10 @@ namespace trkdaq {
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
                                         //                2: auto
+                                        // -1 means use the pre-fetched one
 
-    void         InitExternalCFOReadoutMode(int SampleEdgeMode);
+    void         InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+    void         InitRocReadoutMode();
     
     int          GetLinkMask() { return fLinkMask; }
 
@@ -89,7 +88,7 @@ namespace trkdaq {
 // ROC functions
 // if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
-    void         ResetRoc               (int LinkMask = 0);
+    void         ResetRoc               (int LinkMask = 0, int SetNewMask = 0);
 
     int          RocReadoutMode         ()  { return fReadoutMode; }
     
@@ -118,9 +117,12 @@ namespace trkdaq {
 // return number of found errors
 //-----------------------------------------------------------------------------
     int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel);
-
 //-----------------------------------------------------------------------------
-// ROC has 4 lanes: 2 CAl lanes (0x5) and 2 HV lanes (0xa)
+// reset digitizers .. to be called in the beginning of each event 
+//-----------------------------------------------------------------------------
+    int          MonicaDigiClear(int LinkMask = 0);
+//-----------------------------------------------------------------------------
+// ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
     int          MonicaVarLinkConfig   (int LinkMask = 0, int LaneMask = 0xf);
 //-----------------------------------------------------------------------------

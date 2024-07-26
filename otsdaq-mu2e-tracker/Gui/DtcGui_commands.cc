@@ -1,9 +1,13 @@
-
+/////////////////////////////////////////////////////////////////////////////
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
+
+#include "TRACE/tracemf.h"
+#define  TRACE_NAME "DtcGui_commands"
+
 
 using namespace trkdaq;
 using namespace std;
-
+using namespace CFOLib;
 //-----------------------------------------------------------------------------
 void DtcGui::ExecuteCommand(const char* Cmd, int PrintOnly) {
 
@@ -63,7 +67,7 @@ void DtcGui::print_dtc_status() {
       dtel->fCFO_i->PrintStatus();
     }
     catch (...) {
-      *fTextView << Form("ERROR : coudn't read CFO") << std::endl;
+      *fTextView << Form("ERROR : coudn't read CFO\n");
     }
   }
   else if (dtel->fData->fName == "DTC") {
@@ -98,30 +102,73 @@ void DtcGui::cfo_init_readout() {
   ostringstream strCout;
   cout.rdbuf(strCout.rdbuf());
 
-  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui:: : " << __func__ << ": START" << std::endl;
+  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui::" << __func__ << ": START" << std::endl;
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
 
   if (dtel->fData->fName == "CFO") {
+    TLOG(TLVL_INFO) << "under CFO" << std::endl;
     try         { 
 //-----------------------------------------------------------------------------
 // extract parameters, assume only one time chain
+// also, assume that run plans are stored in ~/test_stand/cfo_run_plans directory
 //-----------------------------------------------------------------------------
+      printf("%s: before dtc_mask\n",__func__);
+      std::string text = dtel->fDtcMask->GetText();
+      TLOG(TLVL_INFO) << Form("before dtc_mask: mask=%s\n",text.data());
       uint dtc_mask;
-      sscanf(dtel->fTimeChainLink->GetText(),"%x",&dtc_mask);
+      sscanf(text.data(),"0x%08x",&dtc_mask);
 
-      const char* run_plan = dtel->fRunPlan->GetText();
+      TLOG(TLVL_INFO) << Form("before runplan\n");
+      std::string  run_plan = Form("~/test_stand/cfo_run_plans/%s",dtel->fRunPlan->GetText());
+      TLOG(TLVL_INFO) << "run plan:" << run_plan;
 
       if (fDebugLevel > 0) {
-        *fTextView << Form("run_plan, dtc_mask: %s 0x%08x",run_plan,dtc_mask) << std::endl; 
+        *fTextView << Form("run_plan, dtc_mask: %s 0x%08x\n",run_plan.data(),dtc_mask); 
       }
 
-      dtel->fCFO_i->InitReadout(run_plan,dtc_mask); 
+      dtel->fCFO_i->InitReadout(run_plan.data(),dtc_mask);
     }
-    catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT") << std::endl; }
+    catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT\n"); }
   }
 
   TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ << ": DONE " << std::endl;
+  fTextView->ShowBottom();
+                                        // restore cout
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+//-----------------------------------------------------------------------------
+void DtcGui::cfo_disable_beam_off() {
+                                        // redirect cout
+  streambuf* oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui::" << __func__ << ": START" << std::endl;
+
+  try         { fCFO_i->Cfo()->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL); }
+  catch (...) { *fTextView << Form("ERROR : DtcGui::cfo_disable_beam_off failed\n"); }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("DtcGui::%s: DONE\n",__func__);
+  fTextView->ShowBottom();
+                                        // restore cout
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+//-----------------------------------------------------------------------------
+void DtcGui::cfo_enable_beam_off() {
+                                        // redirect cout
+  streambuf* oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui::" << __func__ << ": START" << std::endl;
+
+  try         { fCFO_i->Cfo()->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL); }
+  catch (...) { *fTextView << Form("ERROR : DtcGui::cfo_enable_beam_off failed\n"); }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("DtcGui::%s: DONE\n",__func__);
   fTextView->ShowBottom();
                                         // restore cout
   cout.rdbuf( oldCoutStreamBuf );
@@ -134,12 +181,12 @@ void DtcGui::cfo_launch_run_plan() {
   ostringstream strCout;
   cout.rdbuf(strCout.rdbuf());
 
-  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui:: : " << __func__ << ": START" << std::endl;
+  TDatime x1;  *fTextView << x1.AsSQLString() << Form("DtcGui::%s: START\n",__func__);
 
   try         { fCFO_i->LaunchRunPlan(); }
   catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT") << std::endl; }
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ << ": DONE " << std::endl;
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("DtcGui::%s: DONE\n",__func__);
   fTextView->ShowBottom();
                                         // restore cout
   cout.rdbuf( oldCoutStreamBuf );
@@ -309,7 +356,7 @@ void DtcGui::dtc_hard_reset() {
   if (dtel->fData->fName == "DTC") {
     try         { 
       *fTextView << "resetting the DTC" << std::endl; 
-      dtel->fDTC_i->Dtc()->SoftReset();
+      dtel->fDTC_i->Dtc()->HardReset();
       *fTextView << "done resetting the DTC" << std::endl; 
     }
     catch (...) { 
@@ -350,9 +397,8 @@ void DtcGui::init_external_cfo_readout_mode() {
   if (dtel->fData->fName == "DTC") {
     try         { 
       dtel->fDTC_i->Dtc()->SoftReset();
-      dtel->fDTC_i->InitExternalCFOReadoutMode(0);
-      int linkmask = dtel->fDTC_i->fLinkMask;
-      dtel->fDTC_i->RocConfigurePatternMode(linkmask);
+      dtel->fDTC_i->InitExternalCFOReadoutMode();
+      dtel->fDTC_i->RocConfigurePatternMode();
     }
     catch (...) { *fTextView << Form("ERROR : filed  BAIL OUT") << std::endl; }
   }
