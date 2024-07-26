@@ -10,6 +10,7 @@
 #define __CLING__ 1
 
 #include "iostream"
+#include "vector"
 #include "DtcInterface.hh"
 #include "TString.h"
 
@@ -789,6 +790,79 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// align ROC fpga/adc signals, and optionally print summary table
+//-----------------------------------------------------------------------------
+  Alignment DtcInterface::FindAlignment(DTC_Link_ID Link) {
+    // write parameters into roc to initiate routine
+    vector<roc_data_t> writeable = {
+      4,                             // eye-monitor width
+      0,                             // initial adc phase
+      1,                             // flag to check adc patterns
+      static_cast<uint16_t>(-1),     // for channel remapping; unused
+      static_cast<uint16_t>(-1),     // for channel remapping; unused
+      0xFFFF,                        // bitmask for channels  0 - 15
+      0xFFFF,                        // bitmask for channels 16 - 31
+      0xFFFF,                        // bitmask for channels 32 - 47
+      0xFFFF,                        // bitmask for channels 48 - 63
+      0xFFFF,                        // bitmask for channels 64 - 79
+      0xFFFF,                        // bitmask for channels 80 - 95
+    };
+
+    // register 264: find alignment routine
+    bool increment_address = false; // read via fifo
+    fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
+    // then, wait till reg 128 returns non-zero
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000){
+      // idle
+    }
+
+    // register 129: number of words to read
+    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 100));
+    nwords -= 4; // account for low-level headers already consumed on-chip
+    vector<roc_data_t> returned;
+    // register 264: find alignment routine
+    fDtc->ReadROCBlock(returned, Link, 264, nwords, false, 10000);
+    if (returned.size() != nwords){
+      std::string msg = "Malformed block read";
+      msg += " expected ";
+      msg += std::to_string(nwords);
+      msg += " words, received ";
+      msg += std::to_string(returned.size());
+      msg += " words";
+      throw cet::exception("DtcInterface::FindAlignment") << msg;
+    }
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    auto rv = Alignment(returned);
+    return rv;
+  }
+
+//-----------------------------------------------------------------------------
+// align ROC fpga/adc signals, and optionally print summary table
+//-----------------------------------------------------------------------------
+  void DtcInterface::FindAlignments(bool print, int LinkMask) {
+    // reset link mask if desired
+    if (LinkMask != 0) fLinkMask = LinkMask;
+
+    for (int i = 0 ; i < 6 ; i++){
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        auto link = DTC_Link_ID(i);
+        auto alignment = FindAlignment(link);
+        if (print) {
+          print_legacy_table(alignment);
+        }
+      }
+    }
+  }
+
+//-----------------------------------------------------------------------------
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
   void DtcInterface::SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge,
@@ -804,7 +878,7 @@ namespace trkdaq {
 // ForceCFOEdge = 0 : force use of the rising  edge
 //              = 1 : force use of the falling edge
 //              = 2 : auto
-    
+
     fDtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
 
     if (EnableCFORxTx == 0) {

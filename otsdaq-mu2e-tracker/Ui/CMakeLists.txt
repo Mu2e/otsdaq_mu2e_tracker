@@ -6,9 +6,11 @@ cet_make_library(
         SOURCE          
         DtcInterface.cc CfoInterface.cc
         LIBRARIES PUBLIC
+	otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_ParseAlignment
         artdaq::DAQdata
         artdaq_core::artdaq-core_Data
         # artdaq-core-demo::artdaq-core-demo_Overlays
+        cetlib_except
         mu2e_pcie_utils::CFOInterface
         mu2e_pcie_utils::DTCInterface
         ROOT::Core
