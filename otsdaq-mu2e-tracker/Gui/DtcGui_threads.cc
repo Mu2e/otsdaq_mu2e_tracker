@@ -14,6 +14,9 @@ using namespace std;
 using namespace CFOLib;
 
 //-----------------------------------------------------------------------------
+// because of the DTC initializations, to be started earlier than the CFO thread
+// take all initializations out
+//-----------------------------------------------------------------------------
 void* DtcGui::ReaderThread(void* Context) {
   // int rc(0);
 
@@ -41,18 +44,9 @@ void* DtcGui::ReaderThread(void* Context) {
   TStopwatch timer;
   timer.Start();
 
-  if (dtc_i->fReadoutMode == 0) {
-    TLOG(TLVL_INFO) << Form("initialize PATTERN readout mode\n");
-    dtc_i->MonicaVarPatternConfig();
-  }
-  else {
-    TLOG(TLVL_INFO) << Form("initialize DIGI readout mode\n");
-    dtc_i->MonicaVarLinkConfig();
-    dtc_i->MonicaDigiClear();
-  }
-
-  dtc->SoftReset();
-  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+  // dtc->SoftReset();
+  // dtc_i->InitRocReadoutMode();
+  //  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
   
   while (tc->fStop == 0) {
     if (tc->fPause != 0) {
@@ -156,19 +150,28 @@ void* DtcGui::EmuCfoThread(void* Context) {
   ThreadContext_t* tc      = &dtc_gui->fEmuCfoTC;
   DtcInterface*    dtc_i   = tc->fDtel->fDTC_i;
 
+  if (dtc_i->EmulateCfo() == 0) {
+    TLOG(TLVL_ERROR) << "DtcInterface::fEmulateCfo = 0, cant run in emulated mode" << std::endl;
+    return;
+  }
+
   int   ew_length          = dtc_gui->fEWLength->GetIntNumber();
   ulong nevents            = dtc_gui->fNEvents->GetIntNumber();
   ulong first_ts           = dtc_gui->fFirstTS->GetIntNumber();
   int   sleep_ms           = dtc_gui->fSleepMS->GetIntNumber();
 
-  printf("%s: START ew_length: %5i nevents: %10lu first_tx:%10lu sleep_ms:%5i\n",__func__,ew_length,nevents,first_ts,sleep_ms);
+  TLOG(TLVL_INFO) << Form("%s: START ew_length: %5i nevents: %10lu first_tx:%10lu sleep_ms:%5i\n",
+                          __func__,ew_length,nevents,first_ts,sleep_ms);
 
   int t0 = first_ts/dtc_gui->fCfoPrintFreq;
 
+  dtc_i->InitReadout();
+  
   while (tc->fStop == 0) {
     gSystem->Sleep(sleep_ms);
     
-    dtc_i->InitEmulatedCFOReadoutMode(ew_length,nevents+1,first_ts);
+    dtc_i->LaunchRunPlanEmulatedCfo(ew_length,nevents+1,first_ts);
+    
     first_ts = first_ts+nevents;
     int t1 = first_ts/dtc_gui->fCfoPrintFreq;
     if (t1 > t0) {
@@ -177,7 +180,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
     }
   }
 
-  printf("%s: END\n",__func__);
+  TLOG(TLVL_INFO) << "END" << std::endl;
   return nullptr;
 }
 
@@ -200,14 +203,15 @@ void* DtcGui::ExtCfoThread(void* Context) {
   int          dtc_mask;
   sscanf(dtel->fDtcMask->GetText(),"0x%x",&dtc_mask);
 
-  TLOG(TLVL_INFO) << Form("START run_plan: %s DTC mask = 0x%08x\n",run_plan.data(),dtc_mask);
+  TLOG(TLVL_INFO) << Form("START : InitReadout run_plan: %s DTC mask = 0x%08x\n",run_plan.data(),dtc_mask);
 
   cfo_i->InitReadout(run_plan.data(),dtc_mask);
 //-----------------------------------------------------------------------------
 // execute the run plan once, assume it can be infinite
 //-----------------------------------------------------------------------------
   TLOG(TLVL_INFO) << "START executing run plan " << run_plan << std::endl;
-  cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+  // cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+  cfo_i->LaunchRunPlan();
 //-----------------------------------------------------------------------------
 // execute the run plan once and wait after that
 //-----------------------------------------------------------------------------

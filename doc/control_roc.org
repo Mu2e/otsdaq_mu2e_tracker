@@ -25,7 +25,7 @@
     - measure_thresholds -c 91 : channel 91
 ** pulser_on -c 3 -d 10000 -y 200                                            
     -c 3 : (go by 8) : pulse channels 3,11,19,27,35,43,51,59,67,75,83 91
-** readDeviceID                                                              
+** [#B] readDeviceID                                                              
 #+begin_src 
 readDeviceID
 (13, 52)

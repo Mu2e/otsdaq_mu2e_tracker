@@ -141,94 +141,33 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 // EnableClockMarkers: set to 0
 // EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-void dtc_init_emulated_cfo_mode(DTC* dtc, int EWLength, int NMarkers, int FirstEWTag) { 
+void dtc_init_emulated_cfo_readout_mode(int PcieAddr = -1) { 
   //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
-  
-
-  int EWMode             = 1;
-  int EnableClockMarkers = 0;
-  int EnableAutogenDRP   = 1;
-
-	dtc->DisableCFOEmulation();
-	dtc->DisableAutogenDRP();
-
-  dtc->SoftReset();                     // write bit 31
-
-  dtc->SetCFOEmulationEventWindowInterval(EWLength);  
-  dtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-  dtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag(FirstEWTag));
-  dtc->SetCFOEmulationEventMode          (EWMode);
-  dtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
-
-  dtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
-  dtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1 
-  dtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1 
-
-  dtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
-}
-
-//-----------------------------------------------------------------------------
-// write value 0x10800244 to register 0x9100
-// write value 0x00004141 to register 0x9114
-// write value 0x10800244 to register 0x9100
-
-// DTC doesn' know about an external CFO, so it should only prepare itself to receive 
-// EVMs/HBs from the outside
-//-----------------------------------------------------------------------------
-void dtc_init_external_cfo_mode(DTC* dtc) { 
-  //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
-
-  // int EnableAutogenDRP   = 1;
-
-  dtc->DisableCFOEmulation  ();
-  dtc->DisableAutogenDRP();
-
-  // dtc->HardReset();                        // write bit 0
-  // dtc->SoftReset();                     // write bit 31
-
-  //  int EWMode             = 1;
-  // dtc->SetCFOEmulationEventMode          (EWMode);
-
-  int EnableClockMarkers = 0;
-  dtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_0,EnableClockMarkers);
-
-  dtc->SetExternalCFOSampleEdgeMode      (daq_scripts::EdgeMode);
-
-  dtc->EnableAutogenDRP();
-
-  dtc->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
-  // dtc->SetCFOEmulationMode();        // r_0x9100:bit_15 = 1
-
-  // dtc->DisableCFOEmulation();
-  // dtc->EnableCFOEmulation ();        // r_0x9100:bit_30 = 1 
-
-  dtc->EnableReceiveCFOLink ();         // r_0x9114:bit_14 = 1
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->InitEmulatedCFOReadoutMode();
 }
 
 //-----------------------------------------------------------------------------
 // to be executed on each node with the DTC
 // 'dtc_init_link_mask' defines node-specific link mask
 //-----------------------------------------------------------------------------
-void dtc_init_external_cfo_readout_mode() {
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);
-
-  dtc_i->Dtc()->SoftReset();
+void dtc_init_external_cfo_readout_mode(int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
-  //  dtc_i->fDtc->SetCFOEmulationMode();
 }
 
 //-----------------------------------------------------------------------------
-int dtc_configure_roc_pattern_mode(int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);         // assume already initialized
-  dtc_i->RocConfigurePatternMode();                               // readout ROC patterns
-  return 0;
+void dtc_init_readout(int EmulateCfo, int RocReadoutMode, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->InitReadout(EmulateCfo,RocReadoutMode);
 }
 
 //-----------------------------------------------------------------------------
-int dtc_init_external_readout(int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);         // assume already initialized
-  dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
+int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);    // assume already initialized
+  dtc_i->SetRocReadoutMode(ReadoutMode);                     // 0:patterns 1:digis
+  dtc_i->InitRocReadoutMode();
   return 0;
 }
 
@@ -473,8 +412,9 @@ void dtc_val_test_emulated_cfo(int NEvents=3, int PrintLevel = 1, uint64_t First
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr); // assume already initialized
   dtc_i->RocConfigurePatternMode();
                                         // 68x25ns = 1700 ns
-  
-  dtc_i->InitEmulatedCFOReadoutMode(68,NEvents+1,FirstTS);
+  dtc_i->InitEmulatedCFOReadoutMode();
+
+  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS);
 
   dtc_read_and_validate(NEvents,PrintLevel,FirstTS,PcieAddr);
 
@@ -490,14 +430,19 @@ void dtc_buffer_test_emulated_cfo_patterns(int NEvents=3, int PrintLevel = 1, ui
   int pcie_addr(-1);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
-  dtc_i->SetRocReadoutMode(0);
-  dtc_i->InitRocReadoutMode();                       // readout ROC patterns
+
+  int emulate_cfo      = 1;
+  int roc_readout_mode = 0;
+  dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
+
+  // dtc_i->SetRocReadoutMode(0);
+  // dtc_i->InitRocReadoutMode();                       // readout ROC patterns
 
                                                      // 68x25ns = 1700 ns
 
                                                      // this call actually sends EWMs
   
-  dtc_i->InitEmulatedCFOReadoutMode(daq_scripts::EWLength,NEvents+1,0);
+  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS);
 
                                                     // in emulated mode, always read after 
 
@@ -515,33 +460,39 @@ void dtc_buffer_test_emulated_cfo_patterns(int NEvents=3, int PrintLevel = 1, ui
 void dtc_buffer_test_emulated_cfo_new(int NEvents=3, int Mode = 0x1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
   int pcie_addr(-1);                                 // assume initialized
   
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
+  DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized
 
   int print_level      = (Mode >>  0) & 0xff;
   int validation_level = (Mode >>  8) & 0xff;
   int roc_readout_mode = (Mode >> 16) & 0xff;
 
-  dtc_i->SetRocReadoutMode(roc_readout_mode);
-  dtc_i->InitRocReadoutMode();
-                                                     // 68x25ns = 1700 ns
-                                                     // this call actually sends EWMs
+  //  dtc_configure_roc_readout_mode(roc_readout_mode,pcie_addr);
   
-  dtc_i->InitEmulatedCFOReadoutMode(daq_scripts::EWLength,NEvents+1,0);
-
-                                                    // in emulated mode, always read after 
+                                                     // 68x25ns = 1700 ns
+                                                     // this call doesn't send EWMs
+  int emulate_cfo = 1;
+  dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
+  // dtc_i->InitEmulatedCFOReadoutMode();
+                                                    // in emulated mode, always read after
+  
+  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS); // 
 
   dtc_read_subevents(FirstTS,print_level,validation_level,pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------
 void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
-                                  int         PrintData = 1             ,
+                                  int         Mode      = 0x1           ,
                                   uint        DtcMask   = 0x1           ,
                                   const char* OutputFn  = nullptr       ) {
   int pcie_addr = -1; // assume initialized
 
-  dtc_init_external_readout(pcie_addr);
-  dtc_configure_roc_pattern_mode(pcie_addr);
+  int print_level      = (Mode >>  0) & 0xff;
+  int validation_level = (Mode >>  8) & 0xff;
+  int roc_readout_mode = (Mode >> 16) & 0xff;
+
+  int emulate_cfo = 0;
+  dtc_init_readout(emulate_cfo,roc_readout_mode,pcie_addr);
 //-----------------------------------------------------------------------------
 // for now, assume only one time chain, but provide for future
 //-----------------------------------------------------------------------------
@@ -551,7 +502,7 @@ void dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
 // read events
 //-----------------------------------------------------------------------------
   uint64_t first_ts = 0;
-  dtc_read_subevents(first_ts,PrintData,0,pcie_addr,OutputFn);
+  dtc_read_subevents(first_ts,print_level,validation_level,pcie_addr,OutputFn);
 }
 
 //-----------------------------------------------------------------------------

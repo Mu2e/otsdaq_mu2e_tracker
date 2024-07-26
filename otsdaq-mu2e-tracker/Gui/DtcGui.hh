@@ -201,6 +201,9 @@ public:
     TGTextEntry*      fDtcMask;         // CFO only
     TGTextEntry*      fRunPlan;         // CFO only
 
+    TGNumberEntry*    fEmulateCfo;
+    TGNumberEntry*    fRocReadoutMode;
+
     trkdaq::DtcInterface* fDTC_i;       // driver interface
     trkdaq::CfoInterface* fCFO_i;
 
@@ -244,7 +247,7 @@ public:
   TGNumberEntry*      fNEvents;         // DTC , CFO emulation
   TGNumberEntry*      fEWLength;        // DTC , CFO emulation
   TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
-  TGNumberEntry*      fSleepMS;         // DTC , CFO emulation, used by the CFO thread
+  TGNumberEntry*      fSleepMS;         // DTC , CFO emulation, 
   TGNumberEntry*      fPrintFreq;       // DTC , CFO emulation, used by the DTC reading thread
   int                 fCfoPrintFreq;
 
@@ -291,8 +294,6 @@ public:
 
   void     BuildGui          (const TGWindow *Parent, UInt_t Width, UInt_t Height);
 
-  void     ExecuteCommand(const char* Cmd, int PrintOnly = 0);
-
   int      InitRunConfiguration(const char* Project);
 
   static   void* ReaderThread(void* Context);
@@ -303,23 +304,29 @@ public:
   int      manage_emu_cfo_thread();
   int      manage_ext_cfo_thread();
 
+  void     cfo_soft_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     cfo_hard_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     cfo_launch_run_plan ();
   void     cfo_enable_beam_off ();
   void     cfo_disable_beam_off();
+  void     cfo_init_readout    (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
   void     configure_roc_pattern_mode();
 
   void     clear_output       ();
 
-  void     dtc_soft_reset     ();
-  void     dtc_hard_reset     ();
+  void     dtc_soft_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_hard_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_init_readout   (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
+  int      execute_command    ();
   void     exit               ();
 
   void     init_external_cfo_readout_mode();
-  void     cfo_init_readout   ();
 
-  void     print_firefly_temp ();
+  void     dtc_launch_run_plan_emulated_cfo(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+
+  void     dtc_print_firefly_temp (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     print_dtc_status   ();
   void     print_roc_status   ();
 
@@ -328,8 +335,12 @@ public:
   void     read_subevents     ();
   void     reset_roc          ();
 
-  void     write_dtc_register ();
-  void     write_roc_register ();
+  void     set_nevents         ();
+  void     set_emulate_cfo     ();
+  void     set_roc_readout_mode();
+
+  void     write_dtc_register  ();
+  void     write_roc_register  ();
 
 }; 
 
