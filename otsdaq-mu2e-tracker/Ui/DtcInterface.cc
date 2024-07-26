@@ -678,7 +678,7 @@ namespace trkdaq {
       ConvertSpiData(SpiRawData,&spi,PrintLevel);  // &spi[0]
     }
 
-    return 0;
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -879,7 +879,7 @@ namespace trkdaq {
     // write nothing to trigger query
     vector<roc_data_t> empty;
     fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     // read back payload
     auto rv = this->ReadROCBlockEnsured(Link, 260);
@@ -1169,7 +1169,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         if (pattern[i] != exp_pattern) {
           nerr += 1;
           if (PrintLevel > 0) {
-            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %3i 0x%08x 0x%08x\n",
+            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %10li 0x%08x 0x%08x\n",
                    EwTag, ewt, iroc, i, offset,pattern[i],exp_pattern);
           }
         }
