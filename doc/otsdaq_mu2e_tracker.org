@@ -478,9 +478,17 @@ power --ts 1 off
 deviceid=b1 port=/dev/ttyACM2
 #+end_src
 ** TS0: currently unavailable
-** TS1: serial baud rate 57600                                               
-- use '-b 57600'
-<2024-02-23 Fri> 
+** TS1: serial baud rate 115200                                                
+*** <2024-07-21 Sun>                                                         
+(13, 52)
+{'BackLevelVer': '0x0000',
+ 'DesignInfo': '0x000000000000000000000000000000000000000000000000000000434f525e83',
+ 'DesignVer': '0x0000',
+ 'DeviceSerial': '0x7a7fb985c50dfbc734685a1212dad384'}
+
+('DRAC ROC ID #', '7a7fb')
+*** <2024-02-23 Fri>                                                         
+- serial: 57600 kbod ???. use 'control_ROC.py ... -b 57600'
 readDeviceID
 (13, 52)
 {'BackLevelVer': '0x0000',
@@ -490,7 +498,6 @@ readDeviceID
  'DeviceSerial': '0x1b561170e1a31d8ce76538eff83552dc'}
 
 ('DRAC ROC ID #', '1b561')
-
 ** TS2: serial baud rate 115200                                              
 mu2e@trackerpi5:~/trackerScripts $ python3 control_ROC.py --ts 2 -b 115200
 SERIALRATE= 115200
@@ -505,17 +512,17 @@ readDeviceID
  'DeviceSerial': '0x805d653a1e62bc2ea2257c13224ecbef'}
 
 ('DRAC ROC ID #', '805d6')
-* DRAC Tower6
+* DRAC Tower6                                                                
 - new PI ...  mu2e@ ... (local)
-  - window 1: cd ~/LVHVBox/GServer/build
+** window 1: cd ~/LVHVBox/GServer/build
               sudo ~/Server
               response: Pico 1 will be used
-  - window 2: cd ~/LVHVBox/Client
+** window 2: cd ~/LVHVBox/Client
               python3 Client.py
-    - Commands:
-      - powerOn  1       # [or 2 or 3 ... 0=all)
-      - powerOff 1       # same semantics
-      - readMonI6 .. readMonI48 .. readMonV6 .. readMonV48
+** Commands:
+ - powerOn  1       # [or 2 or 3 ... 0=all)
+ - powerOff 1       # same semantics
+ - readMonI6 .. readMonI48 .. readMonV6 .. readMonV48
 * ------------------------------------------------------------------------------
 * how to download firmware to DRAC from .job file (Monica)                   
 <2023-12-13 Wed> Monica

@@ -27,7 +27,7 @@ namespace trkdaq {
                                           // for now assume that all ROCs are doing the same
     int                  fReadoutMode;    // 0: patterns 1:digis
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
-    int                  fEmulatesCfo;    // 1: this DTC operated in the emulated CFO mode
+    int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -46,11 +46,13 @@ namespace trkdaq {
     
     int          ConfigureJA(int ClockSource, int Reset = 1);
 
-    int          EmulatesCfo() { return fEmulatesCfo; }
+    int          EmulateCfo() { return fEmulateCfo; }
 
                                         // EWLength - in 25 ns ticks
+                                        // to be executed on the emulated CFO side
     
-    void         InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag);
+    void         InitEmulatedCFOReadoutMode();
+    void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
@@ -58,6 +60,8 @@ namespace trkdaq {
                                         // -1 means use the pre-fetched one
 
     void         InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+
+    void         InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
     void         InitRocReadoutMode();
     
     int          GetLinkMask() { return fLinkMask; }
@@ -96,7 +100,7 @@ namespace trkdaq {
                                         // 'Value' : 0 or 1
     void         SetBit(int Register, int Bit, int Value);
 
-    void         SetLinkMask(int Mask);
+    void         SetLinkMask(int Mask = 0);
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
