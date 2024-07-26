@@ -22,7 +22,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  int gSleepTimeRocWrite =  2000;  // [us]
+  int gSleepTimeROCWrite =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -557,7 +557,7 @@ namespace trkdaq {
     DTC_Link_ID rlink = DTC_ROC_Links[Link];
     
     fDtc->WriteROCRegister   (rlink,258,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
@@ -634,7 +634,7 @@ namespace trkdaq {
         fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
       }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
   }
 
 //-----------------------------------------------------------------------------
@@ -842,7 +842,7 @@ namespace trkdaq {
     // register 264: find alignment routine
     bool increment_address = false; // read via fifo
     fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     // then, wait till reg 128 returns non-zero
     uint16_t u;
@@ -1180,7 +1180,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
       }
     }
     
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
@@ -1205,7 +1205,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
       }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     int version = 1;
     RocSetDataVersion(version); // Version --> R29
