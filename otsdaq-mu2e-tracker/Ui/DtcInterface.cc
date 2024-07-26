@@ -10,6 +10,7 @@
 #define __CLING__ 1
 
 #include "iostream"
+#include "vector"
 #include "DtcInterface.hh"
 #include "TString.h"
 
@@ -21,7 +22,7 @@ using namespace std;
 
 namespace {
   // int gSleepTimeDTC      =  1000;  // [us]
-  int gSleepTimeRocWrite =  2000;  // [us]
+  int gSleepTimeROCWrite =  2000;  // [us]
   int gSleepTimeROCReset =  4000;  // [us]
 };
 
@@ -643,7 +644,7 @@ namespace trkdaq {
     DTC_Link_ID rlink = DTC_ROC_Links[Link];
     
     fDtc->WriteROCRegister   (rlink,258,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
@@ -677,7 +678,7 @@ namespace trkdaq {
       ConvertSpiData(SpiRawData,&spi,PrintLevel);  // &spi[0]
     }
 
-    return 0;
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -720,7 +721,7 @@ namespace trkdaq {
         fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
       }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
   }
 
 //-----------------------------------------------------------------------------
@@ -846,6 +847,122 @@ namespace trkdaq {
     }
   }
 
+  // wrapper for DTCLib::DTC::ReadROCBlock
+  std::vector<roc_data_t> DtcInterface::ReadROCBlockEnsured(const DTC_Link_ID& Link, const roc_address_t& address){
+    // register 129: number of words to read
+    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 1000));
+    nwords -= 4; // account for low-level headers already consumed on-chip
+
+    std::vector<roc_data_t> rv;
+    bool increment_address = false; // read via fifo
+    fDtc->ReadROCBlock(rv, Link, address, nwords, increment_address, 10000);
+    if (rv.size() != nwords){
+      std::string msg = "Malformed block read";
+      msg += " expected ";
+      msg += std::to_string(nwords);
+      msg += " words, received ";
+      msg += std::to_string(rv.size());
+      msg += " words";
+      throw cet::exception("DtcInterface::ReadROCBlockEnsured") << msg;
+    }
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    return rv;
+  }
+
+  // read serial number and device info
+  vector<roc_data_t> DtcInterface::ReadDeviceID(const DTCLib::DTC_Link_ID& Link){
+    this->ResetRoc();
+    // write nothing to trigger query
+    vector<roc_data_t> empty;
+    fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
+
+    // read back payload
+    auto rv = this->ReadROCBlockEnsured(Link, 260);
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    return rv;
+  }
+
+  roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link){
+    auto returned = this->ReadDeviceID(Link);
+
+    stringstream ss;
+    ss << "0x";
+
+    // first 16 words are the serial number
+    for (size_t i = 0 ; i < 16 ; i++){
+      ss << hex << returned[i];
+
+    }
+
+    auto rv = ss.str();
+    return rv;
+  }
+
+//-----------------------------------------------------------------------------
+// align ROC fpga/adc signals, and optionally print summary table
+//-----------------------------------------------------------------------------
+  Alignment DtcInterface::FindAlignment(DTC_Link_ID Link) {
+    // write parameters into roc to initiate routine
+    vector<roc_data_t> writeable = {
+      4,                             // eye-monitor width
+      0,                             // initial adc phase
+      1,                             // flag to check adc patterns
+      static_cast<uint16_t>(-1),     // for channel remapping; unused
+      static_cast<uint16_t>(-1),     // for channel remapping; unused
+      0xFFFF,                        // bitmask for channels  0 - 15
+      0xFFFF,                        // bitmask for channels 16 - 31
+      0xFFFF,                        // bitmask for channels 32 - 47
+      0xFFFF,                        // bitmask for channels 48 - 63
+      0xFFFF,                        // bitmask for channels 64 - 79
+      0xFFFF,                        // bitmask for channels 80 - 95
+    };
+
+    // register 264: find alignment routine
+    bool increment_address = false; // read via fifo
+    fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
+
+    // then, wait till reg 128 returns non-zero
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000){
+      // idle
+    }
+
+    vector<roc_data_t> returned = this->ReadROCBlockEnsured(Link, 264);
+
+    // return
+    auto rv = Alignment(returned);
+    return rv;
+  }
+
+//-----------------------------------------------------------------------------
+// align ROC fpga/adc signals, and optionally print summary table
+//-----------------------------------------------------------------------------
+  void DtcInterface::FindAlignments(bool print, int LinkMask) {
+    // reset link mask if desired
+    if (LinkMask != 0) fLinkMask = LinkMask;
+
+    for (int i = 0 ; i < 6 ; i++){
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        auto link = DTC_Link_ID(i);
+        auto alignment = FindAlignment(link);
+        if (print) {
+          print_legacy_table(alignment);
+        }
+      }
+    }
+  }
+
 //-----------------------------------------------------------------------------
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
@@ -865,7 +982,8 @@ namespace trkdaq {
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
   void DtcInterface::SetLinkMask(int Mask) {
-    if (Mask != 0) fLinkMask = Mask;
+    if (Mask == 0) return;
+    fLinkMask = Mask;
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
@@ -889,7 +1007,7 @@ namespace trkdaq {
 // ForceCFOEdge = 0 : force use of the rising  edge
 //              = 1 : force use of the falling edge
 //              = 2 : auto
-    
+
     fDtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
 
     if (EnableCFORxTx == 0) {
@@ -1051,7 +1169,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         if (pattern[i] != exp_pattern) {
           nerr += 1;
           if (PrintLevel > 0) {
-            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %3i 0x%08x 0x%08x\n",
+            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %10li 0x%08x 0x%08x\n",
                    EwTag, ewt, iroc, i, offset,pattern[i],exp_pattern);
           }
         }
@@ -1149,7 +1267,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
       }
     }
     
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
@@ -1174,7 +1292,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
       }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
 
     int version = 1;
     RocSetDataVersion(version); // Version --> R29

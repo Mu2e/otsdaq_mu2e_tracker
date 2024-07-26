@@ -9,13 +9,18 @@
 
 #define __CLING__ 1
 
+#include <string>
 #include <vector>
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 
+#include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
+#include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
 
 namespace trkdaq {
+  using roc_serial_t = std::string;
 
   class DtcInterface { 
   public:
@@ -84,6 +89,15 @@ namespace trkdaq {
                                   int         PrintData,
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
+
+    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
+                                        const DTCLib::roc_address_t& address);
+    std::vector<DTCLib::roc_data_t> ReadDeviceID(const DTCLib::DTC_Link_ID& Link);
+    roc_serial_t ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
+
+    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
+    void         FindAlignments(bool print=false, int LinkMask=0);
+
 //-----------------------------------------------------------------------------
 // ROC functions
 // if LinkMask=0, use fLinkMask
