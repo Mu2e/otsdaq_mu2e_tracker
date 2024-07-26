@@ -792,7 +792,7 @@ namespace trkdaq {
     // write nothing to trigger query
     vector<roc_data_t> empty;
     fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
 
     // read back payload
     auto rv = this->ReadROCBlockEnsured(Link, 260);
@@ -842,7 +842,7 @@ namespace trkdaq {
     // register 264: find alignment routine
     bool increment_address = false; // read via fifo
     fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
-    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeRocWrite));
 
     // then, wait till reg 128 returns non-zero
     uint16_t u;
