@@ -41,7 +41,25 @@ void* DtcGui::ReaderThread(void* Context) {
   TStopwatch timer;
   timer.Start();
 
+  if (dtc_i->fReadoutMode == 0) {
+    TLOG(TLVL_INFO) << Form("initialize PATTERN readout mode\n");
+    dtc_i->MonicaVarPatternConfig();
+  }
+  else {
+    TLOG(TLVL_INFO) << Form("initialize DIGI readout mode\n");
+    dtc_i->MonicaVarLinkConfig();
+    dtc_i->MonicaDigiClear();
+  }
+
+  dtc->SoftReset();
+  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+  
   while (tc->fStop == 0) {
+    if (tc->fPause != 0) {
+      TLOG(TLVL_INFO+1) << "thread alive, sleep for " << tc->fSleepTimeMs << "ms" << std::endl;
+      gSystem->Sleep(tc->fSleepTimeMs);
+                                                            continue;
+    }
 
     if (tc->fPrintLevel > 100) printf(" emoe : %10lu\n",tstamp);
 
@@ -147,8 +165,6 @@ void* DtcGui::EmuCfoThread(void* Context) {
 
   int t0 = first_ts/dtc_gui->fCfoPrintFreq;
 
-  dtc_i->RocConfigurePatternMode();
-
   while (tc->fStop == 0) {
     gSystem->Sleep(sleep_ms);
     
@@ -169,47 +185,39 @@ void* DtcGui::EmuCfoThread(void* Context) {
 // assume that the jitter attenuator is configured
 //-----------------------------------------------------------------------------
 void* DtcGui::ExtCfoThread(void* Context) {
-  // int rc(0);
 
   DtcGui*          dtc_gui = (DtcGui*) Context;
+                                        // should point to the CFO tab element
+  DtcTabElement_t* dtel    = dtc_gui->fDtcTel+dtc_gui->fActiveDtcID;
          
   ThreadContext_t* tc      = &dtc_gui->fExtCfoTC;
   CfoInterface*    cfo_i   = dtc_gui->fCFO_i;
   CFOLib::CFO*     cfo     = cfo_i->Cfo();
+//-----------------------------------------------------------------------------
+// for now, assume that the run plans are stored in ~/test_stand/cfo_run_plans directory
+//-----------------------------------------------------------------------------
+  std::string  run_plan = Form("~/test_stand/cfo_run_plans/%s",dtel->fRunPlan->GetText());
+  int          dtc_mask;
+  sscanf(dtel->fDtcMask->GetText(),"0x%x",&dtc_mask);
 
-  DtcTabElement_t* dtel = dtc_gui->fDtcTel+dtc_gui->fActiveDtcID;
+  TLOG(TLVL_INFO) << Form("START run_plan: %s DTC mask = 0x%08x\n",run_plan.data(),dtc_mask);
 
-  printf("%s: START run_plan: %s \n",__func__,dtel->fRunPlan->GetText());
-
-  ulong first_ts = dtc_gui->fFirstTS->GetIntNumber();
-  int  sleep_ms  = dtc_gui->fSleepMS->GetIntNumber();
-  int  t0        = first_ts/dtc_gui->fCfoPrintFreq;
-  ulong nevents            = dtc_gui->fNEvents->GetIntNumber();
-
-  cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); 
-  cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);  
-  cfo->SoftReset();
-  
-  cfo_i->SetRunPlan(dtel->fRunPlan->GetText());
-  cfo->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
-  
+  cfo_i->InitReadout(run_plan.data(),dtc_mask);
+//-----------------------------------------------------------------------------
+// execute the run plan once, assume it can be infinite
+//-----------------------------------------------------------------------------
+  TLOG(TLVL_INFO) << "START executing run plan " << run_plan << std::endl;
+  cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+//-----------------------------------------------------------------------------
+// execute the run plan once and wait after that
+//-----------------------------------------------------------------------------
   while (tc->fStop == 0) {
-//-----------------------------------------------------------------------------
-// execute the run plan once
-//-----------------------------------------------------------------------------
-    cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
-    cfo->SoftReset();
-    cfo->DisableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
-
-    first_ts = first_ts+nevents;
-    int t1 = first_ts/dtc_gui->fCfoPrintFreq;
-    if (t1 > t0) {
-      printf("%s: first_ts: %10lu\n",__func__,first_ts);
-      t0 = t1;
-    }
-    // sleep in the end
-    gSystem->Sleep(sleep_ms);
+    TLOG(TLVL_INFO+1) << Form("thread alive\n");
+    gSystem->Sleep(tc->fSleepTimeMs);
   }
+  
+  cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  TLOG(TLVL_INFO) << "END" << std::endl;
   return nullptr;
 }
 
@@ -251,7 +259,6 @@ int DtcGui::manage_emu_cfo_thread() {
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
     btn->ChangeBackground(fStoppedColor);
-    btn->SetName("Stop EmuCFO");
     TThread::UnLock();
   }
   
@@ -297,6 +304,7 @@ int DtcGui::manage_ext_cfo_thread() {
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
     btn->ChangeBackground(fStoppedColor);
+    btn->SetName("Stop ExtCFO");
     TThread::UnLock();
   }
   

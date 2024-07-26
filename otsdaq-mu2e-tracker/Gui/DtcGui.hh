@@ -151,16 +151,19 @@ public:
   };
 
   struct DtcData_t {
-    TString    fName;         //expect fName to be uppercased
+    TString    fName;         // expect fName to be uppercased
     int        fPcieAddr;
     int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
+    int        fReadoutMode;
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
 
     DtcData_t(const char* Name = "", int PcieAddr = 0) {
-      fName     = Name; 
-      fPcieAddr = PcieAddr;
+      fName         = Name; 
+      fPcieAddr    = PcieAddr;
+      fLinkMask    = 0;             // by default, not reading anything
+      fReadoutMode = 0;             // 0:patterns 1:digis
 
       fActiveRoc = nullptr;
       for (int i=0;i<6; i++) {
@@ -195,7 +198,7 @@ public:
     TGTextEntry*      fValW;
     TGLabel*          fValR;
     TGTextEntry*      fTimeChainLink;   // CFO only
-    TGTextEntry*      fNDtcs;           // CFO only
+    TGTextEntry*      fDtcMask;         // CFO only
     TGTextEntry*      fRunPlan;         // CFO only
 
     trkdaq::DtcInterface* fDTC_i;       // driver interface
@@ -266,6 +269,8 @@ public:
     int              fStop;   // end marker
     int              fCmd;    // command
     int              fPrintLevel;
+    int              fPause;
+    int              fSleepTimeMs;
   };
   
   ThreadContext_t  fEmuCfoTC;
@@ -298,7 +303,9 @@ public:
   int      manage_emu_cfo_thread();
   int      manage_ext_cfo_thread();
 
-  void     cfo_launch_run_plan();
+  void     cfo_launch_run_plan ();
+  void     cfo_enable_beam_off ();
+  void     cfo_disable_beam_off();
 
   void     configure_roc_pattern_mode();
 

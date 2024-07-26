@@ -42,6 +42,7 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
     int pcie_addr = fDtcData[i].fPcieAddr;
     if      (fDtcData[i].IsDtc()) {
       dtel->fDTC_i = DtcInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
+      dtel->fDTC_i->SetRocReadoutMode(fDtcData[i].fReadoutMode);
     }
     else if (fDtcData[i].IsCfo()) {
       dtel->fCFO_i = CfoInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
@@ -52,26 +53,32 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
     }
   }
 
-  fEmuCfoTC.fTp         = nullptr;
-  fEmuCfoTC.fStop       = 0;
-  fEmuCfoTC.fCmd        = 0;
-  fEmuCfoTC.fRunning    = 0;
-  fEmuCfoTC.fPrintLevel = 1;
+  fEmuCfoTC.fTp          = nullptr;
+  fEmuCfoTC.fStop        = 0;
+  fEmuCfoTC.fPause       = 0;
+  fEmuCfoTC.fCmd         = 0;
+  fEmuCfoTC.fRunning     = 0;
+  fEmuCfoTC.fPrintLevel  = 1;
+  fEmuCfoTC.fSleepTimeMs = 2000;
 
-  fExtCfoTC.fTp         = nullptr;
-  fExtCfoTC.fStop       = 0;
-  fExtCfoTC.fCmd        = 0;
-  fExtCfoTC.fRunning    = 0;
-  fExtCfoTC.fPrintLevel = 1;
+  fExtCfoTC.fTp          = nullptr;
+  fExtCfoTC.fStop        = 0;
+  fEmuCfoTC.fPause       = 0;
+  fExtCfoTC.fCmd         = 0;
+  fExtCfoTC.fRunning     = 0;
+  fExtCfoTC.fPrintLevel  = 1;
+  fExtCfoTC.fSleepTimeMs = 2000;
 
-  fReaderTC.fTp         = nullptr;
-  fReaderTC.fStop       = 0;
-  fReaderTC.fCmd        = 0;
-  fReaderTC.fRunning    = 0;
-  fReaderTC.fPrintLevel = 1;
+  fReaderTC.fTp          = nullptr;
+  fReaderTC.fStop        = 0;
+  fEmuCfoTC.fPause       = 0;
+  fReaderTC.fCmd         = 0;
+  fReaderTC.fRunning     = 0;
+  fReaderTC.fPrintLevel  = 2;
+  fReaderTC.fSleepTimeMs = 2000;
 
-  fValidate             = 0;
-  fCfoPrintFreq         = 1;
+  fValidate              = 0;
+  fCfoPrintFreq          = 1;
 
   if (fDebugLevel > 0) printf("DtcGui::%s : all done, EXIT\n", __func__);
 }
@@ -281,7 +288,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   
-  fPrintFreq = new TGNumberEntry(fButtonsFrame, 1000, 9,999,
+  fPrintFreq = new TGNumberEntry(fButtonsFrame,    1, 9,999,
                                  TGNumberFormat::kNESInteger,
                                  TGNumberFormat::kNEANonNegative,
                                  TGNumberFormat::kNELLimitMinMax,

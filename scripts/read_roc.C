@@ -1,10 +1,12 @@
-//
+///////////////////////////////////////////////////////////////////////////////
+// 'read' command over the fiber
+///////////////////////////////////////////////////////////////////////////////
 #define __CLING__ 1
 
 #include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+#include "dtcInterfaceLib/DTC.h"
+// #include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
 
 using namespace DTCLib;
 
@@ -29,13 +31,13 @@ void read_roc(int Link,
 // write parameters into reg 266 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-  uint16_t chan_mask[6] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-  int num_triggers = 10;
-  int num_lookback = 8;
-  int num_samples = 16;
-  int enable_pulser = 0;
-  int max_total_delay = 1;
-  int marker_clock = 0;
+  uint16_t chan_mask[6]    = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+  int      num_triggers    = 10;
+  int      num_lookback    = 8;
+  int      num_samples     = 16;
+  int      enable_pulser   = 0;
+  int      max_total_delay = 1;
+  int      marker_clock    = 0;
 
   vector<uint16_t> vec;
   vec.push_back(uint16_t(AdcMode));

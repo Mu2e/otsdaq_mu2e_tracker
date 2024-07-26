@@ -37,6 +37,7 @@ if(DictCompileOptions)
 	set_target_properties(otsdaq-mu2e-tracker_Ui_dict PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
 endif()
 
+cet_add_compiler_flags(-g -O0)
 
 # if($ENV{BUILD_ROOT_INTERFACE})
 #  message(-- otsdaq_mu2e_tracker/otsdaq-mu2e-tracker/ui::BUILD_ROOT_INTERFACE=$ENV{BUILD_ROOT_INTERFACE})
