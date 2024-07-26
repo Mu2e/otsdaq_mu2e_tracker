@@ -1,4 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
+#include "TSystem.h"
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 #include "TRACE/tracemf.h"
@@ -8,40 +9,6 @@
 using namespace trkdaq;
 using namespace std;
 using namespace CFOLib;
-//-----------------------------------------------------------------------------
-void DtcGui::ExecuteCommand(const char* Cmd, int PrintOnly) {
-
-  streambuf* oldCoutStreamBuf = cout.rdbuf();
-
-  ostringstream strCout;
-  cout.rdbuf( strCout.rdbuf() );
-
-  // Will output our Hello World! from above.
-  cout << strCout.str();
-
-  TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::ExecuteCommand : cmd: " << Cmd << std::endl;
-
-  //  printf("# %s : -------------- DtcGui::ExecuteCommand executing cmd: %s\n",x1.AsSQLString(),Cmd);
-
-  if (PrintOnly != 1) {
-    char buf[10001];
-    FILE* pipe = gSystem->OpenPipe(Cmd,"r");
-    while (fgets(buf,10000,pipe)) { 
-      *fTextView << buf << std::endl;
-    }
-    gSystem->ClosePipe(pipe);
-  }
-
-  TDatime x2;
-  *fTextView << x2.AsSQLString() << gSystem->GetFromPipe(Cmd).Data() 
-             << " DtcGui::ExecuteCommand : DONE " <<  std::endl;
-
-  fTextView->ShowBottom();
-
-  // Restore old cout.
-  cout.rdbuf( oldCoutStreamBuf );
-}
 
 //-----------------------------------------------------------------------------
 // report DTC/CFO status
@@ -88,54 +55,31 @@ void DtcGui::print_dtc_status() {
 
   // Restore old cout.
   cout.rdbuf( oldCoutStreamBuf );
-
-  // ExecuteCommand(cmd.Data(),fDebugLevel);
 }
 
 
 //-----------------------------------------------------------------------------
 // this one chould be called for CFO only
 //-----------------------------------------------------------------------------
-void DtcGui::cfo_init_readout() {
-                                        // redirect cout
-  streambuf* oldCoutStreamBuf = cout.rdbuf();
-  ostringstream strCout;
-  cout.rdbuf(strCout.rdbuf());
-
-  TDatime x1;  *fTextView << x1.AsSQLString() << "DtcGui::" << __func__ << ": START" << std::endl;
-
-  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-
-  if (dtel->fData->fName == "CFO") {
-    TLOG(TLVL_INFO) << "under CFO" << std::endl;
-    try         { 
+void DtcGui::cfo_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  TLOG(TLVL_INFO) << "START" << std::endl;
+  try { 
 //-----------------------------------------------------------------------------
 // extract parameters, assume only one time chain
 // also, assume that run plans are stored in ~/test_stand/cfo_run_plans directory
 //-----------------------------------------------------------------------------
-      printf("%s: before dtc_mask\n",__func__);
-      std::string text = dtel->fDtcMask->GetText();
-      TLOG(TLVL_INFO) << Form("before dtc_mask: mask=%s\n",text.data());
-      uint dtc_mask;
-      sscanf(text.data(),"0x%08x",&dtc_mask);
+    uint dtc_mask;
+    sscanf(Dtel->fDtcMask->GetText(),"0x%08x",&dtc_mask);
 
-      TLOG(TLVL_INFO) << Form("before runplan\n");
-      std::string  run_plan = Form("~/test_stand/cfo_run_plans/%s",dtel->fRunPlan->GetText());
-      TLOG(TLVL_INFO) << "run plan:" << run_plan;
+    std::string  run_plan = Form("%s/test_stand/cfo_run_plans/%s",
+                                 gSystem->Getenv("HOME"),Dtel->fRunPlan->GetText());
 
-      if (fDebugLevel > 0) {
-        *fTextView << Form("run_plan, dtc_mask: %s 0x%08x\n",run_plan.data(),dtc_mask); 
-      }
+    TLOG(TLVL_INFO) << Form("run_plan, dtc_mask: %s 0x%08x\n",run_plan.data(),dtc_mask);
 
-      dtel->fCFO_i->InitReadout(run_plan.data(),dtc_mask);
-    }
-    catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT\n"); }
+    Dtel->fCFO_i->InitReadout(run_plan.data(),dtc_mask);
   }
-
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ << ": DONE " << std::endl;
-  fTextView->ShowBottom();
-                                        // restore cout
-  cout.rdbuf( oldCoutStreamBuf );
+  catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT\n"); }
+  TLOG(TLVL_INFO) << "END" << std::endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -193,6 +137,32 @@ void DtcGui::cfo_launch_run_plan() {
 }
 
 //-----------------------------------------------------------------------------
+void DtcGui::cfo_soft_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+
+  try         { 
+    *fTextView << "soft resetting the CFO" << std::endl; 
+    Dtel->fCFO_i->Cfo()->SoftReset();
+    *fTextView << "done soft resetting the CFO" << std::endl; 
+  }
+  catch (...) { 
+    *fTextView << "ERROR : coudn't soft reset CFO ... BAIL OUT" << std::endl; 
+  }
+}
+
+//-----------------------------------------------------------------------------
+void DtcGui::cfo_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+
+  try         { 
+    *fTextView << "hard resetting the CFO" << std::endl; 
+    Dtel->fCFO_i->Cfo()->HardReset();
+    *fTextView << "done hard resetting the CFO" << std::endl; 
+  }
+  catch (...) { 
+    *fTextView << "ERROR : coudn't hard reset the CFO ... BAIL OUT" << std::endl; 
+  }
+}
+
+//-----------------------------------------------------------------------------
 void DtcGui::clear_output() {
   fTextView->Clear();
 }
@@ -223,29 +193,9 @@ void DtcGui::exit() {
 }
 
 //-----------------------------------------------------------------------------
-void DtcGui::print_firefly_temp() {
-
-  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-  //  int              roc  = dtel->fActiveRocID;
-
-  streambuf* oldCoutStreamBuf = cout.rdbuf();
-
-  ostringstream strCout;
-  cout.rdbuf( strCout.rdbuf() );
-
-  TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui:: : " << __func__ << ": START" << std::endl;
-
-  if (dtel->fData->fName == "DTC") {
-    try         { dtel->fDTC_i->PrintFireflyTemp(); }
-    catch (...) { *fTextView << Form("ERROR, BAIL OUT") << std::endl; }
-  }
-
-  *fTextView << strCout.str() ;  // endl is there
-  TDatime x2; *fTextView << x2.AsSQLString() << " DtcGui::" << __func__ << ": DONE" << std::endl;
-  fTextView->ShowBottom();
-                                        // Restore old cout.
-  cout.rdbuf( oldCoutStreamBuf );
+void DtcGui::dtc_print_firefly_temp(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         { Dtel->fDTC_i->PrintFireflyTemp(); }
+  catch (...) { *fTextView << Form("ERROR, BAIL OUT") << std::endl; }
 }
 
 //-----------------------------------------------------------------------------
@@ -281,103 +231,58 @@ void DtcGui::print_roc_status() {
 }
 
 //-----------------------------------------------------------------------------
-void DtcGui::reset_roc() {
-  //  TString cmd;
-
-  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-  int roc               = dtel->fActiveRocID;
-
-  streambuf*    oldCoutStreamBuf = cout.rdbuf();
-  ostringstream strCout;
-  cout.rdbuf(strCout.rdbuf());
-
-  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+// init (preconfigured) readout
 //-----------------------------------------------------------------------------
-// CFO doesn't have ROC's
-//-----------------------------------------------------------------------------
-  if (dtel->fData->fName == "DTC") {
-    int mask = 1<<4*roc;
-    try         { dtel->fDTC_i->ResetRoc(mask); }
-    catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
+void DtcGui::dtc_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  if (Dtel->fData->fName == "DTC") {
+    try         {
+      int emulate_cfo      = Dtel->fEmulateCfo->GetIntNumber();
+      int roc_readout_mode = Dtel->fRocReadoutMode->GetIntNumber();
+      Dtel->fDTC_i->InitReadout(emulate_cfo,roc_readout_mode);
+    }
+    catch (...) { *TextView << Form("ERROR in DtcGui::%s: failed to execute DtcInterface::InitReadout\n",__func__); }
   }
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE",__func__) <<  std::endl;
-  fTextView->ShowBottom();
-
-  // Restore old cout.
-  cout.rdbuf( oldCoutStreamBuf );
 }
 
 //-----------------------------------------------------------------------------
-void DtcGui::dtc_soft_reset() {
-
-  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-  int roc               = dtel->fActiveRocID;
-
-  streambuf*    oldCoutStreamBuf = cout.rdbuf();
-  ostringstream strCout;
-  cout.rdbuf(strCout.rdbuf());
-
-  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+// init (preconfigured) readout
 //-----------------------------------------------------------------------------
-// CFO doesn't have ROC's
-//-----------------------------------------------------------------------------
-  if (dtel->fData->fName == "DTC") {
-    try         { 
-      *fTextView << "resetting the DTC" << std::endl; 
-      dtel->fDTC_i->Dtc()->SoftReset();
-      *fTextView << "done resetting the DTC" << std::endl; 
-    }
-    catch (...) { 
-      *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
-    }
+void DtcGui::dtc_launch_run_plan_emulated_cfo(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         {
+    int ew_length  = fEWLength->GetIntNumber();
+    int nevents    = fNEvents->GetIntNumber();
+    int first_ewm  = fFirstTS->GetIntNumber();
+    Dtel->fDTC_i->LaunchRunPlanEmulatedCfo(ew_length,nevents+1,first_ewm);
   }
-
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form("%s DONE",__func__) <<  std::endl;
-  fTextView->ShowBottom();
-                                        // Restore old cout.
-  cout.rdbuf(oldCoutStreamBuf);
+  catch (...) { *TextView << Form("ERROR in DtcGui::%s: failed to execute DtcInterface::LaunchRunPlanEmulatedCfo\n",
+                                  __func__); }
 }
 
 //-----------------------------------------------------------------------------
-void DtcGui::dtc_hard_reset() {
+void DtcGui::dtc_soft_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
 
-  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-  int roc               = dtel->fActiveRocID;
-
-  streambuf*    oldCoutStreamBuf = cout.rdbuf();
-  ostringstream strCout;
-  cout.rdbuf(strCout.rdbuf());
-
-  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
-//-----------------------------------------------------------------------------
-// CFO doesn't have ROC's
-//-----------------------------------------------------------------------------
-  if (dtel->fData->fName == "DTC") {
-    try         { 
-      *fTextView << "resetting the DTC" << std::endl; 
-      dtel->fDTC_i->Dtc()->HardReset();
-      *fTextView << "done resetting the DTC" << std::endl; 
-    }
-    catch (...) { 
-      *fTextView << "ERROR : coudn't hard reset the DTC ... BAIL OUT" << std::endl; 
-    }
+  try         { 
+    *fTextView << "resetting the DTC" << std::endl; 
+    Dtel->fDTC_i->Dtc()->SoftReset();
+    *fTextView << "done resetting the DTC" << std::endl; 
   }
-  else if (dtel->fData->fName == "CFO") {
-    try         { 
-      *fTextView << "resetting the CFO" << std::endl; 
-      dtel->fCFO_i->Cfo()->HardReset();
-      *fTextView << "done resetting the CFO" << std::endl; 
-    }
-    catch (...) { 
-      *fTextView << "ERROR : coudn't hard reset the CFO ... BAIL OUT" << std::endl; 
-    }
+  catch (...) { 
+    *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
   }
+}
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s: DONE",__func__) <<  std::endl;
-  fTextView->ShowBottom();
-                                        // Restore old cout.
-  cout.rdbuf(oldCoutStreamBuf);
+//-----------------------------------------------------------------------------
+void DtcGui::dtc_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+
+  try         { 
+    *fTextView << "resetting the DTC" << std::endl; 
+    Dtel->fDTC_i->Dtc()->HardReset();
+    *fTextView << "done resetting the DTC" << std::endl; 
+  }
+  catch (...) { 
+    *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -548,6 +453,114 @@ void DtcGui::read_subevents() {
 }
 
 //-----------------------------------------------------------------------------
+void DtcGui::reset_roc() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  if (dtel->fData->fName == "DTC") {
+    int mask = 1<<4*roc;
+    try         { dtel->fDTC_i->ResetRoc(mask); }
+    catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
+  }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE",__func__) <<  std::endl;
+  fTextView->ShowBottom();
+
+  // Restore old cout.
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+
+//-----------------------------------------------------------------------------
+void DtcGui::set_nevents() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  int nevents = 0;
+  try         {
+    nevents = fNEvents->GetNumberEntry()->GetIntNumber();
+  }
+  catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE nevents = %10i\n",__func__,nevents);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+//-----------------------------------------------------------------------------
+void DtcGui::set_emulate_cfo() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i\n",__func__,fActiveDtcID);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  int emulate_cfo = 0;
+  try         {
+    emulate_cfo = dtel->fEmulateCfo->GetNumberEntry()->GetIntNumber();
+  }
+  catch (...) { *fTextView << Form("ERROR : coudn't set emulate CFO flag... BAIL OUT\n"); }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE, emulate_cfo = %i\n",__func__,emulate_cfo);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+
+//-----------------------------------------------------------------------------
+void DtcGui::set_roc_readout_mode() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i\n",__func__,fActiveDtcID);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  int roc_readout_mode = 0;
+  try         {
+    roc_readout_mode = dtel->fRocReadoutMode->GetNumberEntry()->GetIntNumber();
+  }
+  catch (...) { *fTextView << Form("ERROR : coudn't set ROC readout mode... BAIL OUT\n"); }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE, roc_readout_mode = %i\n",
+                                                                      __func__,roc_readout_mode);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+
+//-----------------------------------------------------------------------------
 void DtcGui::write_dtc_register() {
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
@@ -682,4 +695,35 @@ void DtcGui::DoDtcTab(Int_t id) {
     fActiveDtcID = id;
     fActiveDtc   = &fDtcData[id];
   }
+}
+
+//-----------------------------------------------------------------------------
+// this is a "hub" for exacuting all commands interactive commands
+//-----------------------------------------------------------------------------
+int DtcGui::execute_command() {
+
+  TGButton* btn = (TGButton*) gTQSender;
+
+  TString*  cmd = (TString*) btn->GetUserData();
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  //  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+  
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" DtcGui::%s\n",__func__);
+  void (*fun)(DtcGui*,DtcTabElement_t*, TGTextViewostream*);
+  fun = (void (*)(DtcGui*, DtcGui::DtcTabElement_t*, TGTextViewostream*)) btn->GetUserData();
+  fun(this,dtel,fTextView);
+  
+  *fTextView << strCout.str();
+  TDatime x2; *fTextView << x2.AsSQLString() << Form(" DtcGui::%s: FINISHED\n",__func__);
+  fTextView->ShowBottom();
+
+  // Restore old cout.
+  cout.rdbuf( oldCoutStreamBuf );
+
+  return 0;
 }

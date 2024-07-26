@@ -93,7 +93,7 @@ namespace trkdaq {
       if (ok == 1) break;
     }
     
-    fCfo->FormatJitterAttenuatorCSR();
+    // fCfo->FormatJitterAttenuatorCSR();
 
     if (ok == 0) TLOG(TLVL_ERROR) << "failed to setup CFO JA\n" << std::endl; 
 
@@ -104,6 +104,7 @@ namespace trkdaq {
 // really ? 
 //-----------------------------------------------------------------------------
   void CfoInterface::Halt() {
+    // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
   }
@@ -113,6 +114,7 @@ namespace trkdaq {
 // [at this point] disabling the BeamOn mode may be an overkill, but...
 //-----------------------------------------------------------------------------
   void CfoInterface::LaunchRunPlan() {
+    // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
 
@@ -137,26 +139,53 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
+//   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
+
+//     TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
+    
+//     fCfo->DisableLinks();                                    // Ryan says this is important
+//     fCfo->DisableEmbeddedClockMarker();
+//     // these functions don't use CFO_Link_ALL
+//     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
+//     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+//     ConfigureJA(1,1);
+//     fCfo->SoftReset();
+//     SetRunPlan   (RunPlan);
+//     usleep(10);
+// //-----------------------------------------------------------------------------
+// // in the end, re-initialize the time chains defined by the DTC mask
+// //-----------------------------------------------------------------------------
+//     if (DtcMask != 0) fDtcMask = DtcMask;
+//     for (int i=0; i<8; i++) {
+//       int ndtcs = (fDtcMask >> 4*i) & 0xf;
+//       if (ndtcs > 0) {
+//         fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
+//         TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
+//       }
+//     }
+//     TLOG(TLVL_INFO) << Form("Done\n");
+//   }
   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
 
     TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
-    
-    fCfo->DisableLinks();                                    // Ryan says this is important
-    fCfo->DisableEmbeddedClockMarker();
-    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
-    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-    fCfo->SoftReset();
 
-    SetRunPlan   (RunPlan);
-    usleep(10);
-//-----------------------------------------------------------------------------
-// in the end, re-initialize the time chains defined by the DTC mask
-//-----------------------------------------------------------------------------
-    if (DtcMask != 0) fDtcMask = DtcMask;
-    for (int i=0; i<8; i++) {
-      int ndtcs = (fDtcMask >> 4*i) & 0xf;
-      if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
-    }
+    CfoInterface* cfo_i = this;
+    
+    cfo_i->Cfo()->DisableLinks();                                    // Ryan says this is important
+    cfo_i->Cfo()->DisableEmbeddedClockMarker();
+    cfo_i->Cfo()->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);    //
+    cfo_i->Cfo()->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    ConfigureJA(1,1); // cfo_configure_ja(1,1)
+    cfo_i->Cfo()->SoftReset();
+    //     cfo_i->SetRunPlan("../cfo_run_plans/run_066.bin");
+    cfo_i->SetRunPlan(RunPlan);
+    TLOG(TLVL_INFO) << Form("Run plan: :%s:  :../cfo_run_plans/run_066.bin:\n",RunPlan);
+    // cfo_i->SetRunPlan("../cfo_run_plans/run_00001_hz.bin")
+    // reset after set seems to be a must... 
+    // enable in the end ? 
+    cfo_i->Cfo()->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
+
+    //    cfo_i->Cfo()->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     TLOG(TLVL_INFO) << Form("Done\n");
   }
 
@@ -175,7 +204,7 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
   void CfoInterface::PrintRegister(uint16_t Register, const char* Title) {
-    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
+    std::cout << Form("(0x%04x): 0x%08x : %s\n",Register,ReadRegister(Register),Title);
   }
 
 //-----------------------------------------------------------------------------
@@ -218,7 +247,13 @@ namespace trkdaq {
     TLOG(TLVL_INFO) << Form("START, run plan: %s\n",Fn);
     std::ifstream file(Fn, std::ios::binary | std::ios::ate);
 
-    // read binary file
+    if (! file) {
+      TLOG(TLVL_ERROR) << "failed to open " << Fn << " , BAIL OU" << std::endl;
+      return;
+    }
+//-----------------------------------------------------------------------------
+// read binary file
+//-----------------------------------------------------------------------------
     mu2e_databuff_t inputData;
     auto inputSize = file.tellg();
     uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;

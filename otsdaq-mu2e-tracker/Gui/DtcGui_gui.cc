@@ -3,6 +3,9 @@
 
 #include "TROOT.h"
 
+#include "TRACE/tracemf.h"
+#define  TRACE_NAME "DtcGui_gui"
+
 using namespace trkdaq;
 using namespace std;
 //-----------------------------------------------------------------------------
@@ -63,7 +66,7 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
 
   fExtCfoTC.fTp          = nullptr;
   fExtCfoTC.fStop        = 0;
-  fEmuCfoTC.fPause       = 0;
+  fExtCfoTC.fPause       = 0;
   fExtCfoTC.fCmd         = 0;
   fExtCfoTC.fRunning     = 0;
   fExtCfoTC.fPrintLevel  = 1;
@@ -71,7 +74,7 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
 
   fReaderTC.fTp          = nullptr;
   fReaderTC.fStop        = 0;
-  fEmuCfoTC.fPause       = 0;
+  fReaderTC.fPause       = 0;
   fReaderTC.fCmd         = 0;
   fReaderTC.fRunning     = 0;
   fReaderTC.fPrintLevel  = 2;
@@ -92,7 +95,11 @@ DtcGui::~DtcGui() {
   if (fReaderTC.fTp) fReaderTC.fTp->Join();
 }
 
-// config/$hostname/$project.C should contain function init_run_configuration(DtcGui*)
+//-----------------------------------------------------------------------------
+// 1) first check for project name like "pasha/mu2edaq09_pcie0"
+// if file config/pasha/mu2edaq09_pcie0.C exists , use that
+// 2) otherwise assume config file name config/$project/$hostname.C
+// config file should contain function init_run_configuration(DtcGui*)
 //-----------------------------------------------------------------------------
 int DtcGui::InitRunConfiguration(const char* Config) {
   int           rc(0);
@@ -100,21 +107,33 @@ int DtcGui::InitRunConfiguration(const char* Config) {
 
   TInterpreter::EErrorCode irc;
 
-  TString macro = Form("%s/otsdaq-mu2e-tracker/config/%s/%s.C",gSystem->Getenv("SPACK_ENV"),Config,fHostname.Data());
+  TString macro = Form("%s/otsdaq-mu2e-tracker/config/%s.C",gSystem->Getenv("SPACK_ENV"),Config);
+  FILE* f = fopen(macro,"r");
+  if (f == nullptr) {
+    macro = Form("%s/otsdaq-mu2e-tracker/config/%s/%s.C",gSystem->Getenv("SPACK_ENV"),Config,fHostname.Data());
+    f     = fopen(macro,"r");
+    if (f == nullptr) {
+      TLOG(TLVL_ERROR) << "failed to find config file for " << Config << " , EXIT" << std::endl;
+      rc = -1;
+    }
+  }
 
-  if (fDebugLevel > 0) printf("DtcGui::%s : loading %s\n",__func__,macro.Data());
+  if (rc != 0) return rc;
+
+  TLOG (TLVL_INFO) << Form(" loading configuration from file=%s\n",macro.Data());
   
   cint->LoadMacro(macro.Data(), &irc);
 
-  if (rc == 0) {
-    TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx)",(long int) this);
-
-    if (fDebugLevel > 0) printf("DtcGui::%s : cmd=%s\n", __func__,cmd.Data());
+  rc = irc;
+  if (rc != 0) return rc;
+  
+  TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx)",(long int) this);
+  
+  TLOG(TLVL_INFO) << Form(" cmd=%s\n",cmd.Data());
     
-    gInterpreter->ProcessLine(cmd.Data());
-  }
+  gInterpreter->ProcessLine(cmd.Data(),&irc);
 
-  return rc;
+  return irc;
 }
 
 //-----------------------------------------------------------------------------
@@ -216,8 +235,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                TGNumberFormat::kNELLimitMinMax,
                                0, 100000000);
 
-  fNEvents->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
-  (fNEvents->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
+  fNEvents->Connect("ValueSet(Long_t)", "DtcGui", this, "set_nevents()");
+  (fNEvents->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_nevents()");
 
   fButtonsFrame->AddFrame(fNEvents, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   fNEvents->MoveResize(x4offset+dx4+10,y0,dx4,button_dy);

@@ -19,10 +19,10 @@ int init_run_configuration(DtcGui* X) {
   // gSystem->Setenv("CFOLIB_CFO","0");
 
   dtc[0].fName        = "DTC";
-  dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x11;           // ROC0
+  dtc[0].fPcieAddr    = 1;
+  dtc[0].fLinkMask    = 0x11;           // ROC0 and 1 : ROC tower, draq3 and draq5
   dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
-  gSystem->Setenv("DTCLIB_DTC","0");
+  gSystem->Setenv("DTCLIB_DTC","1");
 
   return rc;
 }

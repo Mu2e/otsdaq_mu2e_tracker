@@ -44,12 +44,13 @@ namespace trkdaq {
     fLinkMask       = LinkMask;
     fReadoutMode    = 0;                   // for now, assume patterns are the default
     fSampleEdgeMode = 1;
-    fEmulatesCfo    = 0;
+    fEmulateCfo     = 0;
     
-    fDtc      = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
-    fDtc->ClearCFOEmulationMode();
+    fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
                                         // constructor performs soft reset
     fDtc->SoftReset();
+    //    fDtc->ClearCFOEmulationMode();
+    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
   }
 
 //-----------------------------------------------------------------------------
@@ -97,9 +98,9 @@ namespace trkdaq {
       if (ok == 1) break;
     }
     
-    fDtc->FormatJitterAttenuatorCSR();
+    // fDtc->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) printf("ERROR in DtcInterface::%s: failed to setup JA\n",__func__); 
+    if (ok == 0) TLOG(TLVL_ERROR) << Form("failed to setup JA\n"); 
 
     return ok;
   }
@@ -327,31 +328,48 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
 // would be cached for the next time
+// EW length         : in units of 25 ns (clock)
+// EWMOde            : 1 for buffer test
+// EnableClockMarkers: set to 0
+// EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitEmulatedCFOReadoutMode(int EWLength, int NMarkers, int FirstEWTag) {
+  void DtcInterface::InitEmulatedCFOReadoutMode() {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
-    int EWMode             = 1;
-    int EnableClockMarkers = 0;
+    TLOG(TLVL_INFO) << Form("START\n");
+    //    int EWMode             = 1;
     // int EnableAutogenDRP   = 1;
 
     fDtc->DisableCFOEmulation();
+    fDtc->DisableReceiveCFOLink();      // r_0x9114:bit_14 = 0
+                                        // this one doesn't take DTC_Link_ALL gently
+    for (int i=0; i<6; i++) {
+      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
+    }
+
     fDtc->DisableAutogenDRP();
     
     fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
 
-    fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
-    fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
-    fDtc->SetCFOEmulationEventMode          (EWMode);
+    ConfigureJA(0,1);
+
+    // fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
+    // fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
+    // fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
+    // fDtc->SetCFOEmulationEventMode          (EWMode);
+                                        // this one is OK...
+    int EnableClockMarkers = 0;
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
     fDtc->EnableCFOEmulatorDRP();                                  // r_0x9100:bit_24 = 1
     fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
 
-    fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1 
-    fDtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1 
+    fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
+
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
+    // this command actually sends the EWM's, comment it out 
+    // fDtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1
+    TLOG(TLVL_INFO) << Form("END\n");
   }
 
 //-----------------------------------------------------------------------------
@@ -362,40 +380,84 @@ namespace trkdaq {
 // EVMs/HBs from the outside
 //-----------------------------------------------------------------------------
   void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+    TLOG(TLVL_INFO) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
 
     if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
 
-    fDtc->DisableCFOEmulation();
-    fDtc->DisableAutogenDRP  ();
+    // this one doesn't take DTC_Link_ALL gently
+    for (int i=0; i<6; i++) {
+      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
+    }
 
-    fDtc->HardReset();                  // write 0x9100:bit_00=1
-    fDtc->SoftReset();                  // write 0x9100:bit_31=1
+    // fDtc->HardReset();                  // write 0x9100:bit_00=1
+    fDtc->SoftReset();                 // write 0x9100:bit_31=1   
 
-    
+    fDtc->DisableCFOEmulation  ();         // r_0x9100:bit_30 = 0
+    fDtc->DisableCFOEmulatorDRP();         // r_0x9100:bit_24 = 0
+    fDtc->DisableAutogenDRP    ();         // r_0x9100:bit_23 = 0
 
+    // do it only when the bit is set ? 
+    fDtc->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
+
+
+    ConfigureJA(1,1);
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
+                                        // this function handles DTC_Link_ALL correctly
     fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_ALL,EnableClockMarkers);
 
     fDtc->SetExternalCFOSampleEdgeMode(fSampleEdgeMode);
     
     fDtc->EnableAutogenDRP();           // r_0x9100:bit_23
 
-    fDtc->ClearCFOEmulationMode();      // r_0x9100:bit_15 = 0
     // dtc->SetCFOEmulationMode();      // r_0x9100:bit_15 = 1
 
-    fDtc->DisableCFOEmulation  ();      // r_0x9100:bit_30 = 0
     // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
 
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
+
+    TLOG(TLVL_INFO) << Form("END\n");
 }
 
+//-----------------------------------------------------------------------------
+// Init Readout doesn't 
+//-----------------------------------------------------------------------------
+  void DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+
+    if (EmulateCfo     != -1) fEmulateCfo  = EmulateCfo;
+    if (RocReadoutMode != -1) fReadoutMode = RocReadoutMode;
+    
+    TLOG(TLVL_INFO) << "START : Emulates CFO=" << fEmulateCfo << " ROC ReadoutMode:" << fReadoutMode << std::endl; 
+
+    if (fEmulateCfo == 0) {
+      InitExternalCFOReadoutMode();
+    }
+    else {
+//-----------------------------------------------------------------------------
+// bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
+//-----------------------------------------------------------------------------
+      InitEmulatedCFOReadoutMode();
+      // fDtc->DisableCFOEmulation();            // r_0x9100:bit_30=0
+      // fDtc->SoftReset();                      // this may be extra
+    }
+    
+    SetLinkMask();                          // this could be reset in the DTC by hard reset
+    InitRocReadoutMode();
+
+    // fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+    
+    TLOG(TLVL_INFO) << "END" << std::endl;
+  }
+    
 //-----------------------------------------------------------------------------
 // fReadoutMode is supposed to be already set, don't reinitialize
 // fReadoutMode = 0: read ROC-renerated patterns
 //              = 1: read digis
+
+  
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
+    TLOG(TLVL_INFO) << Form("START : fReadoutMode=%i\n",fReadoutMode);
     if (fReadoutMode == 0) {
       MonicaVarPatternConfig();                  // readout ROC patterns
     }
@@ -403,8 +465,33 @@ namespace trkdaq {
       MonicaVarLinkConfig();                      // readout ROC digis
       MonicaDigiClear();                          //
     }
+    TLOG(TLVL_INFO) << Form("END   : fReadoutMode=%i\n",fReadoutMode);
   }
     
+//-----------------------------------------------------------------------------
+// run plan already defined in InitEmulatedCFOReadoutMode
+// this function can be executed in a loop, after InitEmulatedCFOReadoutMode
+// has been executed once
+//-----------------------------------------------------------------------------
+  void DtcInterface::LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) {
+
+    TLOG(TLVL_INFO) << Form("START : EWLength=%i NMarkers=%i FirstEWTag=%i\n",EWLength,NMarkers,FirstEWTag);
+
+    fDtc->DisableCFOEmulation();
+    fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
+
+    int EWMode = 1;
+    fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
+    fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
+    fDtc->SetCFOEmulationEventMode          (EWMode);
+    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
+
+                                        // this command sends the EWM's
+    fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
+
+    TLOG(TLVL_INFO) << Form("END\n");
+  }
+  
 //-----------------------------------------------------------------------------
   int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel) {
     const char* keys[] = {
@@ -900,9 +987,7 @@ namespace trkdaq {
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        fDtc->EnableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
-      }
+      if (used) fDtc->EnableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
     }
   }
 
@@ -941,7 +1026,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintFireflyTemp() {
     int tmo_ms(50);
-
+    TLOG(TLVL_INFO) << "START" << std::endl;
 //-----------------------------------------------------------------------------
 // read RX firefly temp
 //------------------------------------------------------------------------------
@@ -974,6 +1059,8 @@ namespace trkdaq {
     txrx_temp = data & 0xff;
 
     cout << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
+    
+    TLOG(TLVL_INFO) << "END" << std::endl;
   }
 
 struct RocData_t {

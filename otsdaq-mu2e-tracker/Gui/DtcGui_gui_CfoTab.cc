@@ -26,6 +26,8 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //------------------------------------------------------------------------------
 // a) graphics context changes
 //-----------------------------------------------------------------------------
+  TString* cmd;
+  
   TGFont *ufont;         // will reflect user font changes
   ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
 
@@ -98,8 +100,9 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0,y0+(dy+5)*3,dx,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "cfo_soft_reset()");
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
+  tb->SetUserData((void*) &DtcGui::cfo_soft_reset);
 //-----------------------------------------------------------------------------
 // column 1 raw 5: hard reset 
 //-----------------------------------------------------------------------------
@@ -112,8 +115,9 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0,y0+(dy+5)*4,dx,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "dtc_hard_reset()");
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
+  tb->SetUserData((void*) &DtcGui::cfo_hard_reset);
 //-----------------------------------------------------------------------------
 // column 2 raw 1 : label "register"
 //-----------------------------------------------------------------------------
@@ -318,9 +322,8 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(c4_dx,y0+3*(dy+5),dx3+10+dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
-  TString* cmd = new TString("cfo_init_readout");
-  tb->SetUserData(cmd);
   // tb->ChangeBackground(fValidatedColor);
+  tb->SetUserData((void*) &DtcGui::cfo_init_readout);
 //-----------------------------------------------------------------------------
 // resize the DTC group panel
 //-----------------------------------------------------------------------------
