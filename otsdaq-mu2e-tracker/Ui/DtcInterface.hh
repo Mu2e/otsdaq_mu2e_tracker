@@ -20,6 +20,7 @@
 #include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
 
 namespace trkdaq {
+  using roc_serial_t = std::string;
 
   class DtcInterface { 
   public:
@@ -84,6 +85,15 @@ namespace trkdaq {
                                   int         PrintData,
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
+
+    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
+                                        const DTCLib::roc_address_t& address);
+    std::vector<DTCLib::roc_data_t> ReadDeviceID(const DTCLib::DTC_Link_ID& Link);
+    roc_serial_t ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
+
+    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
+    void         FindAlignments(bool print=false, int LinkMask=0);
+
 //-----------------------------------------------------------------------------
 // ROC functions
 // if LinkMask=0, use fLinkMask
@@ -101,9 +111,6 @@ namespace trkdaq {
     void         SetBit(int Register, int Bit, int Value);
 
     void         SetLinkMask(int Mask);
-
-    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
-    void         FindAlignments(bool print=false, int LinkMask=0);
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto

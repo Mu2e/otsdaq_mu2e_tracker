@@ -760,33 +760,64 @@ namespace trkdaq {
     }
   }
 
-//-----------------------------------------------------------------------------
-// configure itself to use a CFO
-//-----------------------------------------------------------------------------
-  void DtcInterface::SetBit(int Register, int Bit, int Value) {
-    int tmo_ms(100);
+  // wrapper for DTCLib::DTC::ReadROCBlock
+  std::vector<roc_data_t> DtcInterface::ReadROCBlockEnsured(const DTC_Link_ID& Link, const roc_address_t& address){
+    // register 129: number of words to read
+    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 1000));
+    nwords -= 4; // account for low-level headers already consumed on-chip
 
-    uint32_t data;
-    fDtc->GetDevice()->read_register(Register,tmo_ms,&data);
-    
-    uint32_t w = (1 << Bit);
-    
-    data = (data ^ w) | (Value << Bit);
-    fDtc->GetDevice()->write_register(Register,tmo_ms,data);
+    std::vector<roc_data_t> rv;
+    bool increment_address = false; // read via fifo
+    fDtc->ReadROCBlock(rv, Link, address, nwords, increment_address, 10000);
+    if (rv.size() != nwords){
+      std::string msg = "Malformed block read";
+      msg += " expected ";
+      msg += std::to_string(nwords);
+      msg += " words, received ";
+      msg += std::to_string(rv.size());
+      msg += " words";
+      throw cet::exception("DtcInterface::ReadROCBlockEnsured") << msg;
+    }
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    return rv;
   }
 
-//-----------------------------------------------------------------------------
-// configure itself to use a CFO
-//-----------------------------------------------------------------------------
-  void DtcInterface::SetLinkMask(int Mask) {
-    if (Mask != 0) fLinkMask = Mask;
-    
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        fDtc->EnableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
-      }
+  // read serial number and device info
+  vector<roc_data_t> DtcInterface::ReadDeviceID(const DTCLib::DTC_Link_ID& Link){
+    this->ResetRoc();
+    // write nothing to trigger query
+    vector<roc_data_t> empty;
+    fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROC));
+
+    // read back payload
+    auto rv = this->ReadROCBlockEnsured(Link, 260);
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    return rv;
+  }
+
+  roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link){
+    auto returned = this->ReadDeviceID(Link);
+
+    stringstream ss;
+    ss << "0x";
+
+    // first 16 words are the serial number
+    for (size_t i = 0 ; i < 16 ; i++){
+      ss << hex << returned[i];
+
     }
+
+    auto rv = ss.str();
+    return rv;
   }
 
 //-----------------------------------------------------------------------------
@@ -819,24 +850,7 @@ namespace trkdaq {
       // idle
     }
 
-    // register 129: number of words to read
-    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 100));
-    nwords -= 4; // account for low-level headers already consumed on-chip
-    vector<roc_data_t> returned;
-    // register 264: find alignment routine
-    fDtc->ReadROCBlock(returned, Link, 264, nwords, false, 10000);
-    if (returned.size() != nwords){
-      std::string msg = "Malformed block read";
-      msg += " expected ";
-      msg += std::to_string(nwords);
-      msg += " words, received ";
-      msg += std::to_string(returned.size());
-      msg += " words";
-      throw cet::exception("DtcInterface::FindAlignment") << msg;
-    }
-
-    // reset ddr memory
-    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+    vector<roc_data_t> returned = this->ReadROCBlockEnsured(Link, 264);
 
     // return
     auto rv = Alignment(returned);
@@ -858,6 +872,36 @@ namespace trkdaq {
         if (print) {
           print_legacy_table(alignment);
         }
+      }
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// configure itself to use a CFO
+//-----------------------------------------------------------------------------
+  void DtcInterface::SetBit(int Register, int Bit, int Value) {
+    int tmo_ms(100);
+
+    uint32_t data;
+    fDtc->GetDevice()->read_register(Register,tmo_ms,&data);
+    
+    uint32_t w = (1 << Bit);
+    
+    data = (data ^ w) | (Value << Bit);
+    fDtc->GetDevice()->write_register(Register,tmo_ms,data);
+  }
+
+//-----------------------------------------------------------------------------
+// configure itself to use a CFO
+//-----------------------------------------------------------------------------
+  void DtcInterface::SetLinkMask(int Mask) {
+    if (Mask == 0) return;
+    fLinkMask = Mask;
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        fDtc->EnableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
       }
     }
   }
