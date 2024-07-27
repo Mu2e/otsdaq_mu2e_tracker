@@ -139,55 +139,56 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-//   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
-
-//     TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
-    
-//     fCfo->DisableLinks();                                    // Ryan says this is important
-//     fCfo->DisableEmbeddedClockMarker();
-//     // these functions don't use CFO_Link_ALL
-//     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
-//     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-//     ConfigureJA(1,1);
-//     fCfo->SoftReset();
-//     SetRunPlan   (RunPlan);
-//     usleep(10);
-// //-----------------------------------------------------------------------------
-// // in the end, re-initialize the time chains defined by the DTC mask
-// //-----------------------------------------------------------------------------
-//     if (DtcMask != 0) fDtcMask = DtcMask;
-//     for (int i=0; i<8; i++) {
-//       int ndtcs = (fDtcMask >> 4*i) & 0xf;
-//       if (ndtcs > 0) {
-//         fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
-//         TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
-//       }
-//     }
-//     TLOG(TLVL_INFO) << Form("Done\n");
-//   }
   void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
 
     TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
-
-    CfoInterface* cfo_i = this;
     
-    cfo_i->Cfo()->DisableLinks();                                    // Ryan says this is important
-    cfo_i->Cfo()->DisableEmbeddedClockMarker();
-    cfo_i->Cfo()->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);    //
-    cfo_i->Cfo()->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-    ConfigureJA(1,1); // cfo_configure_ja(1,1)
-    cfo_i->Cfo()->SoftReset();
-    //     cfo_i->SetRunPlan("../cfo_run_plans/run_066.bin");
-    cfo_i->SetRunPlan(RunPlan);
-    TLOG(TLVL_INFO) << Form("Run plan: :%s:  :../cfo_run_plans/run_066.bin:\n",RunPlan);
-    // cfo_i->SetRunPlan("../cfo_run_plans/run_00001_hz.bin")
-    // reset after set seems to be a must... 
-    // enable in the end ? 
-    cfo_i->Cfo()->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
-
-    //    cfo_i->Cfo()->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableLinks();                                    // Ryan says this is important
+    fCfo->DisableEmbeddedClockMarker();
+                                        // these functions don't use CFO_Link_ALL
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    ConfigureJA(1,1);
+    fCfo->SoftReset();
+    SetRunPlan   (RunPlan);
+    usleep(10);
+//-----------------------------------------------------------------------------
+// in the end, re-initialize the time chains defined by the DTC mask
+//-----------------------------------------------------------------------------
+    if (DtcMask != 0) fDtcMask = DtcMask;
+    for (int i=0; i<8; i++) {
+      int ndtcs = (fDtcMask >> 4*i) & 0xf;
+      if (ndtcs > 0) {
+        fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
+        TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
+      }
+    }
     TLOG(TLVL_INFO) << Form("Done\n");
   }
+  
+  // void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
+
+  //   TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
+
+  //   CfoInterface* cfo_i = this;
+    
+  //   cfo_i->Cfo()->DisableLinks();                                    // Ryan says this is important
+  //   cfo_i->Cfo()->DisableEmbeddedClockMarker();
+  //   cfo_i->Cfo()->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);    //
+  //   cfo_i->Cfo()->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  //   ConfigureJA(1,1); // cfo_configure_ja(1,1)
+  //   cfo_i->Cfo()->SoftReset();
+  //   //     cfo_i->SetRunPlan("../cfo_run_plans/run_066.bin");
+  //   cfo_i->SetRunPlan(RunPlan);
+  //   TLOG(TLVL_INFO) << Form("Run plan: :%s:  :../cfo_run_plans/run_066.bin:\n",RunPlan);
+  //   // cfo_i->SetRunPlan("../cfo_run_plans/run_00001_hz.bin")
+  //   // reset after set seems to be a must... 
+  //   // enable in the end ? 
+  //   cfo_i->Cfo()->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
+
+  //   //    cfo_i->Cfo()->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+  //   TLOG(TLVL_INFO) << Form("Done\n");
+  // }
 
 //-----------------------------------------------------------------------------
   uint32_t CfoInterface::ReadRegister(uint16_t Register) {

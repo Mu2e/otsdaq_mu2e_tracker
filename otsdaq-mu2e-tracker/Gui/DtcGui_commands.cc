@@ -24,8 +24,7 @@ void DtcGui::print_dtc_status() {
   ostringstream strCout;
   cout.rdbuf( strCout.rdbuf() );
 
-  TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::ExecuteCommand : cmd: " << "print_status" << std::endl;
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" DtcGui::%s:START:\n",__func__);
 
   //  printf("Active TAB ID: %i\n",fActiveDtcID);
 
@@ -34,7 +33,7 @@ void DtcGui::print_dtc_status() {
       dtel->fCFO_i->PrintStatus();
     }
     catch (...) {
-      *fTextView << Form("ERROR : coudn't read CFO\n");
+      *fTextView << Form("ERROR in DtcGui::%s: coudn't read the CFO\n",__func__);
     }
   }
   else if (dtel->fData->fName == "DTC") {
@@ -42,14 +41,11 @@ void DtcGui::print_dtc_status() {
       dtel->fDTC_i->PrintStatus();
     }
     catch (...) {
-      *fTextView << Form("ERROR : coudn't read DTC") << std::endl;
+      *fTextView << Form("ERROR in DtcGui::%s: coudn't read the DTC\n",__func__);
     }
   }
 
-  TDatime x2;
-  *fTextView << strCout.str() 
-             << x2.AsSQLString() 
-             << " DtcGui::ExecuteCommand : DONE " <<  std::endl;
+  TDatime x2; *fTextView << strCout.str() << x2.AsSQLString() << Form(" DtcGui::%s:DONE\n",__func__);
 
   fTextView->ShowBottom();
 

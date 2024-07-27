@@ -1,19 +1,20 @@
 //
 #define __CLING__ 1
 
-#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+#include "print_buffer.C"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+// #include "dtcInterfaceLib/DTC.h"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 using namespace DTCLib;
+using namespace trkdaq;
 
 //-----------------------------------------------------------------------------
 void parse_fi_output(char* Data, int NBytes) {
   vector<int> val;
 
-  int niteration = int((NBytes-2)/(1+24*2+96+6*2));
-  printf(">>> ninteration = %i\n",niteration);
+  int niterations = int((NBytes-2)/(1+24*2+96+6*2));
+  printf(">>> ninteration = %i\n",niterations);
 
   val.push_back(Data[0]);
   val.push_back(Data[1]);
@@ -23,45 +24,45 @@ void parse_fi_output(char* Data, int NBytes) {
     val.push_back(Data[2]);
     // 24 shorts
     for (int k=0; k<24; k++) {
-      loc = k*2+3;
-      short w = Data[loc] + Data[loc+1]<<8;
+      int   loc = k*2+3;
+      short ub  = Data[loc+1];
+      short w   = (ub << 8) + Data[loc];
       val.push_back(w);
     }
 
     // 96 chars
     for (int k=0; k<96; k++) {
-      loc = k*2+3+48;
-      short w = Data[loc] + Data[loc+1]<<8;
+      int   loc = k*2+3+48;
+      short ub  = Data[loc+1];
+      short w   = (ub << 8) + Data[loc ];
       val.push_back(w);
     }
     
-    // 96 chars
+    // 6 chars
     for (int k=0; k<6; k++) {
-      loc = k*2+3+48+96;
-      short w = Data[loc] + Data[loc+1]<<8;
+      int loc   = k*2+3+48+96;
+      short ub  = Data[loc+1];
+      short w   = (ub << 8) + Data[loc ];
       val.push_back(w);
     }
-    
   }
 }
-
 
 //-----------------------------------------------------------------------------
 // find alignment:
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 //-----------------------------------------------------------------------------
-void find_alignment(int Link, int PcieAddress, int ROCSleepTime = 2000) {
+void find_alignment(int Link, int PcieAddr, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
+// interactive ROOT doesn't like the variable name 'link', use 'roc' instead
 //-----------------------------------------------------------------------------
   auto roc  = DTC_Link_ID(Link);
 
-  int roc_mask = 1 << (4*Link);
-  DTC dtc(DTC_SimMode_NoCFO,PcieAddress,roc_mask,"");
+  int link_mask = 1 << (4*Link);
+  DTC dtc(DTC_SimMode_NoCFO,PcieAddr,link_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-  //  monica_var_link_config(&dtc,roc);
 //-----------------------------------------------------------------------------
 // write 0x1 into reg 264, sleep for some time, 
 // then wait till reg 128 returns non-zero
@@ -113,5 +114,19 @@ void find_alignment(int Link, int PcieAddress, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // parse output  
 //-----------------------------------------------------------------------------
-  parse_fi_output(v2.data(),nw*2)
+  parse_fi_output((char*) v2.data(),nbytes);
+}
+
+
+//-----------------------------------------------------------------------------
+void find_alignment_test_001(int Link, int PcieAddr = -1) {
+  int link_mask = 0x1 << 4*Link;
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr,link_mask);
+  bool print_level(true);
+  dtc_i->FindAlignments(print_level);
+}
+
+//-----------------------------------------------------------------------------
+void find_alignment_test_002(int Link, int PcieAddr = -1) {
+  find_alignment(Link,PcieAddr);
 }

@@ -420,7 +420,7 @@ namespace trkdaq {
 }
 
 //-----------------------------------------------------------------------------
-// Init Readout doesn't 
+// Init Readout 
 //-----------------------------------------------------------------------------
   void DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
 
@@ -428,7 +428,9 @@ namespace trkdaq {
     if (RocReadoutMode != -1) fReadoutMode = RocReadoutMode;
     
     TLOG(TLVL_INFO) << "START : Emulates CFO=" << fEmulateCfo << " ROC ReadoutMode:" << fReadoutMode << std::endl; 
-
+//-----------------------------------------------------------------------------
+// both emulated and external modes perform soft reset of the DTC
+//-----------------------------------------------------------------------------
     if (fEmulateCfo == 0) {
       InitExternalCFOReadoutMode();
     }
@@ -438,7 +440,6 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
       InitEmulatedCFOReadoutMode();
       // fDtc->DisableCFOEmulation();            // r_0x9100:bit_30=0
-      // fDtc->SoftReset();                      // this may be extra
     }
     
     SetLinkMask();                          // this could be reset in the DTC by hard reset
@@ -556,7 +557,7 @@ namespace trkdaq {
     
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRegister(uint16_t Register, const char* Title) {
-    std::cout << Form("%s (0x%04x) : 0x%08x\n",Title,Register,ReadRegister(Register));
+    std::cout << Form("(0x%04x) : 0x%08x : %s\n",Register,ReadRegister(Register),Title);
   }
 
 //-----------------------------------------------------------------------------
@@ -982,8 +983,7 @@ namespace trkdaq {
 // configure itself to use a CFO
 //-----------------------------------------------------------------------------
   void DtcInterface::SetLinkMask(int Mask) {
-    if (Mask == 0) return;
-    fLinkMask = Mask;
+    if (Mask != 0) fLinkMask = Mask;
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
