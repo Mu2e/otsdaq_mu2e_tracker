@@ -176,11 +176,11 @@ int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
 // don't validate
 // a read should always end with releasing  buffers ???
 //-----------------------------------------------------------------------------
-int dtc_read_subevents(uint64_t FirstTS = 0, int PrintData = 1, int Validate = 0, int PcieAddr = -1, const char* OutputFn = nullptr) {
+int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 0, int PcieAddr = -1, const char* OutputFn = nullptr) {
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintData,Validate,OutputFn);
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintLevel,Validate,OutputFn);
   
   return list_of_subevents.size();
 }
@@ -317,84 +317,6 @@ int validate_dtc_block(ulong EwTag, ushort* Data, ulong* Offset, int PrintData) 
 }
 
 //-----------------------------------------------------------------------------
-// types of errors:
-// 1. wrong event window marker
-// 2. bit errors in the payload words
-// 3. 
-//-----------------------------------------------------------------------------
-int dtc_read_and_validate(uint64_t NEvents, int PrintData = 1, uint64_t FirstTS = 0, int PcieAddr = -1) {
-
-  ulong   n_read_events(0);
-  int     nerrors      (0);
-  bool    match        (false);
-  ulong   offset       (0);
-  
-  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  DTC*          dtc   = dtc_i->Dtc();
-
-  while(1) {
-//-----------------------------------------------------------------------------
-// read events
-//-----------------------------------------------------------------------------
-    ulong ts = FirstTS+n_read_events;
-    DTC_EventWindowTag expected_tag = DTC_EventWindowTag(ts);
-    list_of_subevents = dtc->GetSubEventData(expected_tag,match);
-    
-    int   ndtcs         = list_of_subevents.size();
-    if (ndtcs == 0) break;
-    
-    int   nerr          = 0;
-
-    if (PrintData > 10) printf(" --- ts, ndtcs : %10lu %i\n",ts,ndtcs);
-    
-    for (int idtc=0; idtc<ndtcs; idtc++) {
-      DTC_SubEvent* dtc_block = list_of_subevents[idtc].get();
-      int           nb        = dtc_block->GetSubEventByteCount();
-      ulong         tag       = dtc_block->GetEventWindowTag().GetEventWindowTag(true);
-      ushort*       data      = (ushort*) dtc_block->GetRawBufferPointer();
-
-      if (PrintData > 10) dtc_i->PrintBuffer(data,nb/2);
-
-      ulong exp_tag = expected_tag.GetEventWindowTag(true);
-      
-      if (tag != exp_tag) {
-        if (PrintData > 0) printf("ERROR: mismatched event tag: read: %10li  expected: %10lu\n",tag,exp_tag);
-        nerr += 1;
-      }
-
-      int rc(0);
-      // rc = validate_dtc_block(tag,data,&offset,PrintData);
-      rc = dtc_i->ValidateDtcBlock(data,tag,&offset,PrintData);
-
-      if ((rc > 0) and (PrintData > 0)) {
-        dtc_i->PrintBuffer(data,nb/2);
-      }
-
-      nerr  += rc;
-
-      if (PrintData > 10) printf("  tag: %li   rc : %i\n",tag,rc);
-      
-      if (PrintData > 0) {
-        printf(">>>>> ---- n_read_events   tag idtc nerr: %10lu %10lu %3i %5i\n",n_read_events,tag,idtc,nerr);
-      }
-    }
-
-    if (PrintData > 10) printf("  number of dtc blocks: ndtcs:  %i nerr = %i\n",ndtcs,nerr);
-    nerrors       += nerr;
-    n_read_events += 1;
-//-----------------------------------------------------------------------------
-// it looks that a delay is needed, start from one millisecond
-//-----------------------------------------------------------------------------
-    // std::this_thread::sleep_for(std::chrono::microseconds(10000));
-  }
-
-  printf("[%s]: n_read_events nerrors :  %10lu %10i\n",__func__,n_read_events,nerrors);
-  return nerrors;
-}
-
-//-----------------------------------------------------------------------------
 // do this per ROC
 //-----------------------------------------------------------------------------
 void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
@@ -402,25 +324,6 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->ReadSpiData(Link,spi_data,PrintLevel);
-}
-
-//-----------------------------------------------------------------------------
-void dtc_val_test_emulated_cfo(int NEvents=3, int PrintLevel = 1, uint64_t FirstTS=0, int PcieAddr=-1) {
-  TStopwatch timer;
-  timer.Start();
-  
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr); // assume already initialized
-  dtc_i->RocConfigurePatternMode();
-                                        // 68x25ns = 1700 ns
-  dtc_i->InitEmulatedCFOReadoutMode();
-
-  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS);
-
-  dtc_read_and_validate(NEvents,PrintLevel,FirstTS,PcieAddr);
-
-  timer.Stop();
-  printf(" timing: RT=%7.3f s, Cpu=%7.3f s\n",timer.RealTime(),timer.CpuTime());
-  
 }
 
 //-----------------------------------------------------------------------------
@@ -465,14 +368,10 @@ void dtc_buffer_test_emulated_cfo_new(int NEvents=3, int Mode = 0x1, uint64_t Fi
   int print_level      = (Mode >>  0) & 0xff;
   int validation_level = (Mode >>  8) & 0xff;
   int roc_readout_mode = (Mode >> 16) & 0xff;
-
-  //  dtc_configure_roc_readout_mode(roc_readout_mode,pcie_addr);
-  
                                                      // 68x25ns = 1700 ns
                                                      // this call doesn't send EWMs
   int emulate_cfo = 1;
   dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
-  // dtc_i->InitEmulatedCFOReadoutMode();
                                                     // in emulated mode, always read after
   
   dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS); // 

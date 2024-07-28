@@ -37,7 +37,7 @@ namespace trkdaq {
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
       
-    TLOG(TLVL_INFO) << "CONSTRUCT DTC: pcie_addr:" << PcieAddr << " LinkMask:" << std::hex << LinkMask << std::dec
+    TLOG(TLVL_DEBUG) << "CONSTRUCT DTC: pcie_addr:" << PcieAddr << " LinkMask:" << std::hex << LinkMask << std::dec
                     << " SkipInit:" << SkipInit << std::endl;
 
     fPcieAddr       = PcieAddr;
@@ -70,7 +70,7 @@ namespace trkdaq {
       }
     }
 
-    TLOG(TLVL_INFO) << "pcie_addr:" << pcie_addr << " LinkMask:" << std::hex << LinkMask << std::dec
+    TLOG(TLVL_DEBUG) << "pcie_addr:" << pcie_addr << " LinkMask:" << std::hex << LinkMask << std::dec
                     << " SkipInit:" << SkipInit << std::endl;
     
     if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask, SkipInit);
@@ -143,12 +143,12 @@ namespace trkdaq {
       uint32_t dat;
       
       dat = fDtc->ReadROCRegister(link,Reg,100);
-      text += Form("     0x%04x :",dat);
+      text += Form("     0x%04x",dat);
     }
     std::string sreg = Form("reg(%2i)",Reg);
 
     if (Format == 1) text += Form(" %s",Desc.data());
-    cout << Form("%-21s :%s\n",sreg.data(),text.data());
+    cout << Form("%-18s %s\n",sreg.data(),text.data());
   }
 
   //-----------------------------------------------------------------------------
@@ -165,14 +165,14 @@ namespace trkdaq {
       iw1 = fDtc->ReadROCRegister(link,Reg  ,100);
       iw2 = fDtc->ReadROCRegister(link,Reg+1,100);
       iw  = (iw2 << 16) | iw1;
-      text += Form(" 0x%08x :",iw);
+      text += Form(" 0x%08x",iw);
     }
 
     if (Format == 1) text += Form(" %s",Desc.data());
 
-    std::string sreg = Form("reg(%2i)<<16 | reg(%2i)",Reg+1,Reg);
+    std::string sreg = Form("reg(%2i)<<16|reg(%2i)",Reg+1,Reg);
 
-    cout << Form("%-21s :%s\n",sreg.data(),text.data());
+    cout << Form("%-18s%s\n",sreg.data(),text.data());
   }
   
   
@@ -189,11 +189,11 @@ namespace trkdaq {
 
     uint reg;
 
-    std::string text("          Register    :");
+    std::string text("        Register     ");
     for (int i=0; i<6; i++) {
       int used = (link_mask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
-      text += Form("     ROC%i   :",i);
+      text += Form("    ROC%i   ",i);
     }
                      
     if (Format != 0) text += " Description";
@@ -313,7 +313,7 @@ namespace trkdaq {
   void DtcInterface::InitEmulatedCFOReadoutMode() {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
 
-    TLOG(TLVL_INFO) << Form("START\n");
+    TLOG(TLVL_DEBUG) << Form("START\n");
     //    int EWMode             = 1;
     // int EnableAutogenDRP   = 1;
 
@@ -346,7 +346,7 @@ namespace trkdaq {
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
     // this command actually sends the EWM's, comment it out 
     // fDtc->EnableCFOEmulation();                                    // r_0x9100:bit_30 = 1
-    TLOG(TLVL_INFO) << Form("END\n");
+    TLOG(TLVL_DEBUG) << Form("END\n");
   }
 
 //-----------------------------------------------------------------------------
@@ -357,7 +357,7 @@ namespace trkdaq {
 // EVMs/HBs from the outside
 //-----------------------------------------------------------------------------
   void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
-    TLOG(TLVL_INFO) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
+    TLOG(TLVL_DEBUG) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
 
     if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
 
@@ -393,7 +393,7 @@ namespace trkdaq {
 
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
 
-    TLOG(TLVL_INFO) << Form("END\n");
+    TLOG(TLVL_DEBUG) << Form("END\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -404,7 +404,7 @@ namespace trkdaq {
     if (EmulateCfo     != -1) fEmulateCfo  = EmulateCfo;
     if (RocReadoutMode != -1) fReadoutMode = RocReadoutMode;
     
-    TLOG(TLVL_INFO) << "START : Emulates CFO=" << fEmulateCfo << " ROC ReadoutMode:" << fReadoutMode << std::endl; 
+    TLOG(TLVL_DEBUG) << "START : Emulates CFO=" << fEmulateCfo << " ROC ReadoutMode:" << fReadoutMode << std::endl; 
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
@@ -416,15 +416,17 @@ namespace trkdaq {
 // bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
 //-----------------------------------------------------------------------------
       InitEmulatedCFOReadoutMode();
-      // fDtc->DisableCFOEmulation();            // r_0x9100:bit_30=0
     }
-    
-    SetLinkMask();                          // this could be reset in the DTC by hard reset
+//-----------------------------------------------------------------------------
+// the DTC link mask could be reset by the previous DTC hard reset, so restore it
+// also, release all buffers from the previous read - this is the initialization
+//-----------------------------------------------------------------------------
+    SetLinkMask();                         
+                                           
     InitRocReadoutMode();
-
-    // fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
-    TLOG(TLVL_INFO) << "END" << std::endl;
+    TLOG(TLVL_DEBUG) << "END" << std::endl;
   }
     
 //-----------------------------------------------------------------------------
@@ -435,7 +437,7 @@ namespace trkdaq {
   
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
-    TLOG(TLVL_INFO) << Form("START : fReadoutMode=%i\n",fReadoutMode);
+    TLOG(TLVL_DEBUG) << Form("START : fReadoutMode=%i\n",fReadoutMode);
     if (fReadoutMode == 0) {
       MonicaVarPatternConfig();                  // readout ROC patterns
     }
@@ -443,7 +445,7 @@ namespace trkdaq {
       MonicaVarLinkConfig();                      // readout ROC digis
       MonicaDigiClear();                          //
     }
-    TLOG(TLVL_INFO) << Form("END   : fReadoutMode=%i\n",fReadoutMode);
+    TLOG(TLVL_DEBUG) << Form("END   : fReadoutMode=%i\n",fReadoutMode);
   }
     
 //-----------------------------------------------------------------------------
@@ -702,10 +704,10 @@ namespace trkdaq {
                                    const char* Fn       ) {
     ulong    ts       = FirstTS;
     bool     match_ts = false;
-    int      nerr_tot(0);
+    int      nerr_tot  (0);
     ulong    nbytes_tot(0);
-    ulong    offset  (0);               // used in validation mode
-    //    int      print_level(1);
+    ulong    offset    (0);               // used in validation mode
+    int      nerr_roc[6], nerr_roc_tot[6];
 
     FILE*    file(nullptr);
     if (Fn != nullptr) {
@@ -729,6 +731,15 @@ namespace trkdaq {
         }
       }
     }
+    cout << Form("      event  DTC     EW Tag nbytes  nbytes_tot ------------- ROC status ----------------  nerr nerr_tot\n");
+    cout << Form("-------------------------------------------------------------------------------------------------------\n");
+//-----------------------------------------------------------------------------
+// reset per-roc error counters
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      nerr_roc    [i] = 0;
+      nerr_roc_tot[i] = 0;
+    }
 //-----------------------------------------------------------------------------
 // always read an event into the same external buffer (VSub), 
 // so no problem with the memory management
@@ -737,14 +748,11 @@ namespace trkdaq {
       // sleep(1);
       DTC_EventWindowTag event_tag = DTC_EventWindowTag(ts);
       try {
-        // VSub.clear();
         VSub   = fDtc->GetSubEventData(event_tag, match_ts);
         int sz = VSub.size();
-        
-        if (PrintLevel > 0) {
-          cout << Form(">>>> ------- ts = %5li NDTCs:%2i",ts,sz);
-          if (sz == 0) {
-            cout << std::endl;
+        if (sz == 0) {
+          if (PrintLevel > 0) {
+            cout << Form(">>>> ------- ts = %5li NDTCs:%2i END_OF_DATA\n",ts,sz);
             break;
           }
         }
@@ -754,30 +762,18 @@ namespace trkdaq {
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
-          int      nbytes = ev->GetSubEventByteCount();
-          uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
-          char*    data   = (char*) ev->GetRawBufferPointer();
+          uint64_t ew_tag  = ev->GetEventWindowTag().GetEventWindowTag(true);
+          char*    data    = (char*) ev->GetRawBufferPointer();
 
-          nbytes_tot += nbytes;
+          int      nbytes  = ev->GetSubEventByteCount();
+          nbytes_tot      += nbytes;
 
           int nerr(0);
           
           if (Validate > 0) {
-            nerr = ValidateDtcBlock((ushort*)data,ew_tag,&offset,PrintLevel);
-          }
-          nerr_tot += nerr;
-
-          if (file) {
-//-----------------------------------------------------------------------------
-// write event to output file
-//-----------------------------------------------------------------------------
-            int nbb = fwrite(data,1,nbytes,file);
-            if (nbb == 0) {
-              cout << "ERROR in " << __func__ << " : failed to write event " << ew_tag 
-                   << " , close file and BAIL OUT" << endl;
-              fclose(file);
-              return;
-            }
+            nerr = ValidateDtcBlock((ushort*)data,ew_tag,&offset,PrintLevel,nerr_roc);
+            nerr_tot += nerr;
+            for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
           }
 
           char* roc_data  = data+0x30;
@@ -789,16 +785,25 @@ namespace trkdaq {
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i nbytes_tot:%12li ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
-                         i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
+            cout << Form(" %10li  %2i  %10li %5i %12li 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x %5i %8i\n",
+                         ts,i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5],nerr,nerr_tot);
+            if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
+              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+            }
           }
           
-          if (PrintLevel > 1) {
-            cout << std::endl;
-            PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+          if (file) {
+//-----------------------------------------------------------------------------
+// write event to output file
+//-----------------------------------------------------------------------------
+            int nbb = fwrite(data,1,nbytes,file);
+            if (nbb == 0) {
+              TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
+              fclose(file);
+              return;
+            }
           }
         }
-        if (PrintLevel > 0) cout << std::endl;
         
         ts++;
       }
@@ -809,6 +814,17 @@ namespace trkdaq {
     }
 
     //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// print summary
+//-----------------------------------------------------------------------------
+    if (PrintLevel > 0) {
+      ulong nev = ts-FirstTS;
+      cout << Form("nevents: %10li nbytes_tot: %12li\n",nev, nbytes_tot);
+      cout << Form("nerr_tot: %8i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+                   nerr_tot,
+                   nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
+                   nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+    }
 //-----------------------------------------------------------------------------
 // to simplify first steps, assume that in a file writing mode all events 
 // are read at once, so close the file on exit
@@ -996,7 +1012,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintFireflyTemp() {
     int tmo_ms(50);
-    TLOG(TLVL_INFO) << "START" << std::endl;
+    TLOG(TLVL_DEBUG) << "START" << std::endl;
 //-----------------------------------------------------------------------------
 // read RX firefly temp
 //------------------------------------------------------------------------------
@@ -1030,7 +1046,7 @@ namespace trkdaq {
 
     cout << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
     
-    TLOG(TLVL_INFO) << "END" << std::endl;
+    TLOG(TLVL_DEBUG) << "END" << std::endl;
   }
 
 struct RocData_t {
@@ -1040,18 +1056,20 @@ struct RocData_t {
   ushort  ewt[3];
   ushort  status;
   ushort  xxx2;
-  ushort  data; // array, use it just for memory mapping
+  ushort  data; // array, use it juxsst for memory mapping
 };
   
 //-----------------------------------------------------------------------------
+// validate data taken in the tracker ROC pattern generation mode, focus on payload
 // returns number of found errors in the payload data
 // assume ROC pattern generation
 // 'Offset' is the
 // PrintLevel =  0: print nothing
 //            =  1: print all about errors
-//            > 10: full printout 
+//            > 10: full printout
+// also returned NErrRoc[6]: number of errors per ROC
 //-----------------------------------------------------------------------------
-int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel) {
+  int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc) {
 
   int nhits[64] = {
     1,   2,  3,  0,  0,  0,  7,  8,
@@ -1093,6 +1111,7 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 //-----------------------------------------------------------------------------
   roc = (RocData_t*) (Data+0x18);
   for (int iroc=0; iroc<6; iroc++) {
+    NErrRoc[iroc] = 0;
     if (PrintLevel > 10) printf("  ---- roc # %i\n",iroc);
 //-----------------------------------------------------------------------------
 // offsets are the same for all non-emty ROC's in the DTC data block
@@ -1107,7 +1126,8 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 
     if (ewtag_roc != EwTag) {
       if (PrintLevel > 0) printf("ERROR: EwTag ewtag_roc roc : 0x%08lx 0x%08lx %i\n",EwTag,ewtag_roc,iroc);
-      nerr += 1;
+      nerr          += 1;
+      NErrRoc[iroc] += 1;
     }
     
     if (roc->nb > 0x10) { 
@@ -1123,7 +1143,8 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
       if (npackets != npackets_exp) {
         if (PrintLevel > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
                                   EwTag,iroc,npackets,npackets_exp);
-        nerr += 1;
+        nerr          += 1;
+        NErrRoc[iroc] += 1;
       }
       
       if (PrintLevel > 10) {
@@ -1133,14 +1154,15 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
 
       uint nw      = npackets*4;        // N 4-byte words
     
-      for (uint i=0; i<nw; i++) {
-        uint exp_pattern = (i+offset) & 0xffffffff;
+      for (uint iw=0; iw<nw; iw++) {
+        uint exp_pattern = (iw+offset) & 0xffffffff;
     
-        if (pattern[i] != exp_pattern) {
-          nerr += 1;
+        if (pattern[iw] != exp_pattern) {
+          nerr          += 1;
+          NErrRoc[iroc] += 1;
           if (PrintLevel > 0) {
-            printf("ERROR: EwTag, ewt roc i  offset payload[i]  exp_word: %10lu %3i %i %3i %10li 0x%08x 0x%08x\n",
-                   EwTag, ewt, iroc, i, offset,pattern[i],exp_pattern);
+            printf("ERROR: EwTag, ewt roc iw  offset payload[iw] exp_word: %10lu %3i %i %3i %10li 0x%08x 0x%08x\n",
+                   EwTag, ewt, iroc, iw, offset,pattern[iw],exp_pattern);
           }
         }
       }
@@ -1150,7 +1172,9 @@ int DtcInterface::ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int
   
   *Offset += 2*4*nhits[ewt];
 
-  if (PrintLevel > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i\n",EwTag,nb_dtc,nerr);
+  if (PrintLevel > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i nerr_roc: %5i %5i %5i %5i %5i %5i\n",
+                              EwTag,nb_dtc,nerr,
+                              NErrRoc[0],NErrRoc[1],NErrRoc[2],NErrRoc[3],NErrRoc[4],NErrRoc[5]);
 
   return nerr;
 }

@@ -134,7 +134,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
-    int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel);
+    int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
 //-----------------------------------------------------------------------------
 // reset digitizers .. to be called in the beginning of each event 
 //-----------------------------------------------------------------------------

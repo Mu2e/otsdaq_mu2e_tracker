@@ -26,7 +26,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //------------------------------------------------------------------------------
 // a) graphics context changes
 //-----------------------------------------------------------------------------
-  TString* cmd;
+//  TString* cmd;
   
   TGFont *ufont;         // will reflect user font changes
   ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
@@ -58,7 +58,8 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength (-1);
   
   tb->MoveResize(x0,y0,dx,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "print_dtc_status()");
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
+  tb->SetUserData((void*) &DtcGui::cfo_print_status);
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // write register 
@@ -177,7 +178,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_enable_beam_off()");
-  //  tb->ChangeBackground(fValidatedColor);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 2 raw 6 : disable beam off
 //-----------------------------------------------------------------------------
@@ -191,7 +192,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10,y0+(dy+5)*5,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_disable_beam_off()");
-  //  tb->ChangeBackground(fValidatedColor);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 3 row 1: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
@@ -310,7 +311,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   rr->MoveResize(c5_dx,y0+2*(dy+5),dx5,dy);
   DtcTel.fRunPlan = rr;
 //-----------------------------------------------------------------------------
-// column (4+5) raw 4 : "Init Run Plan" for given CFO time link and N(DTCs
+// column (4+5) raw 4 : "InitReadout" for a given CFO time chain map defined by the DTC map
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"init readout",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -322,7 +323,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(c4_dx,y0+3*(dy+5),dx3+10+dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
-  // tb->ChangeBackground(fValidatedColor);
+  tb->ChangeBackground(fValidatedColor);
   tb->SetUserData((void*) &DtcGui::cfo_init_readout);
 //-----------------------------------------------------------------------------
 // resize the DTC group panel
