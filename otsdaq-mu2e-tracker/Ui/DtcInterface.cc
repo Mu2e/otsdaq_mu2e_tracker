@@ -130,200 +130,177 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(int Link) {
-    cout << Form("-------------------- ROC %i registers:\n",Link);
+// print value of the register Reg for different ROCs
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask) {
 
-    DTC* dtc = fDtc;
+    std::string text;
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      
+      DTC_Link_ID link = DTC_Link_ID(i);
+      uint32_t dat;
+      
+      dat = fDtc->ReadROCRegister(link,Reg,100);
+      text += Form("     0x%04x :",dat);
+    }
+    std::string sreg = Form("reg(%2i)",Reg);
 
-    DTC_Link_ID link = DTC_Link_ID(Link);
-    uint32_t dat;
+    if (Format == 1) text += Form(" %s",Desc.data());
+    cout << Form("%-21s :%s\n",sreg.data(),text.data());
+  }
 
-    uint reg = 0;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : ALWAYS\n",reg, dat);
+  //-----------------------------------------------------------------------------
+  void DtcInterface::PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask) {
 
-    reg = 8;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : ROC pattern mode ?? \n",reg, dat);
+    std::string text;
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      
+      DTC_Link_ID link = DTC_Link_ID(i);
+      uint32_t iw1, iw2, iw;
+      
+      iw1 = fDtc->ReadROCRegister(link,Reg  ,100);
+      iw2 = fDtc->ReadROCRegister(link,Reg+1,100);
+      iw  = (iw2 << 16) | iw1;
+      text += Form(" 0x%08x :",iw);
+    }
 
-    reg = 18;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
+    if (Format == 1) text += Form(" %s",Desc.data());
 
-    reg = 16;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x :\n",reg, dat);
+    std::string sreg = Form("reg(%2i)<<16 | reg(%2i)",Reg+1,Reg);
 
-    reg =  7;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Fiber loss/lock counter\n",reg, dat);
+    cout << Form("%-21s :%s\n",sreg.data(),text.data());
+  }
+  
+  
+//-----------------------------------------------------------------------------
+// most of the time LinkMask = -1
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintRocStatus(int Format, int LinkMask) {
+    TLOG(TLVL_DEBUG) << Form("Format=%i LinkMask 0x%08x \n",Format,LinkMask);
 
-    reg =  6;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Bad Markers counter\n",reg, dat);
+    std::string desc;
 
-    reg =  4;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Loopback coarse delay\n",reg, dat);
+    int link_mask = LinkMask;
+    if (LinkMask == -1) link_mask = fLinkMask;
 
-    uint iw, iw1, iw2;
+    uint reg;
 
-    reg = 23;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]\n",
-                 reg+1,reg,iw);
+    std::string text("          Register    :");
+    for (int i=0; i<6; i++) {
+      int used = (link_mask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      text += Form("     ROC%i   :",i);
+    }
+                     
+    if (Format != 0) text += " Description";
+    cout << Form("%s\n",text.data());
+    cout << "------------------------------------------------------------------------\n";
 
-    reg = 25;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]\n",
-                 reg+1,reg,iw);
+    reg =  0; desc = "ALWAYS 0x1234";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg =  8; desc = "ROC pattern mode ??"; 
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg = 18; desc = " ??";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg = 16; desc = " ??";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg =  7; desc = "Fiber loss/lock counter";
+    PrintRocRegister(reg,desc,Format,link_mask);
 
-    reg = 11;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num EWM seen\n", reg+1,reg,iw);
+    reg =  6; desc = "Bad Markers counter";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg =  4; desc = "Loopback coarse delay";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
+    reg = 23; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 64;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num windows seen\n", reg+1,reg,iw);
+    reg = 25; desc = "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 27;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num HB seen\n", reg+1,reg,iw);
+    reg = 11; desc = "Num EWM seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+    
+    reg = 64; desc = "Num windows seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 29;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num null HB seen\n", reg+1,reg,iw);
+    reg = 27; desc = "Num HB seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 31;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num HB on hold\n", reg+1,reg,iw);
+    reg = 29; desc = "Num null HB seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 33;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num PREFETCH seen\n\n", reg+1,reg,iw);
+    reg = 31; desc = "Num HB on hold";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg =  9;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%2i)<<16+reg(%2i) : 0x%08x : Num DATA REQ seen\n", reg+1,reg,iw);
-
-    reg = 35;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ written to DDR\n", reg+1,reg,iw);
-
-    reg = 13;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Num skipped DATA REQ\n",reg,dat);
-
-    reg = 37;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ read from DDR\n", reg+1,reg,iw);
-
-    reg = 39;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ sent to DTC\n", reg+1,reg,iw);
-
-
-    reg = 41;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Num DATA REQ with null data\n", reg+1,reg,iw);
+    reg = 33; desc = "Num PREFETCH seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
     cout << Form("\n");
-  
-    reg = 43;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last spill tag\n", reg+1,reg,iw);
 
-    //    uint16_t iw3;
+    reg =  9; desc = "Num DATA REQ seen";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 45;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    // iw3 = dtc->ReadROCRegister(link,reg+2,100);
-  
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last HB tag\n", reg+1,reg,iw);
+    reg = 35; desc = "Num DATA REQ written to DDR";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 48;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    // iw3 = dtc->ReadROCRegister(link,reg+2,100);
-  
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last PREFETCH tag\n", reg+1,reg,iw);
-  
-    reg = 51;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    // iw3 = dtc->ReadROCRegister(link,reg+2,100);
-  
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last fetched tag\n", reg+1,reg,iw);
+    reg = 13; desc = "Num skipped DATA REQ";
+    PrintRocRegister(reg,desc,Format,link_mask);
 
-    reg = 54;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    // iw3 = dtc->ReadROCRegister(link,reg+2,100);
-  
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : Last DATA REQ tag\n", reg+1,reg,iw);
+    reg = 37; desc = "Num DATA REQ read from DDR";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    reg = 39; desc = "Num DATA REQ sent to DTC";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    reg = 41; desc = "Num DATA REQ with null data";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    cout << Form("\n");
+      
+    reg = 43; desc = "Last spill tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    reg = 45; desc = "Last HB tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    reg = 48; desc = "Last PREFETCH tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
+    reg = 51; desc = "Last fetched tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
-    reg = 57;
-    iw1 = dtc->ReadROCRegister(link,reg  ,100);
-    iw2 = dtc->ReadROCRegister(link,reg+1,100);
-    // iw3 = dtc->ReadROCRegister(link,reg+2,100);
-  
-    iw  = (iw2 << 16) | iw1;
-    cout << Form("reg(%i)<<16+reg(%i) : 0x%08x : OFFSET tag\n", reg+1,reg,iw);
+    reg = 54; desc = "Last DATA REQ tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
 
+    reg = 57; desc = "OFFSET tag";
+    PrintRocRegister2(reg,desc,Format,link_mask);
+      
     cout << std::endl;
-
-    reg = 72;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Num HB tag inconsistencies\n",reg, dat);
-
-    reg = 74;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Num HB tag lost\n",reg, dat);
-
-    reg = 73;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Num DREQ tag inconsistencies\n",reg, dat);
-
-    reg = 75;
-    dat = dtc->ReadROCRegister(link,reg,100);
-    cout << Form("reg(%2i)             :     0x%04x : Num DREQ tag lost\n",reg, dat);
+      
+    reg = 72; desc = "Num HB tag inconsistencies";
+    PrintRocRegister(reg,desc,Format,link_mask);
+      
+    reg = 74; desc = "Num HB tag lost";
+    PrintRocRegister(reg,desc,Format,link_mask);
+      
+    reg = 73; desc = "Num DATA REQ tag inconsistencies";
+    PrintRocRegister(reg,desc,Format,link_mask);
+      
+    reg = 75; desc = "Num DATA REQ tag lost";
+    PrintRocRegister(reg,desc,Format,link_mask);
 
     cout << "------------------------------------------------------------------------\n";
   }
-
 
 //-----------------------------------------------------------------------------
 // according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
@@ -476,7 +453,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) {
 
-    TLOG(TLVL_INFO) << Form("START : EWLength=%i NMarkers=%i FirstEWTag=%i\n",EWLength,NMarkers,FirstEWTag);
+    TLOG(TLVL_DEBUG) << Form("START : EWLength=%i NMarkers=%i FirstEWTag=%i\n",EWLength,NMarkers,FirstEWTag);
 
     fDtc->DisableCFOEmulation();
     fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
@@ -490,7 +467,7 @@ namespace trkdaq {
                                         // this command sends the EWM's
     fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
 
-    TLOG(TLVL_INFO) << Form("END\n");
+    TLOG(TLVL_DEBUG) << Form("END\n");
   }
   
 //-----------------------------------------------------------------------------
@@ -586,16 +563,6 @@ namespace trkdaq {
     PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ");
     PrintRegister(0x91f8,"CFO Marker Enables                         ");
 
-    // PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
-    // PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
-    // PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
-    // PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
-
-    // PrintRegister(0x9218,"Receive  Byte   Count CFO                  ");
-    // PrintRegister(0x9238,"Receive  Packet Count CFO                  ");
-    // PrintRegister(0x9258,"Transmit Byte   Count CFO                  ");
-    // PrintRegister(0x9278,"Transmit Packet Count CFO                  ");
-
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
 
     PrintRegister(0x9630,"TX Data Request Packet Count Link 0        ");
@@ -634,10 +601,10 @@ namespace trkdaq {
   int DtcInterface::ReadSpiData(int Link, vector<uint16_t>& SpiRawData, int PrintLevel) {
     int rc(0);
 //-----------------------------------------------------------------------------
-// is this really needed ?
+// is this really needed ? - probably not
 //-----------------------------------------------------------------------------
-    MonicaVarLinkConfig(Link);
-    MonicaDigiClear(Link);
+    MonicaVarLinkConfig();
+    MonicaDigiClear();
 //-----------------------------------------------------------------------------
 // after writing into reg 258, sleep for some time, 
 // then wait till reg 128 returns non-zero
@@ -736,7 +703,8 @@ namespace trkdaq {
     ulong    ts       = FirstTS;
     bool     match_ts = false;
     int      nerr_tot(0);
-    ulong    offset  (0);      // used in validation mode
+    ulong    nbytes_tot(0);
+    ulong    offset  (0);               // used in validation mode
     //    int      print_level(1);
 
     FILE*    file(nullptr);
@@ -786,9 +754,11 @@ namespace trkdaq {
         int rs[6];
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* ev = VSub[i].get();
-          int      nb     = ev->GetSubEventByteCount();
+          int      nbytes = ev->GetSubEventByteCount();
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
           char*    data   = (char*) ev->GetRawBufferPointer();
+
+          nbytes_tot += nbytes;
 
           int nerr(0);
           
@@ -801,7 +771,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // write event to output file
 //-----------------------------------------------------------------------------
-            int nbb = fwrite(data,1,nb,file);
+            int nbb = fwrite(data,1,nbytes,file);
             if (nbb == 0) {
               cout << "ERROR in " << __func__ << " : failed to write event " << ew_tag 
                    << " , close file and BAIL OUT" << endl;
@@ -819,8 +789,8 @@ namespace trkdaq {
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
-                         i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
+            cout << Form(" DTC:%2i EWTag:%10li nbytes: %4i nbytes_tot:%12li ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x ",
+                         i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5]);
           }
           
           if (PrintLevel > 1) {

@@ -22,9 +22,10 @@ void* DtcGui::ReaderThread(void* Context) {
 
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_dtc_blocks;
   
-  int              match_ts(0);
-  ulong            offset  (0);      // used in validation mode
-  int              nerr_tot(0);
+  int              match_ts  (0);
+  ulong            offset    (0);       // used in validation mode
+  int              nerr_tot  (0);
+  ulong            nbytes_tot(0);
 
   DtcGui*          dtc_gui = (DtcGui*) Context;
   ThreadContext_t* tc      = &dtc_gui->fReaderTC;
@@ -41,13 +42,15 @@ void* DtcGui::ReaderThread(void* Context) {
 //-----------------------------------------------------------------------------
   ulong ew_tag        =  dtc_gui->fFirstTS->GetNumberEntry()->GetIntNumber();
 
+  if (tc->fPrintLevel > 0) {
+    // print header
+    cout << Form("   CPU T   Real T      event  DTC    EW Tag nbytes   nbytes_tot  ------------- ROC status ----------------  nerr nerr_tot\n");
+    cout << Form("-------------------------------------------------------------------------------------------------------------------------\n");
+  }
+  
   TStopwatch timer;
   timer.Start();
 
-  // dtc->SoftReset();
-  // dtc_i->InitRocReadoutMode();
-  //  dtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-  
   while (tc->fStop == 0) {
     if (tc->fPause != 0) {
       TLOG(TLVL_INFO+1) << "thread alive, sleep for " << tc->fSleepTimeMs << "ms" << std::endl;
@@ -70,9 +73,10 @@ void* DtcGui::ReaderThread(void* Context) {
         
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* dtc_block = list_of_dtc_blocks[i].get();
-          int      nb             = dtc_block->GetSubEventByteCount();
+          int      nbytes         = dtc_block->GetSubEventByteCount();
           ew_tag                  = dtc_block->GetEventWindowTag().GetEventWindowTag(true);
           char*    data           = (char*) dtc_block->GetRawBufferPointer();
+          nbytes_tot             += nbytes;
           
           int nerr(0);
           
@@ -95,9 +99,9 @@ void* DtcGui::ReaderThread(void* Context) {
               float ct = timer.CpuTime();
               float rt = timer.RealTime();
               timer.Continue();
-              cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                           ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                   << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+                   << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                   << Form(" %3i %5i\n",nerr,nerr_tot);
               if (tc->fPrintLevel > 10) {
                 dtc_i->PrintBuffer(dtc_block->GetRawBufferPointer(),dtc_block->GetSubEventByteCount()/2);
               }
@@ -108,9 +112,9 @@ void* DtcGui::ReaderThread(void* Context) {
             float ct = timer.CpuTime();
             float rt = timer.RealTime();
             timer.Continue();
-            cout << Form(">>> time: %9.2f %9.2f ts:%10lu DTC:%2i EWTag:%10lu nbytes: %4i ROC status: 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",
-                         ct,rt,tstamp,i,ew_tag,nb,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                 << Form(" nerr:%3i nerr_tot:%5i\n",nerr,nerr_tot);
+            cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+                 << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                 << Form(" %3i %5i\n",nerr,nerr_tot);
             }
           }
         }
@@ -158,29 +162,30 @@ void* DtcGui::EmuCfoThread(void* Context) {
   int   ew_length          = dtc_gui->fEWLength->GetIntNumber();
   ulong nevents            = dtc_gui->fNEvents->GetIntNumber();
   ulong first_ts           = dtc_gui->fFirstTS->GetIntNumber();
-  int   sleep_ms           = dtc_gui->fSleepMS->GetIntNumber();
+  int   sleep_us           = dtc_gui->fSleepUS->GetIntNumber();
 
-  TLOG(TLVL_INFO) << Form("%s: START ew_length: %5i nevents: %10lu first_tx:%10lu sleep_ms:%5i\n",
-                          __func__,ew_length,nevents,first_ts,sleep_ms);
+  TLOG(TLVL_DEBUG) << Form("%s: START ew_length: %5i nevents: %10lu first_tx:%10lu sleep_us:%8i\n",
+                          __func__,ew_length,nevents,first_ts,sleep_us);
 
   int t0 = first_ts/dtc_gui->fCfoPrintFreq;
 
   dtc_i->InitReadout();
   
   while (tc->fStop == 0) {
-    gSystem->Sleep(sleep_ms);
+    // gSystem->Sleep(sleep_us);
+    usleep(sleep_us);
     
     dtc_i->LaunchRunPlanEmulatedCfo(ew_length,nevents+1,first_ts);
     
     first_ts = first_ts+nevents;
     int t1 = first_ts/dtc_gui->fCfoPrintFreq;
     if (t1 > t0) {
-      printf("%s: first_ts: %10lu\n",__func__,first_ts);
+      TLOG(TLVL_DEBUG) << Form("first_ts: %10lu",first_ts);
       t0 = t1;
     }
   }
 
-  TLOG(TLVL_INFO) << "END" << std::endl;
+  TLOG(TLVL_DEBUG) << "END" << std::endl;
   return nullptr;
 }
 

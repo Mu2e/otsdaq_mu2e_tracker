@@ -134,7 +134,7 @@ root [2] .q
 #+end_src
 ** after that can proceed
 * ------------------------------------------------------------------------------
-* [[file:root_interface.org][ROOT interface]]                                                  
+* [[file:root_interface.org][ROOT interface]]                                                             
 * [[file:tracker_roc_registers.org][tracker ROC registers]]  
 * tracker VST configurations                                                 
 - all described in tfm/config                          
@@ -162,6 +162,7 @@ Also, I claim that no power cycles are needed now after a DTC_Reset.
 And that no TIMEOUT should be observed on the very first event after a DTC_Reset.
 
 * [[file:control_roc.org][control_ROC.py and its commands]]
+* [[file:./dtc_gui.org][DtcGui interface]] 
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature
@@ -465,7 +466,7 @@ readDeviceID
 ('DRAC ROC ID #', '7a7fb')
 ** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
-* test stands TS0, TS1, TS2
+* test stands TS0, TS1, TS2                                                  
 ** last update <2024-07-15 Mon>
 ** powering up the test stands (Vadim):                                      
   https://docs.google.com/document/d/1theA9NIRA5XeUUPVuFGVhU7NddPljgaGznR9aMu-Fv8/edit?usp=sharing
