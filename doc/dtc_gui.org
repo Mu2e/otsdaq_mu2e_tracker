@@ -1,6 +1,7 @@
 #+startup:fold -*- buffer-read-only: t -*-
 * ------------------------------------------------------------------------------
 * DTC GUI interface: [[file:../otsdaq-mu2e-tracker/Gui/DtcGui.hh]]
+* ------------------------------------------------------------------------------
 * initialization                                                             
 #+begin_src
 .L dtc_gui.C
@@ -36,28 +37,37 @@ parameters:
 - currently, it is assumed that the run plans are located in $HOME/test_stand/cfo_run_plans directory
 - the directory name will be soon moved to .rootrc
 * DTC panel                                                                  
-** status      : print the DTC status (several registers)
-** writeR      : write the DTC register
-** readR       : read  the DTC register
-** soft reset  : soft reset of the DTC
-** hard reset  : hard reset of the DTC
-** FF temp     : prints the DTC firefly temperatures
-** ROC pattrn  : obsolete, replaced by InitReadout
-** InitReadout : initializes the DTC for a given readout mode                
+** status       : print the DTC status (several registers)
+** writeR       : write the DTC register
+** readR        : read  the DTC register
+** soft reset   : soft reset of the DTC
+** hard reset   : hard reset of the DTC
+** FF temp      : prints the DTC firefly temperatures
+** Launch Run   : launch emulated CFO run plan once
+** ROC pattrn   : obsolete, replaced by InitReadout
+** InitReadout  : initializes the DTC for a given readout mode               
 - the DTC readout mode is defined by the CFO mode and the ROC readout mode
 - DTC may be run in a so-called 'CFO emulation mode', in which no external CFO
   is needed 
-** EmulateCFO  : set to one if the DTC is running in a CFO emulation mode
-** ROC readout mode:                                                         
+** EmulateCFO   : set to one if the DTC is running in a CFO emulation mode
+** ROC r/o mode :                                                            
   - 0: ROC emulated patterns
   - 1: digis
-  - 2: do we need more , i.e. digi patterns ?
-** ROC tabs    : each DTC panel has 6 ROC tabs                               
+  - 2: (not implemented yet) do we need more , i.e. digi patterns ?
+** ROC tabs     : each DTC panel has 6 ROC tabs                              
 *** status     : print ROC status
 *** write      : write ROC register
 *** read       : read  ROC register
 *** reset      : reset the ROC (write 1 to register 14)
-* general panel
+** Start Read   : start readout thread                                       
+- doesn't perform any initializations, only readout 
+- it is assumed that the readout has been initialized - InitReadout called
+- 'PrintFreq' defines how often the thread is printing its statistics
+** Start emuCFO : start emulated CFO thread                                  
+- [[file:../otsdaq-mu2e-tracker/Gui/DtcGui_threads.cc::/DtcGui::EmuCfoThread/]]
+- executes a given run plan in an emulated CFO mode in a loop
+- a run plan is defined by 'NEvents', 'EW length', 'First TS', 'SleepUS'
+* general panel                                                              
 ** clear   : clear the outptu window
 ** exit    : exit
 ** NEvents : N(events) per run in the CFO emulation mode

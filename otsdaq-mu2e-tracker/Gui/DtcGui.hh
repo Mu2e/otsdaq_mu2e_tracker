@@ -300,10 +300,11 @@ public:
   static   void* EmuCfoThread(void* Context);
   static   void* ExtCfoThread(void* Context);
 
-  int      manage_read_thread   ();
+  int      manage_reader_thread ();
   int      manage_emu_cfo_thread();
   int      manage_ext_cfo_thread();
 
+  void     cfo_print_status    (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     cfo_soft_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     cfo_hard_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     cfo_launch_run_plan ();
@@ -318,6 +319,7 @@ public:
   void     dtc_soft_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     dtc_hard_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     dtc_init_readout   (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_read_subevents (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
   int      execute_command    ();
   void     exit               ();

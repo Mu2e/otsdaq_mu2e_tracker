@@ -13,6 +13,15 @@ using namespace CFOLib;
 //-----------------------------------------------------------------------------
 // report DTC/CFO status
 //-----------------------------------------------------------------------------
+void DtcGui::cfo_print_status(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         {  Dtel->fCFO_i->PrintStatus(); }
+  catch (...) { *TextView << Form("ERROR in DtcGui::%s: coudn't read the CFO\n",__func__); }
+}
+
+
+//-----------------------------------------------------------------------------
+// report DTC/CFO status
+//-----------------------------------------------------------------------------
 void DtcGui::print_dtc_status() {
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
@@ -260,28 +269,30 @@ void DtcGui::dtc_launch_run_plan_emulated_cfo(DtcTabElement_t* Dtel, TGTextViewo
 
 //-----------------------------------------------------------------------------
 void DtcGui::dtc_soft_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
-
-  try         { 
-    *fTextView << "resetting the DTC" << std::endl; 
-    Dtel->fDTC_i->Dtc()->SoftReset();
-    *fTextView << "done resetting the DTC" << std::endl; 
-  }
-  catch (...) { 
-    *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
-  }
+  try         { Dtel->fDTC_i->Dtc()->SoftReset(); }
+  catch (...) { *TextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; }
 }
 
 //-----------------------------------------------------------------------------
 void DtcGui::dtc_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         { Dtel->fDTC_i->Dtc()->HardReset(); }
+  catch (...) { *TextView << Form("ERROR : coudn't soft reset DTC ... BAIL OUT\n"); }
+}
 
-  try         { 
-    *fTextView << "resetting the DTC" << std::endl; 
-    Dtel->fDTC_i->Dtc()->HardReset();
-    *fTextView << "done resetting the DTC" << std::endl; 
+//-----------------------------------------------------------------------------
+// read events buffered on ROCs just once. Always validate
+//-----------------------------------------------------------------------------
+void DtcGui::dtc_read_subevents(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         {
+    std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_dtc_blocks;
+
+    int         first_ewm   = fFirstTS->GetIntNumber();
+    int         print_level = 1;
+    int         validate    = 1;
+    const char* output_fn   = nullptr;
+    Dtel->fDTC_i->ReadSubevents(list_of_dtc_blocks,first_ewm,print_level,validate,output_fn);
   }
-  catch (...) { 
-    *fTextView << "ERROR : coudn't soft reset DTC ... BAIL OUT" << std::endl; 
-  }
+  catch (...) { *TextView << Form("ERROR : coudn't read the DTC ... BAIL OUT\n"); }
 }
 
 //-----------------------------------------------------------------------------

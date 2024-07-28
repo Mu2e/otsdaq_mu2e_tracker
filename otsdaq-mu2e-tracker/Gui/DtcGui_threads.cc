@@ -25,6 +25,7 @@ void* DtcGui::ReaderThread(void* Context) {
   int              match_ts  (0);
   ulong            offset    (0);       // used in validation mode
   int              nerr_tot  (0);
+  int              nerr_roc[6], nerr_roc_tot[6];
   ulong            nbytes_tot(0);
 
   DtcGui*          dtc_gui = (DtcGui*) Context;
@@ -46,6 +47,10 @@ void* DtcGui::ReaderThread(void* Context) {
     // print header
     cout << Form("   CPU T   Real T      event  DTC    EW Tag nbytes   nbytes_tot  ------------- ROC status ----------------  nerr nerr_tot\n");
     cout << Form("-------------------------------------------------------------------------------------------------------------------------\n");
+  }
+
+  for (int ir=0; ir<6; ir++) {
+    nerr_roc_tot[ir] = 0;
   }
   
   TStopwatch timer;
@@ -81,9 +86,12 @@ void* DtcGui::ReaderThread(void* Context) {
           int nerr(0);
           
           if (dtc_gui->fValidate) {
-            nerr = dtc_i->ValidateDtcBlock((ushort*)data,ew_tag,&offset,tc->fPrintLevel);
+            nerr      = dtc_i->ValidateDtcBlock((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
+            nerr_tot += nerr;
+            for (int ir=0; ir<6; ir++) {
+              nerr_roc_tot[ir] += nerr_roc[ir];
+            }
           }
-          nerr_tot += nerr;
           
           char* roc_data  = data+0x30;
 
@@ -122,7 +130,10 @@ void* DtcGui::ReaderThread(void* Context) {
         if (sz == 0) {
 //-----------------------------------------------------------------------------
 // sz === NDTCs = 0: zero length event - end-of-read- print only if PrintLevel > 10
+// everything is read in, safe to release all buffers
 //-----------------------------------------------------------------------------
+          dtc_i->Dtc()->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+          
           if (tc->fPrintLevel > 10) {
             cout << Form(">>>> ------- tstamp = %10lu event_tg:%10lu NDTCs:%2i\n",tstamp,event_tag.GetEventWindowTag(true),sz);
           }
@@ -141,6 +152,17 @@ void* DtcGui::ReaderThread(void* Context) {
   }
 
   timer.Stop();
+//-----------------------------------------------------------------------------
+// print summary
+//-----------------------------------------------------------------------------  
+  if (tc->fPrintLevel > 0) {
+    ulong nev = tstamp-dtc_gui->fFirstTS->GetIntNumber();
+    cout << Form("nevents: %10li nbytes_tot: %12li\n",nev, nbytes_tot);
+    cout << Form("nerr_tot: %8i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+                 nerr_tot,
+                 nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
+                 nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+  }
   
   TLOG(TLVL_INFO) << "END , nerr_tot: " << nerr_tot << std::endl;
   return nullptr;
@@ -156,7 +178,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
 
   if (dtc_i->EmulateCfo() == 0) {
     TLOG(TLVL_ERROR) << "DtcInterface::fEmulateCfo = 0, cant run in emulated mode" << std::endl;
-    return;
+    return nullptr;
   }
 
   int   ew_length          = dtc_gui->fEWLength->GetIntNumber();
@@ -323,7 +345,7 @@ int DtcGui::manage_ext_cfo_thread() {
 
 
 //-----------------------------------------------------------------------------
-int DtcGui::manage_read_thread() {
+int DtcGui::manage_reader_thread() {
   int rc(1);
 
   printf("%s: START\n",__func__);

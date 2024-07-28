@@ -218,8 +218,8 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
-  //  tb->ChangeBackground(fValidatedColor);
   tb->SetUserData((void*) &DtcGui::dtc_print_all_rocs);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 3 row 1: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
@@ -253,7 +253,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   lab->MoveResize(x0+dx+10+dx2+10,y0+2*(dy+5),dx3,dy);
   DtcTel.fValR = lab;
 //-----------------------------------------------------------------------------
-// column 3 row 4: "Start (start Read Thread) RT" - manage_read_thread
+// column 3 row 4: "Start (start Read Thread) RT" - manage_reader_thread
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"Start Read",-1,TGTextButton::GetDefaultGC()(),
                           TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -264,8 +264,8 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*3,dx3,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "manage_read_thread()");
-  tb->ChangeBackground(fValidatedColor);  // not yet
+  tb->Connect("Pressed()", "DtcGui", this, "manage_reader_thread()");
+  tb->ChangeBackground(fValidatedColor);
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
 // column 3 row 5: Start CT - manage_emu_cfo_thread
@@ -280,8 +280,8 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*4,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_emu_cfo_thread()");
-  tb->ChangeBackground(fValidatedColor);  // not yet
   tb->SetUserData(nullptr);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 4 row 1:  initReadout
 //-----------------------------------------------------------------------------
@@ -298,6 +298,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->MoveResize(x4,y0,dx4,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->SetUserData((void*) &DtcGui::dtc_init_readout);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 4 row 2: EmulateCFO label
 //-----------------------------------------------------------------------------
@@ -330,8 +331,8 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x4,y0+3*(dy+5),dx4,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
-  // tb->ChangeBackground(fValidatedColor);  // not yet
   tb->SetUserData((void*) &DtcGui::dtc_launch_run_plan_emulated_cfo);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // column 5 row 2: EmulateCFO entry field 
 //-----------------------------------------------------------------------------
@@ -375,6 +376,21 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   (ne->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_emulate_cfo()");
 
   DtcTel.fRocReadoutMode = ne;
+//-----------------------------------------------------------------------------
+// column 5 row 4: read events .. just once, whatever has been stored
+//-----------------------------------------------------------------------------
+  tb = new TGTextButton(group,"ReadSubEvts",-1,TGTextButton::GetDefaultGC()(),
+                          TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+  group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+  tb->SetTextJustify(36);
+  tb->SetMargins(0,0,0,0);
+  tb->SetWrapLength(-1);
+  
+  tb->MoveResize(x5,y0+3*(dy+5),dx5,dy);
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
+  tb->SetUserData((void*) &DtcGui::dtc_read_subevents);
+  tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // resize the DTC group panel
 //-----------------------------------------------------------------------------
