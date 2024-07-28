@@ -208,7 +208,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
 // column 2 raw 6 : ROC patterns - OBSOLETE
 //-----------------------------------------------------------------------------
-  tb = new TGTextButton(group,"ROC pattrn",-1,TGTextButton::GetDefaultGC()(),
+  tb = new TGTextButton(group,"ROC status",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   
@@ -217,9 +217,9 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetWrapLength(-1);
   
   tb->MoveResize(x0+dx+10,y0+(dy+5)*4,dx2,dy);
-  tb->Connect("Pressed()", "DtcGui", this, "configure_roc_pattern_mode()");
-  tb->ChangeBackground(fValidatedColor);
-  tb->SetUserData(nullptr);
+  tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
+  //  tb->ChangeBackground(fValidatedColor);
+  tb->SetUserData((void*) &DtcGui::dtc_print_all_rocs);
 //-----------------------------------------------------------------------------
 // column 3 row 1: write value: 1. label , 2: entry field  3: label
 //-----------------------------------------------------------------------------
@@ -265,7 +265,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*3,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_read_thread()");
-  // tb->ChangeBackground(fValidatedColor);  // not yet
+  tb->ChangeBackground(fValidatedColor);  // not yet
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
 // column 3 row 5: Start CT - manage_emu_cfo_thread
@@ -280,7 +280,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   
   tb->MoveResize(x0+dx+10+dx2+10,y0+(dy+5)*4,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_emu_cfo_thread()");
-  // tb->ChangeBackground(fValidatedColor);  // not yet
+  tb->ChangeBackground(fValidatedColor);  // not yet
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
 // column 4 row 1:  initReadout

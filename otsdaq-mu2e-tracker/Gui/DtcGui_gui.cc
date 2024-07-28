@@ -204,18 +204,18 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   tb->Connect("Pressed()", "DtcGui", this, "exit()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// 3. launch
+// 3. ... 
 //-----------------------------------------------------------------------------
   int x3offset = 10+button_sx*2;
-  tb = new TGTextButton(fButtonsFrame,"launch",-1,TGTextButton::GetDefaultGC()(),
-                        TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-  tb->SetTextJustify(36);
-  tb->SetMargins(0,0,0,0);
-  tb->SetWrapLength(-1);
-  tb->MoveResize(x3offset,y0,button_dx,button_dy);
-  fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
-  tb->ChangeBackground(fValidatedColor);
+//   tb = new TGTextButton(fButtonsFrame,"launch",-1,TGTextButton::GetDefaultGC()(),
+//                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+//   tb->SetTextJustify(36);
+//   tb->SetMargins(0,0,0,0);
+//   tb->SetWrapLength(-1);
+//   tb->MoveResize(x3offset,y0,button_dx,button_dy);
+//   fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+//   tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
+//   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
 // 4 "NEvents" label followed by the entry field
 //-----------------------------------------------------------------------------
@@ -281,23 +281,23 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   fButtonsFrame->AddFrame(fFirstTS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
-// 7: "SleepMS" label followed by the entry field
+// 7: "SleepUS" label followed by the entry field
 //-----------------------------------------------------------------------------
-  lab = new TGLabel(fButtonsFrame,"Sleep MS");
+  lab = new TGLabel(fButtonsFrame,"Sleep US");
   fButtonsFrame->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   
-  fSleepMS = new TGNumberEntry(fButtonsFrame, 2000, 9,999,
+  fSleepUS = new TGNumberEntry(fButtonsFrame, 2000000, 9,999,
                                        TGNumberFormat::kNESInteger,
                                        TGNumberFormat::kNEANonNegative,
                                        TGNumberFormat::kNELLimitMinMax,
-                                       0, 100000);
-  fSleepMS->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
-  (fSleepMS->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
+                                       0, 100000000);
+  fSleepUS->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
+  (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
 
-  fButtonsFrame->AddFrame(fSleepMS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  fButtonsFrame->AddFrame(fSleepUS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
 // 8: "ReadPrintFreq" label followed by the entry field
 //-----------------------------------------------------------------------------

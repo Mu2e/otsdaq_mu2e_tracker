@@ -3,12 +3,13 @@
 
 #include "print_buffer.C"
 
-// #include "dtcInterfaceLib/DTC.h"
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 using namespace DTCLib;
 using namespace trkdaq;
 
+//-----------------------------------------------------------------------------
+// unpack data making everything an int
 //-----------------------------------------------------------------------------
 void parse_fi_output(char* Data, int NBytes) {
   vector<int> val;
@@ -38,7 +39,7 @@ void parse_fi_output(char* Data, int NBytes) {
       val.push_back(w);
     }
     
-    // 6 chars
+    // 6 shorts
     for (int k=0; k<6; k++) {
       int loc   = k*2+3+48+96;
       short ub  = Data[loc+1];

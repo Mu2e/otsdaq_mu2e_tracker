@@ -161,6 +161,7 @@ void DtcGui::cfo_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) 
 //-----------------------------------------------------------------------------
 void DtcGui::clear_output() {
   fTextView->Clear();
+  fTextView->ShowBottom();
 }
 
 //-----------------------------------------------------------------------------
@@ -195,6 +196,12 @@ void DtcGui::dtc_print_firefly_temp(DtcTabElement_t* Dtel, TGTextViewostream* Te
 }
 
 //-----------------------------------------------------------------------------
+void DtcGui::dtc_print_all_rocs(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
+  try         { Dtel->fDTC_i->PrintRocStatus(1,-1); }
+  catch (...) { *fTextView << Form("ERROR, BAIL OUT") << std::endl; }
+}
+
+//-----------------------------------------------------------------------------
 void DtcGui::print_roc_status() {
   //  TString cmd;
 
@@ -208,14 +215,11 @@ void DtcGui::print_roc_status() {
 
   TDatime x1;
   *fTextView << x1.AsSQLString() << "DtcGui:: : " << __func__ << ": START" << std::endl;
-
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (dtel->fData->fName == "DTC") {
-    try         { dtel->fDTC_i->PrintRocStatus(roc); }
-    catch (...) { *fTextView << Form("ERROR : coudn't read ROC %i ... BAIL OUT",roc) << std::endl; }
-  }
+  try         { dtel->fDTC_i->PrintRocStatus(1,1<<4*roc); }
+  catch (...) { *fTextView << Form("ERROR : coudn't read ROC %i ... BAIL OUT",roc) << std::endl; }
 
   TDatime x2;
   *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ 
@@ -238,7 +242,6 @@ void DtcGui::dtc_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView
     }
     catch (...) { *TextView << Form("ERROR in DtcGui::%s: failed to execute DtcInterface::InitReadout\n",__func__); }
   }
-
 }
 
 //-----------------------------------------------------------------------------
@@ -700,7 +703,7 @@ int DtcGui::execute_command() {
 
   TGButton* btn = (TGButton*) gTQSender;
 
-  TString*  cmd = (TString*) btn->GetUserData();
+  //  TString*  cmd = (TString*) btn->GetUserData();
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
   //  int roc               = dtel->fActiveRocID;

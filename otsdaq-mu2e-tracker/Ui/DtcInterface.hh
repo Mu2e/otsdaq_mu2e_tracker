@@ -77,8 +77,15 @@ namespace trkdaq {
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
     void         PrintRegister   (uint16_t Register, const char* Title = "");
-    void         PrintRocStatus  (int Link);
-    void         PrintStatus     ();
+//-----------------------------------------------------------------------------
+// Format = 0 : for each register, print a register and its value
+// Format = 1 : add short description of each register
+// if Link = -1, print a line per register for each ROC
+//-----------------------------------------------------------------------------
+    void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1);
+    void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1);
+    void         PrintRocStatus   (int Format = 1, int LinkMask = -1);
+    void         PrintStatus      ();
 
     uint32_t     ReadRegister    (uint16_t Register);
 

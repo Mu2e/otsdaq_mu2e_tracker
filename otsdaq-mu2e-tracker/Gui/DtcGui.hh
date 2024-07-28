@@ -1,3 +1,4 @@
+// -*- buffer-read-only: t -*-
 // Mainframe macro generated from application: root.exe
 // By ROOT version 6.18/04 on 2020-05-11 18:09:54
 
@@ -231,8 +232,7 @@ public:
   TString             fIStage;
   TString             fTime;
 
-  int                 fNDtcs;             // on a machine
-  int                 fNTimeChainedDtcs;  // N(DTCs) in a time chain
+  int                 fNDtcs;            // on a machine
 
   DtcTabElement_t     fDtcTel[2];
 
@@ -247,14 +247,14 @@ public:
   TGNumberEntry*      fNEvents;         // DTC , CFO emulation
   TGNumberEntry*      fEWLength;        // DTC , CFO emulation
   TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
-  TGNumberEntry*      fSleepMS;         // DTC , CFO emulation, 
+  TGNumberEntry*      fSleepUS;         // DTC , CFO emulation, microseconds
   TGNumberEntry*      fPrintFreq;       // DTC , CFO emulation, used by the DTC reading thread
   int                 fCfoPrintFreq;
 
   int                 fValidate;
 
-  Pixel_t             fGreen;		    // completed stage tab tip
-  Pixel_t             fYellow;		  // active tab tip
+  Pixel_t             fGreen;           // completed stage tab tip
+  Pixel_t             fYellow;          // active tab tip
   Pixel_t             fDtcTabColor;	// non-active tab tip
   Pixel_t             fSubmittedColor;
   Pixel_t             fValidatedColor;
@@ -266,11 +266,11 @@ public:
 // threads
 //-----------------------------------------------------------------------------
   struct ThreadContext_t {
-    TThread*         fTp;     // thread pointer
+    TThread*         fTp;               // thread pointer
     DtcTabElement_t* fDtel;
-    int              fRunning; // 0: stopped 1:running
-    int              fStop;   // end marker
-    int              fCmd;    // command
+    int              fRunning;          // 0: stopped 1:running
+    int              fStop;             // end marker
+    int              fCmd;              // command
     int              fPrintLevel;
     int              fPause;
     int              fSleepTimeMs;
@@ -327,6 +327,7 @@ public:
   void     dtc_launch_run_plan_emulated_cfo(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
   void     dtc_print_firefly_temp (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_print_all_rocs     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
   void     print_dtc_status   ();
   void     print_roc_status   ();
 

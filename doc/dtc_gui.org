@@ -1,0 +1,72 @@
+#+startup:fold -*- buffer-read-only: t -*-
+* ------------------------------------------------------------------------------
+* DTC GUI interface: [[file:../otsdaq-mu2e-tracker/Gui/DtcGui.hh]]
+* initialization                                                             
+#+begin_src
+.L dtc_gui.C
+auto x = dtc_gui(config_name)
+#+end_src
+parameters:
+  - config_name: points to the configuration file. It is either a directory name or a file name, see below.
+  - locating configuration file: 
+    - it is assumed that config_name is a located under [[file:../config][otsdaq-mu2e-tracker/config]]
+    - if a file='otsdaq-mu2e-tracker/config/config_name.C' exists, the configuration is taken from there
+    - if a directory='config/config_name' exists, the configuration is taken from config/config_name/
+* CFO panel                                                                  
+** status       : prints the CFO status
+** writeR       : writes to the CFO register
+** readR        : reads from the CFO register
+** soft reset   : soft reset of the CFO
+** hard reset   : hard reset of the CFO
+** launch       : launch external CFO run plan
+** EnableBmOff  : enable  'Beam Off' mode - (start the run)
+** DisableBmOff : disable 'Beam Off' mode - (stop  the run)                  
+- assume that the Bean On mode is disabled
+- then, <disable BeamOf> + <soft reset> + <Enable Beam Off> restarts executaion of the current run plan
+** Extrnl CT - <External CFO Thread> - obsolete                              
+- a run plan can be started just once, no need to have a thread for that
+** DTC mask     : defines the number of DTCs in each time chain              
+- CFO supports 8 time chains 
+- each hex digit of the DTC mask contains the number of DTC's in the corresponding time chain:
+#+begin_src 
+  ndtcs[i] = (DtcMask >> 4*i) & 0xf
+#end_src
+** init readout : reads the run plan and initializes the CFO                 
+- that includes setting the DTC mask                                  
+- currently, it is assumed that the run plans are located in $HOME/test_stand/cfo_run_plans directory
+- the directory name will be soon moved to .rootrc
+* DTC panel                                                                  
+** status      : print the DTC status (several registers)
+** writeR      : write the DTC register
+** readR       : read  the DTC register
+** soft reset  : soft reset of the DTC
+** hard reset  : hard reset of the DTC
+** FF temp     : prints the DTC firefly temperatures
+** ROC pattrn  : obsolete, replaced by InitReadout
+** InitReadout : initializes the DTC for a given readout mode                
+- the DTC readout mode is defined by the CFO mode and the ROC readout mode
+- DTC may be run in a so-called 'CFO emulation mode', in which no external CFO
+  is needed 
+** EmulateCFO  : set to one if the DTC is running in a CFO emulation mode
+** ROC readout mode:                                                         
+  - 0: ROC emulated patterns
+  - 1: digis
+  - 2: do we need more , i.e. digi patterns ?
+** ROC tabs    : each DTC panel has 6 ROC tabs                               
+*** status     : print ROC status
+*** write      : write ROC register
+*** read       : read  ROC register
+*** reset      : reset the ROC (write 1 to register 14)
+* general panel
+** clear   : clear the outptu window
+** exit    : exit
+** NEvents : N(events) per run in the CFO emulation mode
+** EWLength : event window length in units of 25 ns
+- EWLength=80 defines an event window length of 2000 ns
+** FirstTS  : first event window tag in a run for teh CFO emulation mode
+** SleepUS  : sleep time, in us, after a single run has been taken
+in a CFO emulation mode
+- used by file:../otsdaq-mu2e-tracker/EmuCfoThread
+* ------------------------------------------------------------------------------
+* back to [[file:otsdaq_mu2e_tracker.org]]
+* ------------------------------------------------------------------------------
