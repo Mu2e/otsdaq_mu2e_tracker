@@ -328,39 +328,13 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 // this test is performed in a pattern readout mode
-//-----------------------------------------------------------------------------
-void dtc_buffer_test_emulated_cfo_patterns(int NEvents=3, int PrintLevel = 1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
-  int pcie_addr(-1);                                 // assume initialized
-  
-  DtcInterface* dtc_i = DtcInterface::Instance(-1);  // assume already initialized
-
-  int emulate_cfo      = 1;
-  int roc_readout_mode = 0;
-  dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
-
-  // dtc_i->SetRocReadoutMode(0);
-  // dtc_i->InitRocReadoutMode();                       // readout ROC patterns
-
-                                                     // 68x25ns = 1700 ns
-
-                                                     // this call actually sends EWMs
-  
-  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS);
-
-                                                    // in emulated mode, always read after 
-
-  dtc_read_subevents(FirstTS,PrintLevel,Validate, pcie_addr,OutputFn);
-}
-
-//-----------------------------------------------------------------------------
-// this test is performed in a pattern readout mode
 // Mode : 0xXXRRVVPP
 //        PP : print level - up to 256
 //        VV : validation level
 //        RR : ROC readout mode
 //        XX : reserved
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_emulated_cfo_new(int NEvents=3, int Mode = 0x1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
+void dtc_buffer_test_emulated_cfo(int NEvents=3, int Mode = 0x1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
   int pcie_addr(-1);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized

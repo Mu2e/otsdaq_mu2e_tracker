@@ -21,8 +21,8 @@
 |----------+--------------------------------------------------------------------+------|
 |       13 | Num skipped DATA REQ                                               |      |
 |       14 | reset, write 1 to this register to reset the ROC                   |      |
-|       16 | unused                                                             |      |
-|       18 | unused    ???                                                      |      |
+|       16 | unused ....                                                  |      |
+|       18 | in digi mode 0x0f00 for reg_8 of 0x030f (repeats the lane mask)    |      |
 |----------+--------------------------------------------------------------------+------|
 |       23 | r24<<16+r23 : SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0] |      |
 |       24 |                                                                    |      |

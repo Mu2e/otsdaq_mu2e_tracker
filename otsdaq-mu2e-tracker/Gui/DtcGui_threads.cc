@@ -117,12 +117,12 @@ void* DtcGui::ReaderThread(void* Context) {
           }
           else if (dtc_gui->fValidate > 0) {
             if ((nerr > 0) or (tc->fPrintLevel > 1)) {
-            float ct = timer.CpuTime();
-            float rt = timer.RealTime();
-            timer.Continue();
-            cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
-                 << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                 << Form(" %3i %5i\n",nerr,nerr_tot);
+              float ct = timer.CpuTime();
+              float rt = timer.RealTime();
+              timer.Continue();
+              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+                   << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                   << Form(" %3i %5i\n",nerr,nerr_tot);
             }
           }
         }
@@ -191,7 +191,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
 
   int t0 = first_ts/dtc_gui->fCfoPrintFreq;
 
-  dtc_i->InitReadout();
+  //  dtc_i->InitReadout();
   
   while (tc->fStop == 0) {
     // gSystem->Sleep(sleep_us);
@@ -232,7 +232,7 @@ void* DtcGui::ExtCfoThread(void* Context) {
 
   TLOG(TLVL_INFO) << Form("START : InitReadout run_plan: %s DTC mask = 0x%08x\n",run_plan.data(),dtc_mask);
 
-  cfo_i->InitReadout(run_plan.data(),dtc_mask);
+  //  cfo_i->InitReadout(run_plan.data(),dtc_mask);
 //-----------------------------------------------------------------------------
 // execute the run plan once, assume it can be infinite
 //-----------------------------------------------------------------------------
@@ -256,7 +256,7 @@ void* DtcGui::ExtCfoThread(void* Context) {
 int DtcGui::manage_emu_cfo_thread() {
   int rc(1);
   
-  printf("%s: START fRunning:%i\n",__func__,fEmuCfoTC.fRunning);
+  TLOG(TLVL_DEBUG) << Form("START: fEmuCfoTC.fRunning = %i\n",fEmuCfoTC.fRunning);
 
   if (fEmuCfoTC.fRunning == 0) {
 //-----------------------------------------------------------------------------
@@ -289,11 +289,11 @@ int DtcGui::manage_emu_cfo_thread() {
     fEmuCfoTC.fRunning = 0;
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
-    btn->ChangeBackground(fStoppedColor);
+    btn->ChangeBackground(fValidatedColor);
     TThread::UnLock();
   }
   
-  printf("%s: END fRunning:%i\n",__func__,fEmuCfoTC.fRunning);
+  TLOG(TLVL_DEBUG) << Form("END: fEmuCfoTC.fRunning = %i\n",fEmuCfoTC.fRunning);
   return rc;
 }
 
@@ -302,7 +302,7 @@ int DtcGui::manage_emu_cfo_thread() {
 int DtcGui::manage_ext_cfo_thread() {
   int rc(1);
   
-  printf("%s: START fRunning:%i\n",__func__,fExtCfoTC.fRunning);
+  TLOG(TLVL_DEBUG) << Form("START: fExtCfoTC.fRunning = %i\n",fExtCfoTC.fRunning);
 
   if (fExtCfoTC.fRunning == 0) {
 //-----------------------------------------------------------------------------
@@ -334,12 +334,12 @@ int DtcGui::manage_ext_cfo_thread() {
     fExtCfoTC.fRunning = 0;
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
-    btn->ChangeBackground(fStoppedColor);
+    btn->ChangeBackground(fValidatedColor);
     btn->SetName("Stop ExtCFO");
     TThread::UnLock();
   }
   
-  printf("%s: END fRunning:%i\n",__func__,fExtCfoTC.fRunning);
+  TLOG(TLVL_DEBUG) <<  Form("EN: fExtCfoTC.fRunning = %i\n",fExtCfoTC.fRunning);
   return rc;
 }
 
@@ -348,7 +348,7 @@ int DtcGui::manage_ext_cfo_thread() {
 int DtcGui::manage_reader_thread() {
   int rc(1);
 
-  printf("%s: START\n",__func__);
+  TLOG(TLVL_DEBUG) <<  Form("START fReaderTC.fRunning=%i\n",fReaderTC.fRunning);
   
   if (fReaderTC.fRunning == 0) {
 //-----------------------------------------------------------------------------
@@ -380,10 +380,10 @@ int DtcGui::manage_reader_thread() {
     fReaderTC.fRunning = 0;
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
-    btn->ChangeBackground(fStoppedColor);
+    btn->ChangeBackground(fValidatedColor);
     TThread::UnLock();
   }
 
-  printf("%s: END\n",__func__);
+  TLOG(TLVL_DEBUG) << Form("END fReaderTC.fRunning=%i\n",fReaderTC.fRunning);
   return rc;
 }
