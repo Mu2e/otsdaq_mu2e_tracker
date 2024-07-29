@@ -162,7 +162,9 @@ Also, I claim that no power cycles are needed now after a DTC_Reset.
 And that no TIMEOUT should be observed on the very first event after a DTC_Reset.
 
 * [[file:control_roc.org][control_ROC.py and its commands]]
-* [[file:./dtc_gui.org][DtcGui interface]] 
+* [[file:./dtc_gui.org][DtcGui interface]]
+* LVHVBox : https://github.com/vlrusu/LVHVBox                                
+- local repo: file:~mu2etrk/products/LVHVBox
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature

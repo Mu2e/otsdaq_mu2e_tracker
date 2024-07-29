@@ -1,6 +1,7 @@
 #startup:fold
 * ------------------------------------------------------------------------------
 * source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+* local repo : file:~mu2etrk/products/trackerScripts
 * ------------------------------------------------------------------------------
 * control_ROC commands                                                       
 ** digi_rw   [-w 1]                                                          

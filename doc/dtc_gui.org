@@ -13,6 +13,18 @@ parameters:
     - it is assumed that config_name is a located under [[file:../config][otsdaq-mu2e-tracker/config]]
     - if a file='otsdaq-mu2e-tracker/config/config_name.C' exists, the configuration is taken from there
     - if a directory='config/config_name' exists, the configuration is taken from config/config_name/
+
+- to turn ON validation:
+#+begin_src
+ x->fValidate=1                 // default:1
+#+end_src
+
+- to change the reader printout level:
+#+begin_src
+ x->fReaderTC.fPrintLevel=1     // default:2
+#+end_src
+
+- this can also be done in teh configuration file
 * CFO panel                                                                  
 ** status       : prints the CFO status
 ** writeR       : writes to the CFO register

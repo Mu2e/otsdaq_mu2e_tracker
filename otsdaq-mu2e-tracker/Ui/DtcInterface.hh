@@ -46,10 +46,14 @@ namespace trkdaq {
     int PcieAddr() { return fPcieAddr; }
 
     DTCLib::DTC* Dtc() { return fDtc; }
-
                                         // clock source=0: internal, clock=1: RTF (RJ45)
     
     int          ConfigureJA(int ClockSource, int Reset = 1);
+//-----------------------------------------------------------------------------
+// generic interface to control_ROC.py commands.
+// When/if we figure how to do it better, we'll implement a better solution
+//-----------------------------------------------------------------------------
+    int          ControlRoc(const char* Command, void* Parameters);
 
     int          EmulateCfo() { return fEmulateCfo; }
 
@@ -98,13 +102,12 @@ namespace trkdaq {
                                   const char* OutputFn = nullptr);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
-                                        const DTCLib::roc_address_t& address);
-    std::vector<DTCLib::roc_data_t> ReadDeviceID(const DTCLib::DTC_Link_ID& Link);
-    roc_serial_t ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
+                                                        const DTCLib::roc_address_t& address);
+    std::vector<DTCLib::roc_data_t> ReadDeviceID        (const DTCLib::DTC_Link_ID& Link);
+    roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
 
     Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
     void         FindAlignments(bool print=false, int LinkMask=0);
-
 //-----------------------------------------------------------------------------
 // ROC functions
 // if LinkMask=0, use fLinkMask

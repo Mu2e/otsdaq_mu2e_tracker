@@ -633,24 +633,27 @@ void DtcGui::write_roc_register() {
   ostringstream strCout;
   cout.rdbuf(strCout.rdbuf());
 
-  TDatime x1;
-  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << ": cmd: " 
-             << "write_roc_register DTC:" << fActiveDtcID << " ROC:" << roc << std::endl;
-
   uint reg, val;
   sscanf(rtel->fRegW->GetText(),"0x%x",&reg);
   sscanf(rtel->fValW->GetText(),"0x%x",&val);
+
+  TDatime x1;
+  *fTextView << x1.AsSQLString() << " DtcGui::" << __func__
+             << " DTC: " << fActiveDtcID
+             << " ROC:" << roc
+             << " reg:0x" << std::hex << reg
+             << " val:0x" << std::hex << val
+             << std::endl;
+
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  if (dtel->fData->fName == "DTC") {
-    try {
-      int timeout_ms(150);
-      dtel->fDTC_i->Dtc()->WriteROCRegister(DTC_Link_ID(roc),reg,val,timeout_ms,false);
-    }
-    catch (...) {
-      *fTextView << Form("ERROR in %s: coudn't write ROC %i ... BAIL OUT",__func__,roc) << std::endl;
-    }
+  try {
+    int timeout_ms(150);
+    dtel->fDTC_i->Dtc()->WriteROCRegister(DTC_Link_ID(roc),reg,val,false,timeout_ms);
+  }
+  catch (...) {
+    *fTextView << Form("ERROR in %s: coudn't write ROC %i ... BAIL OUT",__func__,roc) << std::endl;
   }
 
   TDatime x2;
