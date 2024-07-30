@@ -45,7 +45,7 @@ void* DtcGui::ReaderThread(void* Context) {
 
   if (tc->fPrintLevel > 0) {
     // print header
-    cout << Form("   CPU T   Real T      event  DTC    EW Tag nbytes   nbytes_tot  ------------- ROC status ----------------  nerr nerr_tot\n");
+    cout << Form("   CPU T   Real T      event  DTC    EW Tag   nbytes   nbytes_tot  ------------- ROC status ----------------  nerr nerr_tot\n");
     cout << Form("-------------------------------------------------------------------------------------------------------------------------\n");
   }
 
@@ -107,7 +107,7 @@ void* DtcGui::ReaderThread(void* Context) {
               float ct = timer.CpuTime();
               float rt = timer.RealTime();
               timer.Continue();
-              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
                    << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
                    << Form(" %3i %5i\n",nerr,nerr_tot);
               if (tc->fPrintLevel > 10) {
@@ -120,7 +120,7 @@ void* DtcGui::ReaderThread(void* Context) {
               float ct = timer.CpuTime();
               float rt = timer.RealTime();
               timer.Continue();
-              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %4i %12li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
                    << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
                    << Form(" %3i %5i\n",nerr,nerr_tot);
             }

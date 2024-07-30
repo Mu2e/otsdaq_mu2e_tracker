@@ -536,7 +536,7 @@ namespace trkdaq {
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" %10li  %2i  %10li %5i %12li 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x %5i %8i\n",
+            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x %5i %8i\n",
                          ts,i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5],nerr,nerr_tot);
             if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
               PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
@@ -570,7 +570,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     if (PrintLevel > 0) {
       ulong nev = ts-FirstTS;
-      cout << Form("nevents: %10li nbytes_tot: %12li\n",nev, nbytes_tot);
+      cout << Form("nevents: %10li nbytes_tot: %13li\n",nev, nbytes_tot);
       cout << Form("nerr_tot: %8i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
                    nerr_tot,
                    nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
