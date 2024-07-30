@@ -89,6 +89,9 @@ parameters:
 ** SleepUS  : sleep time, in us, after a single run has been taken
 in a CFO emulation mode
 - used by file:../otsdaq-mu2e-tracker/EmuCfoThread
+* command line interface
+- often it is handy to type on a command line 
+** [[file:../scripts/daq_scripts.C::/void dtc_init_readout/][dtc_init_readout]] : 
 * ------------------------------------------------------------------------------
 * back to [[file:otsdaq_mu2e_tracker.org]]
 * ------------------------------------------------------------------------------
