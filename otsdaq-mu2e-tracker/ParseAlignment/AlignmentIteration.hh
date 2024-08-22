@@ -37,9 +37,9 @@ class AlignmentIteration{
     AlignmentIteration() = default;
     AlignmentIteration(unsigned int, words_t);
 
-    unsigned int Index();
-    int ADCPhase();
-    std::vector<AlignmentChannel>& Channels();
+    unsigned int Index() const;
+    int ADCPhase() const;
+    std::vector<AlignmentChannel> Channels() const;
   protected:
     unsigned int index;
     int adc_phase;

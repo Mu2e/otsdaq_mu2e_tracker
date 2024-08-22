@@ -29,9 +29,12 @@ find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 
 # XDAQ Extra setup
-include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
+ include_directories($ENV{XDAQ_ROOT}/include/linux $ENV{XDAQ_ROOT}/include)
+link_directories($ENV{XDAQ_ROOT}/lib)
 
 find_package(Offline           10.00.00 REQUIRED)
+include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
+link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )
