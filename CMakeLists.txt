@@ -15,9 +15,9 @@ cet_cmake_env()
 
 cet_set_compiler_flags(
         DIAGS VIGILANT
-        WERROR  
+        # WERROR
         NO_UNDEFINED
-        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
+        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g -O0 -v # Equivalent to debug qualifier, for testing
 )
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env
@@ -29,7 +29,7 @@ find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 
 # XDAQ Extra setup
-include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
+include_directories($ENV{XDAQ_ROOT}/include)
 
 find_package(Offline           10.00.00 REQUIRED)
 
@@ -58,17 +58,5 @@ add_subdirectory(otsdaq-mu2e-tracker)
 
 # Test Programs
 #add_subdirectory(test)
-
-# Data
-#FILE(COPY ConfigurationDataExamples DESTINATION Data)
-#INSTALL(DIRECTORY ConfigurationDataExamples DESTINATION ${product}/${version}/Data)
-#FILE(COPY XDAQConfigurations DESTINATION Data)
-#INSTALL(DIRECTORY XDAQConfigurations DESTINATION ${product}/${version}/Data)
-#FILE(COPY ServiceData DESTINATION Data)
-#INSTALL(DIRECTORY ServiceData DESTINATION ${product}/${version}/Data)
-#FILE(COPY Data DESTINATION .)
-#INSTALL(DIRECTORY Data DESTINATION ${product}/${version})
-#FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ServiceData/LoginData)
-#INSTALL(DIRECTORY DESTINATION ${product}/${version}/Data/ServiceData/LoginData)
 
 cet_cmake_config()

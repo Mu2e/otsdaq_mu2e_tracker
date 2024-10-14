@@ -7,15 +7,13 @@
 #include "dtcInterfaceLib/DTCSoftwareCFO.h"
 
 using namespace DTCLib;
-
 //-----------------------------------------------------------------------------
-// measure_thresholds:
+// rates: not implemented yet
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 // Firstchannel values: 0 to 7
 //-----------------------------------------------------------------------------
-void pulser_on(int Link, uint FirstChannel, int DutyCycle = 10, int Delay = 1000, 
-               int ROCSleepTime = 5000) {
+void rates( ,              , int PrintLevel = 0, int ROCSleepTime = 5000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -24,18 +22,17 @@ void pulser_on(int Link, uint FirstChannel, int DutyCycle = 10, int Delay = 1000
   int roc_mask = 1 << (4*Link);
   DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  dtc.WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
 //-----------------------------------------------------------------------------
-// write parameters into reg 268 (block write) , sleep for some time, 
+// write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 // chan mask always includes the first channel
 //-----------------------------------------------------------------------------
-  dtc.WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
-
   vector<uint16_t> vec;
 
   uint16_t chan_mask = 0x10 | (0x1 << FirstChannel);
 
-  // vec.push_back(uint16_t(FirstChannel));
   vec.push_back(uint16_t(chan_mask));
   vec.push_back(uint16_t(DutyCycle));
 
@@ -56,7 +53,7 @@ void pulser_on(int Link, uint FirstChannel, int DutyCycle = 10, int Delay = 1000
 
   dtc.ReadROCRegister(roc,129,100);
 
-  dtc.WriteROCBlock   (roc,268,vec,false,false,1000);
+  dtc.WriteROCBlock   (roc,***,vec,false,false,1000);
   std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
 
   // 0x86 = 0x82 + 4
@@ -70,15 +67,15 @@ void pulser_on(int Link, uint FirstChannel, int DutyCycle = 10, int Delay = 1000
 
   nw = nw-4;
   vector<uint16_t> v2;
-  dtc.ReadROCBlock(v2,roc,268,nw,false,100);
+  dtc.ReadROCBlock(v2,roc,***,nw,false,100);
 //-----------------------------------------------------------------------------
-// 
+// print output - in two formats
 //-----------------------------------------------------------------------------
   print_buffer(v2.data(),nw);
 
-  int chmask      = v2[0];
-  int duty_cycle  = v2[1];
-  int delay       = v2[2] | (v2[3] << 16);
+  int XXXX      = v2[0];
+  int XXX  = v2[1];
+  int XX       = v2[2] | (v2[3] << 16);
 
   printf(" chmask = 0x%04x duty cycle = %5i delay = 0x%08x\n",chmask, duty_cycle, delay); 
 //-----------------------------------------------------------------------------

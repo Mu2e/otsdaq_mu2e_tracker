@@ -9,6 +9,12 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 
   DtcTel.fData = DtcData;
 
+  DtcTel.fCFO_i = CfoInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
+//-----------------------------------------------------------------------------
+// there is only one CFO... so assigning to global only once
+//-----------------------------------------------------------------------------
+  fCFO_i = DtcTel.fCFO_i;
+  
   const char* device_name = DtcData->fName.Data();
 
   DtcTel.fFrame = Tab->AddTab(Form("%s:%i", DtcData->fName.Data(),DtcData->fPcieAddr));
@@ -244,14 +250,15 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
   int x4  = x3+dx3+5;
   int dx4 = dx3;
-
-  // lab = new TGLabel(group,"CFO link");
-  // group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  // lab->SetTextJustify(36);
-  // lab->SetMargins(0,0,0,0);
-  // lab->SetWrapLength(-1);
-  // lab->MoveResize(c4_dx,y0,dx3,dy);
-  //  DtcTel.fCfoLink = lab;
+//-----------------------------------------------------------------------------
+// column 4 row 1: label: run plan
+//-----------------------------------------------------------------------------
+  lab = new TGLabel(group,"Run Plan");
+  group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  lab->SetTextJustify(36);
+  lab->SetMargins(0,0,0,0);
+  lab->SetWrapLength(-1);
+  lab->MoveResize(x4,y0+0*(dy+5),dx4,dy);
 //-----------------------------------------------------------------------------
 // column 4 row 2: label: N(DTCs) in the timing chain 
 //-----------------------------------------------------------------------------
@@ -260,21 +267,30 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
-  lab->MoveResize(x4,y0+(dy+5),dx4,dy);
+  lab->MoveResize(x4,y0+1*(dy+5),dx4,dy);
 //-----------------------------------------------------------------------------
-// column 4 row 3: label: run plan
+// column 4 row 3: label: JA Mode 
 //-----------------------------------------------------------------------------
-  lab = new TGLabel(group,"Run Plan");
+  lab = new TGLabel(group,"JA Mode");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   lab->MoveResize(x4,y0+2*(dy+5),dx4,dy);
 //-----------------------------------------------------------------------------
-// column 5 row 1: input field: CFO timing chain link 
+// column 5 row 1: input field: Run Plan (long)
 //-----------------------------------------------------------------------------
   int x5  = x4+dx4+5;
-  int dx5 = 150;
+  int dx5 = 110;
+
+  rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
+                       ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
+  group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  rr->SetMaxLength(4096);
+  rr->SetAlignment(kTextLeft);
+  rr->SetText("run_00001_hz.bin");
+  rr->MoveResize(x5,y0+0*(dy+5),dx5+90,dy);
+  DtcTel.fRunPlan = rr;
 //-----------------------------------------------------------------------------
 // column 5 row 2: input field: DTC mask
 //-----------------------------------------------------------------------------
@@ -284,19 +300,21 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
   rr->SetText("0x00000001");
-  rr->MoveResize(x5,y0+(dy+5),dx5,dy);
+  rr->MoveResize(x5,y0+1*(dy+5),dx5,dy);
   DtcTel.fDtcMask = rr;
 //-----------------------------------------------------------------------------
-// column 5 row 3: input field: N(DTCs)
+// column 5 row 3: input field: JA Mode
 //-----------------------------------------------------------------------------
   rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                        ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   rr->SetMaxLength(4096);
   rr->SetAlignment(kTextLeft);
-  rr->SetText("run_00001_hz.bin");
+  rr->SetText(Form("0x%02x",DtcTel.fCFO_i->fJAMode));
   rr->MoveResize(x5,y0+2*(dy+5),dx5,dy);
-  DtcTel.fRunPlan = rr;
+  DtcTel.fJAMode = rr;
+
+  rr->Connect("ReturnPressed()","DtcGui", this,"cfo_set_ja_mode()");
 //-----------------------------------------------------------------------------
 // column (4+5) raw 4 : "InitReadout" for a given CFO time chain map defined by the DTC map
 //-----------------------------------------------------------------------------

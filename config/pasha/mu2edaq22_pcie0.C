@@ -20,8 +20,8 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x000101;           // ROC0
-  dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
+  dtc[0].fLinkMask    = 0x1;             // ROC0
+  dtc[0].fReadoutMode = 0;               // 0:patterns 1:digis
   gSystem->Setenv("DTCLIB_DTC","0");
 
   return rc;

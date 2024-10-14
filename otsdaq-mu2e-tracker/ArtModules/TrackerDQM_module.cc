@@ -306,7 +306,7 @@ void TrackerDQM::beginJob() {
 
   //  int           tmp_argc(2);
   int           tmp_argc(0);
-  char**        tmp_argv;
+  char**        tmp_argv(nullptr);
 
   // tmp_argv    = new char*[2];
   // tmp_argv[0] = new char[100];

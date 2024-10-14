@@ -204,6 +204,7 @@ public:
 
     TGNumberEntry*    fEmulateCfo;
     TGNumberEntry*    fRocReadoutMode;
+    TGTextEntry*      fJAMode;          // 0xAB A:source B:reset
 
     trkdaq::DtcInterface* fDTC_i;       // driver interface
     trkdaq::CfoInterface* fCFO_i;
@@ -312,17 +313,20 @@ public:
   void     cfo_disable_beam_off();
   void     cfo_init_readout    (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
+  void     cfo_set_ja_mode     ();
+
   void     configure_roc_pattern_mode();
 
-  void     clear_output       ();
+  void     clear_output         ();
 
-  void     dtc_soft_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_hard_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_init_readout   (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_read_subevents (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_soft_reset       (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_hard_reset       (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_init_readout     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_read_subevents   (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+  void     dtc_set_ja_mode      ();
 
-  int      execute_command    ();
-  void     exit               ();
+  int      execute_command      ();
+  void     exit                 ();
 
   void     init_external_cfo_readout_mode();
 

@@ -19,24 +19,26 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintBuffer(const void* ptr, int nw) {
 
-    ushort* p16 = (ushort*) ptr;
-    int     n   = 0;
+    ushort*      p16 = (ushort*) ptr;
 
-    std::cout << Form("-------- nw = %i\n",nw);
+    int          n(0);
+    std::string  line;
+
+    TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw);
+   
     for (int i=0; i<nw; i++) {
-      if (n == 0) cout << Form(" 0x%08x: ",i*2);
-      
+      if (n == 0) line = Form(" 0x%08x: ",i*2);
       ushort  word = p16[i];
-      cout << Form("0x%04x ",word);
+      line += Form("0x%04x ",word);
       
       n   += 1;
       if (n == 8) {
-        cout << std::endl;
+        TLOG(TLVL_DEBUG) << line << std::endl;
         n = 0;
       }
     }
     
-    if (n != 0) cout << std::endl;
+    if (n != 0) TLOG(TLVL_DEBUG) << line << std::endl;
   }
 
 //-----------------------------------------------------------------------------
@@ -286,22 +288,47 @@ namespace trkdaq {
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
 
     PrintRegister(0x9630,"TX Data Request Packet Count Link 0        ");
-    PrintRegister(0x9631,"TX Data Request Packet Count Link 1        ");
+    PrintRegister(0x9634,"TX Data Request Packet Count Link 1        ");
+    PrintRegister(0x9638,"TX Data Request Packet Count Link 2        ");
+    PrintRegister(0x963c,"TX Data Request Packet Count Link 3        ");
+    PrintRegister(0x963c,"TX Data Request Packet Count Link 3        ");
+    PrintRegister(0x9640,"TX Data Request Packet Count Link 4        ");
+    PrintRegister(0x9644,"TX Data Request Packet Count Link 5        ");
 
     PrintRegister(0x9650,"TX Heartbeat    Packet Count Link 0        ");
-    PrintRegister(0x9651,"TX Heartbeat    Packet Count Link 1        ");
+    PrintRegister(0x9654,"TX Heartbeat    Packet Count Link 1        ");
+    PrintRegister(0x9658,"TX Heartbeat    Packet Count Link 2        ");
+    PrintRegister(0x965c,"TX Heartbeat    Packet Count Link 3        ");
+    PrintRegister(0x9660,"TX Heartbeat    Packet Count Link 4        ");
+    PrintRegister(0x9664,"TX Heartbeat    Packet Count Link 5        ");
 
     PrintRegister(0x9670,"RX Data Header  Packet Count Link 0        ");
-    PrintRegister(0x9671,"RX Data Header  Packet Count Link 1        ");
+    PrintRegister(0x9674,"RX Data Header  Packet Count Link 1        ");
+    PrintRegister(0x9678,"RX Data Header  Packet Count Link 2        ");
+    PrintRegister(0x967c,"RX Data Header  Packet Count Link 3        ");
+    PrintRegister(0x9680,"RX Data Header  Packet Count Link 4        ");
+    PrintRegister(0x9684,"RX Data Header  Packet Count Link 5        ");
 
     PrintRegister(0x9690,"RX Data         Packet Count Link 0        ");
-    PrintRegister(0x9691,"RX Data         Packet Count Link 1        ");
+    PrintRegister(0x9694,"RX Data         Packet Count Link 1        ");
+    PrintRegister(0x9698,"RX Data         Packet Count Link 2        ");
+    PrintRegister(0x969c,"RX Data         Packet Count Link 3        ");
+    PrintRegister(0x96a0,"RX Data         Packet Count Link 4        ");
+    PrintRegister(0x96a4,"RX Data         Packet Count Link 5        ");
 
     PrintRegister(0xa400,"TX Event Window Marker Count Link 0        ");
-    PrintRegister(0xa404,"TX Event Window Marker Count Link 0        ");
+    PrintRegister(0xa404,"TX Event Window Marker Count Link 1        ");
+    PrintRegister(0xa408,"TX Event Window Marker Count Link 2        ");
+    PrintRegister(0xa40c,"TX Event Window Marker Count Link 3        ");
+    PrintRegister(0xa410,"TX Event Window Marker Count Link 4        ");
+    PrintRegister(0xa414,"TX Event Window Marker Count Link 5        ");
 
     PrintRegister(0xa420,"RX Data Header Timeout Count Link 0        ");
-    PrintRegister(0xa424,"RX Data Header Timeout Count Link 0        ");
+    PrintRegister(0xa424,"RX Data Header Timeout Count Link 1        ");
+    PrintRegister(0xa428,"RX Data Header Timeout Count Link 2        ");
+    PrintRegister(0xa42c,"RX Data Header Timeout Count Link 3        ");
+    PrintRegister(0xa430,"RX Data Header Timeout Count Link 4        ");
+    PrintRegister(0xa434,"RX Data Header Timeout Count Link 5        ");
 
   }
 };

@@ -18,6 +18,7 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
+#include "otsdaq-mu2e-tracker/Ui/ControlRoc_Read_Par_t.hh"
 
 namespace trkdaq {
   using roc_serial_t = std::string;
@@ -33,6 +34,11 @@ namespace trkdaq {
     int                  fReadoutMode;    // 0: patterns 1:digis
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
+    int                  fJAMode;         // clock_source << 4 | reset
+
+    int                  fSleepTimeROCWrite; // the two are different 
+    int                  fSleepTimeROCReset;
+    int                  fPrintLevel;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -54,6 +60,11 @@ namespace trkdaq {
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
+    
+    int          ControlRoc_Read(ControlRoc_Read_Par_t* Par,
+                                 int                    LinkMask   = -1   ,
+                                 bool                   UpdateMask = false,
+                                 int                    PrintLevel = 0    );
 
     int          EmulateCfo() { return fEmulateCfo; }
 
@@ -76,8 +87,9 @@ namespace trkdaq {
     int          GetLinkMask() { return fLinkMask; }
 
     int          ConvertSpiData  (const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
-
-    // assume that printed are uint16_t words , in hex
+//-----------------------------------------------------------------------------
+// assume that to be printed are 'nw' uint16_t words , in hex
+//-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
     void         PrintRegister   (uint16_t Register, const char* Title = "");
@@ -122,7 +134,9 @@ namespace trkdaq {
     void         SetRocReadoutMode      (int Mode) { fReadoutMode = Mode; }
     
                                         // 'Value' : 0 or 1
-    void         SetBit(int Register, int Bit, int Value);
+    void         SetBit     (int Register, int Bit, int Value);
+
+    void         SetJAMode  (int Mode) { fJAMode = Mode; }
 
     void         SetLinkMask(int Mask = 0);
 //-----------------------------------------------------------------------------

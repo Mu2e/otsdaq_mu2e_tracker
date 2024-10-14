@@ -1,10 +1,10 @@
 //
 #define __CLING__ 1
 
-#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+#include "scripts/trk_utils.C"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+#include "dtcInterfaceLib/DTC.h"
+#include "dtcInterfaceLib/DTCSoftwareCFO.h"
 
 using namespace DTCLib;
 
@@ -28,12 +28,12 @@ void measure_thresholds(int PcieAddress, int Link, int ROCSleepTime = 2000) {
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-  int16_t  chan_num       (-1);
+  // int16_t  chan_num       (-1);
   uint16_t chan_mask[6] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
 
 
   vector<uint16_t> vec;
-  vec.push_back(chan_num);
+  // vec.push_back(chan_num);
   vec.push_back(chan_mask[0]);
   vec.push_back(chan_mask[1]);
   vec.push_back(chan_mask[2]);
@@ -63,6 +63,15 @@ void measure_thresholds(int PcieAddress, int Link, int ROCSleepTime = 2000) {
   dtc.WriteROCRegister(roc,14,0x01,false,1000); 
 
   print_buffer(v2.data(),nw);
+  // expect nw=288 = 96*3, if not - in trouble
+  
+  for (int i=0; i<96; i++) {
+    float hw  = (-1000. + v2[i]*2000./1024.)/10.;
+    float cal = (-1000. + v2[96+i]*2000./1024.)/10.;
+    float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
+
+    printf(" i, hw, cal, tot : %3i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+  }
   
 //-----------------------------------------------------------------------------
 // sleep

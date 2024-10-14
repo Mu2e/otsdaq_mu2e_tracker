@@ -37,24 +37,25 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   if (fDebugLevel > 0) printf("DtcGui::%s: before BuildGui\n",__func__);
   BuildGui(p,w,h);
   if (fDebugLevel > 0) printf("DtcGui::%s: after  BuildGui\n",__func__);
-//-----------------------------------------------------------------------------
-// two PCIE cards
-//-----------------------------------------------------------------------------
-  for (int i=0; i<2; i++) {
-    DtcTabElement_t* dtel = &fDtcTel[i];
-    int pcie_addr = fDtcData[i].fPcieAddr;
-    if      (fDtcData[i].IsDtc()) {
-      dtel->fDTC_i = DtcInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
-      dtel->fDTC_i->SetRocReadoutMode(fDtcData[i].fReadoutMode);
-    }
-    else if (fDtcData[i].IsCfo()) {
-      dtel->fCFO_i = CfoInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
-//-----------------------------------------------------------------------------
-// there is only one CFO, so initialize the CFO pointer - by copying it from the tab
-//-----------------------------------------------------------------------------
-      fCFO_i = dtel->fCFO_i;
-    }
-  }
+
+// //-----------------------------------------------------------------------------
+// // two PCIE cards
+// //-----------------------------------------------------------------------------
+//   for (int i=0; i<2; i++) {
+//     DtcTabElement_t* dtel = &fDtcTel[i];
+//     int pcie_addr = fDtcData[i].fPcieAddr;
+//     if      (fDtcData[i].IsDtc()) {
+//       dtel->fDTC_i = DtcInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
+//       dtel->fDTC_i->SetRocReadoutMode(fDtcData[i].fReadoutMode);
+//     }
+//     else if (fDtcData[i].IsCfo()) {
+//       dtel->fCFO_i = CfoInterface::Instance(pcie_addr,fDtcData[i].fLinkMask);
+// //-----------------------------------------------------------------------------
+// // there is only one CFO, so initialize the CFO pointer - by copying it from the tab
+// //-----------------------------------------------------------------------------
+//       fCFO_i = dtel->fCFO_i;
+//     }
+//   }
 
   fEmuCfoTC.fTp          = nullptr;
   fEmuCfoTC.fStop        = 0;
@@ -159,9 +160,6 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   for (int i=0; i<fNDtcs; i++) {
     if      (fDtcData[i].IsDtc()) BuildDtcTabElement(fDtcTab,fDtcTel[i],&fDtcData[i]);
     else if (fDtcData[i].IsCfo()) BuildCfoTabElement(fDtcTab,fDtcTel[i],&fDtcData[i]);
-    else {
-      BuildDtcTabElement(fDtcTab,fDtcTel[i],&fDtcData[i]);
-    }
   }
 
   fDtcTab->MoveResize(10,10,920,260);  // this defines the size of the tab below the tabs line
