@@ -13,10 +13,11 @@ int init_run_configuration(DtcGui* X) {
 
   X->fNDtcs           = 1; // 2;              // installed on a machine
 
-  dtc[0].fName        = "CFO";
+  dtc[0].fName        = "DTC" ; // "CFO";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x2;            // start from 2 DTCs on link0
-  gSystem->Setenv("CFOLIB_CFO","0");
+  dtc[0].fLinkMask    = 0x1;            // start from 2 DTCs on link0
+  //gSystem->Setenv("CFOLIB_CFO","0");
+  gSystem->Setenv("DTCLIB_DTC","0");
 
   // dtc[0].fName        = "DTC";
   // dtc[0].fPcieAddr    = 1;

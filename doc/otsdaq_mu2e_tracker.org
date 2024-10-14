@@ -468,9 +468,11 @@ readDeviceID
 ('DRAC ROC ID #', '7a7fb')
 ** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
-* test stands TS0, TS1, TS2                                                  
-** last update <2024-07-15 Mon>
-** powering up the test stands (Vadim):                                      
+* test stands TS0, TS1, TS2                     
+- located in G291
+| TS2 | TS0 | TS1 |
+** last update  <2024-09-26 Thu> 
+** powering up the test stands (Vadim):
   https://docs.google.com/document/d/1theA9NIRA5XeUUPVuFGVhU7NddPljgaGznR9aMu-Fv8/edit?usp=sharing
 #+begin_src                           
 mu2e@trackerpi5:~/trackerScripts$ power --list

@@ -20,8 +20,8 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC";
   dtc[0].fPcieAddr    = 1;
-  // dtc[0].fLinkMask    = 0x111;  
-  dtc[0].fLinkMask    = 0x00111111;          // ROC6: link1 stopped responding
+  dtc[0].fLinkMask    = 0x111;  
+  // dtc[0].fLinkMask    = 0x00111111;          // ROC6: link1 stopped responding
   dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
   gSystem->Setenv("DTCLIB_DTC","1");
 
