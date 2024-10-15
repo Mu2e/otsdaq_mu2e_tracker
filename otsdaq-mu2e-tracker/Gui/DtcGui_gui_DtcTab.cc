@@ -56,6 +56,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //------------------------------------------------------------------------------
 // a) graphics context changes
 //-----------------------------------------------------------------------------
+//  TString* cmd;
   TGFont *ufont;         // will reflect user font changes
   ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
 
@@ -133,9 +134,9 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->ChangeBackground(fValidatedColor);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_soft_reset);
+  tb->SetUserData((void*) &DtcGui::dtc_soft_reset);
 #pragma GCC diagnostic pop
-  //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // column 1 raw 5: DTC hard reset 
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"hard reset",-1,TGTextButton::GetDefaultGC()(),
@@ -151,9 +152,9 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->ChangeBackground(fValidatedColor);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_hard_reset);
+  tb->SetUserData((void*) &DtcGui::dtc_hard_reset);
 #pragma GCC diagnostic pop
-  //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // column 2 raw 1 : label "register"
 //-----------------------------------------------------------------------------
   int x2  = x1+dx1+10;
@@ -202,9 +203,9 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->ChangeBackground(fValidatedColor);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_print_firefly_temp);
+  tb->SetUserData((void*) &DtcGui::dtc_print_firefly_temp);
 #pragma GCC diagnostic pop
-  //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // column 2 raw 5 : init readout mode with the external CFO
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"init ext CFO",-1,TGTextButton::GetDefaultGC()(),
@@ -234,7 +235,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_print_all_rocs);
+  tb->SetUserData((void*) &DtcGui::dtc_print_all_rocs);
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
@@ -317,7 +318,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_init_readout);
+  tb->SetUserData((void*) &DtcGui::dtc_init_readout);
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
@@ -363,7 +364,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_launch_run_plan_emulated_cfo);
+  tb->SetUserData((void*) &DtcGui::dtc_launch_run_plan_emulated_cfo);
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
@@ -431,12 +432,12 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-
+  
   tb->MoveResize(x5,y0+4*(dy+5),dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-  tb->SetUserData((void*)&DtcGui::dtc_read_subevents);
+  tb->SetUserData((void*) &DtcGui::dtc_read_subevents);
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------

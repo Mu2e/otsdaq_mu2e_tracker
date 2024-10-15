@@ -544,7 +544,6 @@ void DtcGui::set_nevents() {
 
 //-----------------------------------------------------------------------------
 void DtcGui::set_ew_length() {
-  //  TString cmd;
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
   int roc               = dtel->fActiveRocID;
@@ -570,7 +569,6 @@ void DtcGui::set_ew_length() {
 
 //-----------------------------------------------------------------------------
 void DtcGui::set_emulate_cfo() {
-  //  TString cmd;
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
 
