@@ -255,8 +255,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                 TGNumberFormat::kNEANonNegative,
                                 TGNumberFormat::kNELLimitMinMax,
                                 0, 100000);
-  fEWLength->Connect("ValueSet(Long_t)", "MyMainFrame", this, "set_ew_length()");
-  (fEWLength->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"set_ew_length()");
+  fEWLength->Connect("ValueSet(Long_t)", "DtcGui", this, "set_ew_length()");
+  (fEWLength->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_ew_length()");
 
   fButtonsFrame->AddFrame(fEWLength, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
