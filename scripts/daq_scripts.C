@@ -139,24 +139,29 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 
 
 //-----------------------------------------------------------------------------
+// test of the 'READ' command implementation over the fiber
+//-----------------------------------------------------------------------------
 int dtc_control_roc_read(int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  ControlRoc_Read_Par_t par;
+  ControlRoc_Read_Input_t par;
   
-  par.adc_mode = 8;
-  par.tdc_mode = 0;
-  par.lookback = 8;
-  par.samples  = 1;
-  par.triggers = 10;
+  par.adc_mode        = 8;
+  par.tdc_mode        = 0;
+  par.num_lookback    = 8;
+  par.num_samples     = 1;
+  par.num_triggers[0] = 10;
+  par.num_triggers[1] = 0;
   
-  for (int i=0; i<6; i++) par.chan_mask[i] = 0xffff;
+  for (int i=0; i<6; i++) par.ch_mask[i] = 0xffff;
 
-  par.pulser   = 1;
-  par.delay    = 1;
-  par.mode     = 3;   // marker_clock in Monica's code
-  
-  dtc_i->ControlRoc_Read(&par);
+  par.enable_pulser   = 1;
+  par.marker_clock    = 3;
+  par.mode            = 0;   // 
+  par.clock           = 99;  // 
+
+  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
+  dtc_i->ControlRoc_Read(&par,0,false,2);
   return 0;
 }
 
