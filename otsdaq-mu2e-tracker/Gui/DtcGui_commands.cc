@@ -543,6 +543,32 @@ void DtcGui::set_nevents() {
 }
 
 //-----------------------------------------------------------------------------
+void DtcGui::set_ew_length() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  int ew_length = 0;
+  try         {
+    ew_length = fEWLength->GetIntNumber();
+  }
+  catch (...) { *fTextView << Form("ERROR : coudn't read EW Length ... BAIL OUT",roc) << std::endl; }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE ew_length = %10i\n",__func__,ew_length);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+//-----------------------------------------------------------------------------
 void DtcGui::set_emulate_cfo() {
   //  TString cmd;
 

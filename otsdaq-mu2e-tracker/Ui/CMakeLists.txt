@@ -10,7 +10,7 @@ cet_make_library(
         artdaq::DAQdata
         artdaq_core::artdaq-core_Data
         # artdaq-core-demo::artdaq-core-demo_Overlays
-        cetlib_except
+        cetlib_except::cetlib_except
         mu2e_pcie_utils::CFOInterface
         mu2e_pcie_utils::DTCInterface
         ROOT::Core

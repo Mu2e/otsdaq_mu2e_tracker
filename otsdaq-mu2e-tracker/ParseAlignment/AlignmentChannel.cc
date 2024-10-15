@@ -35,7 +35,7 @@ AlignmentChannel::AlignmentChannel(unsigned int adc,
                                      bitslip_done(bitslip_done),
                                      bitslip_step(bitslip_step),
                                      pattern_match(pattern_match){
-  this->channel = AlignmentChannel::adc_to_straw_map[this->adc];
+  this->channel = AlignmentChannel::adc_to_straw_map.at(this->adc);
 }
 
 unsigned int AlignmentChannel::ADC() const{

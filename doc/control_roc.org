@@ -1,4 +1,4 @@
-#+startup:fold
+#+startup:fold -*- buffer-read-only:t -*- 
 * ------------------------------------------------------------------------------
 * source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
 * local repo : file:~mu2etrk/products/trackerScripts
@@ -257,20 +257,21 @@ set_digi_rw -s 0
 
 * TODO command implementation over the fiber                                 
 
-| command            | status | comments                                       |
-|--------------------+--------+------------------------------------------------|
-| digi_rw            |        |                                                |
-|--------------------+--------+------------------------------------------------|
-| readSPI            | OK     | implemented                                    |
-| find_alignment     |        | implemented readout, parsing implemented by Ed |
-| set_preamp_thresh  |        |                                                |
-| measure_thresholds |        |                                                |
-| pulser_on          |        |                                                |
-| readDeviceID       |        |                                                |
-| set_digi_rw        |        | shouldn't need, all goes over the fiber        |
-| rates              |        |                                                |
-| read               |        |                                                |
-|--------------------+--------+------------------------------------------------|
+
+| command            | status | comments                                |
+|--------------------+--------+-----------------------------------------|
+| digi_rw            |        |                                         |
+|--------------------+--------+-----------------------------------------|
+| readSPI            | OK     | implemented                             |
+| find_alignment     |        | implemented by Ed, minor wrinkle        |
+| set_preamp_thresh  |        |                                         |
+| measure_thresholds |        | ok                                      |
+| pulser_on          |        |                                         |
+| readDeviceID       |        |                                         |
+| set_digi_rw        |        | shouldn't need, all goes over the fiber |
+| rates              |        |                                         |
+| read               |        |                                         |
+|--------------------+--------+-----------------------------------------|
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
@@ -287,7 +288,7 @@ Ctrl-C
 #+end_src 
   exiting at this point is important, otherwise the serial port will not work properly
 
-** 2) run diagnostics, use whatever USB port the TS1 is on                 
+** 2) to load thresholds, run diagnostics.py, use the USB port the TS1 is on                 
    example of [[file:settings_pasha.dat]]                          
    - all gains  - at 370
    - thresholds - around 400

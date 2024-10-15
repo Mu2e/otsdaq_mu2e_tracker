@@ -244,7 +244,9 @@ public:
   DtcData_t*          fActiveDtc;
 
   int                 fNRocs;
-
+//-----------------------------------------------------------------------------
+// fields set from GUI
+//-----------------------------------------------------------------------------
   TGNumberEntry*      fNEvents;         // DTC , CFO emulation
   TGNumberEntry*      fEWLength;        // DTC , CFO emulation
   TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
@@ -342,6 +344,7 @@ public:
   void     read_subevents     ();
   void     reset_roc          ();
 
+  void     set_ew_length       ();
   void     set_nevents         ();
   void     set_emulate_cfo     ();
   void     set_roc_readout_mode();

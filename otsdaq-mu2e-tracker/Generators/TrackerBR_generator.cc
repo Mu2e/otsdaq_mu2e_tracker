@@ -165,8 +165,8 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
   , _debugLevel        (ps.get<int>                     ("debugLevel"                  ,     0))
   , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"                  ,   100))
   , _pcieAddr          (ps.get<int>                     ("pcieAddr"                 ,          -1)) 
-  , _linkMask          (stoi(ps.get<std::string>        ("linkMask"                           ),0,16)) // 
   , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
+  , _linkMask          (stoi(ps.get<std::string>        ("linkMask"                           ),0,16)) // 
   , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
   , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
   , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 

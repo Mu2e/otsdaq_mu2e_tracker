@@ -37,17 +37,17 @@ const unsigned int AlignmentIteration::payload_size = 127;
 
 const unsigned int AlignmentIteration::channel_count = 96;
 
-unsigned int AlignmentIteration::Index(){
+unsigned int AlignmentIteration::Index() const {
   auto rv = this->index;
   return rv;
 }
 
-int AlignmentIteration::ADCPhase(){
+int AlignmentIteration::ADCPhase() const {
   auto rv = this->adc_phase;
   return rv;
 }
 
-std::vector<AlignmentChannel>& AlignmentIteration::Channels(){
+std::vector<AlignmentChannel> AlignmentIteration::Channels() const {
   auto& rv = this->channels;
   return rv;
 }

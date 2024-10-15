@@ -12,6 +12,7 @@ project(otsdaq_mu2e_tracker VERSION 3.02.00)
 
 include(CetCMakeEnv)
 cet_cmake_env()
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 cet_set_compiler_flags(
         DIAGS VIGILANT
@@ -32,6 +33,8 @@ find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 include_directories($ENV{XDAQ_ROOT}/include)
 
 find_package(Offline           10.00.00 REQUIRED)
+include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
+link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )
