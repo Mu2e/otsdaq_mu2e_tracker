@@ -37,6 +37,7 @@ namespace trkdaq {
 // init DTC mask, less 16 DTCs per tine chain
 //-----------------------------------------------------------------------------
     fDtcMask  = DtcMask;
+    fJAMode   = 0x11;
     //    int link_mask = 0;
     for (int i=0; i<8; i++) {
       int ndtcs = (fDtcMask >> 4*i) & 0xf;
@@ -148,7 +149,11 @@ namespace trkdaq {
                                         // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-    ConfigureJA(1,1);
+
+    int clock_source = (fJAMode >> 4) & 0x1;
+    int reset        = fJAMode & 0x1;
+    ConfigureJA(clock_source, reset);
+
     fCfo->SoftReset();
     SetRunPlan   (RunPlan);
     usleep(10);

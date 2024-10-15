@@ -28,6 +28,8 @@ enum {
   kAutogenDRPBit         = 23,
 };
 
+// #include "control_roc_read.C"
+
 namespace daq_scripts {
   int EWLength    = 68;                 // in units of 25 ns, = 1700 ns
   int EdgeMode    = 0x0;                // two bits
@@ -135,6 +137,29 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
   return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
 }
 
+
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read(int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  ControlRoc_Read_Par_t par;
+  
+  par.adc_mode = 8;
+  par.tdc_mode = 0;
+  par.lookback = 8;
+  par.samples  = 1;
+  par.triggers = 10;
+  
+  for (int i=0; i<6; i++) par.chan_mask[i] = 0xffff;
+
+  par.pulser   = 1;
+  par.delay    = 1;
+  par.mode     = 3;   // marker_clock in Monica's code
+  
+  dtc_i->ControlRoc_Read(&par);
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // EW length         : in units of 25 ns (clock)
 // EWMOde            : 1 for buffer test
@@ -146,15 +171,6 @@ void dtc_init_emulated_cfo_readout_mode(int PcieAddr = -1) {
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->InitEmulatedCFOReadoutMode();
-}
-
-//-----------------------------------------------------------------------------
-// to be executed on each node with the DTC
-// 'dtc_init_link_mask' defines node-specific link mask
-//-----------------------------------------------------------------------------
-void dtc_init_external_cfo_readout_mode(int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->InitExternalCFOReadoutMode(daq_scripts::EdgeMode);
 }
 
 //-----------------------------------------------------------------------------
@@ -194,127 +210,126 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
   return 0;
 }
 
-
-struct RocData_t {
-  ushort  nb;
-  ushort  header;
-  ushort  n_data_packets;  // n data packets, 16 bytes each
-  ushort  ewt[3];
-  ushort  status;
-  ushort  xxx2;
-  ushort  data; // array, use it just for memory mapping
-};
+// struct RocData_t {
+//   ushort  nb;
+//   ushort  header;
+//   ushort  n_data_packets;  // n data packets, 16 bytes each
+//   ushort  ewt[3];
+//   ushort  status;
+//   ushort  xxx2;
+//   ushort  data; // array, use it just for memory mapping
+// };
   
 //-----------------------------------------------------------------------------
 // returns number of found errors in the payload data
 //-----------------------------------------------------------------------------
-int validate_dtc_block(ulong EwTag, ushort* Data, ulong* Offset, int PrintData) {
+// int validate_dtc_block(ulong EwTag, ushort* Data, ulong* Offset, int PrintData) {
 
-  int nhits[64] = {
-    1,   2,  3,  0,  0,  0,  7,  8,
-    9,  10, 11, 12, 13, 14, 15, 16,
-    0,  20, 21, 22, 12, 13, 11, 12,
-    0,   0,  8,  4, 12, 11, 12, 13,
-    16,  6,  3,  1, 12,  0, 16, 17,
-    18, 19, 12,  1, 12, 12, 11, 11,
-     0,  0,  0,  0, 13, 14, 10, 13,
-    11, 14, 14, 15,  8,  9, 10, 32
-  };
+//   int nhits[64] = {
+//     1,   2,  3,  0,  0,  0,  7,  8,
+//     9,  10, 11, 12, 13, 14, 15, 16,
+//     0,  20, 21, 22, 12, 13, 11, 12,
+//     0,   0,  8,  4, 12, 11, 12, 13,
+//     16,  6,  3,  1, 12,  0, 16, 17,
+//     18, 19, 12,  1, 12, 12, 11, 11,
+//      0,  0,  0,  0, 13, 14, 10, 13,
+//     11, 14, 14, 15,  8,  9, 10, 32
+//   };
 
-//-----------------------------------------------------------------------------
-// calculate offsets just once
-//-----------------------------------------------------------------------------
-  static int   initialized(0);
+// //-----------------------------------------------------------------------------
+// // calculate offsets just once
+// //-----------------------------------------------------------------------------
+//   static int   initialized(0);
   
-  if (initialized == 0) {
-    //    calculate_offsets(nhits,offset);
-    initialized = 1;
-  }
-//-----------------------------------------------------------------------------
-// check consistency of the lengths
-// 1. total number of 2-byte words
-//
-//-----------------------------------------------------------------------------
-  int ewt    = EwTag % 64 ;
-  int nb_dtc = *Data;
+//   if (initialized == 0) {
+//     //    calculate_offsets(nhits,offset);
+//     initialized = 1;
+//   }
+// //-----------------------------------------------------------------------------
+// // check consistency of the lengths
+// // 1. total number of 2-byte words
+// //
+// //-----------------------------------------------------------------------------
+//   int ewt    = EwTag % 64 ;
+//   int nb_dtc = *Data;
 
-  RocData_t* roc = (RocData_t*) (Data+0x18);
+//   RocData_t* roc = (RocData_t*) (Data+0x18);
 
-  int nb_rocs = 0;
-  for (int i=0; i<6; i++) {
-    int nb   = roc->nb;
-    nb_rocs += nb;
-    roc      = (RocData_t*) ( ((char*) roc) + roc->nb);
-  }
+//   int nb_rocs = 0;
+//   for (int i=0; i<6; i++) {
+//     int nb   = roc->nb;
+//     nb_rocs += nb;
+//     roc      = (RocData_t*) ( ((char*) roc) + roc->nb);
+//   }
 
-  int nerr     = 0;
+//   int nerr     = 0;
 
-  if (nb_dtc != nb_rocs+0x30) {
-    if (PrintData > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x 0x%04x\n",nb_dtc,nb_rocs);
-    nerr += 1;
-  }
-//-----------------------------------------------------------------------------
-// event length checks out, check ROC payload
-// check the ROC payload, assume a hit = 2 packets
-//-----------------------------------------------------------------------------
-  roc = (RocData_t*) (Data+0x18);
-  for (int i=0; i<6; i++) {
-    int nb = roc->nb;
-//-----------------------------------------------------------------------------
-// validate ROC header
-//-----------------------------------------------------------------------------
-    // ... TODO
-    ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
+//   if (nb_dtc != nb_rocs+0x30) {
+//     if (PrintData > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x 0x%04x\n",nb_dtc,nb_rocs);
+//     nerr += 1;
+//   }
+// //-----------------------------------------------------------------------------
+// // event length checks out, check ROC payload
+// // check the ROC payload, assume a hit = 2 packets
+// //-----------------------------------------------------------------------------
+//   roc = (RocData_t*) (Data+0x18);
+//   for (int i=0; i<6; i++) {
+//     int nb = roc->nb;
+// //-----------------------------------------------------------------------------
+// // validate ROC header
+// //-----------------------------------------------------------------------------
+//     // ... TODO
+//     ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
 
-    if (ewtag_roc != EwTag) {
-      if (PrintData > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx 0x%08lx\n",i,EwTag,ewtag_roc);
-      nerr += 1;
-    }
+//     if (ewtag_roc != EwTag) {
+//       if (PrintData > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx 0x%08lx\n",i,EwTag,ewtag_roc);
+//       nerr += 1;
+//     }
     
-    if (roc->nb > 0x10) { 
-//-----------------------------------------------------------------------------
-// non-zero payload
-//-----------------------------------------------------------------------------
-      uint*   pattern  = (uint*) &roc->data;
-      if (PrintData > 10) printf("data[0]  = nb = 0x%04x\n",pattern[0]);
+//     if (roc->nb > 0x10) { 
+// //-----------------------------------------------------------------------------
+// // non-zero payload
+// //-----------------------------------------------------------------------------
+//       uint*   pattern  = (uint*) &roc->data;
+//       if (PrintData > 10) printf("data[0]  = nb = 0x%04x\n",pattern[0]);
  
-      int npackets     = roc->n_data_packets;
-      int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number is stored somewhere)
+//       int npackets     = roc->n_data_packets;
+//       int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number is stored somewhere)
 
-      if (npackets != npackets_exp) {
-        if (PrintData > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
-                                  EwTag,i,npackets,npackets_exp);
-        nerr += 1;
-      }
+//       if (npackets != npackets_exp) {
+//         if (PrintData > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
+//                                   EwTag,i,npackets,npackets_exp);
+//         nerr += 1;
+//       }
       
-      if (PrintData > 10) {
-        printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i %10lu\n",
-               EwTag,  ewt, npackets, npackets_exp, *Offset);
-      }
+//       if (PrintData > 10) {
+//         printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i %10lu\n",
+//                EwTag,  ewt, npackets, npackets_exp, *Offset);
+//       }
 
-      uint nw      = npackets*4;        // N 4-byte words
+//       uint nw      = npackets*4;        // N 4-byte words
     
-      for (uint i=0; i<nw; i++) {
-        uint exp_pattern = (i+*Offset) & 0xffffffff;
+//       for (uint i=0; i<nw; i++) {
+//         uint exp_pattern = (i+*Offset) & 0xffffffff;
     
-        if (pattern[i] != exp_pattern) {
-          nerr += 1;
-          if (PrintData > 0) {
-            printf("ERROR: EwTag, ewt i  payload[i]  offset exp_word: %10lu %3i %3i 0x%08x 0x%08lx 0x%08x\n",
-                   EwTag, ewt, i, pattern[i],*Offset,exp_pattern);
-          }
-        }
-      }
-    }
-    roc = (RocData_t*) (((char*) roc) + roc->nb);
-  }
+//         if (pattern[i] != exp_pattern) {
+//           nerr += 1;
+//           if (PrintData > 0) {
+//             printf("ERROR: EwTag, ewt i  payload[i]  offset exp_word: %10lu %3i %3i 0x%08x 0x%08lx 0x%08x\n",
+//                    EwTag, ewt, i, pattern[i],*Offset,exp_pattern);
+//           }
+//         }
+//       }
+//     }
+//     roc = (RocData_t*) (((char*) roc) + roc->nb);
+//   }
   
-  *Offset += 2*4*nhits[ewt];
+//   *Offset += 2*4*nhits[ewt];
 
-  if (PrintData > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i\n",EwTag,nb_dtc,nerr);
+//   if (PrintData > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i\n",EwTag,nb_dtc,nerr);
 
-  return nerr;
-}
+//   return nerr;
+// }
 
 //-----------------------------------------------------------------------------
 // do this per ROC
@@ -330,11 +345,14 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 // this test is performed in a pattern readout mode
 // Mode : 0xXXRRVVPP
 //        PP : print level - up to 256
-//        VV : validation level
-//        RR : ROC readout mode
+//        VV : validation level : 00 : don't validate 01: validate
+//        RR : ROC readout mode : 00 : ROC patterns   01: digis
 //        XX : reserved
 //-----------------------------------------------------------------------------
-void dtc_buffer_test_emulated_cfo(int NEvents=3, int Mode = 0x1, uint64_t FirstTS=0, int Validate = 0, const char* OutputFn = nullptr) {
+void dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
+                                  int         Mode     = 0x01   ,
+                                  uint64_t    FirstTS  = 0      ,
+                                  const char* OutputFn = nullptr) {
   int pcie_addr(-1);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized
@@ -348,7 +366,7 @@ void dtc_buffer_test_emulated_cfo(int NEvents=3, int Mode = 0x1, uint64_t FirstT
   dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
                                                     // in emulated mode, always read after
   
-  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS); // 
+  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS); //
 
   dtc_read_subevents(FirstTS,print_level,validation_level,pcie_addr,OutputFn);
 }
@@ -388,6 +406,7 @@ DtcGui* dtc_gui(const char* Project = "test", int DebugLevel = 0) {
   return x;
 } 
 
+//-----------------------------------------------------------------------------
 void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link) {
   auto dtc_i = DtcInterface::Instance(dtc_pcie);
   auto dtc = dtc_i->Dtc();

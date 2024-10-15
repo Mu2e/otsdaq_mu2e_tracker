@@ -1,6 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // 'read' command over the fiber
 ///////////////////////////////////////////////////////////////////////////////
+#ifndef __control_roc_read__
+#define __control_roc_read__
 #define __CLING__ 1
 
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
@@ -44,13 +46,13 @@ void control_roc_read(int PcieAddr, int LinkMask, Control_ROC_Read_Par_t* Par, i
 // write parameters into reg 266 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-  uint16_t chan_mask[6]    = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-  int      triggers        = 10;
-  int      lookback        = 8;
-  int      samples         = 16;
-  int      pulser          = 0;
-  int      delay           = 1;
-  int      mode            = 0;
+  // uint16_t chan_mask[6]    = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+  // int      triggers        = 10;
+  // int      lookback        = 8;
+  // int      samples         = 16;
+  // int      pulser          = 0;
+  // int      delay           = 1;
+  // int      mode            = 0;
 
   vector<uint16_t> vec;
   
@@ -58,8 +60,8 @@ void control_roc_read(int PcieAddr, int LinkMask, Control_ROC_Read_Par_t* Par, i
   vec.push_back(Par->tdc_mode);
   vec.push_back(Par->lookback);
 
-  uint16_t w1 = ((triggers      ) & 0xffff);
-  uint16_t w2 = ((triggers >> 16) & 0xffff);
+  uint16_t w1 = ((Par->triggers      ) & 0xffff);
+  uint16_t w2 = ((Par->triggers >> 16) & 0xffff);
 
   vec.push_back(w1);
   vec.push_back(w2);
@@ -97,6 +99,13 @@ void control_roc_read(int PcieAddr, int LinkMask, Control_ROC_Read_Par_t* Par, i
     dtc->ReadROCBlock(v2,roc,265,nw,false,100);
 
     dtc_i->PrintBuffer(v2.data(),nw);
+
+    Par->hvcal_mask1         = v2[13];
+    Par->hvcal_mask2         = v2[14];
+    Par->hvcal_mask3         = v2[15];
+    Par->hvcal_enable_pulser = v2[16];
+    Par->output_mode         = v2[17];
+    Par->return_code         = 0;         // TBD
   }
 //-----------------------------------------------------------------------------
 // 
@@ -118,8 +127,9 @@ int control_roc_read_test_001(int PcieAddr, int Link = -1) {
 
   par.pulser   = 1;
   par.delay    = 1;
-  par.mode     = 3;
+  par.mode     = 3;   // marker_clock in Monica's code
   
   control_roc_read(PcieAddr,Link, &par);
   return 0;
 }
+#endif

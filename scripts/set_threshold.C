@@ -1,10 +1,10 @@
 //
 #define __CLING__ 1
 
-#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+#include "scripts/trk_utils.C"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+#include "dtcInterfaceLib/DTC.h"
+#include "dtcInterfaceLib/DTCSoftwareCFO.h"
 
 using namespace DTCLib;
 
@@ -12,6 +12,7 @@ using namespace DTCLib;
 // measure_thresholds:
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
+// 
 //-----------------------------------------------------------------------------
 void set_threshold(int Link, int ChannelID, int Threshold, int PreampType, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------

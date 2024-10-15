@@ -1,19 +1,18 @@
-//
+//-----------------------------------------------------------------------------
+// set_gain:  not validated yet
+// on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
+// so can't do that for every event ...
+// PreampType: 0=HV 1=CAL ?
+//-----------------------------------------------------------------------------
 #define __CLING__ 1
 
-#include "srcs/otsdaq_mu2e_tracker/scripts/trk_utils.C"
+#include "scripts/trk_utils.C"
 
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTC.h"
-#include "srcs/mu2e_pcie_utils/dtcInterfaceLib/DTCSoftwareCFO.h"
+#include "dtcInterfaceLib/DTC.h"
 
 using namespace DTCLib;
 
-//-----------------------------------------------------------------------------
-// measure_thresholds:
-// on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
-// so can't do that for every event ...
-//-----------------------------------------------------------------------------
-void set_gain(int Link, int ChannelID, int Gain, int PreampType = 0, int ROCSleepTime = 2000) {
+void set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------

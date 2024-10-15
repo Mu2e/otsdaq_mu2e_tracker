@@ -11,11 +11,13 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 
 	const char* device_name = DtcData->fName.Data();
 
-	DtcTel.fFrame = Tab->AddTab(Form("%s:%i", DtcData->fName.Data(), DtcData->fPcieAddr));
-	int ntabs     = Tab->GetNumberOfTabs();
-	DtcTel.fFrame->SetLayoutManager(new TGVerticalLayout(DtcTel.fFrame));
-	DtcTel.fTab   = Tab->GetTabTab(ntabs - 1);
-	DtcTel.fColor = DtcTel.fTab->GetBackground();
+  DtcTel.fCFO_i = CfoInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
+//-----------------------------------------------------------------------------
+// there is only one CFO... so assigning to global only once
+//-----------------------------------------------------------------------------
+  fCFO_i = DtcTel.fCFO_i;
+  
+  const char* device_name = DtcData->fName.Data();
 
 	TGGroupFrame* group =
 	    new TGGroupFrame(DtcTel.fFrame, Form("%s : %s", fHostname.Data(), device_name));

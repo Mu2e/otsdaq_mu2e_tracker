@@ -168,6 +168,19 @@ void DtcGui::cfo_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView) 
 }
 
 //-----------------------------------------------------------------------------
+void DtcGui::cfo_set_ja_mode() {
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  
+  try         {
+    int mode;
+    sscanf(dtel->fJAMode->GetText(),"0x%x",&mode);
+    dtel->fCFO_i->SetJAMode(mode);
+  }
+  catch (...) { *fTextView << Form("ERROR in DtcGui::%s: failed to execute",__func__); }
+}
+
+//-----------------------------------------------------------------------------
 void DtcGui::clear_output() {
   fTextView->Clear();
   fTextView->ShowBottom();
@@ -240,17 +253,29 @@ void DtcGui::print_roc_status() {
 }
 
 //-----------------------------------------------------------------------------
+// set DTC JA mode - 
+//-----------------------------------------------------------------------------
+void DtcGui::dtc_set_ja_mode() {
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  try         {
+    int mode;
+    sscanf(dtel->fJAMode->GetText(),"0x%x",&mode);
+    dtel->fDTC_i->SetJAMode(mode);
+  }
+  catch (...) { *fTextView << Form("ERROR in DtcGui::%s: failed to execute",__func__); }
+}
+
+//-----------------------------------------------------------------------------
 // init (preconfigured) readout
 //-----------------------------------------------------------------------------
 void DtcGui::dtc_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView) {
-  if (Dtel->fData->fName == "DTC") {
-    try         {
-      int emulate_cfo      = Dtel->fEmulateCfo->GetIntNumber();
-      int roc_readout_mode = Dtel->fRocReadoutMode->GetIntNumber();
-      Dtel->fDTC_i->InitReadout(emulate_cfo,roc_readout_mode);
-    }
-    catch (...) { *TextView << Form("ERROR in DtcGui::%s: failed to execute DtcInterface::InitReadout\n",__func__); }
+  try         {
+    int emulate_cfo      = Dtel->fEmulateCfo->GetIntNumber();
+    int roc_readout_mode = Dtel->fRocReadoutMode->GetIntNumber();
+    Dtel->fDTC_i->InitReadout(emulate_cfo,roc_readout_mode);
   }
+  catch (...) { *TextView << Form("ERROR in DtcGui::%s: failed to execute DtcInterface::InitReadout\n",__func__); }
 }
 
 //-----------------------------------------------------------------------------
@@ -585,7 +610,8 @@ void DtcGui::set_roc_readout_mode() {
 //-----------------------------------------------------------------------------
   int roc_readout_mode = 0;
   try         {
-    roc_readout_mode = dtel->fRocReadoutMode->GetNumberEntry()->GetIntNumber();
+    roc_readout_mode = dtel->fRocReadoutMode->GetHexNumber();
+    dtel->fDTC_i->SetRocReadoutMode(roc_readout_mode);
   }
   catch (...) { *fTextView << Form("ERROR : coudn't set ROC readout mode... BAIL OUT\n"); }
 

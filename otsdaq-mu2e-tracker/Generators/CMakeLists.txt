@@ -31,3 +31,6 @@ cet_build_plugin(TrackerBR artdaq::commandableGenerator
 
 target_include_directories(otsdaq-mu2e-tracker_Generators_TrackerVST_generator
   PRIVATE ${XMLRPC_INCLUDE_DIRS})
+
+target_include_directories(otsdaq-mu2e-tracker_Generators_TrackerBR_generator
+  PRIVATE ${XMLRPC_INCLUDE_DIRS})

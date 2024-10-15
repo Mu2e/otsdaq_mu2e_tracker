@@ -37,7 +37,7 @@ void* DtcGui::ReaderThread(void* Context) {
 
   int              print_freq = dtc_gui->fPrintFreq->GetIntNumber();
   
-  TLOG(TLVL_INFO) << "START print_freq:" << print_freq << std::endl;
+  TLOG(TLVL_DEBUG) << "START print_freq:" << print_freq << std::endl;
 //-----------------------------------------------------------------------------
 // reset connected ROC's - event tag issue
 //-----------------------------------------------------------------------------
@@ -58,12 +58,12 @@ void* DtcGui::ReaderThread(void* Context) {
 
   while (tc->fStop == 0) {
     if (tc->fPause != 0) {
-      TLOG(TLVL_INFO+1) << "thread alive, sleep for " << tc->fSleepTimeMs << "ms" << std::endl;
+      TLOG(TLVL_DEBUG) << "thread alive, sleep for " << tc->fSleepTimeMs << "ms" << std::endl;
       gSystem->Sleep(tc->fSleepTimeMs);
                                                             continue;
     }
 
-    if (tc->fPrintLevel > 100) printf(" emoe : %10lu\n",tstamp);
+    if (tc->fPrintLevel > 100) TLOG(TLVL_DEBUG) << Form(" emoe : %10lu\n",tstamp);
 
     DTC_EventWindowTag event_tag = DTC_EventWindowTag(tstamp);
 
@@ -164,7 +164,7 @@ void* DtcGui::ReaderThread(void* Context) {
                  nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
   }
   
-  TLOG(TLVL_INFO) << "END , nerr_tot: " << nerr_tot << std::endl;
+  TLOG(TLVL_DEBUG) << "END , nerr_tot: " << nerr_tot << std::endl;
   return nullptr;
 }
 
@@ -263,7 +263,7 @@ int DtcGui::manage_emu_cfo_thread() {
 // start thread
 //-----------------------------------------------------------------------------
     if (fEmuCfoTC.fTp != nullptr) {
-      printf("%s: delete previous thread\n",__func__);
+      TLOG(TLVL_DEBUG) << Form("delete previous thread\n");
       fEmuCfoTC.fTp->Kill() ;
       delete fEmuCfoTC.fTp ;
     }
@@ -309,7 +309,7 @@ int DtcGui::manage_ext_cfo_thread() {
 // start thread
 //-----------------------------------------------------------------------------
     if (fExtCfoTC.fTp != nullptr) {
-      printf("%s: delete previous thread\n",__func__);
+      TLOG(TLVL_DEBUG) << Form("delete previous thread\n");
       fExtCfoTC.fTp->Kill() ;
       delete fExtCfoTC.fTp ;
     }
@@ -355,7 +355,7 @@ int DtcGui::manage_reader_thread() {
 // start thread
 //-----------------------------------------------------------------------------
     if (fReaderTC.fTp != nullptr) {
-      printf("%s: delete previous thread\n",__func__);
+      TLOG(TLVL_DEBUG) << Form("delete previous thread\n");
       fReaderTC.fTp->Kill() ;
       delete fReaderTC.fTp;
     }

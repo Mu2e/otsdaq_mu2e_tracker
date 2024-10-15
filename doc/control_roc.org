@@ -41,12 +41,17 @@ readDeviceID
 ** set_digi_rw                                                               
     set_digi_rw -s 1 : enable  commands over the serial connection
     set_digi_rw -s 0 : disable commands over the serial connection
-** rates [-c channel]                                                        
+** rates [-c channel]                                               systemd-resolved         
     - if channel is not specified, all channels
     - rates -c 91 : rate in the channel # 91
 ** read                                                                      
-    - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
-   
+ - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
+
+   -a mode : output test mode
+| mode | pattern name | digital output word |
+|------+--------------+---------------------|
+|      |              |                     |
+
     -m 3   : mode  ... need -m 3 for internal pulser 
     -l 8   : defines the look-back number of ADC samples for the waveform readout (may want to set to 0) 
     -p 0/1 : 0: 
@@ -251,6 +256,7 @@ set_digi_rw -s 0
 #+end_src 
 
 * TODO command implementation over the fiber                                 
+
 
 | command            | status | comments                                |
 |--------------------+--------+-----------------------------------------|
