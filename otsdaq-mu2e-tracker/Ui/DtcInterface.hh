@@ -61,10 +61,10 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
     
-    int          ControlRoc_Read(ControlRoc_Read_Par_t* Par,
-                                 int                    LinkMask   = -1   ,
-                                 bool                   UpdateMask = false,
-                                 int                    PrintLevel = 0    );
+    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par,
+                                 int                      LinkMask   = 0   ,
+                                 bool                     UpdateMask = false,
+                                 int                      PrintLevel = 0    );
 
     int          EmulateCfo() { return fEmulateCfo; }
 

@@ -20,7 +20,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // what should it return ? - for now, return 0
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Par_t* Par, int LinkMask, bool UpdateMask, int PrintLevel) {
+  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par, int LinkMask, bool UpdateMask, int PrintLevel) {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -29,27 +29,33 @@ namespace  trkdaq {
   
     vec.push_back(Par->adc_mode);
     vec.push_back(Par->tdc_mode);
-    vec.push_back(Par->lookback);
+    vec.push_back(Par->num_lookback);
+    
+    if (Par->num_samples > 63) {
+      printf("WARNING: num_samples = %i > 63, truncate to 63\n",Par->num_samples);
+      Par->num_samples = 63;
+    }
+    vec.push_back(Par->num_samples);
 
-    uint16_t w1 = ((Par->triggers      ) & 0xffff);
-    uint16_t w2 = ((Par->triggers >> 16) & 0xffff);
+    uint16_t w1 = Par->num_triggers[0];
+    uint16_t w2 = Par->num_triggers[1];
 
     vec.push_back(w1);
     vec.push_back(w2);
 
-    for (int i=0; i<6; i++) vec.push_back(Par->chan_mask[i]); 
+    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
 
-    vec.push_back(Par->samples);
-    vec.push_back(Par->pulser );
-    vec.push_back(Par->delay  );
-    vec.push_back(Par->mode   );
+    vec.push_back(Par->enable_pulser);
+    vec.push_back(Par->marker_clock );
+    vec.push_back(0 );
+    vec.push_back(99);
 
     bool increment_address(false);
 
-    if (UpdateMask) fLinkMask = LinkMask;
+    if (UpdateMask and (LinkMask != 0)) fLinkMask = LinkMask;
   
     for (int i=0; i<6; i++) {
-      int used = (LinkMask >> 4*i) & 0x1;
+      int used = (fLinkMask >> 4*i) & 0x1;
       if (not used)                                           continue;
       auto roc  = DTC_Link_ID(i);
       fDtc->WriteROCBlock   (roc,265,vec,false,increment_address,100);
@@ -68,15 +74,30 @@ namespace  trkdaq {
       nw = nw-4;
       std::vector<uint16_t> v2;
       fDtc->ReadROCBlock(v2,roc,265,nw,false,100);
+
+      if (PrintLevel > 0) {
+        PrintBuffer(v2.data(),nw);
+        if (PrintLevel > 1) {
+          trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) v2.data();
+          
+          printf("adc_mode     : %i\n",o->adc_mode);
+          printf("tdc_mode     : %i\n",o->tdc_mode);
+          printf("num_lookback : %i\n",o->num_lookback);
+          printf("num_samples  : %i\n",o->num_samples);
+          printf("num_triggers : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+          printf("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                 o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+          printf("enable_pulser : %i\n",o->enable_pulser);
+          printf("marker_clock  : %i\n",o->marker_clock);
+          printf("mode          : %i\n",o->mode);
+          printf("clock         : %i\n",o->clock);
+          printf("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
+          printf("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
+          printf("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
+          printf("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
+        }
+      }
       
-      PrintBuffer(v2.data(),nw);
-      
-      Par->hvcal_mask1         = v2[13];
-      Par->hvcal_mask2         = v2[14];
-      Par->hvcal_mask3         = v2[15];
-      Par->hvcal_enable_pulser = v2[16];
-      Par->output_mode         = v2[17];
-      Par->return_code         = 0;         // TBD
     }
 //-----------------------------------------------------------------------------
 // 
