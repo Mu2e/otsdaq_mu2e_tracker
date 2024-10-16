@@ -36,7 +36,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   for (int i=0; i<6; i++) {
     BuildRocTabElement(DtcTel.fRocTab,DtcTel.fRocTel[i], &fDtcData->fRocData[i]);
   }
-  TLOG(TLVL_DEBUG) << Form("checkpoint one\n");
+  TLOG(TLVL_DEBUG+5) << Form("checkpoint one\n");
 //-----------------------------------------------------------------------------
 // position the ROC tab inside the DTC tab
 //-----------------------------------------------------------------------------
@@ -410,8 +410,6 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 //-----------------------------------------------------------------------------
 // column 5 row 4: JA Mode entry field 
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_DEBUG) << Form("DONE\n");
-
   rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                        ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
   group->AddFrame(rr, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -446,5 +444,5 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
   group->MoveResize(10,10,900,230);
 
-  TLOG(TLVL_DEBUG) << Form("DONE\n");
+  TLOG(TLVL_DEBUG+5) << Form("DONE\n");
 }

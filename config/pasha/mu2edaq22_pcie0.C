@@ -7,7 +7,7 @@
 int init_run_configuration(DtcGui* X) {
   int rc(0);
 
-  printf("[init_run_configuration] : test : host:%s\n",gSystem->Getenv("HOSTNAME"));
+  printf("[init_run_configuration] : host:%s\n",gSystem->Getenv("HOSTNAME"));
 
   DtcGui::DtcData_t* dtc = (DtcGui::DtcData_t*) X->fDtcData;
 

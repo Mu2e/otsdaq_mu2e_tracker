@@ -517,27 +517,23 @@ void DtcGui::reset_roc() {
 
 
 //-----------------------------------------------------------------------------
-void DtcGui::set_nevents() {
-  //  TString cmd;
+void DtcGui::set_emulate_cfo() {
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
-  int roc               = dtel->fActiveRocID;
 
   streambuf*    oldCoutStreamBuf = cout.rdbuf();
   ostringstream strCout;
   cout.rdbuf(strCout.rdbuf());
 
-  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i\n",__func__,fActiveDtcID);
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  int nevents = 0;
-  try         {
-    nevents = fNEvents->GetNumberEntry()->GetIntNumber();
-  }
-  catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
+  int emulate_cfo = 0;
+  try         { emulate_cfo = dtel->fEmulateCfo->GetNumberEntry()->GetIntNumber(); }
+  catch (...) { *fTextView << Form("ERROR : coudn't set emulate CFO flag... BAIL OUT\n"); }
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE nevents = %10i\n",__func__,nevents);
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE, emulate_cfo = %i\n",__func__,emulate_cfo);
   fTextView->ShowBottom();
   cout.rdbuf( oldCoutStreamBuf );
 }
@@ -557,9 +553,7 @@ void DtcGui::set_ew_length() {
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   int ew_length = 0;
-  try         {
-    ew_length = fEWLength->GetIntNumber();
-  }
+  try         { ew_length = fEWLength->GetIntNumber(); }
   catch (...) { *fTextView << Form("ERROR : coudn't read EW Length ... BAIL OUT",roc) << std::endl; }
 
   TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE ew_length = %10i\n",__func__,ew_length);
@@ -568,29 +562,76 @@ void DtcGui::set_ew_length() {
 }
 
 //-----------------------------------------------------------------------------
-void DtcGui::set_emulate_cfo() {
+void DtcGui::set_first_ts() {
 
   DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
 
   streambuf*    oldCoutStreamBuf = cout.rdbuf();
   ostringstream strCout;
   cout.rdbuf(strCout.rdbuf());
 
-  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i\n",__func__,fActiveDtcID);
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
 //-----------------------------------------------------------------------------
-// CFO doesn't have ROC's
+// 
 //-----------------------------------------------------------------------------
-  int emulate_cfo = 0;
-  try         {
-    emulate_cfo = dtel->fEmulateCfo->GetNumberEntry()->GetIntNumber();
-  }
-  catch (...) { *fTextView << Form("ERROR : coudn't set emulate CFO flag... BAIL OUT\n"); }
+  int value = 0;
+  try         { value = fFirstTS->GetIntNumber(); }
+  catch (...) { *fTextView << Form("ERROR : coudn't read FirstTS ... BAIL OUT",roc) << std::endl; }
 
-  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE, emulate_cfo = %i\n",__func__,emulate_cfo);
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE first_ts = %10i\n",
+                                                                      __func__,value);
   fTextView->ShowBottom();
   cout.rdbuf( oldCoutStreamBuf );
 }
 
+//-----------------------------------------------------------------------------
+void DtcGui::set_nevents() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// CFO doesn't have ROC's
+//-----------------------------------------------------------------------------
+  int nevents = 0;
+  try         { nevents = fNEvents->GetNumberEntry()->GetIntNumber(); }
+  catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE nevents = %10i\n",__func__,nevents);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
+
+//-----------------------------------------------------------------------------
+void DtcGui::set_print_freq() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+  int value = 0;
+  try         { value = fPrintFreq->GetIntNumber(); }
+  catch (...) { *fTextView << Form("ERROR : coudn't set PrintFreq %i ... BAIL OUT",roc) << std::endl; }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE PrintFreq = %10i\n",__func__,value);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
 
 //-----------------------------------------------------------------------------
 void DtcGui::set_roc_readout_mode() {
@@ -619,6 +660,30 @@ void DtcGui::set_roc_readout_mode() {
   cout.rdbuf( oldCoutStreamBuf );
 }
 
+
+//-----------------------------------------------------------------------------
+void DtcGui::set_sleep_us() {
+  //  TString cmd;
+
+  DtcTabElement_t* dtel = fDtcTel+fActiveDtcID;
+  int roc               = dtel->fActiveRocID;
+
+  streambuf*    oldCoutStreamBuf = cout.rdbuf();
+  ostringstream strCout;
+  cout.rdbuf(strCout.rdbuf());
+
+  TDatime x1; *fTextView << x1.AsSQLString() << Form(" %s: DTC ID: %i roc: %i\n",__func__,fActiveDtcID,roc);
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+  int value(0);
+  try         { value = fSleepUS->GetIntNumber(); }
+  catch (...) { *fTextView << Form("ERROR : coudn't set SleepUS %i ... BAIL OUT",roc) << std::endl; }
+
+  TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE SleepUS = %10i\n",__func__,value);
+  fTextView->ShowBottom();
+  cout.rdbuf( oldCoutStreamBuf );
+}
 
 //-----------------------------------------------------------------------------
 void DtcGui::write_dtc_register() {
