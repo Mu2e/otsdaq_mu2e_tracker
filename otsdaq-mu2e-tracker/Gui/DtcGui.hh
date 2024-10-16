@@ -345,9 +345,12 @@ public:
   void     reset_roc          ();
 
   void     set_ew_length       ();
+  void     set_first_ts        ();
   void     set_nevents         ();
   void     set_emulate_cfo     ();
+  void     set_print_freq      ();
   void     set_roc_readout_mode();
+  void     set_sleep_us        ();
 
   void     write_dtc_register  ();
   void     write_roc_register  ();

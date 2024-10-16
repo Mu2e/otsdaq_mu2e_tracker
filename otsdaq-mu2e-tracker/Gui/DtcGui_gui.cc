@@ -13,15 +13,13 @@ using namespace std;
 //-----------------------------------------------------------------------------
 DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel) {
 
-  printf(" --------------------------------- EMOE 001\n");
   //
   char buf[100];
   FILE* pip = gSystem->OpenPipe("hostname | awk -F . '{print $1}'","r");
   fgets(buf,100,pip); // expect just one line
   gSystem->ClosePipe(pip);
 
-  if (fDebugLevel > 0) printf("DtcGui::%s: .buf. =.%s.\n",__func__,buf);
-  printf(" --------------------------------- EMOE 002\n");
+  TLOG(TLVL_DEBUG+5) << Form("buf = %s\n",buf);
 
   fHostname       = buf;
   fHostname       = fHostname.Strip(TString::kTrailing,'\n');
@@ -30,13 +28,13 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   fRunningColor   = 0xFF3399; // 16724889;
   fStoppedColor   = 0xcccccc; // perhaps , gray
 
-  if (fDebugLevel > 0) printf("DtcGui::%s: host:%s project:%s\n",__func__,fHostname.Data(),Project);
+  TLOG(TLVL_DEBUG+5) << Form("host:%s project:%s\n",fHostname.Data(),Project);
 
   InitRunConfiguration(Project);
 
-  if (fDebugLevel > 0) printf("DtcGui::%s: before BuildGui\n",__func__);
+  TLOG(TLVL_DEBUG+5) << Form("before BuildGui\n");
   BuildGui(p,w,h);
-  if (fDebugLevel > 0) printf("DtcGui::%s: after  BuildGui\n",__func__);
+  TLOG(TLVL_DEBUG+5) << Form("after BuildGui\n");
 
 // //-----------------------------------------------------------------------------
 // // two PCIE cards
@@ -121,16 +119,16 @@ int DtcGui::InitRunConfiguration(const char* Config) {
 
   if (rc != 0) return rc;
 
-  TLOG (TLVL_INFO) << Form(" loading configuration from file=%s\n",macro.Data());
+  TLOG (TLVL_DEBUG+5) << Form(" loading configuration from file=%s\n",macro.Data());
   
   cint->LoadMacro(macro.Data(), &irc);
 
   rc = irc;
   if (rc != 0) return rc;
   
-  TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx)",(long int) this);
+  TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx);",(long int) this);
   
-  TLOG(TLVL_INFO) << Form(" cmd=%s\n",cmd.Data());
+  TLOG(TLVL_DEBUG+5) << Form(" cmd=%s\n",cmd.Data());
     
   gInterpreter->ProcessLine(cmd.Data(),&irc);
 
@@ -274,14 +272,14 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                        TGNumberFormat::kNEANonNegative,
                                        TGNumberFormat::kNELLimitMinMax,
                                        0, 100000);
-  fFirstTS->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
-  (fFirstTS->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
+  fFirstTS->Connect("ValueSet(Long_t)", "DtcGui", this, "set_first_ts()");
+  (fFirstTS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_first_ts()");
 
   fButtonsFrame->AddFrame(fFirstTS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
 // 7: "SleepUS" label followed by the entry field
 //-----------------------------------------------------------------------------
-  lab = new TGLabel(fButtonsFrame,"Sleep US");
+  lab = new TGLabel(fButtonsFrame,"Sleep [us]");
   fButtonsFrame->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
@@ -292,8 +290,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                        TGNumberFormat::kNEANonNegative,
                                        TGNumberFormat::kNELLimitMinMax,
                                        0, 100000000);
-  fSleepUS->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
-  (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
+  fSleepUS->Connect("ValueSet(Long_t)", "DtcGui", this, "set_sleep_us()");
+  (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_sleep_us()");
 
   fButtonsFrame->AddFrame(fSleepUS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
@@ -310,8 +308,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                  TGNumberFormat::kNEANonNegative,
                                  TGNumberFormat::kNELLimitMinMax,
                                  0, 100000);
-  fPrintFreq->Connect("ValueSet(Long_t)", "MyMainFrame", this, "DoSetlabel()");
-  (fPrintFreq->GetNumberEntry())->Connect("ReturnPressed()","MyMainFrame", this,"DoSetlabel()");
+  fPrintFreq->Connect("ValueSet(Long_t)", "DtcGui", this, "set_print_freq()");
+  (fPrintFreq->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_print_freq()");
 
   fButtonsFrame->AddFrame(fPrintFreq, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 //-----------------------------------------------------------------------------
