@@ -8,7 +8,7 @@
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 find_package(cetmodules)
 
-project(otsdaq_mu2e_tracker VERSION 3.02.00)
+project(otsdaq_mu2e_tracker VERSION 3.03.00)
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -18,7 +18,7 @@ cet_set_compiler_flags(
         DIAGS VIGILANT
         # WERROR
         NO_UNDEFINED
-        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g -O0 -v # Equivalent to debug qualifier, for testing
+        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g  # -O0 -v Equivalent to debug qualifier, for testing
 )
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env
