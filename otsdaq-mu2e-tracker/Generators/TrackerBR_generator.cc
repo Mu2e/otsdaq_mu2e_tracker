@@ -186,7 +186,7 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
 //  _dtc      = new DTC(DTC_SimMode_NoCFO,_pcieAddr,_linkMask,"",false,"");
   _dtc      = _dtc_i->Dtc();  // new DTC(DTC_SimMode_Disabled,_pcieAddr,_linkMask,"",false,"");
 
-  _dtc_i->InitExternalCFOReadoutMode(1);  // daq_scripts::EdgeMode
+  //  _dtc_i->InitExternalCFOReadoutMode(1);  // daq_scripts::EdgeMode
   //  _dtc_i->RocConfigurePatternMode();
 //-----------------------------------------------------------------------------
 // finally, initialize the environment for the XML-RPC messaging client
