@@ -305,13 +305,10 @@ Loading settings ...
 =======================================================
 Ending...
 #+end_src
-
-- or , if thresholds need to be adjusted: 
-
+** 2.5) update and save thresholds                                      
 #+begin_src
 python3 diagnostic.py -m V -tv 30 -f settings_pasha_002.dat -p /dev/ttyUSB0
 #+end_src
-
 ** 3) login back to control_ROC, measure thresholds, set pulser              
 #+begin_src 
 python3 control_ROC.py --ts 1
@@ -371,7 +368,7 @@ set_digi_rw -s 0
 #+end_src
 * 1) after each DIGIs power up, run control_ROC.py on trackerpi1/trackerpi5  
 1. start control_ROC.py on the PI
-   1.a : let serial drives commands to DIGI
+   1.a : let serial drive commands to DIGI
    1.b : do alignment, what is alignment ?
    1.c : read smth, why ?
    1.d : in the end, let fiber drive commands to DIGI
