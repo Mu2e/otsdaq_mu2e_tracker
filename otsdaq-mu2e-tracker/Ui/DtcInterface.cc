@@ -23,9 +23,25 @@ using namespace DTCLib;
 using namespace std;
 
 namespace trkdaq {
+  
+  const char* kSpiVarName[TrkSpiDataNWords] = {
+    "I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
+    "VDMBHV5_0", "V1_8HV"  , "V3_3HV", "V2_5" ,                   //  4
+    "A0"     , "A1"  ,    "A2"  , "A3"  ,                         //  8
+    "I1_8CAL", "I1_2"  , "ICAL5_0"  ,                             // 12
+    "ADCSPARE",                                                   // 15
+    "V3_3"  , "VCAL5_0", "V1_8CAL", "V1_0",                       // 16
+    "ROCPCBTEMP", "HVPCBTEMP", "CALPCBTEMP", "RTD",               // 20
+    "ROC_RAIL_1V", "ROC_RAIL_1_8V", "ROC_RAIL_2_5V", "ROC_TEMP",  // 24
+    "CAL_RAIL_1V", "CAL_RAIL_1_8V", "CAL_RAIL_2_5V", "CAL_TEMP",  // 28
+    "HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
+  };
+  
 
   DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
-
+  
+  const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
+  
 //-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
     std::string expected_version("");              // dont check
@@ -70,7 +86,15 @@ namespace trkdaq {
         return nullptr;
       }
     }
-
+//-----------------------------------------------------------------------------
+// initialize the variable names just once
+//-----------------------------------------------------------------------------
+    if ((fgInstance[0] == nullptr) and (fgInstance[1] == nullptr)) {
+      for (int i=0; i<TrkSpiDataNWords; i++) {
+        fgSpiVarName[i] = kSpiVarName[i];
+      }
+    }
+                                    
     TLOG(TRK_DEBUG_LEVEL) << "pcie_addr:" << pcie_addr
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
@@ -381,8 +405,8 @@ namespace trkdaq {
 
     int nw = nb-4;
 
-    if (nw != TrkSpiRawData_t::nWords()) {
-      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiRawData_t::nWords() << " , reported nw=" << nw;
+    if (nw != TrkSpiDataNWords) {
+      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
       rc = -1;
     }
 
@@ -1015,7 +1039,6 @@ struct RocData_t {
 
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
-    //    ResetRoc();                         // use fLinkMask
     return 0;
   }
 
@@ -1040,7 +1063,6 @@ struct RocData_t {
 
     int version = 1;
     RocSetDataVersion(version); // Version --> R29
-    //    ResetRoc();                                     // use fLinkMask
 
     return 0;
   }

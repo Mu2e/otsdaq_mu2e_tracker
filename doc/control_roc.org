@@ -48,9 +48,19 @@ readDeviceID
  - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
 
    -a mode : output test mode
-| mode | pattern name | digital output word |
-|------+--------------+---------------------|
-|      |              |                     |
+| mode | pattern name      | digital output word 1   | digital output word2    |
+|------+-------------------+-------------------------+-------------------------|
+| 0000 | off               | default                 | none                    |
+| 0001 | midscale short    | 1000 0000 0000 (12 bit) | none                    |
+|      |                   | 10 0000 0000 (10 bit)   | none                    |
+| 0010 | +full-scale short | 1111 1111 1111 (12 bit) |                         |
+|      |                   | 11 1111 1111 (10 bit)   | none                    |
+| 0011 | -full-scale short | 0000 0000 0000 (12 bit) | none                    |
+|      |                   | 00 0000 0000 (10 bit)   |                         |
+| 0100 | checkerboard      | 1010 1010 1010 (12 bit) | 0101 0101 0101 (12 bit) |
+|      |                   | 10 1010 1010 (10 bit)   | 01 0101 0101 (10 bit)   |
+|      |                   |                         |                         |
+Vadim's cheatsheet: file:images/vadim_digi_pattern_codes.png
 
     -m 3   : mode  ... need -m 3 for internal pulser 
     -l 8   : defines the look-back number of ADC samples for the waveform readout (may want to set to 0) 

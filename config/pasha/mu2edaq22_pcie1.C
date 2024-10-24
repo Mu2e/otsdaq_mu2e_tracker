@@ -22,7 +22,6 @@ int init_run_configuration(DtcGui* X) {
   dtc[0].fPcieAddr    = 1;
   //  dtc[0].fLinkMask    = 0x111111;           // full ROC tower
   dtc[0].fLinkMask    = 0x1;           // ROC0
-  // dtc[0].fLinkMask    = 0x00011;            // ROC0 and 1 : ROC tower, draq3 and draq5
   dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
   gSystem->Setenv("DTCLIB_DTC","1");
 

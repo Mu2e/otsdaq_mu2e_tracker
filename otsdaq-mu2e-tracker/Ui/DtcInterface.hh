@@ -36,9 +36,11 @@ namespace trkdaq {
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
 
-    int                  fSleepTimeROCWrite; // the two are different 
-    int                  fSleepTimeROCReset;
-    int                  fPrintLevel;
+    int                  fSleepTimeROCWrite;             // the two are different 
+    int                  fSleepTimeROCReset;             // 
+    int                  fPrintLevel;                    // 
+
+    static const char*   fgSpiVarName[TrkSpiDataNWords]; //
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -53,6 +55,8 @@ namespace trkdaq {
 
     DTCLib::DTC* Dtc() { return fDtc; }
                                         // clock source=0: internal, clock=1: RTF (RJ45)
+
+    static const char*  SpiVarName(int I) { return fgSpiVarName[I]; }
     
     int          ConfigureJA(int ClockSource, int Reset = 1);
 //-----------------------------------------------------------------------------
@@ -60,11 +64,15 @@ namespace trkdaq {
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
-    
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par,
                                  int                      LinkMask   = 0   ,
                                  bool                     UpdateMask = false,
                                  int                      PrintLevel = 0    );
+//-----------------------------------------------------------------------------
+// PreampTYpe: 0:HV 1:CAL, or vice versa
+// do one channel at a time
+//-----------------------------------------------------------------------------
+    int          ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType);
 
     int          EmulateCfo() { return fEmulateCfo; }
 

@@ -146,19 +146,19 @@ int dtc_control_roc_read(int PcieAddr = -1) {
 
   ControlRoc_Read_Input_t par;
   
-  par.adc_mode        = 8;
-  par.tdc_mode        = 0;
-  par.num_lookback    = 8;
-  par.num_samples     = 1;
-  par.num_triggers[0] = 10;
-  par.num_triggers[1] = 0;
+  par.adc_mode        = 4;     // -a
+  par.tdc_mode        = 0;     // -t 
+  par.num_lookback    = 8;     // -l 
+  par.num_samples     = 1;     // -s
+  par.num_triggers[0] = 10;    // -T 10
+  par.num_triggers[1] = 0;     // -T (high bytes)
   
   for (int i=0; i<6; i++) par.ch_mask[i] = 0xffff;
 
-  par.enable_pulser   = 1;
-  par.marker_clock    = 3;
-  par.mode            = 0;   // 
-  par.clock           = 99;  // 
+  par.enable_pulser   = 1;     // -p 1
+  par.marker_clock    = 3;     // -m 3
+  par.mode            = 0;     // 
+  par.clock           = 99;    // 
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
   dtc_i->ControlRoc_Read(&par,0,false,2);

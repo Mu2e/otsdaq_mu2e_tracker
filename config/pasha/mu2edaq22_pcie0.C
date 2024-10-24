@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// mu2edaq22 : 
+// mu2edaq22 : DTC0: ROC tower
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,8 +20,11 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x1;             // ROC0
+  dtc[0].fLinkMask    = 0x111111;        // ROC0
+  // dtc[0].fLinkMask    = 0x1;          // ROC0
   dtc[0].fReadoutMode = 0;               // 0:patterns 1:digis
+  // dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
+
   gSystem->Setenv("DTCLIB_DTC","0");
 
   return rc;

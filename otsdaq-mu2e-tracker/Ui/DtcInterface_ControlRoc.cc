@@ -106,4 +106,45 @@ namespace  trkdaq {
     return 0;
   }
 
+//-----------------------------------------------------------------------------  
+  int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+  auto roc  = DTC_Link_ID(Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg 266 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+  std::vector<uint16_t> vec;
+  vec.push_back(uint16_t(ChannelID));
+  vec.push_back(uint16_t(Threshold));
+  vec.push_back(uint16_t(PreampType));
+
+  bool increment_address(false);
+  fDtc->WriteROCBlock   (roc,266,vec,false,increment_address,100);
+  std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+                                        // 0x86 = 0x82 + 4
+  uint16_t u; 
+  while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+  TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+  int nw = fDtc->ReadROCRegister(roc,129,100);
+  TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+
+  nw = nw-4;
+  std::vector<uint16_t> v2;
+  fDtc->ReadROCBlock(v2,roc,267,nw,false,100);
+
+  PrintBuffer(v2.data(),nw);
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+  ResetRoc(Link); 
+}
+  
+
 };

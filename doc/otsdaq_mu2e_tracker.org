@@ -468,7 +468,7 @@ readDeviceID
 ('DRAC ROC ID #', '7a7fb')
 ** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
-* DRAC Tower6                                                                
+* ROC Tower                                                                
 - new PI ...  mu2e@ ... (local)
 ** window 1: cd ~/LVHVBox/GServer/build
               sudo ~/Server
@@ -477,7 +477,7 @@ readDeviceID
               python3 Client.py
 ** Commands:                                                                 
  - powerOn  1       # [or 2 or 3 ... 0=all)
- - powerOff 1       # same semantics
+ - powerOff         # same semantics
  - readMonI6 .. readMonI48 .. readMonV6 .. readMonV48
 * test stands TS0, TS1, TS2                                                  
 ** last update <2024-07-15 Mon>
