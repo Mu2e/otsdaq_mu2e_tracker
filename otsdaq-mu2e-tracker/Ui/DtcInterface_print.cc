@@ -132,7 +132,7 @@ namespace trkdaq {
 // most of the time LinkMask = -1
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocStatus(int Format, int LinkMask) {
-    TLOG(TLVL_DEBUG) << Form("Format=%i LinkMask 0x%08x \n",Format,LinkMask);
+    TLOG(TLVL_DBG+1) << Form("Format=%i LinkMask 0x%08x \n",Format,LinkMask);
 
     std::string desc;
 

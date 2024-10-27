@@ -156,6 +156,7 @@ public:
     int        fPcieAddr;
     int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
     int        fReadoutMode;
+    int        fJAMode;
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
@@ -165,6 +166,7 @@ public:
       fPcieAddr    = PcieAddr;
       fLinkMask    = 0;             // by default, not reading anything
       fReadoutMode = 0;             // 0:patterns 1:digis
+      fJAMode      = 0;
 
       fActiveRoc = nullptr;
       for (int i=0;i<6; i++) {

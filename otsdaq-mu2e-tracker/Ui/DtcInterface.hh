@@ -64,6 +64,7 @@ namespace trkdaq {
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
+    
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par,
                                  int                      LinkMask   = 0   ,
                                  bool                     UpdateMask = false,
@@ -79,17 +80,19 @@ namespace trkdaq {
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side
     
-    void         InitEmulatedCFOReadoutMode();
+    int          InitEmulatedCFOReadoutMode();
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
                                         //                2: auto
                                         // -1 means use the pre-fetched one
+                                        // success: returns rc=0
+                                        // if rc < 0, can't continue
 
-    void         InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+    int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
-    void         InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
+    int          InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
     void         InitRocReadoutMode();
     
     int          GetLinkMask() { return fLinkMask; }

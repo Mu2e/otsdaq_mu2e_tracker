@@ -397,7 +397,8 @@ void DtcGui::read_dtc_register() {
   }
 
   TDatime x2;
-  *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ << " : DONE " <<  std::endl;
+  *fTextView << x2.AsSQLString() << strCout.str() << " DtcGui::" << __func__ 
+             << Form(" : DONE, value=0x%04x\n",val);
   fTextView->ShowBottom();
                                         // Restore old cout.
   cout.rdbuf( oldCoutStreamBuf );

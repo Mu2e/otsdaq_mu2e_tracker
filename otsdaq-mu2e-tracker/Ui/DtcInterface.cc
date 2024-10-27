@@ -116,10 +116,12 @@ namespace trkdaq {
 // on success, returns 1
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
+    int nmax_iter(10);
+    
     fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
     int ok(0);
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<nmax_iter; i++) {
       ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
       usleep(100000);
       if (ok == 1) break;
@@ -127,9 +129,14 @@ namespace trkdaq {
     
     // fDtc->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) TLOG(TLVL_ERROR) << Form("failed to setup JA\n"); 
+    int rc = 0;
+    if (ok == 0) {
+      TLOG(TLVL_ERROR) << Form("failed to setup JA for ClockSource=%i and Reset=%i in %i attempts\n",
+                               ClockSource,Reset,nmax_iter);
+      rc = -1;
+    }
 
-    return ok;
+    return rc;
   }
 
   
@@ -142,8 +149,9 @@ namespace trkdaq {
 // EnableClockMarkers: set to 0
 // EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitEmulatedCFOReadoutMode() {
+  int DtcInterface::InitEmulatedCFOReadoutMode() {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
+    int rc(0);
 
     TLOG(TRK_DEBUG_LEVEL) << Form("START\n");
 
@@ -161,7 +169,8 @@ namespace trkdaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset);
+    if (rc < 0) return rc;
                                         // this one is OK...
     int EnableClockMarkers = 0;
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
@@ -174,6 +183,7 @@ namespace trkdaq {
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
 
     TLOG(TRK_DEBUG_LEVEL) << Form("END\n");
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -183,7 +193,8 @@ namespace trkdaq {
 // DTC doesn' know about an external CFO, so it should only prepare itself to receive 
 // EVMs/HBs from the outside
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+  int DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+    int rc(0);
     TLOG(TLVL_DEBUG+1) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
 
     if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
@@ -206,7 +217,8 @@ namespace trkdaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset);
+    if (rc < 0) return rc;
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
                                         // this function handles DTC_Link_ALL correctly
@@ -223,12 +235,14 @@ namespace trkdaq {
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
 
     TLOG(TLVL_DEBUG+1) << Form("END\n");
-}
+    return rc;
+  }
 
 //-----------------------------------------------------------------------------
 // Init Readout 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+    int rc(0);
 
     if (EmulateCfo     != -1) fEmulateCfo  = EmulateCfo;
     if (RocReadoutMode != -1) fReadoutMode = RocReadoutMode;
@@ -238,14 +252,15 @@ namespace trkdaq {
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
     if (fEmulateCfo == 0) {
-      InitExternalCFOReadoutMode();
+      rc = InitExternalCFOReadoutMode();
     }
     else {
 //-----------------------------------------------------------------------------
 // bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
 //-----------------------------------------------------------------------------
-      InitEmulatedCFOReadoutMode();
+      rc = InitEmulatedCFOReadoutMode();
     }
+    if (rc < 0) return rc;
 //-----------------------------------------------------------------------------
 // the DTC link mask could be reset by the previous DTC hard reset, so restore it
 // also, release all buffers from the previous read - this is the initialization
@@ -256,6 +271,7 @@ namespace trkdaq {
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
     TLOG(TLVL_DEBUG+1) << "END" << std::endl;
+    return rc;
   }
     
 //-----------------------------------------------------------------------------
@@ -264,6 +280,8 @@ namespace trkdaq {
 //              = 1: read digis
 
   
+//-----------------------------------------------------------------------------
+// this si fully tracker-specific
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
     TLOG(TLVL_DEBUG+1) << Form("START : fReadoutMode=%i\n",fReadoutMode);
@@ -508,8 +526,8 @@ namespace trkdaq {
         }
       }
     }
-    cout << Form("      event  DTC     EW Tag nbytes  nbytes_tot ------------- ROC status ----------------  nerr nerr_tot\n");
-    cout << Form("-------------------------------------------------------------------------------------------------------\n");
+    cout << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
+    cout << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
 //-----------------------------------------------------------------------------
 // reset per-roc error counters
 //-----------------------------------------------------------------------------
@@ -555,15 +573,18 @@ namespace trkdaq {
 
           char* roc_data  = data+0x30;
 
+          int nb_roc[6];
           for (int roc=0; roc<6; roc++) {
-            int nb    = *((ushort*) roc_data);
-            rs[roc]   = *((ushort*)(roc_data+0x0c));
-            roc_data += nb;
+            nb_roc[roc] = *((ushort*) roc_data);
+            rs[roc]     = *((ushort*)(roc_data+0x0c));
+            roc_data   += nb_roc[roc];
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x %5i %8i %4i %4i %4i %4i %4i %4i\n",
-                         ewt,i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5],nerr,nerr_tot,
+            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
+                         ewt,i,ew_tag,nbytes,nbytes_tot,
+                         rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
+                         nerr,nerr_tot,
                          nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
             if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
               PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);

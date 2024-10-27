@@ -272,16 +272,15 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
 
           memcpy(afd,ev->GetRawBufferPointer(),nb);
           Frags.emplace_back(frag);
-//-----------------------------------------------------------------------------
+          //-----------------------------------------------------------------------------
 // this is essentially it, now - diagnostics 
 //-----------------------------------------------------------------------------
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
 
-          //          if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
-          std::cout << " DTC: " << setw(2) << i << " EW tag:" 
-                    << setw(10) << ew_tag << " nbytes = " << setw(4) << nb << endl;;
-          _dtc_i->PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
-          // }
+          if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+            TLOG(TLVL_INFO) << " subevent:" << i << " EW tag:" << ew_tag << " nbytes: " << nb << std::endl;
+            _dtc_i->PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+          }
           rc = 0;
         }
         else {
@@ -292,10 +291,8 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
           message("alarm", "TrackerBR::ReadData::ERROR event="+std::to_string(ev_counter())+" nbytes=0") ;
         }
       }
-      if (_debugLevel > 0) std::cout << std::endl;
       
       TLOG(TLVL_DBG+1) << "read data , NDTCs=" << sz << " nbytes=" << nbytes << std::endl;
-      // if (sz > 0) break;
     }
     catch (...) {
       TLOG(TLVL_ERROR) << "ERROR reading data";
