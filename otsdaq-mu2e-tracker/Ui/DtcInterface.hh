@@ -103,7 +103,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
-    void         PrintRegister   (uint16_t Register, const char* Title = "");
+    
+    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc);
+    void         PrintRegister        (uint16_t Register, const char* Title = "");
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value
 // Format = 1 : add short description of each register

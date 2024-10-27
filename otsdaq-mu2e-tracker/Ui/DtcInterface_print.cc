@@ -126,7 +126,30 @@ namespace trkdaq {
 
     cout << Form("%-18s%s\n",sreg.data(),text.data());
   }
-  
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc) {
+
+    std::string text = Form("(0x%04x) : ",FirstReg);
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      
+      // DTC_Link_ID link = DTC_Link_ID(i);
+      uint32_t iw, reg;
+
+      reg = FirstReg+4*i;
+      
+      iw = ReadRegister(reg);
+      text += Form("  0x%04x",iw);
+    }
+
+    text += Form(" : %s",Desc);
+
+    cout << Form("%-s\n",text.data());
+  }
+
   
 //-----------------------------------------------------------------------------
 // most of the time LinkMask = -1
@@ -287,48 +310,26 @@ namespace trkdaq {
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
 
-    PrintRegister(0x9630,"TX Data Request Packet Count Link 0        ");
-    PrintRegister(0x9634,"TX Data Request Packet Count Link 1        ");
-    PrintRegister(0x9638,"TX Data Request Packet Count Link 2        ");
-    PrintRegister(0x963c,"TX Data Request Packet Count Link 3        ");
-    PrintRegister(0x963c,"TX Data Request Packet Count Link 3        ");
-    PrintRegister(0x9640,"TX Data Request Packet Count Link 4        ");
-    PrintRegister(0x9644,"TX Data Request Packet Count Link 5        ");
+    std::string text1("           ");
+    std::string text2(" offset  : ");
 
-    PrintRegister(0x9650,"TX Heartbeat    Packet Count Link 0        ");
-    PrintRegister(0x9654,"TX Heartbeat    Packet Count Link 1        ");
-    PrintRegister(0x9658,"TX Heartbeat    Packet Count Link 2        ");
-    PrintRegister(0x965c,"TX Heartbeat    Packet Count Link 3        ");
-    PrintRegister(0x9660,"TX Heartbeat    Packet Count Link 4        ");
-    PrintRegister(0x9664,"TX Heartbeat    Packet Count Link 5        ");
-
-    PrintRegister(0x9670,"RX Data Header  Packet Count Link 0        ");
-    PrintRegister(0x9674,"RX Data Header  Packet Count Link 1        ");
-    PrintRegister(0x9678,"RX Data Header  Packet Count Link 2        ");
-    PrintRegister(0x967c,"RX Data Header  Packet Count Link 3        ");
-    PrintRegister(0x9680,"RX Data Header  Packet Count Link 4        ");
-    PrintRegister(0x9684,"RX Data Header  Packet Count Link 5        ");
-
-    PrintRegister(0x9690,"RX Data         Packet Count Link 0        ");
-    PrintRegister(0x9694,"RX Data         Packet Count Link 1        ");
-    PrintRegister(0x9698,"RX Data         Packet Count Link 2        ");
-    PrintRegister(0x969c,"RX Data         Packet Count Link 3        ");
-    PrintRegister(0x96a0,"RX Data         Packet Count Link 4        ");
-    PrintRegister(0x96a4,"RX Data         Packet Count Link 5        ");
-
-    PrintRegister(0xa400,"TX Event Window Marker Count Link 0        ");
-    PrintRegister(0xa404,"TX Event Window Marker Count Link 1        ");
-    PrintRegister(0xa408,"TX Event Window Marker Count Link 2        ");
-    PrintRegister(0xa40c,"TX Event Window Marker Count Link 3        ");
-    PrintRegister(0xa410,"TX Event Window Marker Count Link 4        ");
-    PrintRegister(0xa414,"TX Event Window Marker Count Link 5        ");
-
-    PrintRegister(0xa420,"RX Data Header Timeout Count Link 0        ");
-    PrintRegister(0xa424,"RX Data Header Timeout Count Link 1        ");
-    PrintRegister(0xa428,"RX Data Header Timeout Count Link 2        ");
-    PrintRegister(0xa42c,"RX Data Header Timeout Count Link 3        ");
-    PrintRegister(0xa430,"RX Data Header Timeout Count Link 4        ");
-    PrintRegister(0xa434,"RX Data Header Timeout Count Link 5        ");
-
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      int offset = 4*i;
+      text1 += Form("  link %i",i);
+      text2 += Form("  (0x%02x)",offset);
+    }
+    cout << std::endl;
+    cout << Form("%-s\n",text1.data());
+    cout << Form("%-s\n",text2.data());
+    
+    PrintDtcLinkRegisters(0x9630,"TX Data Request Packet Count");
+    PrintDtcLinkRegisters(0x9650,"TX Heartbeat    Packet Count");
+    PrintDtcLinkRegisters(0x9670,"RX Data Header  Packet Count");
+    PrintDtcLinkRegisters(0x9690,"RX Data         Packet Count");
+    PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count");
+    PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count");
+                          
   }
 };
