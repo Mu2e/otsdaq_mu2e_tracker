@@ -28,6 +28,7 @@ namespace trkdaq {
     static DtcInterface* fgInstance[2];
 
     DTCLib::DTC*         fDtc;
+    int                  fEnabled;        // if comes from ODB, could be 0
     int                  fPcieAddr;
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
@@ -65,8 +66,8 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
     
-    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par,
-                                 int                      LinkMask   = 0   ,
+    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
+                                 int                      LinkMask   = 0    ,
                                  bool                     UpdateMask = false,
                                  int                      PrintLevel = 0    );
 //-----------------------------------------------------------------------------
@@ -75,6 +76,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     int          ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType);
 
+    int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
 
                                         // EWLength - in 25 ns ticks
@@ -149,7 +151,8 @@ namespace trkdaq {
                                         // 'Value' : 0 or 1
     void         SetBit     (int Register, int Bit, int Value);
 
-    void         SetJAMode  (int Mode) { fJAMode = Mode; }
+    void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+    void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
     void         SetLinkMask(int Mask = 0);
 //-----------------------------------------------------------------------------

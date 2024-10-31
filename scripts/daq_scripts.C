@@ -95,17 +95,14 @@ int cfo_init_readout_ext(const char* RunPlan, uint DtcMask) {
 //-----------------------------------------------------------------------------
 void cfo_launch_run_plan(int PcieAddress = -1) {
   CfoInterface::Instance(PcieAddress)->LaunchRunPlan(); 
-//-----------------------------------------------------------------------------
-// this is what it really is
-//-----------------------------------------------------------------------------
-  // cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-  // cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  // cfo->SoftReset();
-
-	// usleep(10);	
-	// cfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
 }
 
+//-----------------------------------------------------------------------------
+// default: 1700 ns
+//-----------------------------------------------------------------------------
+void cfo_set_event_window(int EWLength = 68) {
+  daq_scripts::EWLength = EWLength;
+}
 //-----------------------------------------------------------------------------
 // first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
 // (the sizeof(mu2e_databuff_t) 0
@@ -142,28 +139,41 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_read(int PcieAddr = -1) {
+int dtc_control_roc_read(int      LinkMask   = -1,
+                         uint32_t MaskC      = 0xFFFFFFFF,
+                         uint32_t MaskD      = 0xFFFFFFFF,
+                         uint32_t MaskE      = 0xFFFFFFFF,
+                         int      NumSamples = 1,
+                         int      PcieAddr   = -1) {
+  
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   ControlRoc_Read_Input_t par;
   
-  par.adc_mode        = 4;     // -a
-  par.tdc_mode        = 0;     // -t 
-  par.num_lookback    = 8;     // -l 
-  par.num_samples     = 1;     // -s
-  par.num_triggers[0] = 10;    // -T 10
-  par.num_triggers[1] = 0;     // -T (high bytes)
+  par.adc_mode        = 4;          // -a
+  par.tdc_mode        = 0;          // -t 
+  par.num_lookback    = 8;          // -l 
+  par.num_samples     = NumSamples; // -s
+  par.num_triggers[0] = 10;         // -T 10
+  par.num_triggers[1] = 0;          // -T (high bytes)
   
-  for (int i=0; i<6; i++) par.ch_mask[i] = 0xffff;
+  par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+  par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+  par.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+  par.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+  par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+  par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
-  par.enable_pulser   = 1;     // -p 1
-  par.marker_clock    = 3;     // -m 3
-  par.mode            = 0;     // 
-  par.clock           = 99;    // 
+  par.enable_pulser   = 1;         // -p 1
+  par.marker_clock    = 3;         // -m 3
+  par.mode            = 0;         // 
+  par.clock           = 99;        // 
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  dtc_i->ControlRoc_Read(&par,0,false,2);
+  bool update_mask(false);
+  dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,2);
   return 0;
 }
 

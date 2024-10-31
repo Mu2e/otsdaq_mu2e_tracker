@@ -15,6 +15,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   DtcTel.fDTC_i = DtcInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
   DtcTel.fDTC_i->SetRocReadoutMode(DtcData->fReadoutMode);
   DtcTel.fDTC_i->SetJAMode(DtcData->fJAMode);
+  DtcTel.fDTC_i->SetEmulateCfo(DtcData->fEmulateCfo);
 
   const char* device_name = DtcData->fName.Data();
 

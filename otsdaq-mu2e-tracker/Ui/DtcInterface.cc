@@ -52,7 +52,7 @@ namespace trkdaq {
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
-
+    fEnabled        = 1;                // by default - enabled
     fPcieAddr       = PcieAddr;
     fLinkMask       = LinkMask;
     fReadoutMode    = 0;                // for now, assume patterns are the default
@@ -1052,7 +1052,7 @@ struct RocData_t {
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // configure ROC to send patterns
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
       }
     }
     

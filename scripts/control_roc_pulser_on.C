@@ -12,9 +12,10 @@ using namespace DTCLib;
 // measure_thresholds:
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
-// 
+// Firstchannel values: 0 to 7
 //-----------------------------------------------------------------------------
-void set_threshold(int Link, int ChannelID, int Threshold, int PreampType, int ROCSleepTime = 2000) {
+void control_roc_pulser_on(int Link, uint FirstChannel, int DutyCycle = 10, int Delay = 1000, 
+                           int ROCSleepTime = 5000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -24,21 +25,43 @@ void set_threshold(int Link, int ChannelID, int Threshold, int PreampType, int R
   DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 //-----------------------------------------------------------------------------
-// write parameters into reg 266 (block write) , sleep for some time, 
+// write parameters into reg 268 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
+// chan mask always includes the first channel
 //-----------------------------------------------------------------------------
+  dtc.WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
+
   vector<uint16_t> vec;
-  vec.push_back(uint16_t(ChannelID));
-  vec.push_back(uint16_t(Threshold));
-  vec.push_back(uint16_t(PreampType));
+
+  uint16_t chan_mask = 0x10 | (0x1 << FirstChannel);
+
+  // vec.push_back(uint16_t(FirstChannel));
+  vec.push_back(uint16_t(chan_mask));
+  vec.push_back(uint16_t(DutyCycle));
+
+  // next go two halves of the delay, no frequency
+
+  uint16_t w1 = ((Delay      ) & 0xffff);
+  uint16_t w2 = ((Delay >> 16) & 0xffff);
+
+  vec.push_back(w1);
+  vec.push_back(w2);
+
+  printf("vec[0]=0x%04x\n",vec[0]);
+  printf("vec[1]=%i\n"    ,vec[1]);
+  printf("vec[2]=%i\n"    ,vec[2]);
+  printf("vec[3]=%i\n"    ,vec[3]);
 
   bool increment_address(false);
-  dtc.WriteROCBlock   (roc,266,vec,false,increment_address,100);
+
+  dtc.ReadROCRegister(roc,129,100);
+
+  dtc.WriteROCBlock   (roc,268,vec,false,false,1000);
   std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
 
   // 0x86 = 0x82 + 4
   uint16_t u; 
-  while ((u = dtc.ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+  while ((u = dtc.ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
   printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -47,14 +70,17 @@ void set_threshold(int Link, int ChannelID, int Threshold, int PreampType, int R
 
   nw = nw-4;
   vector<uint16_t> v2;
-  dtc.ReadROCBlock(v2,roc,267,nw,false,100);
-
-  print_buffer(v2.data(),nw);
+  dtc.ReadROCBlock(v2,roc,268,nw,false,100);
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-  dtc.WriteROCRegister(roc,14,0x01,false,1000); 
-  
+  print_buffer(v2.data(),nw);
+
+  int chmask      = v2[0];
+  int duty_cycle  = v2[1];
+  int delay       = v2[2] | (v2[3] << 16);
+
+  printf(" chmask = 0x%04x duty cycle = %5i delay = 0x%08x\n",chmask, duty_cycle, delay); 
 //-----------------------------------------------------------------------------
 // sleep
 //-----------------------------------------------------------------------------

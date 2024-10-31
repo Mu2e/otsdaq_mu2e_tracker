@@ -20,10 +20,11 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x111111;        // ROC0
-  // dtc[0].fLinkMask    = 0x1;          // ROC0
+  // dtc[0].fLinkMask    = 0x000010;        // ROC0
+  dtc[0].fLinkMask    = 0x111111;           // 6 ROCs
   dtc[0].fReadoutMode = 0;               // 0:patterns 1:digis
-  // dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
+  dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
+  dtc[0].fEmulateCfo  = 1;               // 
 
   gSystem->Setenv("DTCLIB_DTC","0");
 

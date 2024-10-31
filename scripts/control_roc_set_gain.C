@@ -12,7 +12,7 @@
 
 using namespace DTCLib;
 
-void set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTime = 2000) {
+void control_roc_set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------

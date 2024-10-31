@@ -157,6 +157,7 @@ public:
     int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
     int        fReadoutMode;
     int        fJAMode;
+    int        fEmulateCfo;
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;

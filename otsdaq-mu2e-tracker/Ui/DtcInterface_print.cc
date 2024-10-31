@@ -274,6 +274,19 @@ namespace trkdaq {
     reg = 75; desc = "Num DATA REQ tag lost";
     PrintRocRegister(reg,desc,Format,link_mask);
 
+    reg = 0x90; desc = "total N packets (DCS+data)";    // r_144
+    PrintRocRegister(reg,desc,Format,link_mask);        // 
+    reg = 0x91; desc = "N(DCS) packets sent to DTC";    // r_145
+    PrintRocRegister(reg,desc,Format,link_mask);        //
+    reg = 0x92; desc = "Num DATA REQ tag lost";         // r_146
+    PrintRocRegister(reg,desc,Format,link_mask);        //
+    reg = 0x93; desc = "Num DATA REQ tag lost";         // r_147
+    PrintRocRegister(reg,desc,Format,link_mask);        //
+    reg = 0x94; desc = "Num DATA REQ tag lost";         // r_148
+    PrintRocRegister(reg,desc,Format,link_mask);        //
+    reg = 0x95; desc = "Num DATA REQ tag lost";         // r_149
+    PrintRocRegister(reg,desc,Format,link_mask);        //
+
     cout << "------------------------------------------------------------------------\n";
   }
 

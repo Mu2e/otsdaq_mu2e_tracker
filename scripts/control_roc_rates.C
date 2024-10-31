@@ -12,7 +12,7 @@ using namespace DTCLib;
 // should be 96*3*2+2*2 = 580 16-bit words
 // 3 words per channel (straw)
 //-----------------------------------------------------------------------------
-void print_rates(uint16_t* data, int nw) {
+void control_roc_print_rates(uint16_t* data, int nw) {
   if (nw != 580) {
     printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
     return;
@@ -28,7 +28,7 @@ void print_rates(uint16_t* data, int nw) {
     int rate_coic = int(data[loc+4])+(int(data[loc+5]) << 16);
     printf(" %5i %10i %10i %10i\n",ich,rate_hv, rate_cal, rate_coic);
   }
-  // finally, the last two words - totatl counts
+  // finally, the last two words - total counts
   loc = 576;
   int iw1   = int(data[loc  ])+(int(data[loc+1]) << 16);
   int iw2   = int(data[loc+2])+(int(data[loc+3]) << 16);
@@ -40,7 +40,7 @@ void print_rates(uint16_t* data, int nw) {
 //            1: hex dump
 //            2: formatted printout
 //-----------------------------------------------------------------------------
-void rates(int Link, int PrintLevel = 0) {
+void control_roc_rates(int Link, int PrintLevel = 0) {
 //-----------------------------------------------------------------------------
 // convert into enum
 // DTC has already been initialized, don't reco
@@ -94,6 +94,6 @@ void rates(int Link, int PrintLevel = 0) {
     print_buffer(v2.data(),nw);
   }
   if (PrintLevel > 1) {
-    print_rates(v2.data(),nw);
+    control_roc_print_rates(v2.data(),nw);
   }
 }

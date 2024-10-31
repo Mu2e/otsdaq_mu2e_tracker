@@ -52,7 +52,7 @@ namespace  trkdaq {
 
     bool increment_address(false);
 
-    if (UpdateMask and (LinkMask != 0)) fLinkMask = LinkMask;
+    if (UpdateMask and (LinkMask != -1)) fLinkMask = LinkMask;
   
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
