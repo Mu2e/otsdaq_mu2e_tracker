@@ -172,8 +172,8 @@ int dtc_control_roc_read(int      LinkMask   = -1,
   par.clock           = 99;        // 
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  bool update_mask(false);
-  dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,2);
+  bool update_mask(false), print_level(2);
+  dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,print_level);
   return 0;
 }
 
