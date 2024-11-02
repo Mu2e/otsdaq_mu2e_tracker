@@ -1,4 +1,4 @@
-
+// -*- buffer-read-only:t -*- 
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 using namespace trkdaq;
@@ -46,7 +46,7 @@ void* DtcGui::ReaderThread(void* Context) {
   if (tc->fPrintLevel > 0) {
     // print header
     cout << Form("   CPU T   Real T      event  DTC    EW Tag   nbytes   nbytes_tot  ------------- ROC status ----------------  nerr nerr_tot\n");
-    cout << Form("-------------------------------------------------------------------------------------------------------------------------\n");
+    cout << Form("---------------------------------------------------------------------------------------------------------------------------\n");
   }
 
   for (int ir=0; ir<6; ir++) {
@@ -370,6 +370,9 @@ int DtcGui::manage_reader_thread() {
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
     btn->ChangeBackground(fRunningColor);
+//-----------------------------------------------------------------------------
+// if requested, open output file
+//-----------------------------------------------------------------------------
     TThread::UnLock();
   }
   else {

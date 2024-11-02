@@ -15,8 +15,10 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC" ; // "CFO";
   dtc[0].fPcieAddr    = 0;
-  // dtc[0].fLinkMask    = 0x11111;           // start from 2 DTCs on link0
-  dtc[0].fLinkMask    = 0x11111;           // can read 3 ROCs
+  dtc[0].fLinkMask    = 0x110111;           // start from 2 DTCs on link0
+  // dtc[0].fLinkMask    = 0x0010;           // MN180
+  // dtc[0].fLinkMask    = 0x1000;           // MN162
+  // dtc[0].fLinkMask    = 0x1001;           // MN234+MN162
   dtc[0].fJAMode      = 0x01;           // no ext clock 
   //gSystem->Setenv("CFOLIB_CFO","0");
   gSystem->Setenv("DTCLIB_DTC","0");

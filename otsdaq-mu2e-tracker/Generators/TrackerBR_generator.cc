@@ -162,7 +162,7 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
   , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"          , std::vector<uint16_t>()))  // 
   , _debugLevel        (ps.get<int>                     ("debugLevel"                  ,     0))
   , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"                  ,   100))
-  , _pcieAddr          (ps.get<int>                     ("pcieAddr"                 ,          -1)) 
+  , _pcieAddr          (ps.get<int>                     ("pcieAddr"              ,          -1)) 
   , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
   , _linkMask          (stoi(ps.get<std::string>        ("linkMask"                           ),0,16)) // 
   , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
@@ -180,6 +180,7 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
 // DTC is already initialized by the frontend, don't change anything !
 //-----------------------------------------------------------------------------
   bool skip_init(false);
+  _linkMask = 0x111111;
   _dtc_i = trkdaq::DtcInterface::Instance(_pcieAddr,_linkMask,skip_init);
   _dtc      = _dtc_i->Dtc();  // new DTC(DTC_SimMode_Disabled,_pcieAddr,_linkMask,"",false,"");
 //-----------------------------------------------------------------------------

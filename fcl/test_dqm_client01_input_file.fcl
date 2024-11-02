@@ -178,7 +178,7 @@ physics: {
 # new format: offset 0x20 : 40  (80 bytes = (0x20 + 0x08) in 2-byte words)
 # currently redefined in beginRun
 #------------------------------------------------------------------------------
-            dataHeaderOffset    : 32
+            dataHeaderOffset    : 24
             dumpDTCRegisters    :  0
 #------------------------------------------------------------------------------
 # reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
