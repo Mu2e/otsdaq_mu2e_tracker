@@ -24,6 +24,19 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
+/*
+            adc_mode = dtcbuffer[0];                                  // -a
+            tdc_mode = dtcbuffer[1];                                  // -t
+            num_lookback = dtcbuffer[2];                              // -l
+            num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
+            channel_mask[0] = (dtcbuffer[6] << 16) + dtcbuffer[5];    // -C
+            channel_mask[1] = (dtcbuffer[8] << 16) + dtcbuffer[7];    // -D
+            channel_mask[2] = (dtcbuffer[10] << 16) + dtcbuffer[9];    // -E
+            num_samples = dtcbuffer[11];                     // -s
+            enable_pulser = (uint8_t) dtcbuffer[12];         // -p
+            max_total_delay = dtcbuffer[13];                 // -d (def 1)
+            marker_clock = (uint8_t) dtcbuffer[14];          // -m
+*/    
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
   
@@ -35,7 +48,6 @@ namespace  trkdaq {
       printf("WARNING: num_samples = %i > 63, truncate to 63\n",Par->num_samples);
       Par->num_samples = 63;
     }
-    vec.push_back(Par->num_samples);
 
     uint16_t w1 = Par->num_triggers[0];
     uint16_t w2 = Par->num_triggers[1];
@@ -45,10 +57,12 @@ namespace  trkdaq {
 
     for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
 
+    vec.push_back(Par->num_samples);
     vec.push_back(Par->enable_pulser);
+    vec.push_back(1 );                  // max_total_delay (unused)
     vec.push_back(Par->marker_clock );
-    vec.push_back(0 );
-    vec.push_back(99);
+    // vec.push_back(0 );
+    // vec.push_back(99);
 
     bool increment_address(false);
 
@@ -111,40 +125,40 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
-  auto roc  = DTC_Link_ID(Link);
+    auto roc  = DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-  std::vector<uint16_t> vec;
-  vec.push_back(uint16_t(ChannelID));
-  vec.push_back(uint16_t(Threshold));
-  vec.push_back(uint16_t(PreampType));
+    std::vector<uint16_t> vec;
+    vec.push_back(uint16_t(ChannelID));
+    vec.push_back(uint16_t(Threshold));
+    vec.push_back(uint16_t(PreampType));
 
-  bool increment_address(false);
-  fDtc->WriteROCBlock   (roc,266,vec,false,increment_address,100);
-  std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    bool increment_address(false);
+    fDtc->WriteROCBlock   (roc,266,vec,false,increment_address,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
-  uint16_t u; 
-  while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-  TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-  int nw = fDtc->ReadROCRegister(roc,129,100);
-  TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,129,100);
+    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
 
-  nw = nw-4;
-  std::vector<uint16_t> v2;
-  fDtc->ReadROCBlock(v2,roc,267,nw,false,100);
+    nw = nw-4;
+    std::vector<uint16_t> v2;
+    fDtc->ReadROCBlock(v2,roc,267,nw,false,100);
 
-  PrintBuffer(v2.data(),nw);
+    PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-  ResetRoc(Link); 
-}
+    ResetRoc(Link); 
+  }
   
 
 };

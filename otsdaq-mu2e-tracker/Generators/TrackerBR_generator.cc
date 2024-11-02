@@ -174,13 +174,12 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentG
 {
     
   TLOG(TLVL_INFO) << "TrackerBR_generator CONSTRUCTOR (1) readData:" << _readData;
-  printf("TrackerBR::TrackerBR readData=%i\n",_readData);
 //-----------------------------------------------------------------------------
 // the BR interface should not be changing any settings, just read events
 // DTC is already initialized by the frontend, don't change anything !
 //-----------------------------------------------------------------------------
   bool skip_init(false);
-  _linkMask = 0x111111;
+  //  _linkMask = 0x111111;
   _dtc_i = trkdaq::DtcInterface::Instance(_pcieAddr,_linkMask,skip_init);
   _dtc      = _dtc_i->Dtc();  // new DTC(DTC_SimMode_Disabled,_pcieAddr,_linkMask,"",false,"");
 //-----------------------------------------------------------------------------
