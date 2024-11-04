@@ -28,6 +28,12 @@
 
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
+// #ifdef USE_MIDAS
+// #include "midas.h"
+// #include "utils/utils.hh"
+// #include "utils/OdbInterface.hh"
+// #ENDIF
+
 #include <atomic>
 #include <chrono>
 #include <fstream>
@@ -52,9 +58,8 @@ namespace mu2e {
 // FHiCL-configurable variables. 
 // C++ variable names are the FHiCL parameter names prepended with a "_"
 //-----------------------------------------------------------------------------
-    FragmentType const                    fragment_type_;  // Type of fragment (see FragmentType.hh)
-
-    std::chrono::steady_clock::time_point lastReportTime_;
+    std::string                           _artdaqLabel;
+    std::chrono::steady_clock::time_point _lastReportTime;
     std::chrono::steady_clock::time_point procStartTime_;
     std::vector<uint16_t>                 _fragment_ids;           // handled by CommandableGenerator, but not a data member there
     int                                   _debugLevel;
@@ -62,12 +67,11 @@ namespace mu2e {
     int                                   _pcieAddr;
     std::string                           _tfmHost;                // used to send xmlrpc messages to
 
-    int                                   _linkMask;
+    //    int                                   _linkMask;
                                                                    // 101:simulate data internally, DTC not used; default:0
 
     int                                   _readData;               // 1: read data, 0: save empty fragment
     int                                   _readDTCRegisters;       // 1: read and save the DTC registers
-    int                                   _saveSPI;                // 
     int                                   _printFreq;              // printout frequency
     int                                   _maxEventsPerSubrun;     // 
     int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
@@ -113,9 +117,9 @@ namespace mu2e {
     int  readData        (artdaq::FragmentPtrs& Frags, ulong& Timestamp);
 
     double _timeSinceLastSend() {
-      auto now    = std::chrono::steady_clock::now();
-      auto deltaw = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - lastReportTime_).count();
-      lastReportTime_ = now;
+      auto now        = std::chrono::steady_clock::now();
+      auto deltaw     = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - _lastReportTime).count();
+      _lastReportTime = now;
       return deltaw;
     }
     
@@ -148,7 +152,6 @@ std::vector<uint16_t> mu2e::TrackerBR::fragmentIDs() {
   std::vector<uint16_t> v;
   v.push_back(0);
   if (_readDTCRegisters) v.push_back(FragmentType::TRKDTC);
-  //  if (_saveSPI)          v.push_back(FragmentType::TRKSPI);
   
   return v;
 }
@@ -156,32 +159,64 @@ std::vector<uint16_t> mu2e::TrackerBR::fragmentIDs() {
 //-----------------------------------------------------------------------------
 // sim_mode="N" means real DTC 
 //-----------------------------------------------------------------------------
-mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps) : CommandableFragmentGenerator(ps)
-  , fragment_type_     (toFragmentType("MU2E"))
-  , lastReportTime_    (std::chrono::steady_clock::now())
-  , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"          , std::vector<uint16_t>()))  // 
-  , _debugLevel        (ps.get<int>                     ("debugLevel"                  ,     0))
-  , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"                  ,   100))
-  , _pcieAddr          (ps.get<int>                     ("pcieAddr"              ,          -1)) 
-  , _tfmHost           (ps.get<std::string>             ("tfmHost"                            ))  // 
-  , _linkMask          (stoi(ps.get<std::string>        ("linkMask"                           ),0,16)) // 
-  , _readData          (ps.get<int>                     ("readData"              ,           1))  // 
-  , _saveSPI           (ps.get<int>                     ("saveSPI"               ,           1))  // 
-  , _printFreq         (ps.get<int>                     ("printFreq"             ,         100))  // 
-  , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun"    ,       10000))  // 
-  , _readoutMode       (ps.get<int>                     ("readoutMode"           ,           1))  // 
+mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps)
+  : CommandableFragmentGenerator(ps)
+  , _artdaqLabel       (ps.get<std::string>             ("artdaqLabel"                     ))
+  , _lastReportTime    (std::chrono::steady_clock::now())
+  , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"       , std::vector<uint16_t>()))  // 
+  , _debugLevel        (ps.get<int>                     ("debugLevel"         ,           0))
+  , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"         ,         100))
+  , _pcieAddr          (ps.get<int>                     ("pcieAddr"           ,          -1)) 
+  , _tfmHost           (ps.get<std::string>             ("tfmHost"                         ))  // 
+  , _readData          (ps.get<int>                     ("readData"           ,           1))  // 
+  , _printFreq         (ps.get<int>                     ("printFreq"          ,         100))  // 
+  , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun" ,       10000))  // 
+  , _readoutMode       (ps.get<int>                     ("readoutMode"        ,           1))  // 
   
 {
-    
-  TLOG(TLVL_INFO) << "TrackerBR_generator CONSTRUCTOR (1) readData:" << _readData;
+  TLOG(TLVL_INFO) << "CONSTRUCTOR (1) readData:" << _readData;
 //-----------------------------------------------------------------------------
 // the BR interface should not be changing any settings, just read events
 // DTC is already initialized by the frontend, don't change anything !
+// for skip_init=true, the linkmask is not used. The board reader shouldn't even know
+// about it, but it has to know about the DTC PCIE address
 //-----------------------------------------------------------------------------
-  bool skip_init(false);
-  //  _linkMask = 0x111111;
-  _dtc_i = trkdaq::DtcInterface::Instance(_pcieAddr,_linkMask,skip_init);
-  _dtc      = _dtc_i->Dtc();  // new DTC(DTC_SimMode_Disabled,_pcieAddr,_linkMask,"",false,"");
+// #ifdef USE_MIDAS
+// //-----------------------------------------------------------------------------
+// // figure out the PCIE address - nothing wrong with connecting to ODB and
+// //-----------------------------------------------------------------------------
+//   HNDLE  hDB;
+//   cm_get_experiment_database(&hDB, NULL);
+// 
+//   OdbInterface* odb_i         = OdbInterface::Instance(hDB);
+//   std::string active_run_conf = odb_i->GetActiveRunConfig(hDB);
+//   HNDLE h_active_run_conf     = odb_i->GetRunConfigHandle(hDB,active_run_conf);
+//   std::string rpc_host        = get_short_host_name("local");
+//   HNDLE h_daq_host_conf       = odb_i->GetDaqHostHandle(hDB,h_active_run_conf,rpc_host);
+//   
+//   HNDLE h_component;
+//   KEY   component;
+//   int   ncomp(0);
+//   int   pcie_addr(-1);
+//   for (int i=0; db_enum_key(hDB, h_daq_host_conf, i, &h_component) != DB_NO_MORE_SUBKEYS; ++i) {
+//     db_get_key(hDB, h_component, &component);
+//     TLOG(TLVL_DBG+1) << "index: " << " Subkey:" <<  component.name << " Type: " << component.type;
+//     if (component.name == _artdaqLabel) {
+// //-----------------------------------------------------------------------------
+// // the board reader configuration found, take the PCIE address from there
+// //-----------------------------------------------------------------------------
+//       int sz(0);
+//       if (db_get_value(hDB, h_component, "DTC/PCIEAddress", &pcie_addr, &sz, TID_INT32, TRUE) != DB_SUCCESS) {
+//         TLOG(TLVL_ERROR) << "no PCIE address for" << component.name << " in" << active_run_conf ;
+//       }
+//     }
+//   }
+//   if (pcie_addr != -1) _pcieAddr = pcie_addr;
+// #endif
+  
+  bool skip_init(true);
+  _dtc_i = trkdaq::DtcInterface::Instance(_pcieAddr,0x0,skip_init);
+  _dtc      = _dtc_i->Dtc();
 //-----------------------------------------------------------------------------
 // finally, initialize the environment for the XML-RPC messaging client
 //-----------------------------------------------------------------------------
@@ -219,8 +254,6 @@ mu2e::TrackerBR::~TrackerBR() {
 
 //-----------------------------------------------------------------------------
 void mu2e::TrackerBR::stop() {
-  // _dtc->DisableDetectorEmulator();
-  // _dtc->DisableCFOEmulation    ();
 }
 
 //-----------------------------------------------------------------------------
@@ -239,8 +272,6 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
 
   DTC_EventWindowTag event_tag = DTC_EventWindowTag(_tstamp);
 
-  //  _dtc_i->PrintRocStatus(0);
-  
   try {
 //------------------------------------------------------------------------------
 // sz: 1 (or 0, if nothing has been read out)
@@ -272,7 +303,7 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
 
           memcpy(afd,ev->GetRawBufferPointer(),nb);
           Frags.emplace_back(frag);
-          //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // this is essentially it, now - diagnostics 
 //-----------------------------------------------------------------------------
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
@@ -318,7 +349,7 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
 //-----------------------------------------------------------------------------
 // a hack : reduce the PMT logfile size 
 //-----------------------------------------------------------------------------
-//  int print_event = (ev_counter() % _printFreq) == 0;
+// int print_event = (ev_counter() % _printFreq) == 0;
 // make sure even a fake fragment goes in
 //-----------------------------------------------------------------------------
   ulong tstamp = CommandableFragmentGenerator::ev_counter();
