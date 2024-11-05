@@ -24,7 +24,7 @@ void control_roc_set_threshold(int Link, int ChannelID, int Threshold, int Pream
   DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 //-----------------------------------------------------------------------------
-// write parameters into reg 266 (block write) , sleep for some time, 
+// write parameters into reg 267 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
   vector<uint16_t> vec;
@@ -33,7 +33,7 @@ void control_roc_set_threshold(int Link, int ChannelID, int Threshold, int Pream
   vec.push_back(uint16_t(PreampType));
 
   bool increment_address(false);
-  dtc.WriteROCBlock   (roc,266,vec,false,increment_address,100);
+  dtc.WriteROCBlock   (roc,267,vec,false,increment_address,100);
   std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
 
   // 0x86 = 0x82 + 4
