@@ -129,7 +129,7 @@ namespace  trkdaq {
 
   
 //-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int Gain, int PreampType) {
+  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -165,12 +165,13 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    ResetRoc(Link); 
+    ResetRoc(Link);
+    return 0;
   }
 
 
 //-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType) {
+  int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -206,7 +207,67 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    ResetRoc(Link); 
+    ResetRoc(Link);
+    return 0;
+  }
+
+
+//-----------------------------------------------------------------------------  
+  int DtcInterface::ControlRoc_MeasureThresholds(int Link, uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+    auto roc  = DTC_Link_ID(Link);
+
+    // int roc_mask = 1 << (4*Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg 264 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    // uint16_t chan_mask[6] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+
+
+    std::vector<uint16_t> vec;
+
+    vec.push_back((MaskC      ) & 0xffff);
+    vec.push_back((MaskC >> 16) & 0xffff);
+    vec.push_back((MaskD      ) & 0xffff);
+    vec.push_back((MaskD >> 16) & 0xffff);
+    vec.push_back((MaskE      ) & 0xffff);
+    vec.push_back((MaskE >> 16) & 0xffff);
+
+    bool increment_address(false);
+    fDtc->WriteROCBlock   (roc,270,vec,false,increment_address,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+    // 0x86 = 0x82 + 4
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    printf("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+
+    nw = nw-4;
+    std::vector<uint16_t> v2;
+    fDtc->ReadROCBlock(v2,roc,270,nw,false,100);
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+    fDtc->WriteROCRegister(roc,14,0x01,false,1000); 
+
+    PrintBuffer(v2.data(),nw);
+    // expect nw=288 = 96*3, if not - in trouble
+  
+    for (int i=0; i<96; i++) {
+      float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
+      float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
+      float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
+
+      printf(" i, hw, cal, tot : %3i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+    }
+    return 0;
   }
   
 

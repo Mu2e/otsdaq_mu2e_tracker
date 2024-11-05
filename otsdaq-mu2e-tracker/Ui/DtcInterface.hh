@@ -55,28 +55,37 @@ namespace trkdaq {
     int PcieAddr() { return fPcieAddr; }
 
     DTCLib::DTC* Dtc() { return fDtc; }
-                                        // clock source=0: internal, clock=1: RTF (RJ45)
 
     static const char*  SpiVarName(int I) { return fgSpiVarName[I]; }
-    
+//-----------------------------------------------------------------------------    
+// clock source= 0:internal, 1:RTF (RJ45)
+//-----------------------------------------------------------------------------    
     int          ConfigureJA(int ClockSource, int Reset = 1);
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
-    int          ControlRoc     (const char* Command, void* Parameters);
+    int          ControlRoc(const char* Command, void* Parameters);
     
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
                                  int                      LinkMask   = 0    ,
                                  bool                     UpdateMask = false,
                                  int                      PrintLevel = 0    );
 //-----------------------------------------------------------------------------
-// PreampTYpe: 0:HV 1:CAL, or vice versa
+// measure thresholds returns an array of thresholds, which needs to be parsed
+// so far, do it internally
+//-----------------------------------------------------------------------------
+    int          ControlRoc_MeasureThresholds(int      Link,
+                                              uint32_t MaskC = 0xFFFFFFFF,
+                                              uint32_t MaskD = 0xFFFFFFFF,
+                                              uint32_t MaskE = 0xFFFFFFFF);
+//-----------------------------------------------------------------------------
+// PreampType: 0:HV 1:CAL, or vice versa
 // do one channel at a time
 // shall we think of a block operation ? or not ? - channels could be masked OFFx
 //-----------------------------------------------------------------------------
-    int          ControlRoc_SetGain     (int Link, int ChannelID, int Threshold, int PreampType);
-    int          ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType);
+    int          ControlRoc_SetGain     (int Link, int ChannelID, int PreampType, int Gain     );
+    int          ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
