@@ -15,7 +15,7 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC" ; // "CFO";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x110111;           // start from 2 DTCs on link0
+  dtc[0].fLinkMask    = 0x111111;           // start from 2 DTCs on link0
   // dtc[0].fLinkMask    = 0x0010;           // MN180
   // dtc[0].fLinkMask    = 0x1000;           // MN162
   // dtc[0].fLinkMask    = 0x1001;           // MN234+MN162
