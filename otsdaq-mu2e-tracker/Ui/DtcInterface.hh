@@ -64,7 +64,7 @@ namespace trkdaq {
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
-    int          ControlRoc(const char* Command, void* Parameters);
+    int          ControlRoc     (const char* Command, void* Parameters);
     
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
                                  int                      LinkMask   = 0    ,
@@ -73,7 +73,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // PreampTYpe: 0:HV 1:CAL, or vice versa
 // do one channel at a time
+// shall we think of a block operation ? or not ? - channels could be masked OFFx
 //-----------------------------------------------------------------------------
+    int          ControlRoc_SetGain     (int Link, int ChannelID, int Threshold, int PreampType);
     int          ControlRoc_SetThreshold(int Link, int ChannelID, int Threshold, int PreampType);
 
     int          Enabled   () { return fEnabled;    }
