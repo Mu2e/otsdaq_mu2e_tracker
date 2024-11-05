@@ -17,13 +17,15 @@ doit=$3
 echo rn1=$rn1 rn2=$rn2 doit=$doit
 name_stub=${USER}_`echo $MU2E_DAQ_DIR | awk -F / '{print $NF}'`
 
+dest=/exp/mu2e/data/projects/vst/datasets
+
 for rn in `seq $rn1 $rn2` ; do
     irn=`printf "%06i" $rn`
     for f in `ls /scratch/mu2e/$name_stub/data/raw.mu2e.trkvst.*.*.art | grep $rn` ; do
         bn=`basename $f`
         dsconf=`echo $bn | awk -F . '{print $4}'`
         dsid=raw.mu2e.trkvst.$dsconf.art
-        cmd="scp $f murat@mu2egpvm06:/exp/mu2e/data/projects/tracker/vst/datasets/$dsid/."
+        cmd="scp $f murat@mu2egpvm06:$dest/$dsid/."
         echo "$cmd"
         if [ ".$doit" != "." ] ; then 
             # echo doit=$doit
