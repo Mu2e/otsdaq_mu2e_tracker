@@ -141,23 +141,26 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_read(int      LinkMask   = -1,
-                         uint32_t MaskC      = 0xFFFFFFFF,
-                         uint32_t MaskD      = 0xFFFFFFFF,
-                         uint32_t MaskE      = 0xFFFFFFFF,
-                         int      NumSamples = 1,
-                         int      PcieAddr   = -1) {
+int dtc_control_roc_read(int      LinkMask     = -1,
+                         int      AdcMode      = 4,
+                         int      TdcMode      = 0,
+                         int      EnablePulser = 1, 
+                         uint32_t MaskC        = 0xFFFFFFFF,
+                         uint32_t MaskD        = 0xFFFFFFFF,
+                         uint32_t MaskE        = 0xFFFFFFFF,
+                         int      NumSamples   = 1,
+                         int      PcieAddr     = -1) {
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   ControlRoc_Read_Input_t par;
   
-  par.adc_mode        = 4;          // -a
-  par.tdc_mode        = 0;          // -t 
-  par.num_lookback    = 8;          // -l 
-  par.num_samples     = NumSamples; // -s
-  par.num_triggers[0] = 10;         // -T 10
-  par.num_triggers[1] = 0;          // -T (high bytes)
+  par.adc_mode        = AdcMode;        // -a
+  par.tdc_mode        = TdcMode;        // -t 
+  par.num_lookback    = 8;              // -l 
+  par.num_samples     = NumSamples;     // -s
+  par.num_triggers[0] = 10;             // -T 10
+  par.num_triggers[1] = 0;              // -T (high bytes)
   
   par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
   par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
@@ -166,10 +169,10 @@ int dtc_control_roc_read(int      LinkMask   = -1,
   par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
   par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
-  par.enable_pulser   = 1;         // -p 1
-  par.marker_clock    = 3;         // -m 3
-  par.mode            = 0;         // 
-  par.clock           = 99;        // 
+  par.enable_pulser   = EnablePulser;   // -p 1
+  par.marker_clock    = 3;              // -m 3
+  par.mode            = 0;              // 
+  par.clock           = 99;             // 
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
   bool update_mask(false), print_level(2);
