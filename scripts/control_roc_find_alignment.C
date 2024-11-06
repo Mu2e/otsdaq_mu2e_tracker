@@ -129,5 +129,5 @@ void find_alignment_test_001(int Link, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 void find_alignment_test_002(int Link, int PcieAddr = -1) {
-  find_alignment(Link,PcieAddr);
+  control_roc_find_alignment(Link,PcieAddr);
 }

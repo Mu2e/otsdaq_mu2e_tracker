@@ -165,6 +165,18 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 * [[file:./dtc_gui.org][DtcGui interface]]
 * LVHVBox : https://github.com/vlrusu/LVHVBox                                
 - local repo: file:~mu2etrk/products/LVHVBox
+- client commands:                                                           
+  - powerOn 3
+  - powerOff
+#+begin_src readMonV48                                                       
+readMonV48
+Channel 0 47.64 V
+Channel 1 47.96 V
+Channel 2 47.88 V
+Channel 3 0.62 V
+Channel 4 0.62 V
+Channel 5 0.61 V
+#+end_src
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature

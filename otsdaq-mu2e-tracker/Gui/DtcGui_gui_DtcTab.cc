@@ -12,7 +12,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
 
   DtcTel.fData = DtcData;
   
-  DtcTel.fDTC_i = DtcInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
+  DtcTel.fDTC_i = DtcInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask,DtcData->fDtcID);
   DtcTel.fDTC_i->SetRocReadoutMode(DtcData->fReadoutMode);
   DtcTel.fDTC_i->SetJAMode(DtcData->fJAMode);
   DtcTel.fDTC_i->SetEmulateCfo(DtcData->fEmulateCfo);

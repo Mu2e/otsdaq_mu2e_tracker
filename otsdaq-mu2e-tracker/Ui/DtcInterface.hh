@@ -29,13 +29,18 @@ namespace trkdaq {
 
     DTCLib::DTC*         fDtc;
     int                  fEnabled;        // if comes from ODB, could be 0
-    int                  fPcieAddr;
+    int                  fPcieAddr;       // 
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
     int                  fReadoutMode;    // 0: patterns 1:digis
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
+
+    int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
+    int                  fMode;           // whatever it is
+    int                  fPartitionID;
+    int                  fMacAddrByte;
 
     int                  fSleepTimeROCWrite;             // the two are different 
     int                  fSleepTimeROCReset;             // 
@@ -46,11 +51,11 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   private:
-    DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
+    DtcInterface(int PcieAddr, uint LinkMask, int DtcID,  bool SkipInit);
   public:
     virtual ~DtcInterface();
 
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
+    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, int DtcID = -1, bool SkipInit = false);
 
     int PcieAddr() { return fPcieAddr; }
 
@@ -90,10 +95,13 @@ namespace trkdaq {
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
 
+    int          DtcID     () { return fDtcID; }
+    
+    int          InitEmulatedCFOReadoutMode();
+
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side
     
-    int          InitEmulatedCFOReadoutMode();
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
                                         // SampleEdgeMode=0: force rising  edge
@@ -102,7 +110,6 @@ namespace trkdaq {
                                         // -1 means use the pre-fetched one
                                         // success: returns rc=0
                                         // if rc < 0, can't continue
-
     int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
     int          InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
@@ -163,6 +170,8 @@ namespace trkdaq {
     void         SetBit     (int Register, int Bit, int Value);
 
     void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+                                        // just cache the DTC ID for future, to evolve
+
     void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
     void         SetLinkMask(int Mask = 0);

@@ -142,7 +142,7 @@ namespace trkdaq {
       reg = FirstReg+4*i;
       
       iw = ReadRegister(reg);
-      text += Form("  0x%04x",iw);
+      text += Form("  0x%08x",iw);
     }
 
     text += Form(" : %s",Desc);
@@ -314,6 +314,7 @@ namespace trkdaq {
     PrintRegister(0x9144,"DMA Timeout Preset                         ");
     PrintRegister(0x9148,"ROC reply timeout                          ");
     PrintRegister(0x914c,"ROC reply timeout error                    ");
+    PrintRegister(0x9154,"DTC ID/EVB partition ID/MAC address        ");
     PrintRegister(0x9158,"Event Builder Configuration                ");
     PrintRegister(0x91a8,"CFO Emulation Heartbeat Interval           ");
     PrintRegister(0x91ac,"CFO Emulation Number of HB Packets         ");
@@ -330,8 +331,8 @@ namespace trkdaq {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
       int offset = 4*i;
-      text1 += Form("  link %i",i);
-      text2 += Form("  (0x%02x)",offset);
+      text1 += Form("    link %i  ",i);
+      text2 += Form("    (0x%02x)  ",offset);
     }
     cout << std::endl;
     cout << Form("%-s\n",text1.data());

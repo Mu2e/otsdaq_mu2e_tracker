@@ -26,6 +26,11 @@ int init_run_configuration(DtcGui* X) {
   dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
   dtc[0].fEmulateCfo  = 1;               // 
 
+  dtc[0].fDtcID       = 7;              // for one machine, make it the same as the PcieAddr
+  dtc[0].fPartitionID = 0;
+  dtc[0].fMode        = 0;
+  dtc[0].fMacAddrByte = 0;
+
   gSystem->Setenv("DTCLIB_DTC","0");
 
   return rc;

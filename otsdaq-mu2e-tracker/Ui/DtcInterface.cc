@@ -43,7 +43,7 @@ namespace trkdaq {
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
   
 //-----------------------------------------------------------------------------
-  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
+  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, int DtcID, bool SkipInit) {
     std::string expected_version("");              // dont check
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
@@ -52,7 +52,8 @@ namespace trkdaq {
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
-    fEnabled        = 1;                // by default - enabled
+    fDtcID          = DtcID;            // default: -1
+    fEnabled        = 1;                // default: enabled
     fPcieAddr       = PcieAddr;
     fLinkMask       = LinkMask;
     fReadoutMode    = 0;                // for now, assume patterns are the default
@@ -74,7 +75,7 @@ namespace trkdaq {
   DtcInterface::~DtcInterface() { }
 
 //-----------------------------------------------------------------------------
-  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, bool SkipInit) {
+  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, int DtcID, bool SkipInit) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
 //-----------------------------------------------------------------------------
@@ -100,7 +101,7 @@ namespace trkdaq {
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
     
-    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask, SkipInit);
+    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,DtcID,SkipInit);
     
     if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
       TLOG(TLVL_ERROR) << Form("DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -265,7 +266,14 @@ namespace trkdaq {
 // the DTC link mask could be reset by the previous DTC hard reset, so restore it
 // also, release all buffers from the previous read - this is the initialization
 //-----------------------------------------------------------------------------
-    SetLinkMask();                         
+    SetLinkMask();
+                                        // this shoudl do for now, later - set the partition ID
+                                        // at begin run, perhaps
+    uint8_t id           = fDtcID       & 0xff;
+    uint8_t mode         = fMode        & 0xff;
+    uint8_t partition_id = fPartitionID & 0xff;
+    uint8_t mac_byte     = fMacAddrByte & 0xff;
+    fDtc->SetEVBInfo(id,mode,partition_id,mac_byte);
                                            
     InitRocReadoutMode();
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
@@ -1039,13 +1047,13 @@ struct RocData_t {
 //-----------------------------------------------------------------------------
 // configure_ROC 'read' command should be followed by ROC reset
 //-----------------------------------------------------------------------------
-    // to be added 
+// to be added 
 //-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarLinkConfig(int LinkMask, int LaneMask) {
-
+    int rc(0);
+    
     fReadoutMode = 1;                            // 1: read digis
     if (LinkMask != 0) SetLinkMask(LinkMask);
-    ResetRoc();                         // use fLinkMask
 
     int lane_mask = 0x300 | LaneMask;
     
@@ -1060,7 +1068,31 @@ struct RocData_t {
 
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
-    return 0;
+
+    ResetRoc();                         // use fLinkMask
+//-----------------------------------------------------------------------------
+// according to Monica, this is the place for find_alignment and control_roc_read
+// check if all lanes are ready to be read
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+        if ((u >> 0x8) != LaneMask) {
+          // try to recover
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
+          // and check again
+          u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+          if ((u >> 0x8) != LaneMask) {
+            // still in trouble
+            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs, call Monica and Richie\n",i);
+            rc -= 1;
+          }
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
