@@ -51,11 +51,11 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   private:
-    DtcInterface(int PcieAddr, uint LinkMask, int DtcID,  bool SkipInit);
+    DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
     virtual ~DtcInterface();
 
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, int DtcID = -1, bool SkipInit = false);
+    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
 
     int PcieAddr() { return fPcieAddr; }
 

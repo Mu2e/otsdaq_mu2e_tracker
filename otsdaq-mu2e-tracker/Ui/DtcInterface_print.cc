@@ -130,23 +130,17 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc) {
 
-    std::string text = Form("(0x%04x) : ",FirstReg);
+    std::string text = Form("(0x%04x)         : ",FirstReg);
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
-      
-      // DTC_Link_ID link = DTC_Link_ID(i);
-      uint32_t iw, reg;
-
-      reg = FirstReg+4*i;
-      
-      iw = ReadRegister(reg);
-      text += Form("  0x%08x",iw);
+      uint32_t reg = FirstReg+4*i;
+      uint32_t iw  = ReadRegister(reg);
+      text        += Form(" 0x%08x",iw);
     }
 
-    text += Form(" : %s",Desc);
-
+    text += Form(" %s",Desc);
     cout << Form("%-s\n",text.data());
   }
 
@@ -324,15 +318,15 @@ namespace trkdaq {
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ");
 
-    std::string text1("           ");
-    std::string text2(" offset  : ");
+    std::string text1("                  ");
+    std::string text2(" offset         : ");
 
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
       int offset = 4*i;
-      text1 += Form("    link %i  ",i);
-      text2 += Form("    (0x%02x)  ",offset);
+      text1 += Form("   link %i  ",i);
+      text2 += Form("   (0x%02x)  ",offset);
     }
     cout << std::endl;
     cout << Form("%-s\n",text1.data());

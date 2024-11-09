@@ -73,7 +73,9 @@ void* DtcGui::ReaderThread(void* Context) {
 // read events until done; tstamp is incremented only upon a successful read
 //-----------------------------------------------------------------------------
       while (1) {
+        //        TThread::Lock();
         list_of_dtc_blocks = dtc->GetSubEventData(event_tag, match_ts);
+        //        TThread::UnLock();
         sz = list_of_dtc_blocks.size();
         
         for (int i=0; i<sz; i++) {
@@ -132,7 +134,9 @@ void* DtcGui::ReaderThread(void* Context) {
 // sz === NDTCs = 0: zero length event - end-of-read- print only if PrintLevel > 10
 // everything is read in, safe to release all buffers
 //-----------------------------------------------------------------------------
+//          TThread::Lock();
           dtc_i->Dtc()->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+          //        TThread::UnLock();
           
           if (tc->fPrintLevel > 10) {
             cout << Form(">>>> ------- tstamp = %10lu event_tg:%10lu NDTCs:%2i\n",tstamp,event_tag.GetEventWindowTag(true),sz);
@@ -196,8 +200,10 @@ void* DtcGui::EmuCfoThread(void* Context) {
   while (tc->fStop == 0) {
     // gSystem->Sleep(sleep_us);
     usleep(sleep_us);
-    
+    //    TThread::Lock();
+    // dtc_i->InitReadout();
     dtc_i->LaunchRunPlanEmulatedCfo(ew_length,nevents+1,first_ts);
+    //    TThread::UnLock();
     
     first_ts = first_ts+nevents;
     int t1 = first_ts/dtc_gui->fCfoPrintFreq;
@@ -205,6 +211,11 @@ void* DtcGui::EmuCfoThread(void* Context) {
       TLOG(TLVL_DEBUG) << Form("first_ts: %10lu",first_ts);
       t0 = t1;
     }
+//-----------------------------------------------------------------------------
+// this is a kludge - so far, resetting in the end of the pulse train
+// seems to be the only way to make the ROC not to complain
+// not really
+//-----------------------------------------------------------------------------
   }
 
   TLOG(TLVL_DEBUG) << "END" << std::endl;

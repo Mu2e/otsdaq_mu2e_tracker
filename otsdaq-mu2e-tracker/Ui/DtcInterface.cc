@@ -43,7 +43,7 @@ namespace trkdaq {
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
   
 //-----------------------------------------------------------------------------
-  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, int DtcID, bool SkipInit) {
+  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
     std::string expected_version("");              // dont check
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
@@ -52,7 +52,6 @@ namespace trkdaq {
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
-    fDtcID          = DtcID;            // default: -1
     fEnabled        = 1;                // default: enabled
     fPcieAddr       = PcieAddr;
     fLinkMask       = LinkMask;
@@ -61,6 +60,11 @@ namespace trkdaq {
     fEmulateCfo     = 0;
     fJAMode         = 0x11;             // by default, assume RTF clock and reset upon setting
     
+    fDtcID          = 0;                // needed for multi-DTC DAQ, default:0
+    fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
+    fMode           = 0;
+    fMacAddrByte    = 0;                // 
+
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
                                         // constructor performs soft reset
     fDtc->SoftReset();
@@ -75,7 +79,9 @@ namespace trkdaq {
   DtcInterface::~DtcInterface() { }
 
 //-----------------------------------------------------------------------------
-  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, int DtcID, bool SkipInit) {
+// in many cases, want SkipInit=false
+//-----------------------------------------------------------------------------
+  DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, bool SkipInit) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
 //-----------------------------------------------------------------------------
@@ -101,7 +107,7 @@ namespace trkdaq {
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
     
-    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,DtcID,SkipInit);
+    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
     
     if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
       TLOG(TLVL_ERROR) << Form("DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -267,8 +273,9 @@ namespace trkdaq {
 // also, release all buffers from the previous read - this is the initialization
 //-----------------------------------------------------------------------------
     SetLinkMask();
-                                        // this shoudl do for now, later - set the partition ID
-                                        // at begin run, perhaps
+                                        // this should do for now, later - set the partition ID
+                                        // at begin run, for example, as follows
+    
     uint8_t id           = fDtcID       & 0xff;
     uint8_t mode         = fMode        & 0xff;
     uint8_t partition_id = fPartitionID & 0xff;
@@ -318,7 +325,7 @@ namespace trkdaq {
     int EWMode = 1;
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationEventMode          (EWMode);
+    fDtc->SetCFOEmulationEventMode          (EWMode  );
     fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
 
                                         // this command sends the EWM's
