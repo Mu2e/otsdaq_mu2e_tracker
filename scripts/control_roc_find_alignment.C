@@ -54,7 +54,7 @@ void parse_fi_output(char* Data, int NBytes) {
 // on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
 // so can't do that for every event ...
 //-----------------------------------------------------------------------------
-void find_alignment(int Link, int PcieAddr, int ROCSleepTime = 2000) {
+void control_roc_find_alignment(int Link, int PcieAddr, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 // interactive ROOT doesn't like the variable name 'link', use 'roc' instead
@@ -129,5 +129,5 @@ void find_alignment_test_001(int Link, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 void find_alignment_test_002(int Link, int PcieAddr = -1) {
-  find_alignment(Link,PcieAddr);
+  control_roc_find_alignment(Link,PcieAddr);
 }

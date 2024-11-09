@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// mu2edaq22 : DTC0: ROC tower
+// mu2edaq22 : 
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,19 +19,17 @@ int init_run_configuration(DtcGui* X) {
   // gSystem->Setenv("CFOLIB_CFO","0");
 
   dtc[0].fName        = "DTC";
-  dtc[0].fPcieAddr    = 0;
-  // dtc[0].fLinkMask    = 0x000001;        // ROC0
-  dtc[0].fLinkMask    = 0x111111;           // 6 ROCs
-  dtc[0].fReadoutMode = 0;               // 0:patterns 1:digis
-  dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
-  dtc[0].fEmulateCfo  = 1;               // 
+  dtc[0].fPcieAddr    = 1;
+  dtc[0].fLinkMask    = 0x011;           // TS2 (0x10) +TS1
+  dtc[0].fJAMode      = 0x01;
+  dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
 
-  dtc[0].fDtcID       = 7;              // for one machine, make it the same as the PcieAddr
+  dtc[0].fDtcID       = 1;               // for 1 node, make it the same as PcieAddr
   dtc[0].fPartitionID = 0;
   dtc[0].fMode        = 0;
   dtc[0].fMacAddrByte = 0;
-
-  gSystem->Setenv("DTCLIB_DTC","0");
+  
+  gSystem->Setenv("DTCLIB_DTC","1");
 
   return rc;
 }

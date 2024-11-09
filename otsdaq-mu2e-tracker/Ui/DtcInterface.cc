@@ -23,9 +23,25 @@ using namespace DTCLib;
 using namespace std;
 
 namespace trkdaq {
+  
+  const char* kSpiVarName[TrkSpiDataNWords] = {
+    "I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
+    "VDMBHV5_0", "V1_8HV"  , "V3_3HV", "V2_5" ,                   //  4
+    "A0"     , "A1"  ,    "A2"  , "A3"  ,                         //  8
+    "I1_8CAL", "I1_2"  , "ICAL5_0"  ,                             // 12
+    "ADCSPARE",                                                   // 15
+    "V3_3"  , "VCAL5_0", "V1_8CAL", "V1_0",                       // 16
+    "ROCPCBTEMP", "HVPCBTEMP", "CALPCBTEMP", "RTD",               // 20
+    "ROC_RAIL_1V", "ROC_RAIL_1_8V", "ROC_RAIL_2_5V", "ROC_TEMP",  // 24
+    "CAL_RAIL_1V", "CAL_RAIL_1_8V", "CAL_RAIL_2_5V", "CAL_TEMP",  // 28
+    "HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
+  };
+  
 
   DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
-
+  
+  const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
+  
 //-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
     std::string expected_version("");              // dont check
@@ -36,7 +52,7 @@ namespace trkdaq {
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
-
+    fEnabled        = 1;                // default: enabled
     fPcieAddr       = PcieAddr;
     fLinkMask       = LinkMask;
     fReadoutMode    = 0;                // for now, assume patterns are the default
@@ -44,6 +60,11 @@ namespace trkdaq {
     fEmulateCfo     = 0;
     fJAMode         = 0x11;             // by default, assume RTF clock and reset upon setting
     
+    fDtcID          = 0;                // needed for multi-DTC DAQ, default:0
+    fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
+    fMode           = 0;
+    fMacAddrByte    = 0;                // 
+
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
                                         // constructor performs soft reset
     fDtc->SoftReset();
@@ -58,6 +79,8 @@ namespace trkdaq {
   DtcInterface::~DtcInterface() { }
 
 //-----------------------------------------------------------------------------
+// in many cases, want SkipInit=false
+//-----------------------------------------------------------------------------
   DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, bool SkipInit) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
@@ -70,13 +93,21 @@ namespace trkdaq {
         return nullptr;
       }
     }
-
+//-----------------------------------------------------------------------------
+// initialize the variable names just once
+//-----------------------------------------------------------------------------
+    if ((fgInstance[0] == nullptr) and (fgInstance[1] == nullptr)) {
+      for (int i=0; i<TrkSpiDataNWords; i++) {
+        fgSpiVarName[i] = kSpiVarName[i];
+      }
+    }
+                                    
     TLOG(TRK_DEBUG_LEVEL) << "pcie_addr:" << pcie_addr
                           << " LinkMask:0x" << std::hex << LinkMask
                           << std::dec
                           << " SkipInit:" << SkipInit << std::endl;
     
-    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask, SkipInit);
+    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
     
     if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
       TLOG(TLVL_ERROR) << Form("DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -92,10 +123,12 @@ namespace trkdaq {
 // on success, returns 1
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
+    int nmax_iter(10);
+    
     fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
     int ok(0);
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<nmax_iter; i++) {
       ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
       usleep(100000);
       if (ok == 1) break;
@@ -103,9 +136,14 @@ namespace trkdaq {
     
     // fDtc->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) TLOG(TLVL_ERROR) << Form("failed to setup JA\n"); 
+    int rc = 0;
+    if (ok == 0) {
+      TLOG(TLVL_ERROR) << Form("failed to setup JA for ClockSource=%i and Reset=%i in %i attempts\n",
+                               ClockSource,Reset,nmax_iter);
+      rc = -1;
+    }
 
-    return ok;
+    return rc;
   }
 
   
@@ -118,8 +156,9 @@ namespace trkdaq {
 // EnableClockMarkers: set to 0
 // EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitEmulatedCFOReadoutMode() {
+  int DtcInterface::InitEmulatedCFOReadoutMode() {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
+    int rc(0);
 
     TLOG(TRK_DEBUG_LEVEL) << Form("START\n");
 
@@ -137,7 +176,8 @@ namespace trkdaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset);
+    if (rc < 0) return rc;
                                         // this one is OK...
     int EnableClockMarkers = 0;
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
@@ -150,6 +190,7 @@ namespace trkdaq {
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
 
     TLOG(TRK_DEBUG_LEVEL) << Form("END\n");
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -159,7 +200,8 @@ namespace trkdaq {
 // DTC doesn' know about an external CFO, so it should only prepare itself to receive 
 // EVMs/HBs from the outside
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+  int DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+    int rc(0);
     TLOG(TLVL_DEBUG+1) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
 
     if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
@@ -182,7 +224,8 @@ namespace trkdaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset);
+    if (rc < 0) return rc;
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
                                         // this function handles DTC_Link_ALL correctly
@@ -199,12 +242,14 @@ namespace trkdaq {
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
 
     TLOG(TLVL_DEBUG+1) << Form("END\n");
-}
+    return rc;
+  }
 
 //-----------------------------------------------------------------------------
 // Init Readout 
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+    int rc(0);
 
     if (EmulateCfo     != -1) fEmulateCfo  = EmulateCfo;
     if (RocReadoutMode != -1) fReadoutMode = RocReadoutMode;
@@ -214,24 +259,34 @@ namespace trkdaq {
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
     if (fEmulateCfo == 0) {
-      InitExternalCFOReadoutMode();
+      rc = InitExternalCFOReadoutMode();
     }
     else {
 //-----------------------------------------------------------------------------
 // bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
 //-----------------------------------------------------------------------------
-      InitEmulatedCFOReadoutMode();
+      rc = InitEmulatedCFOReadoutMode();
     }
+    if (rc < 0) return rc;
 //-----------------------------------------------------------------------------
 // the DTC link mask could be reset by the previous DTC hard reset, so restore it
 // also, release all buffers from the previous read - this is the initialization
 //-----------------------------------------------------------------------------
-    SetLinkMask();                         
+    SetLinkMask();
+                                        // this should do for now, later - set the partition ID
+                                        // at begin run, for example, as follows
+    
+    uint8_t id           = fDtcID       & 0xff;
+    uint8_t mode         = fMode        & 0xff;
+    uint8_t partition_id = fPartitionID & 0xff;
+    uint8_t mac_byte     = fMacAddrByte & 0xff;
+    fDtc->SetEVBInfo(id,mode,partition_id,mac_byte);
                                            
     InitRocReadoutMode();
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
     TLOG(TLVL_DEBUG+1) << "END" << std::endl;
+    return rc;
   }
     
 //-----------------------------------------------------------------------------
@@ -240,6 +295,8 @@ namespace trkdaq {
 //              = 1: read digis
 
   
+//-----------------------------------------------------------------------------
+// this si fully tracker-specific
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
     TLOG(TLVL_DEBUG+1) << Form("START : fReadoutMode=%i\n",fReadoutMode);
@@ -268,7 +325,7 @@ namespace trkdaq {
     int EWMode = 1;
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationEventMode          (EWMode);
+    fDtc->SetCFOEmulationEventMode          (EWMode  );
     fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
 
                                         // this command sends the EWM's
@@ -381,8 +438,8 @@ namespace trkdaq {
 
     int nw = nb-4;
 
-    if (nw != TrkSpiRawData_t::nWords()) {
-      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiRawData_t::nWords() << " , reported nw=" << nw;
+    if (nw != TrkSpiDataNWords) {
+      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
       rc = -1;
     }
 
@@ -484,8 +541,8 @@ namespace trkdaq {
         }
       }
     }
-    cout << Form("      event  DTC     EW Tag nbytes  nbytes_tot ------------- ROC status ----------------  nerr nerr_tot\n");
-    cout << Form("-------------------------------------------------------------------------------------------------------\n");
+    cout << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
+    cout << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
 //-----------------------------------------------------------------------------
 // reset per-roc error counters
 //-----------------------------------------------------------------------------
@@ -531,15 +588,18 @@ namespace trkdaq {
 
           char* roc_data  = data+0x30;
 
+          int nb_roc[6];
           for (int roc=0; roc<6; roc++) {
-            int nb    = *((ushort*) roc_data);
-            rs[roc]   = *((ushort*)(roc_data+0x0c));
-            roc_data += nb;
+            nb_roc[roc] = *((ushort*) roc_data);
+            rs[roc]     = *((ushort*)(roc_data+0x0c));
+            roc_data   += nb_roc[roc];
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x %5i %8i %4i %4i %4i %4i %4i %4i\n",
-                         ewt,i,ew_tag,nbytes,nbytes_tot,rs[0],rs[1],rs[2],rs[3],rs[4],rs[5],nerr,nerr_tot,
+            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
+                         ewt,i,ew_tag,nbytes,nbytes_tot,
+                         rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
+                         nerr,nerr_tot,
                          nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
             if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
               PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
@@ -994,20 +1054,20 @@ struct RocData_t {
 //-----------------------------------------------------------------------------
 // configure_ROC 'read' command should be followed by ROC reset
 //-----------------------------------------------------------------------------
-    // to be added 
+// to be added 
 //-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarLinkConfig(int LinkMask, int LaneMask) {
-
+    int rc(0);
+    
     fReadoutMode = 1;                            // 1: read digis
     if (LinkMask != 0) SetLinkMask(LinkMask);
-    ResetRoc();                         // use fLinkMask
 
     int lane_mask = 0x300 | LaneMask;
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // configure ROC to send patterns
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
       }
     }
     
@@ -1015,8 +1075,31 @@ struct RocData_t {
 
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
-    //    ResetRoc();                         // use fLinkMask
-    return 0;
+
+    ResetRoc();                         // use fLinkMask
+//-----------------------------------------------------------------------------
+// according to Monica, this is the place for find_alignment and control_roc_read
+// check if all lanes are ready to be read
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) {
+        uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+        if ((u >> 0x8) != LaneMask) {
+          // try to recover
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
+          // and check again
+          u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+          if ((u >> 0x8) != LaneMask) {
+            // still in trouble
+            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs, call Monica and Richie\n",i);
+            rc -= 1;
+          }
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -1040,7 +1123,6 @@ struct RocData_t {
 
     int version = 1;
     RocSetDataVersion(version); // Version --> R29
-    //    ResetRoc();                                     // use fLinkMask
 
     return 0;
   }

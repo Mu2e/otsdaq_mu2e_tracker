@@ -140,7 +140,8 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
+  int CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
+    int rc(0);
 
     TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
     
@@ -169,6 +170,7 @@ namespace trkdaq {
       }
     }
     TLOG(TLVL_INFO) << Form("Done\n");
+    return rc;
   }
   
   // void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {

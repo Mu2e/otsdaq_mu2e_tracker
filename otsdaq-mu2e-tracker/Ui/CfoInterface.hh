@@ -38,7 +38,7 @@ namespace trkdaq {
 
     int          ConfigureJA(int ClockSource, int Reset = 1);
 
-    void         InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
+    int          InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
 
     void         Halt();
     void         LaunchRunPlan();

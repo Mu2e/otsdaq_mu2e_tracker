@@ -209,7 +209,8 @@ void TrackerDQM::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber
 // waveform histograms, assume number of samples < 30
 //-----------------------------------------------------------------------------
   for (int j=0; j<kMaxNHitsPerChannel; j++) {
-    Hist->wf[j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] waveform",RunNumber,I,j),30, 0.,30.);
+    Hist->wf    [j] = Dir->make<TH1F>(Form("h_wf_ch_%02i_%i",I,j)    ,Form("run %06i: ch [%02i][%i] waveform"    ,RunNumber,I,j),30, 0.,30.);
+    Hist->raw_wf[j] = Dir->make<TH1F>(Form("h_raw_wf_ch_%02i_%i",I,j),Form("run %06i: ch [%02i][%i] raw waveform",RunNumber,I,j),30, 0.,30.);
   }
 }
 
@@ -410,7 +411,9 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
     Wf[ 2] = reverseBits(Hit->ADC02);
 
     for (int i=0; i<n_adc_packets; i++) {
-      mu2e::TrackerDataDecoder::TrackerADCPacket* ahit = (mu2e::TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+6+8*i);
+// first packet contains times, TOTs etc, two last words - ARC samples
+// second and other packets - all ADC samples
+      mu2e::TrackerDataDecoder::TrackerADCPacket* ahit = (mu2e::TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
 
       Wf[loc+ 1] = reverseBits(ahit->ADC0);
@@ -421,8 +424,8 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
       Wf[loc+ 6] = reverseBits(ahit->ADC5);
       Wf[loc+ 7] = reverseBits(ahit->ADC6);
       Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      Wf[loc+ 9] = reverseBits(ahit->ADC5);
-      Wf[loc+10] = reverseBits(ahit->ADC6);
+      Wf[loc+ 9] = reverseBits(ahit->ADC8);
+      Wf[loc+10] = reverseBits(ahit->ADC9);
       Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
       Wf[loc+12] = reverseBits(ahit->ADC11);
     }
@@ -566,12 +569,15 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
           hch->wf[ih]->Reset();
           for (int is=0; is<nsamples; is++) {
             hch->wf[ih]->Fill(is,wform[is]);
+            hch->raw_wf[ih]->Fill(is,wform[is]+wpar->bl);
           }
                                         // also set bin errors to zero
           int nb =  hch->wf[ih]->GetNbinsX();
           for (int ib=0; ib<nb; ib++) {
             hch->wf[ih]->SetBinError(ib+1,0);
             hch->wf[ih]->SetOption("HIST");
+            hch->raw_wf[ih]->SetBinError(ib+1,0);
+            hch->raw_wf[ih]->SetOption("HIST");
           }
 //-----------------------------------------------------------------------------
 // reconstructed waveform parameters

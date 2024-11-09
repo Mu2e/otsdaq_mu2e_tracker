@@ -152,19 +152,33 @@ public:
   };
 
   struct DtcData_t {
-    TString    fName;         // expect fName to be uppercased
+    TString    fName;                   // expect fName to be uppercased
     int        fPcieAddr;
-    int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
+    int        fLinkMask;               // active links, for DTC - ROCs, for CFO: nDTCs
     int        fReadoutMode;
+    int        fJAMode;
+
+    int        fDtcID;                  // 4 pieces to be written to 0x9154
+    int        fMode;
+    int        fPartitionID;
+    int        fMacAddrByte;
+    
+    int        fEmulateCfo;
 
     RocData_t  fRocData[6];
     RocData_t* fActiveRoc;
 
     DtcData_t(const char* Name = "", int PcieAddr = 0) {
-      fName         = Name; 
+      fName        = Name;
       fPcieAddr    = PcieAddr;
       fLinkMask    = 0;             // by default, not reading anything
       fReadoutMode = 0;             // 0:patterns 1:digis
+      fJAMode      = 0;
+      fDtcID       = -1;
+      fPartitionID = -1;
+      fMode        = -1;
+      fMacAddrByte = -1;
+
 
       fActiveRoc = nullptr;
       for (int i=0;i<6; i++) {

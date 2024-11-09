@@ -62,7 +62,7 @@ class TrackerDQM : public art::EDAnalyzer {
     kNPanelsPerPlane    =  6,
     kNChannels          = 96,
     kMaxNLinks          =  6,
-    kMaxNHitsPerChannel = 15,
+    kMaxNHitsPerChannel = 10,
     kMaxNSamples        = 30
   };
 
@@ -100,7 +100,8 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         qt;                 // tail charge Qt
     TH1F*         qtq;                // Qt/Q
 
-    TH1F*         wf[kMaxNHitsPerChannel];
+    TH1F*         wf    [kMaxNHitsPerChannel];
+    TH1F*         raw_wf[kMaxNHitsPerChannel];
   };
 
 //-----------------------------------------------------------------------------

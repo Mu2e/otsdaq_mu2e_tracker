@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// mu2edaq09 : 
+// mu2edaq09/pcie0 : 
 // init_run_configuration : the name and the call signature are is fixed 
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
@@ -15,8 +15,18 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fName        = "DTC" ; // "CFO";
   dtc[0].fPcieAddr    = 0;
-  dtc[0].fLinkMask    = 0x1;            // start from 2 DTCs on link0
+  dtc[0].fLinkMask    = 0x111111;           // start from 2 DTCs on link0
+  // dtc[0].fLinkMask    = 0x0010;           // MN180
+  // dtc[0].fLinkMask    = 0x1000;           // MN162
+  // dtc[0].fLinkMask    = 0x1001;           // MN234+MN162
+  dtc[0].fJAMode      = 0x01;           // no ext clock 
   //gSystem->Setenv("CFOLIB_CFO","0");
+
+  dtc[0].fDtcID       = 0;              // for one machine, make it the same as the PcieAddr
+  dtc[0].fPartitionID = 0;
+  dtc[0].fMode        = 0;
+  dtc[0].fMacAddrByte = 0;
+
   gSystem->Setenv("DTCLIB_DTC","0");
 
   // dtc[0].fName        = "DTC";

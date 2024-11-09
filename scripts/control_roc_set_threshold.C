@@ -1,18 +1,20 @@
-//-----------------------------------------------------------------------------
-// set_gain:  not validated yet
-// on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
-// so can't do that for every event ...
-// PreampType: 0=HV 1=CAL ?
-//-----------------------------------------------------------------------------
+//
 #define __CLING__ 1
 
 #include "scripts/trk_utils.C"
 
 #include "dtcInterfaceLib/DTC.h"
+#include "dtcInterfaceLib/DTCSoftwareCFO.h"
 
 using namespace DTCLib;
 
-void set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTime = 2000) {
+//-----------------------------------------------------------------------------
+// measure_thresholds:
+// on mu2edaq09, a delay > 1.4 usec is needed after WriteROCRegister(258...)
+// so can't do that for every event ...
+// 
+//-----------------------------------------------------------------------------
+void control_roc_set_threshold(int Link, int ChannelID, int Threshold, int PreampType, int ROCSleepTime = 2000) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -22,16 +24,16 @@ void set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTim
   DTC dtc(DTC_SimMode_NoCFO,-1,roc_mask,"");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 //-----------------------------------------------------------------------------
-// write parameters into reg 266 (block write) , sleep for some time, 
+// write parameters into reg 267 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
   vector<uint16_t> vec;
   vec.push_back(uint16_t(ChannelID));
-  vec.push_back(uint16_t(Gain));
+  vec.push_back(uint16_t(Threshold));
   vec.push_back(uint16_t(PreampType));
 
   bool increment_address(false);
-  dtc.WriteROCBlock   (roc,266,vec,false,increment_address,100);
+  dtc.WriteROCBlock   (roc,267,vec,false,increment_address,100);
   std::this_thread::sleep_for(std::chrono::microseconds(ROCSleepTime));
 
   // 0x86 = 0x82 + 4
@@ -45,7 +47,7 @@ void set_gain(int Link, int ChannelID, int PreampType, int Gain, int ROCSleepTim
 
   nw = nw-4;
   vector<uint16_t> v2;
-  dtc.ReadROCBlock(v2,roc,266,nw,false,100);
+  dtc.ReadROCBlock(v2,roc,267,nw,false,100);
 
   print_buffer(v2.data(),nw);
 //-----------------------------------------------------------------------------

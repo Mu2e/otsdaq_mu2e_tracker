@@ -29,6 +29,23 @@ find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
 find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 
+message("-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=."$ENV{MIDASSYS})
+
+# message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )
+# 
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#   message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+  
+# if (DEFINED ENV{MIDASSYS})
+#    message(-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=.$ENV{MIDASSYS}. )
+#    find_package(Midas REQUIRED)
+# else()
+#    message("-- P.Murat: no MIDASSYS")
+# endif()
+
 # XDAQ Extra setup
 include_directories($ENV{XDAQ_ROOT}/include)
 

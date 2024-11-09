@@ -28,7 +28,8 @@ namespace trkdaq {
     static DtcInterface* fgInstance[2];
 
     DTCLib::DTC*         fDtc;
-    int                  fPcieAddr;
+    int                  fEnabled;        // if comes from ODB, could be 0
+    int                  fPcieAddr;       // 
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
     int                  fReadoutMode;    // 0: patterns 1:digis
@@ -36,9 +37,16 @@ namespace trkdaq {
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
 
-    int                  fSleepTimeROCWrite; // the two are different 
-    int                  fSleepTimeROCReset;
-    int                  fPrintLevel;
+    int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
+    int                  fMode;           // whatever it is
+    int                  fPartitionID;
+    int                  fMacAddrByte;
+
+    int                  fSleepTimeROCWrite;             // the two are different 
+    int                  fSleepTimeROCReset;             // 
+    int                  fPrintLevel;                    // 
+
+    static const char*   fgSpiVarName[TrkSpiDataNWords]; //
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -52,8 +60,11 @@ namespace trkdaq {
     int PcieAddr() { return fPcieAddr; }
 
     DTCLib::DTC* Dtc() { return fDtc; }
-                                        // clock source=0: internal, clock=1: RTF (RJ45)
-    
+
+    static const char*  SpiVarName(int I) { return fgSpiVarName[I]; }
+//-----------------------------------------------------------------------------    
+// clock source= 0:internal, 1:RTF (RJ45)
+//-----------------------------------------------------------------------------    
     int          ConfigureJA(int ClockSource, int Reset = 1);
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
@@ -61,27 +72,47 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
     
-    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par,
-                                 int                      LinkMask   = 0   ,
+    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
+                                 int                      LinkMask   = 0    ,
                                  bool                     UpdateMask = false,
                                  int                      PrintLevel = 0    );
+//-----------------------------------------------------------------------------
+// measure thresholds returns an array of thresholds, which needs to be parsed
+// so far, do it internally
+//-----------------------------------------------------------------------------
+    int          ControlRoc_MeasureThresholds(int      Link,
+                                              uint32_t MaskC = 0xFFFFFFFF,
+                                              uint32_t MaskD = 0xFFFFFFFF,
+                                              uint32_t MaskE = 0xFFFFFFFF);
+//-----------------------------------------------------------------------------
+// PreampType: 0:HV 1:CAL, or vice versa
+// do one channel at a time
+// shall we think of a block operation ? or not ? - channels could be masked OFFx
+//-----------------------------------------------------------------------------
+    int          ControlRoc_SetGain     (int Link, int ChannelID, int PreampType, int Gain     );
+    int          ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold);
 
+    int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
+
+    int          DtcID     () { return fDtcID; }
+    
+    int          InitEmulatedCFOReadoutMode();
 
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side
     
-    void         InitEmulatedCFOReadoutMode();
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
                                         //                2: auto
                                         // -1 means use the pre-fetched one
+                                        // success: returns rc=0
+                                        // if rc < 0, can't continue
+    int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
-    void         InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
-
-    void         InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
+    int          InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
     void         InitRocReadoutMode();
     
     int          GetLinkMask() { return fLinkMask; }
@@ -92,7 +123,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw);
     void         PrintFireflyTemp();
-    void         PrintRegister   (uint16_t Register, const char* Title = "");
+    
+    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc);
+    void         PrintRegister        (uint16_t Register, const char* Title = "");
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value
 // Format = 1 : add short description of each register
@@ -136,7 +169,10 @@ namespace trkdaq {
                                         // 'Value' : 0 or 1
     void         SetBit     (int Register, int Bit, int Value);
 
-    void         SetJAMode  (int Mode) { fJAMode = Mode; }
+    void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+                                        // just cache the DTC ID for future, to evolve
+
+    void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
     void         SetLinkMask(int Mask = 0);
 //-----------------------------------------------------------------------------

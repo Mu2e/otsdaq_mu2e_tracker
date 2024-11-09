@@ -165,6 +165,18 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 * [[file:./dtc_gui.org][DtcGui interface]]
 * LVHVBox : https://github.com/vlrusu/LVHVBox                                
 - local repo: file:~mu2etrk/products/LVHVBox
+- client commands:                                                           
+  - powerOn 3
+  - powerOff
+#+begin_src readMonV48                                                       
+readMonV48
+Channel 0 47.64 V
+Channel 1 47.96 V
+Channel 2 47.88 V
+Channel 3 0.62 V
+Channel 4 0.62 V
+Channel 5 0.61 V
+#+end_src
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature
@@ -468,7 +480,7 @@ readDeviceID
 ('DRAC ROC ID #', '7a7fb')
 ** [[file:roc_id_1b561.org][ROC ID 1b561]] : <2024-05-09 Thu> installed at TS1               
 ** [[file:roc_id_805d6.org][ROC ID 805d6]] : <2024-02-25 Sun> installed at TS2
-* DRAC Tower6                                                                
+* ROC Tower                                                                
 - new PI ...  mu2e@ ... (local)
 ** window 1: cd ~/LVHVBox/GServer/build
               sudo ~/Server
@@ -477,7 +489,7 @@ readDeviceID
               python3 Client.py
 ** Commands:                                                                 
  - powerOn  1       # [or 2 or 3 ... 0=all)
- - powerOff 1       # same semantics
+ - powerOff         # same semantics
  - readMonI6 .. readMonI48 .. readMonV6 .. readMonV48
 * test stands TS0, TS1, TS2                                                  
 ** last update <2024-07-15 Mon>
