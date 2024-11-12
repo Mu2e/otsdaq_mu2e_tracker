@@ -99,6 +99,8 @@ DtcGui::~DtcGui() {
 // if file config/pasha/mu2edaq09_pcie0.C exists , use that
 // 2) otherwise assume config file name config/$project/$hostname.C
 // config file should contain function init_run_configuration(DtcGui*)
+//
+// assumes that MU2E_DAQ_DIR points to the directory from where root is started
 //-----------------------------------------------------------------------------
 int DtcGui::InitRunConfiguration(const char* Config) {
   int           rc(0);
@@ -106,10 +108,10 @@ int DtcGui::InitRunConfiguration(const char* Config) {
 
   TInterpreter::EErrorCode irc;
 
-  TString macro = Form("%s/otsdaq-mu2e-tracker/config/%s.C",gSystem->Getenv("SPACK_ENV"),Config);
+  TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),Config);
   FILE* f = fopen(macro,"r");
   if (f == nullptr) {
-    macro = Form("%s/otsdaq-mu2e-tracker/config/%s/%s.C",gSystem->Getenv("SPACK_ENV"),Config,fHostname.Data());
+    macro = Form("%s/config/dtc_gui/%s/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),Config,fHostname.Data());
     f     = fopen(macro,"r");
     if (f == nullptr) {
       TLOG(TLVL_ERROR) << "failed to find config file for " << Config << " , EXIT" << std::endl;

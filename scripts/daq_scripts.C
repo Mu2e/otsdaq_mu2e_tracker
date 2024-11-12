@@ -372,9 +372,9 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 //        XX : reserved
 //-----------------------------------------------------------------------------
 int dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
-                                  int         Mode     = 0x01   ,
-                                  uint64_t    FirstTS  = 0      ,
-                                  const char* OutputFn = nullptr) {
+                                 int         Mode     = 0x01   ,
+                                 uint64_t    FirstTS  = 0      ,
+                                 const char* OutputFn = nullptr) {
   int pcie_addr(-1), rc(0);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized
