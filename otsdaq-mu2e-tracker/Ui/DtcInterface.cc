@@ -62,8 +62,10 @@ namespace trkdaq {
     
     fDtcID          = 0;                // needed for multi-DTC DAQ, default:0
     fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
-    fMode           = 0;
-    fMacAddrByte    = 0;                // 
+    fMacAddrByte    = 0;                //
+
+    fOnSpill        = 0;                // together: 0x0100000001
+    fMode           = 1;
 
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
                                         // constructor performs soft reset
@@ -307,6 +309,10 @@ namespace trkdaq {
       MonicaVarLinkConfig();                      // readout ROC digis
       MonicaDigiClear();                          //
     }
+//-----------------------------------------------------------------------------
+// this should be the only place where we reset the ROC
+//-----------------------------------------------------------------------------
+    // ResetRoc();
     TLOG(TLVL_DEBUG+1) << Form("END   : fReadoutMode=%i\n",fReadoutMode);
   }
     
@@ -317,21 +323,24 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) {
 
-    TLOG(TLVL_DEBUG+1) << Form("START : EWLength=%i NMarkers=%i FirstEWTag=%i\n",EWLength,NMarkers,FirstEWTag);
+    TLOG(TLVL_DEBUG) << Form("START : EWLength=%i NMarkers=%i FirstEWTag=%i\n",EWLength,NMarkers,FirstEWTag);
 
     fDtc->DisableCFOEmulation();
     fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
 
-    int EWMode = 1;
     fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
     fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-    fDtc->SetCFOEmulationEventMode          (EWMode  );
+
+    uint64_t ew_mode = EventMode();
+    TLOG(TLVL_DEBUG) << Form("START : Event Mode=0x%010lx\n",ew_mode);
+    fDtc->SetCFOEmulationEventMode          (ew_mode  );
+
     fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
 
                                         // this command sends the EWM's
     fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
 
-    TLOG(TLVL_DEBUG+1) << Form("END\n");
+    TLOG(TLVL_DEBUG) << Form("END\n");
   }
   
 //-----------------------------------------------------------------------------
@@ -695,7 +704,8 @@ namespace trkdaq {
       return rv;
     }
                                         // reset only ROC in question
-    this->ResetRoc(Link,0);
+                                        // 2024-11-14: Monica tells reset is not needed
+    //    this->ResetRoc(Link,0);
     // write nothing to trigger query
     vector<roc_data_t> empty;
     fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
@@ -1061,8 +1071,9 @@ struct RocData_t {
     
     fReadoutMode = 1;                            // 1: read digis
     if (LinkMask != 0) SetLinkMask(LinkMask);
-
-    int lane_mask = 0x300 | LaneMask;
+                                        // bit 13 - disable reset of the counters by the HB next to the null HB
+    int lane_mask = 0x2300 | LaneMask;
+    // int lane_mask = 0x0300 | LaneMask;
     
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
@@ -1088,11 +1099,13 @@ struct RocData_t {
         if ((u >> 0x8) != LaneMask) {
           // try to recover
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
           // and check again
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
           if ((u >> 0x8) != LaneMask) {
             // still in trouble
-            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs, call Monica and Richie\n",i);
+            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs  link mask is 0x%04x, call Monica and Richie\n",
+                                     i,u);
             rc -= 1;
           }
         }
@@ -1111,12 +1124,13 @@ struct RocData_t {
 
     fReadoutMode = 0;                                // 0 = read patterns
     if (LinkMask != 0) SetLinkMask(LinkMask);
-    ResetRoc();                                     // use fLinkMask
+    // ResetRoc();                                     // use fLinkMask
 
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000);              // configure ROC to send patterns
+        // fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
       }
     }
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));

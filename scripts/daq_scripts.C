@@ -141,6 +141,39 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
+int dtc_control_roc_digi_rw(int      Address          ,
+                            int      Rw               , // 0:read, 1:write
+                            int      HvCal            , // 0: both, 1:hv 2:cal 3: ???
+                            int      Data             ,
+                            int      LinkMask     = -1,
+                            int      PcieAddr     = -1) {
+  
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  ControlRoc_DigiRW_Input_t  par;
+  ControlRoc_DigiRW_Output_t output;
+  
+  par.rw        = Rw;        // -a
+  par.hvcal     = HvCal;        // -t 
+  par.address   = Address;        // -t 
+  par.data[0]   = (Data >>  0) & 0xFFFF;
+  par.data[1]   = (Data >> 16) & 0xFFFF;
+  
+  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
+  int print_level(2);
+  dtc_i->ControlRoc_DigiRW(&par,&output,LinkMask,print_level);
+  if (Rw == 0) { // read
+    return (((int (output.data[1])) << 16) | output.data[0]) ;
+  }
+  else {
+    return 0;
+  }
+}
+
+//-----------------------------------------------------------------------------
+// test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
+//-----------------------------------------------------------------------------
 int dtc_control_roc_read(int      LinkMask     = -1,
                          int      AdcMode      = 4,
                          int      TdcMode      = 0,
@@ -175,7 +208,8 @@ int dtc_control_roc_read(int      LinkMask     = -1,
   par.clock           = 99;             // 
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  bool update_mask(false), print_level(2);
+  bool update_mask(false);
+  int  print_level(3);
   dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,print_level);
   return 0;
 }

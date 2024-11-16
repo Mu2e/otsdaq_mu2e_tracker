@@ -157,6 +157,7 @@ public:
     int        fLinkMask;               // active links, for DTC - ROCs, for CFO: nDTCs
     int        fReadoutMode;
     int        fJAMode;
+    int        fOnSpill;
 
     int        fDtcID;                  // 4 pieces to be written to 0x9154
     int        fMode;
@@ -174,9 +175,10 @@ public:
       fLinkMask    = 0;             // by default, not reading anything
       fReadoutMode = 0;             // 0:patterns 1:digis
       fJAMode      = 0;
+      fOnSpill     = 0;
       fDtcID       = -1;
       fPartitionID = -1;
-      fMode        = -1;
+      fMode        =  1;
       fMacAddrByte = -1;
 
 

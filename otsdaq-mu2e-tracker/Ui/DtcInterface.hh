@@ -17,8 +17,7 @@
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
-#include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
-#include "otsdaq-mu2e-tracker/Ui/ControlRoc_Read_Par_t.hh"
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 
 namespace trkdaq {
   using roc_serial_t = std::string;
@@ -37,8 +36,10 @@ namespace trkdaq {
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
 
+    int                  fOnSpill;        // 1:on-spill, 0:off-spill
+    int                  fMode;           // whatever it is, hopefully, together they make 5 bytes
+
     int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
-    int                  fMode;           // whatever it is
     int                  fPartitionID;
     int                  fMacAddrByte;
 
@@ -71,6 +72,12 @@ namespace trkdaq {
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
+
+    // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
+    int          ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t*  Input          ,
+                                   ControlRoc_DigiRW_Output_t* Output         ,
+                                   int                         LinkMask   = -1,
+                                   int                         PrintLevel =  0);
     
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
                                  int                      LinkMask   = 0    ,
@@ -94,6 +101,8 @@ namespace trkdaq {
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
+
+    int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fMode); }
 
     int          DtcID     () { return fDtcID; }
     
@@ -164,7 +173,8 @@ namespace trkdaq {
     void         RocConfigurePatternMode(int LinkMask = 0);
     void         RocSetDataVersion      (int Version, int LinkMask=0);
 
-    void         SetRocReadoutMode      (int Mode) { fReadoutMode = Mode; }
+    void         SetOnSpill             (int OnSpill) { fOnSpill     = OnSpill; }
+    void         SetRocReadoutMode      (int Mode   ) { fReadoutMode = Mode   ; }
     
                                         // 'Value' : 0 or 1
     void         SetBit     (int Register, int Bit, int Value);
@@ -199,7 +209,6 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------
-    
     int          MonicaVarPatternConfig(int LinkMask = 0);
   };
 
