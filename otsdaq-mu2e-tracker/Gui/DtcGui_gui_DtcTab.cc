@@ -16,7 +16,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   DtcTel.fDTC_i->fDtcID       = DtcData->fDtcID;
   DtcTel.fDTC_i->fPartitionID = DtcData->fPartitionID;
   DtcTel.fDTC_i->fOnSpill     = DtcData->fOnSpill;
-  DtcTel.fDTC_i->fMode        = DtcData->fMode;
+  DtcTel.fDTC_i->fEventMode   = DtcData->fEventMode;
   DtcTel.fDTC_i->fMacAddrByte = DtcData->fMacAddrByte;
   
   DtcTel.fDTC_i->SetRocReadoutMode(DtcData->fReadoutMode);

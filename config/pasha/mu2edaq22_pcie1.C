@@ -30,7 +30,7 @@ int init_run_configuration(DtcGui* X) {
   dtc[0].fMacAddrByte = 0;
 
   dtc[0].fOnSpill     = 1;
-  dtc[0].fMode        = 1;
+  dtc[0].fEventMode   = 1;
   
   gSystem->Setenv("DTCLIB_DTC","1");
 

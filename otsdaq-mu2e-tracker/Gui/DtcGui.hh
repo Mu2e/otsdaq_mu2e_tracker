@@ -160,7 +160,7 @@ public:
     int        fOnSpill;
 
     int        fDtcID;                  // 4 pieces to be written to 0x9154
-    int        fMode;
+    int        fEventMode;
     int        fPartitionID;
     int        fMacAddrByte;
     
@@ -178,7 +178,7 @@ public:
       fOnSpill     = 0;
       fDtcID       = -1;
       fPartitionID = -1;
-      fMode        =  1;
+      fEventMode   =  1;
       fMacAddrByte = -1;
 
 

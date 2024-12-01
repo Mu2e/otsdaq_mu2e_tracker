@@ -516,6 +516,21 @@ before next run, clear TDC counters with
 #+end_src
 
 * 5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
+
+-- some details: https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd#L682
+from Richie: 
+32 bit words, MSB to LSB, assuming 1 adc packet (full hit is 2 packets)
+cal_tdc(15 downto 0) & panel_id(8 downto 0) & straw_num(6 downto 0)
+hv_tdc(15 downto 0) & ewmcount(3 downto 0) & cal_tot(3 downto 0) & cal_tdc(23 downto 16)
+ewmcount(9 downto 0) & numadcpackets(5 downto 0) & "0" & ewm_overlap_error & missed_last_hit & fifo_was_fu
+ll & hv_tot(3 downto 0) & hv_tdc(23 downto 0)
+"00" & adc2(9 downto 0) & adc1(9 downto 0) & adc0(9 downto 0)
+"00" & adc5(9 downto 0) & adc4(9 downto 0) & adc3(9 downto 0)
+"00" & adc8(9 downto 0) & adc7(9 downto 0) & adc6(9 downto 0)
+"00" & adc11(9 downto 0) & adc10(9 downto 0) & adc9(9 downto 0)
+"00" & adc14(9 downto 0) & adc13(9 downto 0) & adc12(9 downto 0)
+
+
 * 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
 

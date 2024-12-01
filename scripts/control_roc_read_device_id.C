@@ -40,7 +40,7 @@ void control_roc_read_device_id(int Link, int PrintLevel = 0) {
   
   int roc_mask        = 1 << (4*Link);
 
-  dtc->WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
+  //  dtc->WriteROCRegister(roc,14,0x01,false,1000);  // don't need to reset the ROC
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
