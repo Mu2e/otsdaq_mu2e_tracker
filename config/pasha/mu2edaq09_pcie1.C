@@ -23,7 +23,7 @@ int init_run_configuration(DtcGui* X) {
 
   dtc[0].fDtcID       = 1;              // for one machine, make it the same as the PcieAddr
   dtc[0].fPartitionID = 0;
-  dtc[0].fMode        = 0;
+  dtc[0].fEventMode   = 0;
   dtc[0].fMacAddrByte = 0;
 
   gSystem->Setenv("DTCLIB_DTC","1");

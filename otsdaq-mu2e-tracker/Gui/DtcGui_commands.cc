@@ -460,27 +460,22 @@ void DtcGui::read_subevents() {
   TDatime x1;
   *fTextView << x1.AsSQLString() << " DtcGui::" << __func__ << std::endl;
 
-  //  if (fDebugLevel > 1) printf("DtcGui::%s : Active DTC ID: %i\n",__func__,fActiveDtcID);
-
-  // int              roc  = dtel->fActiveRocID;
-  //  RocTabElement_t* rtel = &dtel->fRocTel[roc];
+                                        // Restore old cout.
+  cout.rdbuf(old_cout_sb);
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
   if (dtel->fData->fName == "DTC") {
-    // uint reg;
-    // sscanf(rtel->fRegR->GetText(),"0x%x",&reg);
     try {
       std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-      // int timeout_ms(150);
       dtel->fDTC_i->ReadSubevents(list_of_subevents,0,1,0);
-      // *fTextView << Form("%s: roc: %i reg : 0x%04x val: 0x%04x",__func__,roc,reg,val) << std::endl;
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't read event BAIL OUT",__func__) << std::endl;
     }
   }
 
+  cout.rdbuf(str_cout.rdbuf());
   TDatime x2;
   *fTextView << x2.AsSQLString() << str_cout.str() << " DtcGui::" << __func__ << " : DONE " <<  std::endl;
   fTextView->ShowBottom();

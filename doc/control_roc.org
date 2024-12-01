@@ -16,6 +16,71 @@
 *** set pulser frequency:                                                    
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+*** details on over-the-fiber implementation (from Monica)                   
+- DCS block register  263, or 0x107.
+#+begin_src 
+On BLOCK_WRITE it takes 5 inputs:
+
+[0]  =   rw           (python    -w option)
+[1]  =   thisvcal   (python    -h option)
+[2]  =   address  (python    -a option)
+[3]  =   data_low    (python  -d option   16 LSB)
+[4]  =   data_high   (python -d option    16 MSB)
+
+On BLOCK_READ  it returns 7 outputs:
+
+[0]  =    copy of  input "rw"
+[1]  =    copy of  input "thishvcal"
+[2]  =    used  "digiaddr"   (see below)
+[3]  =    16  LSB  of  "digidata"   (see below)
+[4]  =    32  MSB  of  "digidata"   (see below)
+[5] =   "adc_num"  (see below)
+[6] =   "adc_mask"  (see below)
+
+This is how the inputs are used to generate the outputs
+
+ rw         = (uint8_t) dtcbuffer[0];      // -w
+ thishvcal  = (uint8_t) buffer[1];         // -h
+ digiaddr   = dtcbuffer[2];                // -a
+ data_low   = dtcbuffer[3];                // -d
+ data_high  = dtcbuffer[4];                // -d
+
+
+ digidata =  ((data_high<<16) & 0XFFFF0000)  +  (data_low & 0x0000FFFF);
+
+
+   // give TWI control to uProc before calling DIGI_READ/WRITE or ADC/READ_WRITE
+
+  *(registers_0_addr + REG_DIGIRW_SEL) = 1;
+
+   if (rw & 0x2) {
+       digiaddr |= 0x100;
+       rw &= 0x1;
+   }
+   if (thishvcal < 3) {
+       if (rw == 0) {                  //read
+           digidata = digi_read(digiaddr, thishvcal);
+       } else {
+           digi_write(digiaddr, digidata, thishvcal);
+       }
+   } else {
+       if (thishvcal == 3) {
+           if (rw == 0) {                //read
+               digidata = *(registers_0_addr + digiaddr);
+           } else {
+               *(registers_0_addr + digiaddr) = digidata;
+           }
+       } else {
+           adc_num = thishvcal - 4;
+           if (rw == 0) {
+               digidata = adc_read(digiaddr, adc_num);
+           } else {
+               adc_mask = (0x1 << adc_num);
+               adc_write(digiaddr, digidata, adc_mask);
+           }
+       }
+   }
+#+end_src
 ** find_alignment                                          
 ** set_preamp_thresh                                                         
     - set_preamp_thresh -c 91 -d 350 -hv 1
@@ -26,7 +91,7 @@
     - measure_thresholds -c 91 : channel 91
 ** pulser_on -c 3 -d 10000 -y 200                                            
     -c 3 : (go by 8) : pulse channels 3,11,19,27,35,43,51,59,67,75,83 91
-** [#B] readDeviceID                                                              
+** [#B] readDeviceID                                                         
 #+begin_src 
 readDeviceID
 (13, 52)
@@ -37,11 +102,12 @@ readDeviceID
 
 ('DRAC ROC ID #', '5a71c')
 #+end_src
-** readSPI : no parameters
+** readSPI : no parameters                                                   
+ conversion constants : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
 ** set_digi_rw                                                               
     set_digi_rw -s 1 : enable  commands over the serial connection
     set_digi_rw -s 0 : disable commands over the serial connection
-** rates [-c channel]                                               systemd-resolved         
+** rates [-c channel]                                                        
     - if channel is not specified, all channels
     - rates -c 91 : rate in the channel # 91
 ** read                                                                      
@@ -265,23 +331,23 @@ readSPI
 set_digi_rw -s 0
 #+end_src 
 
-* TODO command implementation over the fiber                                 
+* TODO control_ROC command implementation over the fiber                     
 
-
-| command            | status | comments                                |
-|--------------------+--------+-----------------------------------------|
-| digi_rw            |        |                                         |
-|--------------------+--------+-----------------------------------------|
-| readSPI            | OK     | implemented                             |
-| find_alignment     |        | implemented by Ed, minor wrinkle        |
-| set_preamp_thresh  |        |                                         |
-| measure_thresholds |        | ok                                      |
-| pulser_on          |        |                                         |
-| readDeviceID       |        |                                         |
-| set_digi_rw        |        | shouldn't need, all goes over the fiber |
-| rates              |        |                                         |
-| read               |        |                                         |
-|--------------------+--------+-----------------------------------------|
+|--------------------+--------+-----------------------------------------------------------|
+| command            | status | comments                                                  |
+|--------------------+--------+-----------------------------------------------------------|
+| digi_rw            |        | implemented                                               |
+|--------------------+--------+-----------------------------------------------------------|
+| readSPI            | OK     | implemented                                               |
+| find_alignment     |        | implemented by Ed, minor wrinkle - parameter order, stars |
+| set_preamp_thresh  |        |                                                           |
+| measure_thresholds |        | ok                                                        |
+| pulser_on          |        |                                                           |
+| readDeviceID       |        |                                                           |
+| set_digi_rw        |        | shouldn't need, all goes over the fiber                   |
+| rates              |        |                                                           |
+| read               | OK     | implemented                                               |
+|--------------------+--------+-----------------------------------------------------------|
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
@@ -450,6 +516,21 @@ before next run, clear TDC counters with
 #+end_src
 
 * 5) hit format : https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd
+
+-- some details: https://github.com/bonventre/Digi_FW/blob/master/hdl/fer.vhd#L682
+from Richie: 
+32 bit words, MSB to LSB, assuming 1 adc packet (full hit is 2 packets)
+cal_tdc(15 downto 0) & panel_id(8 downto 0) & straw_num(6 downto 0)
+hv_tdc(15 downto 0) & ewmcount(3 downto 0) & cal_tot(3 downto 0) & cal_tdc(23 downto 16)
+ewmcount(9 downto 0) & numadcpackets(5 downto 0) & "0" & ewm_overlap_error & missed_last_hit & fifo_was_fu
+ll & hv_tot(3 downto 0) & hv_tdc(23 downto 0)
+"00" & adc2(9 downto 0) & adc1(9 downto 0) & adc0(9 downto 0)
+"00" & adc5(9 downto 0) & adc4(9 downto 0) & adc3(9 downto 0)
+"00" & adc8(9 downto 0) & adc7(9 downto 0) & adc6(9 downto 0)
+"00" & adc11(9 downto 0) & adc10(9 downto 0) & adc9(9 downto 0)
+"00" & adc14(9 downto 0) & adc13(9 downto 0) & adc12(9 downto 0)
+
+
 * 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
 

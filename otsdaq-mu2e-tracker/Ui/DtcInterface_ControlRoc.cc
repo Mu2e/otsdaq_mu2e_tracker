@@ -18,8 +18,77 @@ namespace  trkdaq {
   }
   
 //-----------------------------------------------------------------------------
-// what should it return ? - for now, return 0
+// digi_rw over the fiber: reg 263 
 //-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t* Input,
+                                      ControlRoc_DigiRW_Output_t* Output,
+                                      int LinkMask,
+                                      int PrintLevel) {
+//-----------------------------------------------------------------------------
+    const int  reg (263);  // for digi_rw
+    
+    std::vector<uint16_t> vec;
+  
+    vec.push_back(Input->rw);
+    vec.push_back(Input->hvcal);
+    vec.push_back(Input->address);
+    vec.push_back(Input->data[0]);
+    vec.push_back(Input->data[1]);
+    
+    bool increment_address(false);
+//-----------------------------------------------------------------------------
+// if LinkMask != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
+//-----------------------------------------------------------------------------
+    int link_mask = fLinkMask;
+    if (LinkMask != -1) {
+      link_mask = LinkMask;
+    }
+//-----------------------------------------------------------------------------
+// loop over the links and execute
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      int used = (link_mask >> 4*i) & 0x1;
+      if (not used)                                           continue;
+      auto roc  = DTC_Link_ID(i);
+      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+      int nw = fDtc->ReadROCRegister(roc,129,100);
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+
+      nw = nw-4;
+      std::vector<uint16_t> v2;
+      fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
+
+      if (PrintLevel > 0) {
+        printf(" ---------------- link %i\n",i);
+        PrintBuffer(v2.data(),nw);
+        if (PrintLevel > 1) {
+          trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
+          
+          printf("rw           : %i\n",o->rw);
+          printf("hvcal        : 0x%04x\n",o->hvcal);
+          printf("address      : 0x%04x\n",o->address);
+          printf("data[32 bit] : 0x%02x%02x\n",o->data[1],o->data[0]);
+          printf("adc_num      : 0x%04x\n",o->adc_num);
+          printf("adc_mask     : 0x%04x\n",o->adc_mask);
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+    ResetRoc();
+    return 0;
+  }
+
+  
   int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par, int LinkMask, bool UpdateMask, int PrintLevel) {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
@@ -38,6 +107,7 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
+    const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
   
     vec.push_back(Par->adc_mode);
@@ -79,7 +149,7 @@ namespace  trkdaq {
       int used = (link_mask >> 4*i) & 0x1;
       if (not used)                                           continue;
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,265,vec,false,increment_address,100);
+      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
       // 0x86 = 0x82 + 4
@@ -94,7 +164,7 @@ namespace  trkdaq {
 
       nw = nw-4;
       std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,265,nw,false,100);
+      fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
 
       if (PrintLevel > 0) {
         PrintBuffer(v2.data(),nw);

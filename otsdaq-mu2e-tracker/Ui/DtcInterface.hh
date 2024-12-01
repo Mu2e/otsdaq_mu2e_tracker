@@ -17,8 +17,7 @@
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
-#include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
-#include "otsdaq-mu2e-tracker/Ui/ControlRoc_Read_Par_t.hh"
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 
 namespace trkdaq {
   using roc_serial_t = std::string;
@@ -32,19 +31,21 @@ namespace trkdaq {
     int                  fPcieAddr;       // 
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
-    int                  fReadoutMode;    // 0: patterns 1:digis
+    int                  fRocReadoutMode; // 0: patterns 1:digis
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
 
+    int                  fOnSpill;        // 1:on-spill, 0:off-spill
+    int                  fEventMode;      // whatever it is, hopefully, together they make 5 bytes
+
     int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
-    int                  fMode;           // whatever it is
     int                  fPartitionID;
     int                  fMacAddrByte;
 
     int                  fSleepTimeROCWrite;             // the two are different 
     int                  fSleepTimeROCReset;             // 
-    int                  fPrintLevel;                    // 
+    //    int                  fPrintLevel;                    // 
 
     static const char*   fgSpiVarName[TrkSpiDataNWords]; //
 //-----------------------------------------------------------------------------
@@ -71,6 +72,12 @@ namespace trkdaq {
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
     int          ControlRoc(const char* Command, void* Parameters);
+
+    // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
+    int          ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t*  Input          ,
+                                   ControlRoc_DigiRW_Output_t* Output         ,
+                                   int                         LinkMask   = -1,
+                                   int                         PrintLevel =  0);
     
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
                                  int                      LinkMask   = 0    ,
@@ -94,6 +101,8 @@ namespace trkdaq {
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
+
+    int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fEventMode); }
 
     int          DtcID     () { return fDtcID; }
     
@@ -159,22 +168,29 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         ResetRoc               (int LinkMask = 0, int SetNewMask = 0);
 
-    int          RocReadoutMode         ()  { return fReadoutMode; }
+    int          RocReadoutMode         ()  { return fRocReadoutMode; }
     
     void         RocConfigurePatternMode(int LinkMask = 0);
     void         RocSetDataVersion      (int Version, int LinkMask=0);
 
-    void         SetRocReadoutMode      (int Mode) { fReadoutMode = Mode; }
+    void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
+    void         SetRocReadoutMode      (int Mode   ) { fRocReadoutMode = Mode   ; }
     
                                         // 'Value' : 0 or 1
-    void         SetBit     (int Register, int Bit, int Value);
+    void         SetBit       (int Register, int Bit, int Value);
 
     void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+//-----------------------------------------------------------------------------
+// event mode is specified in the heartbeat packet, non-zero
+// event mode=0 is reserved, last packet of the train
+//-----------------------------------------------------------------------------
+    void         SetEventMode (int Mode      ) { fEventMode  = Mode      ; }
+    
                                         // just cache the DTC ID for future, to evolve
 
     void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
-    void         SetLinkMask(int Mask = 0);
+    void         SetLinkMask  (int Mask = 0);
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
@@ -199,7 +215,6 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------
-    
     int          MonicaVarPatternConfig(int LinkMask = 0);
   };
 
