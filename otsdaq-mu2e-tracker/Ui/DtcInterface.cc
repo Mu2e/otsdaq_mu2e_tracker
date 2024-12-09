@@ -318,7 +318,7 @@ namespace trkdaq {
 // this si fully tracker-specific
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
-    TLOG(TLVL_DEBUG+1) << Form("START : fRocReadoutMode=%i\n",fRocReadoutMode);
+    TLOG(TLVL_DEBUG) << Form("START : fRocReadoutMode=%i\n",fRocReadoutMode);
 //-----------------------------------------------------------------------------
 // this should be the only place where we reset the ROC
 //-----------------------------------------------------------------------------
@@ -327,11 +327,17 @@ namespace trkdaq {
     if (fRocReadoutMode == 0) {
       MonicaVarPatternConfig();                  // readout ROC patterns
     }
-    else {
+    else if (fRocReadoutMode == 1) {
       MonicaVarLinkConfig();                      // readout ROC digis
       MonicaDigiClear();                          //
     }
-    TLOG(TLVL_DEBUG+1) << Form("END   : fRocReadoutMode=%i\n",fRocReadoutMode);
+    else if (fRocReadoutMode == 2) {
+      MonicaVarPatternConfig();                  // readout ROC patterns
+    }
+    else {
+      TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
+    }
+    TLOG(TLVL_DEBUG) << Form("END   : fRocReadoutMode=%i\n",fRocReadoutMode);
   }
     
 //-----------------------------------------------------------------------------
@@ -950,7 +956,7 @@ struct RocData_t {
   int nerr   = 0;
 
   if (nb_dtc != nb_rocs+0x30) {
-    if (PrintLevel > 0) printf("ERROR: EWtag, nb_dtc, nb_rocs : %10lu 0x%04x 0x%04x\n",EwTag,nb_dtc,nb_rocs);
+    if (PrintLevel > 1) printf("ERROR: EWtag, nb_dtc, nb_rocs : %10lu 0x%04x 0x%04x\n",EwTag,nb_dtc,nb_rocs);
     nerr += 1;
   }
 //-----------------------------------------------------------------------------
@@ -973,7 +979,7 @@ struct RocData_t {
     ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
 
     if (ewtag_roc != EwTag) {
-      if (PrintLevel > 0) printf("ERROR: EwTag ewtag_roc roc : 0x%08lx 0x%08lx %i\n",EwTag,ewtag_roc,iroc);
+      if (PrintLevel > 1) printf("ERROR: EwTag ewtag_roc roc : 0x%08lx 0x%08lx %i\n",EwTag,ewtag_roc,iroc);
       nerr          += 1;
       NErrRoc[iroc] += 1;
     }
@@ -989,7 +995,7 @@ struct RocData_t {
       int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number is stored somewhere)
 
       if (npackets != npackets_exp) {
-        if (PrintLevel > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
+        if (PrintLevel > 1) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
                                   EwTag,iroc,npackets,npackets_exp);
         nerr          += 1;
         NErrRoc[iroc] += 1;
@@ -1149,20 +1155,42 @@ struct RocData_t {
 //  -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
 // adding 0x2000 prevents ROC from reinitializing the pattern, so two subsequent
 // buffer test runs would return different results
+// lane mask default: 0xf
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarPatternConfig(int LinkMask) {
+  int DtcInterface::MonicaVarPatternConfig(int LinkMask, int LaneMask, int NHits) {
 
     fRocReadoutMode = 0;                             // 0 = read patterns
     ResetRoc();                                      // use fLinkMask
     if (LinkMask != 0) SetLinkMask(LinkMask);
     int version = 1;
-    RocSetDataVersion(version); // Version --> R29
+    RocSetDataVersion(version);                      // Version --> R29
+
+    if ((fRocReadoutMode != 0) and (fRocReadoutMode != 2)) {
+      TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << " BAIL OUT";
+      return -1;
+    }
 
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000);              // configure ROC to send patterns
-        //        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x0010,false,1000);              // configure ROC to send patterns
+        if (fRocReadoutMode == 0) {
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000); // configure ROC to send variable length patterns
+        }
+        else {
+//-----------------------------------------------------------------------------
+// can only be Mode == 2
+// set number of simulated hits per lane - where that number is coming from?
+// have only 10 bits for the number  of hits
+// mask bit#13=1: don't reset the conters when receiving a null HB
+// mask bit#12=0: 'ROC counter;
+// mask bit#12=1: 'ROC checkerboard'
+// mask bit#11=1: fixed length patters
+// NHits : 10 LS bits in reg@15
+//-----------------------------------------------------------------------------
+          uint16_t mask = 0x3810 | LaneMask;
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 8,mask,false,1000);   // configure ROC to send fixed length patterns
+          fDtc->WriteROCRegister(DTC_Link_ID(i),15,(NHits & 0x3ff),false,1000);
+        }
       }
     }
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
