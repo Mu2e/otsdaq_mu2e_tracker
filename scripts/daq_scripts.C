@@ -402,7 +402,7 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 // Mode : 0xXXRRVVPP
 //        PP : print level - up to 256
 //        VV : validation level : 00 : don't validate 01: validate
-//        RR : ROC readout mode : 00 : ROC patterns   01: digis
+//        RR : ROC readout mode : 00 : ROC patterns   01: digis 02: patterns fixed size
 //        XX : reserved
 //-----------------------------------------------------------------------------
 int dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
