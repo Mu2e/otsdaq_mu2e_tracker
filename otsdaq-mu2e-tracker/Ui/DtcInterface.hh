@@ -215,7 +215,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------
-    int          MonicaVarPatternConfig(int LinkMask = 0);
+    int          MonicaVarPatternConfig(int LinkMask = 0, int LaneMask = 0xf, int NHits = 2);
   };
 
 };
