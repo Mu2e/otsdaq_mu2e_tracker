@@ -172,10 +172,13 @@ namespace trkdaq {
     reg =  0; desc = "ALWAYS 0x1234";
     PrintRocRegister(reg,desc,Format,link_mask);
     
+    reg = 18; desc = " ??";
+    PrintRocRegister(reg,desc,Format,link_mask);
+    
     reg =  8; desc = "ROC pattern mode ??"; 
     PrintRocRegister(reg,desc,Format,link_mask);
     
-    reg = 18; desc = " ??";
+    reg = 15; desc = "N simulated hits per lane";
     PrintRocRegister(reg,desc,Format,link_mask);
     
     reg = 16; desc = " ??";

@@ -155,7 +155,10 @@ public:
     TString    fName;                   // expect fName to be uppercased
     int        fPcieAddr;
     int        fLinkMask;               // active links, for DTC - ROCs, for CFO: nDTCs
-    int        fReadoutMode;
+    int        fRocReadoutMode;
+    int        fRocLaneMask;
+    int        fRocNHitsPerLane;
+    
     int        fJAMode;
     int        fOnSpill;
 
@@ -170,16 +173,18 @@ public:
     RocData_t* fActiveRoc;
 
     DtcData_t(const char* Name = "", int PcieAddr = 0) {
-      fName        = Name;
-      fPcieAddr    = PcieAddr;
-      fLinkMask    = 0;             // by default, not reading anything
-      fReadoutMode = 0;             // 0:patterns 1:digis
-      fJAMode      = 0;
-      fOnSpill     = 0;
-      fDtcID       = -1;
-      fPartitionID = -1;
-      fEventMode   =  1;
-      fMacAddrByte = -1;
+      fName            = Name;
+      fPcieAddr        = PcieAddr;
+      fLinkMask        = 0;             // by default, not reading anything
+      fRocReadoutMode  = 0;             // 0:patterns 1:digis
+      fRocLaneMask     = 0xf;
+      fRocNHitsPerLane = 2;             // Monicas's default
+      fJAMode          = 0;
+      fOnSpill         = 0;
+      fDtcID           = -1;
+      fPartitionID     = -1;
+      fEventMode       =  1;
+      fMacAddrByte     = -1;
 
 
       fActiveRoc = nullptr;

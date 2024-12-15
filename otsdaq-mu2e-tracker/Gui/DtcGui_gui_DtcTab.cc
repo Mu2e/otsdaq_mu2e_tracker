@@ -19,7 +19,10 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
   DtcTel.fDTC_i->fEventMode   = DtcData->fEventMode;
   DtcTel.fDTC_i->fMacAddrByte = DtcData->fMacAddrByte;
   
-  DtcTel.fDTC_i->SetRocReadoutMode(DtcData->fReadoutMode);
+  DtcTel.fDTC_i->SetRocReadoutMode (DtcData->fRocReadoutMode);
+  DtcTel.fDTC_i->SetRocLaneMask    (DtcData->fRocLaneMask);
+  DtcTel.fDTC_i->SetRocNHitsPerLane(DtcData->fRocNHitsPerLane);
+  
   DtcTel.fDTC_i->SetJAMode(DtcData->fJAMode);
   DtcTel.fDTC_i->SetEmulateCfo(DtcData->fEmulateCfo);
 
@@ -406,7 +409,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t*
                          TGNumberFormat::kNESInteger,
                          TGNumberFormat::kNEANonNegative,
                          TGNumberFormat::kNELLimitMinMax,
-                         0, 1);
+                         0, 2);
   group->AddFrame(ne, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   
   ne->MoveResize(x5,y0+2*(dy+5),dx5,dy);

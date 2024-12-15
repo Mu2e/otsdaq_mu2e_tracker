@@ -18,19 +18,22 @@ int init_run_configuration(DtcGui* X) {
   // dtc[0].fLinkMask    = 0x2;            // 2 DTCs on link0
   // gSystem->Setenv("CFOLIB_CFO","0");
 
-  dtc[0].fName        = "DTC";
-  dtc[0].fPcieAddr    = 0;
+  dtc[0].fName            = "DTC";
+  dtc[0].fPcieAddr        = 0;
   // dtc[0].fLinkMask    = 0x111111;           // 6 ROCs
-  dtc[0].fLinkMask    = 0x000010;        // TS1 : ROC1@DTC0
-  dtc[0].fReadoutMode = 0;               // 0:patterns 1:digis
-  dtc[0].fJAMode      = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
-  dtc[0].fEmulateCfo  = 1;               // 
+  dtc[0].fLinkMask        = 0x000010;        // TS1 : ROC1@DTC0
+  dtc[0].fRocReadoutMode  = 0;               // 0:patterns 1:digis
+  dtc[0].fRocLaneMask     = 0xf;              // 0:patterns 1:digis
+  dtc[0].fROcNHitsPerLane = 10;               // for mode=2;
+  
+  dtc[0].fJAMode          = 0x01;            // ROC tower@IERC: external clock (internal_clock << 4) + reset
+  dtc[0].fEmulateCfo      = 1;               // 
 
-  dtc[0].fDtcID       = 0;              // for one machine, make it the same as the PcieAddr
-  dtc[0].fPartitionID = 0;
-  dtc[0].fEventMode   = 1;
-  dtc[0].fOnSpill     = 1;
-  dtc[0].fMacAddrByte = -1;
+  dtc[0].fDtcID           = 44;              // for one machine, make it the same as the PcieAddr
+  dtc[0].fPartitionID     = 0;
+  dtc[0].fEventMode       = 1;
+  dtc[0].fOnSpill         = 1;
+  dtc[0].fMacAddrByte     = -1;
 
   gSystem->Setenv("DTCLIB_DTC","0");
 

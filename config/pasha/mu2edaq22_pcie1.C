@@ -22,10 +22,13 @@ int init_run_configuration(DtcGui* X) {
   dtc[0].fPcieAddr    = 1;
   dtc[0].fLinkMask    = 0x010;           // TS2 (0x10) +TS1
   //  dtc[0].fLinkMask    = 0x01;           // TS1
-  dtc[0].fJAMode      = 0x01;
-  dtc[0].fReadoutMode = 1;               // 0:patterns 1:digis
+  dtc[0].fRocReadoutMode  = 1;               // 0:patterns 1:digis 2:ROC checkerboard
+  dtc[0].fRocLaneMask     = 0xf;              // 0:patterns 1:digis
+  dtc[0].fRocNHitsPerLane = 10;               // for mode=2
 
-  dtc[0].fDtcID       = 1;               // for 1 node, make it the same as PcieAddr
+  dtc[0].fJAMode      = 0x01;
+
+  dtc[0].fDtcID       = 45;               // for 1 node, make it the same as PcieAddr
   dtc[0].fPartitionID = 0;
   dtc[0].fMacAddrByte = 0;
 
