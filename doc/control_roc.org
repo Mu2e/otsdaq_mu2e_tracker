@@ -111,7 +111,9 @@ readDeviceID
     - if channel is not specified, all channels
     - rates -c 91 : rate in the channel # 91
 ** read                                                                      
- - read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
+- microcontroller implementation:                                            
+  https://github.com/vlrusu/ROC/blob/944a1196c67be48835ba33ab6e9a7a83a3ae054c/main.c#L1317
+- read -a 0 -t 3 -s 1 -l 8 -T 10 -m 3 -p 0 -C 0 -D 0 -E 08000000 : enable channel 91
 
    -a mode : output test mode
 | mode | pattern name      | digital output word 1   | digital output word2    |

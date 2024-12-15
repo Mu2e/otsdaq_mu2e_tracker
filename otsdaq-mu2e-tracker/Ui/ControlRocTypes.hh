@@ -8,19 +8,12 @@
 // ---------
 // read -a 8 -t 8 -s 1 -l8 - T 10 -m 3 -p 1 -C FFFFFFFF -D FFFFFFFF -E FFFFFFFF
 //-----------------------------------------------------------------------------
+#define READ_ROC_VERSION 1
+
 namespace trkdaq {
   struct ControlRoc_Read_Input_t {
-    // *v2* uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]
-    // *v2* uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]
-    // *v2* uint16_t    num_lookback;           // -l 8   (default:  8)  [2]
-    // *v2* uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63
-    // *v2* uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]
-    // *v2* uint16_t    ch_mask[6];             // FFFF FFFF FFFF FFFF FFFF FFFF [6:11]
-    // *v2* uint16_t    enable_pulser;          // -p 1     (default: 0) [12]
-    // *v2* uint16_t    marker_clock;           // -m 3 ??? )default: 0) [13]
-    // *v2* uint16_t    mode;                   // [14] need to set mode=0
-    // *v2* uint16_t    clock;                  // [15] need to set clock=99
 
+#if READ_ROC_VERSION == 1
     uint16_t    adc_mode;               // = dtcbuffer[0];                                  // -a
     uint16_t    tdc_mode;               // = dtcbuffer[1];                                  // -t
     uint16_t    num_lookback;           // = dtcbuffer[2];                              // -l
@@ -35,28 +28,25 @@ namespace trkdaq {
 
     uint16_t    mode;                   // need to set mode=0
     uint16_t    clock;                  // need to set clock=99
-    
+#elif READ_ROC_VERSION == 2
+    // uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2* 
+    // uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2* 
+    // uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2* 
+    // uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63  // *v2* 
+    // uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]                 // *v2* 
+    // uint16_t    ch_mask[6];             // FFFF FFFF FFFF FFFF FFFF FFFF [6:11]        // *v2* 
+    // uint16_t    enable_pulser;          // -p 1     (default: 0) [12]                  // *v2* 
+    // uint16_t    marker_clock;           // -m 3 ??? )default: 0) [13]                  // *v2* 
+    // uint16_t    mode;                   // [14] need to set mode=0                     // *v2* 
+    // uint16_t    clock;                  // [15] need to set clock=99                   // *v2* 
+#endif    
   };
  
 //-----------------------------------------------------------------------------
 // output parameters : same as input , plus four words
 //-----------------------------------------------------------------------------
   struct ControlRoc_Read_Output_t {
-    // this is v2
-    // *v2* uint16_t    adc_mode;               // [0]
-    // *v2* uint16_t    tdc_mode;               // [1]
-    // *v2* uint16_t    num_lookback;           // [2]
-    // *v2* uint16_t    num_samples;            // [3]
-    // *v2* uint16_t    num_triggers[2];        // [4-5]
-    // *v2* uint16_t    ch_mask[6];             // [6--11]
-    // *v2* uint16_t    enable_pulser;          // [13]
-    // *v2* uint16_t    marker_clock;           // [12]
-    // *v2* uint16_t    mode;                   // [14] returned 0
-    // *v2* uint16_t    clock;                  // [15] returned 99, 
-    // *v2* uint16_t    digi_read_0xb;          // [16]
-    // *v2* uint16_t    digi_read_0xe;          // [17]
-    // *v2* uint16_t    digi_read_0xd;          // [18]
-    // *v2* uint16_t    digi_read_0xc;          // [19]
+#if READ_ROC_VERSION == 1
     // and this is v1
     uint16_t    enable_pulser;          // [0] *(registers_1_addr + CRDCS_WRITE_TX) = enable_pulser;
     uint16_t    num_samples;            // [1] *(registers_1_addr + CRDCS_WRITE_TX) = num_samples;
@@ -72,6 +62,23 @@ namespace trkdaq {
     uint16_t    mode;                   // [18]
     uint16_t    clock;                  // need to set clock=99
     uint16_t    marker_clock;           //
+#elif READ_ROC_VERSION == 2
+    // this is v2
+    // uint16_t    adc_mode;               // [0]                  // *v2* 
+    // uint16_t    tdc_mode;               // [1]                  // *v2* 
+    // uint16_t    num_lookback;           // [2]                  // *v2* 
+    // uint16_t    num_samples;            // [3]                  // *v2* 
+    // uint16_t    num_triggers[2];        // [4-5]                // *v2* 
+    // uint16_t    ch_mask[6];             // [6--11]              // *v2* 
+    // uint16_t    enable_pulser;          // [13]                 // *v2* 
+    // uint16_t    marker_clock;           // [12]                 // *v2* 
+    // uint16_t    mode;                   // [14] returned 0      // *v2* 
+    // uint16_t    clock;                  // [15] returned 99,    // *v2* 
+    // uint16_t    digi_read_0xb;          // [16]                 // *v2* 
+    // uint16_t    digi_read_0xe;          // [17]                 // *v2* 
+    // uint16_t    digi_read_0xd;          // [18]                 // *v2* 
+    // uint16_t    digi_read_0xc;          // [19]                 // *v2* 
+#endif
   };
 
   struct ControlRoc_DigiRW_Input_t {

@@ -31,7 +31,10 @@ namespace trkdaq {
     int                  fPcieAddr;       // 
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
-    int                  fRocReadoutMode; // 0: patterns 1:digis
+                                          // fRocReadoutMode: (fixed_length << 4) | readout_mode
+    int                  fRocReadoutMode; // 0: 'counter patterns' 1:digis 2:checkerboard patterns
+    int                  fRocLaneMask;    // 0xf : all of them
+    int                  fRocNHitsPerLane;// NHits per lane for Mode=2
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset
@@ -174,7 +177,6 @@ namespace trkdaq {
     void         RocSetDataVersion      (int Version, int LinkMask=0);
 
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
-    void         SetRocReadoutMode      (int Mode   ) { fRocReadoutMode = Mode   ; }
     
                                         // 'Value' : 0 or 1
     void         SetBit       (int Register, int Bit, int Value);
@@ -191,6 +193,10 @@ namespace trkdaq {
     void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
     void         SetLinkMask  (int Mask = 0);
+
+    void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
+    void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
+    void         SetRocReadoutMode (int Mode ) { fRocReadoutMode  = Mode ; }
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
@@ -203,7 +209,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
-    int          ValidateDtcBlock(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
+    int          ValidateDigiPatterns (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
+    int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
+    int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
 //-----------------------------------------------------------------------------
 // reset digitizers .. to be called in the beginning of each event 
 //-----------------------------------------------------------------------------
@@ -215,7 +223,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------
-    int          MonicaVarPatternConfig(int LinkMask = 0, int LaneMask = 0xf, int NHits = 2);
+    int          MonicaVarPatternConfig(int LinkMask = 0, int LaneMask = -1, int NHits = -1);
   };
 
 };

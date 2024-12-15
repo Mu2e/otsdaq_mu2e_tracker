@@ -107,18 +107,49 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
+    int version(1); // v2: 20w ewaponse version, v1: 18w version
+    
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
   
     TLOG(TLVL_DEBUG) << "LinkMask: 0x" << std::hex << LinkMask << std::dec << " PrintLevel:" << PrintLevel;
-      vec.push_back(Par->adc_mode);
+
+#if READ_ROC_VERSION == 1
+    vec.push_back(Par->adc_mode);
+    vec.push_back(Par->tdc_mode);
+    vec.push_back(Par->num_lookback);
+    
+    uint16_t w1 = Par->num_triggers[0];
+    uint16_t w2 = Par->num_triggers[1];
+    
+    vec.push_back(w1);
+    vec.push_back(w2);
+
+    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
+
+    if (Par->num_samples > 63) {
+      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
+      Par->num_samples = 63;
+    }
+
+    vec.push_back(Par->num_samples);
+
+    vec.push_back(Par->enable_pulser);
+    vec.push_back(1 );                  // max_total_delay (unused)
+    vec.push_back(Par->marker_clock );
+    // vec.push_back(0 );
+    // vec.push_back(99);
+#elif READ_ROC_VERSION == 2
+    vec.push_back(Par->adc_mode);
     vec.push_back(Par->tdc_mode);
     vec.push_back(Par->num_lookback);
     
     if (Par->num_samples > 63) {
-      printf("WARNING: num_samples = %i > 63, truncate to 63\n",Par->num_samples);
+      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
       Par->num_samples = 63;
     }
+
+    vec.push_back(Par->num_samples);
 
     uint16_t w1 = Par->num_triggers[0];
     uint16_t w2 = Par->num_triggers[1];
@@ -128,13 +159,15 @@ namespace  trkdaq {
 
     for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
 
-    vec.push_back(Par->num_samples);
     vec.push_back(Par->enable_pulser);
-    vec.push_back(1 );                  // max_total_delay (unused)
+    // vec.push_back(1 );                  // max_total_delay (unused)
     vec.push_back(Par->marker_clock );
+    vec.push_back(Par->mode  );
+    vec.push_back(Par->clock );
     // vec.push_back(0 );
     // vec.push_back(99);
-
+#endif
+      
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // if LinkMask != -1, use it
@@ -166,21 +199,38 @@ namespace  trkdaq {
       nw = nw-4;
       std::vector<uint16_t> v2;
       fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
-
+        
       if (PrintLevel & 0x1) {
         PrintBuffer(v2.data(),nw);
       }
-
+        
       if (PrintLevel & 0x2) {
         trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) v2.data();
-          
+
+#if READ_ROC_VERSION == 1
+        printf("enable_pulser   : %i\n",o->enable_pulser);
+        printf("num_samples     : %i\n",o->num_samples);
+        printf("num_lookback    : %i\n",o->num_lookback);
+        printf("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+               o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+        printf("adc_mode        : %i\n",o->adc_mode);
+        printf("tdc_mode        : %i\n",o->tdc_mode);
+        printf("num_triggers    : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+        printf("digi_read_0xb   : 0x%04x\n",o->digi_read_0xb);
+        printf("digi_read_0xe   : 0x%04x\n",o->digi_read_0xe);
+        printf("digi_read_0xd   : 0x%04x\n",o->digi_read_0xd);
+        printf("digi_read_0xc   : 0x%04x\n",o->digi_read_0xc);
+        printf("mode            : %i\n",o->mode);
+        printf("clock           : %i\n",o->clock);
+        printf("marker_clock    : %i\n",o->marker_clock);
+#elif READ_ROC_VERSION == 2
         printf("adc_mode     : %i\n",o->adc_mode);
         printf("tdc_mode     : %i\n",o->tdc_mode);
         printf("num_lookback : %i\n",o->num_lookback);
-        printf("num_samples  : %i\n",o->num_samples);
         printf("num_triggers : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
         printf("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
                o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+        printf("num_samples  : %i\n",o->num_samples);
         printf("enable_pulser : %i\n",o->enable_pulser);
         printf("marker_clock  : %i\n",o->marker_clock);
         printf("mode          : %i\n",o->mode);
@@ -189,8 +239,8 @@ namespace  trkdaq {
         printf("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
         printf("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
         printf("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
+#endif
       }
-      
     }
 //-----------------------------------------------------------------------------
 // 

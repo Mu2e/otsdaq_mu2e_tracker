@@ -250,7 +250,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetWrapLength(-1);
   lab->MoveResize(x5offset,y0,dx5,button_dy);
   
-  fEWLength = new TGNumberEntry(fButtonsFrame, 68, 9,999,
+  fEWLength = new TGNumberEntry(fButtonsFrame, 1000, 9,999,
                                 TGNumberFormat::kNESInteger,
                                 TGNumberFormat::kNEANonNegative,
                                 TGNumberFormat::kNELLimitMinMax,

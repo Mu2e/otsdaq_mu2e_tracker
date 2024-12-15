@@ -165,6 +165,8 @@ physics: {
     analyzers: {
         trackerDQM : { module_type:TrackerDQM
             analyzeFragments    : 1           ## set to 0 to print only
+            fillHistograms      : 1
+            trkfCollTag         : "daq:TRK"
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
@@ -173,18 +175,20 @@ physics: {
             minNBytes           : -1
             maxNBytes           : 1000000
             maxFragmentSize     : 20000       ## to catch obvious errors
-#------------------------------------------------------------------------------
-# old format: offset 0x00 :  0  (16 bytes = (0x00 + 0x08) in 2-byte words)
-# new format: offset 0x20 : 40  (80 bytes = (0x20 + 0x08) in 2-byte words)
-# currently redefined in beginRun
-#------------------------------------------------------------------------------
-            dataHeaderOffset    : 24
-            dumpDTCRegisters    :  0
+            nADCPackets         : 1
+            minNErrors          : 100
+            errorCode           : 258
+            debugBits           : [
+                                   # "bit0:1" ## print everything
+                                  ]
+            dumpDTCRegisters    : 0
+            validateADCPatterns : 0
 #------------------------------------------------------------------------------
 # reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
 # reference channel number is run-dependent
 #------------------------------------------------------------------------------
-            activeLinks         : [ 0 ]
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
             refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
             refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------

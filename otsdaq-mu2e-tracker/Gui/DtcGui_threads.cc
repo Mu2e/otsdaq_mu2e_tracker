@@ -88,7 +88,15 @@ void* DtcGui::ReaderThread(void* Context) {
           int nerr(0);
           
           if (dtc_gui->fValidate) {
-            nerr      = dtc_i->ValidateDtcBlock((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
+            if      (dtc_i->RocReadoutMode() == 0) {
+              nerr      = dtc_i->ValidateVarPatterns((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
+            }
+            else if (dtc_i->RocReadoutMode() == 1) {
+              nerr      = dtc_i->ValidateDigiPatterns((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
+            }
+            else if (dtc_i->RocReadoutMode() == 2) {
+              nerr      = dtc_i->ValidateFixedPatterns((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
+            }
             nerr_tot += nerr;
             for (int ir=0; ir<6; ir++) {
               nerr_roc_tot[ir] += nerr_roc[ir];
@@ -116,15 +124,17 @@ void* DtcGui::ReaderThread(void* Context) {
                 dtc_i->PrintBuffer(dtc_block->GetRawBufferPointer(),dtc_block->GetSubEventByteCount()/2);
               }
             }
-          }
-          else if (dtc_gui->fValidate > 0) {
-            if ((nerr > 0) or (tc->fPrintLevel > 1)) {
-              float ct = timer.CpuTime();
-              float rt = timer.RealTime();
-              timer.Continue();
-              cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
-                   << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
-                   << Form(" %3i %5i\n",nerr,nerr_tot);
+
+            else if (dtc_gui->fValidate > 0) {
+              if ((nerr > 0) or (tc->fPrintLevel > 1)) {
+                float ct = timer.CpuTime();
+                float rt = timer.RealTime();
+                timer.Continue();
+                cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
+                     << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                     << Form(" %3i %5i %5i %5i %5i %5i %5i %5i \n",nerr,nerr_tot,
+                             nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+              }
             }
           }
         }
@@ -161,7 +171,7 @@ void* DtcGui::ReaderThread(void* Context) {
 //-----------------------------------------------------------------------------  
   if (tc->fPrintLevel > 0) {
     ulong nev = tstamp-dtc_gui->fFirstTS->GetIntNumber();
-    cout << Form("nevents: %10li nbytes_tot: %12li\n",nev, nbytes_tot);
+    cout << Form("nevents: %10li nbytes_tot: %12li Validate:%i\n",nev, nbytes_tot,dtc_gui->fValidate);
     cout << Form("nerr_tot: %8i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
                  nerr_tot,
                  nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
@@ -208,7 +218,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
     first_ts = first_ts+nevents;
     int t1 = first_ts/dtc_gui->fCfoPrintFreq;
     if (t1 > t0) {
-      TLOG(TLVL_DEBUG) << Form("first_ts: %10lu",first_ts);
+      TLOG(TLVL_DEBUG+10) << Form("first_ts: %10lu",first_ts);
       t0 = t1;
     }
 //-----------------------------------------------------------------------------
