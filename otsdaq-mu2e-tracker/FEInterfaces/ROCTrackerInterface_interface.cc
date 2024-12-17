@@ -19,8 +19,8 @@ ROCTrackerInterface::ROCTrackerInterface(
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
-	__MCOUT_INFO__("ROCTrackerInterface instantiated with link: "
-	               << linkID_ << " and EventWindowDelayOffset = " << delay_ << __E__);
+	__COUT_INFO__ << "ROCTrackerInterface instantiated with link: "
+	               << linkID_ << " and EventWindowDelayOffset = " << delay_ << __E__;
 
 	__CFG_COUT__ << "Constructor..." << __E__;
 
@@ -174,13 +174,13 @@ void ROCTrackerInterface::configure(void) try
 	    << __E__;
 	ROCPolarFireCoreInterface::configure();
 
-	//__MCOUT_INFO__("Tracker configure, next configure front-end... " << __E__);
-	//__MCOUT_INFO__("..... write parameter 1 = " << TrackerParameter_1_ << __E__);
-	//__MCOUT_INFO__("..... followed by parameter 2 = " << TrackerParameter_2_ << __E__);
+	//__COUT_INFO__ << "Tracker configure, next configure front-end... " << __E__;
+	//__COUT_INFO__ << "..... write parameter 1 = " << TrackerParameter_1_ << __E__;
+	//__COUT_INFO__ << "..... followed by parameter 2 = " << TrackerParameter_2_ << __E__;
 }
 catch(const std::runtime_error& e)
 {
-	__FE_MOUT__ << "Error caught: " << e.what() << __E__;
+	__FE_COUT__ << "Error caught: " << e.what() << __E__;
 	throw;
 }
 catch(...)
@@ -224,7 +224,7 @@ bool ROCTrackerInterface::running(void)
 
 	if(event_number_ % 1000 == 0)
 	{
-		__MCOUT_INFO__("Running event number " << std::dec << event_number_ << __E__);
+		__FE_COUT_INFO__ << "Running event number " << std::dec << event_number_ << __E__;
 	}
 
 	// make sure we have an empty buffer to put data in.
@@ -319,10 +319,10 @@ void ROCTrackerInterface::stop()  // runNumber)
 	//  __FE_COUTV__(number_of_good_events_);
 	//  __FE_COUTV__(number_of_bad_events_);
 
-	__MCOUT__("RUN END" << __E__);
-	__MCOUT__("--> number of good events = " << number_of_good_events_ << __E__);
-	__MCOUT__("--> number of bad events = " << number_of_bad_events_ << __E__);
-	__MCOUT__("--> number of empty events = " << number_of_empty_events_ << __E__);
+	__COUT__ << "RUN END" << __E__;
+	__COUT__ << "--> number of good events = " << number_of_good_events_ << __E__;
+	__COUT__ << "--> number of bad events = " << number_of_bad_events_ << __E__;
+	__COUT__ << "--> number of empty events = " << number_of_empty_events_ << __E__;
 	// int startIndex = getIterationIndex();
 
 	// indicateIterationWork();  // I still need to be touched
