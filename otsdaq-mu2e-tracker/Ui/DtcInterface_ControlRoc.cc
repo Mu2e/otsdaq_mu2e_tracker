@@ -108,7 +108,8 @@ namespace  trkdaq {
 */    
 //-----------------------------------------------------------------------------
     int version(1); // v2: 20w ewaponse version, v1: 18w version
-    
+    TLOG(TLVL_DEBUG) << "version: " << version;
+
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
   

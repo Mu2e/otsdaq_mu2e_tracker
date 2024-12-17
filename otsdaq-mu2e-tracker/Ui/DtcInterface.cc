@@ -363,7 +363,7 @@ namespace trkdaq {
                                         // this command sends the EWM's
     fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
 
-    TLOG(TLVL_DEBUG+10) << Form("EWLength=%i NMarkers=%i FirstEWTag=%i EventMode=0x%08x\n",
+    TLOG(TLVL_DEBUG+10) << Form("EWLength=%i NMarkers=%i FirstEWTag=%i EventMode=0x%08lx\n",
                                 EWLength,NMarkers,FirstEWTag,ew_mode);
   }
   
