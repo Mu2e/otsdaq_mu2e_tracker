@@ -29,8 +29,6 @@ find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
 find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
 
-message("-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=."$ENV{MIDASSYS})
-
 # message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )
 # 
 # get_cmake_property(_variableNames VARIABLES)
