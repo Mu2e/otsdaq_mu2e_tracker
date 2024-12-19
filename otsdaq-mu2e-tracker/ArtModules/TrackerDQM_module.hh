@@ -52,7 +52,6 @@ class TrackerDQM : public art::EDAnalyzer {
       fhicl::Atom<int>             maxFragmentSize        {Name("maxFragmentSize"    )    , Comment("max fragment size"          ) };
       fhicl::Atom<int>             pulserFrequency        {Name("pulserFrequency"    )    , Comment("pulser frequency"           ) };
       fhicl::Atom<int>             nADCPackets            {Name("nADCPackets"        )    , Comment("N(ADC packets/hit)"         ) };
-      fhicl::Atom<int>             port                   {Name("port"               )    , Comment("port"                       ) };
       fhicl::Atom<int>             timeWindow             {Name("timeWindow"         )    , Comment("time window, 25 ns ticks"   ) };
       fhicl::Atom<int>             nSamplesBL             {Name("nSamplesBL"         )    , Comment("N(baseline samples)"        ) };
       fhicl::Atom<float>           minPulseHeight         {Name("minPulseHeight"     )    , Comment("min pulse over threshold"   ) };
@@ -60,9 +59,12 @@ class TrackerDQM : public art::EDAnalyzer {
       fhicl::Atom<float>           errorCode              {Name("errorCode"          )    , Comment("error code to print"        ) };
       fhicl::Atom<float>           validateADCPatterns    {Name("validateADCPatterns")    , Comment("validate ADC patterns"      ) };
       fhicl::Atom<float>           fillHistograms         {Name("fillHistograms"     )    , Comment("1:fill histograms"          ) };
+      fhicl::Atom<float>           fillWfHistograms       {Name("fillWfHistograms"   )    , Comment("1:fill WF histograms"       ) };
+      fhicl::Atom<float>           interactiveMode        {Name("interactiveMode"    )    , Comment("1:interactive mode"         ) };
       fhicl::Sequence<int>         plotWaveforms          {Name("plotWaveforms"      )    , Comment("[link, channel]"            ) };
-
       fhicl::Sequence<std::string> debugBits              {Name("debugBits"          )    , Comment("debug bits"                 ) };
+
+      fhicl::Atom<int>             port                   {Name("port"               )    , Comment("port"                       ) };
     };
 
                                         // TODO use constants from StrawID
@@ -411,6 +413,7 @@ class TrackerDQM : public art::EDAnalyzer {
 //-----------------------------------------------------------------------------
 // talk-to parameters
 //-----------------------------------------------------------------------------
+  art::InputTag    _trkfCollTag;
   int              _diagLevel;
   int              _minNBytes;
   int              _maxNBytes;
@@ -420,7 +423,6 @@ class TrackerDQM : public art::EDAnalyzer {
   std::vector<int>*_activeLinks[2];         // active links - connected ROCs
   std::vector<int> _refChCal;           // reference channel on CAL side FPGA
   std::vector<int> _refChHV;            // reference channel on HV  side FPGA
-  art::InputTag    _trkfCollTag;
   int              _dumpDTCRegisters;
   int              _analyzeFragments;
   int              _maxFragmentSize;
@@ -435,7 +437,8 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _errorCode;                // errorCode to print
   int              _validateADCPatterns;      //
   int              _fillHistograms;           // <=0 : don't
-  int              _fillWaveformHistograms;   // <=0 : don't
+  int              _fillWfHistograms;         // <=0 : don't
+  int              _interactiveMode;
   int              _rocDataFormat;            // digis, patterns, etc
 
   std::vector<std::string> _debugBits;

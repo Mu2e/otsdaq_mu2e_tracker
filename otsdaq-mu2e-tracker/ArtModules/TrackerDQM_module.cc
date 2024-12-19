@@ -16,8 +16,10 @@ int TrackerDQM::dtcIndex(int DtcID) {
   
   if      (DtcID ==  0) dtc_index = 0;  // generic
   else if (DtcID ==  1) dtc_index = 1;  // generic
-  else if (DtcID == 42) dtc_index = 1;  // daq09
-  else if (DtcID == 73) dtc_index = 0;  // daq09
+  else if (DtcID == 18) dtc_index = 1;  // daq09, new
+  else if (DtcID == 19) dtc_index = 0;  // daq09, new
+  else if (DtcID == 42) dtc_index = 1;  // daq09, old
+  else if (DtcID == 73) dtc_index = 0;  // daq09, old
   else if (DtcID == 44) dtc_index = 0;  // daq22
   else if (DtcID == 45) dtc_index = 1;  // daq22
   else {
@@ -137,8 +139,8 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
 TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) : 
   art::EDAnalyzer   (conf),
 
-  _diagLevel          (conf().diagLevel          ()), 
   _trkfCollTag        (conf().trkfCollTag        ()), 
+  _diagLevel          (conf().diagLevel          ()), 
   _minNBytes          (conf().minNBytes          ()), 
   _maxNBytes          (conf().maxNBytes          ()), 
   // _dataHeaderOffset   (conf().dataHeaderOffset   ()), 
@@ -157,6 +159,8 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _errorCode          (conf().errorCode          ()),
   _validateADCPatterns(conf().validateADCPatterns()),
   _fillHistograms     (conf().fillHistograms     ()),
+  _fillWfHistograms   (conf().fillWfHistograms   ()),
+  _interactiveMode    (conf().interactiveMode    ()),
   _debugBits          (conf().debugBits          ()),
 
   _port               (conf().port               ())
@@ -307,7 +311,7 @@ void TrackerDQM::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber
 //-----------------------------------------------------------------------------
 // waveform parameters
 //-----------------------------------------------------------------------------
-  if (_fillWaveformHistograms) { 
+  if (_fillWfHistograms) { 
     Hist->fsample = Dir->make<TH1F>(Form("ch_%i_%02i_fs"    ,Link,I),Form("run %06i: link %i ch %02i first sample"   ,RunNumber,Link,I), 30,-0.5, 29.5);
     Hist->bline   = Dir->make<TH1F>(Form("ch_%i_%02i_bl"    ,Link,I),Form("run %06i: link %i ch %02i WF baseline"    ,RunNumber,Link,I),250,0,500);
     Hist->pheight = Dir->make<TH1F>(Form("ch_%i_%02i_ph"    ,Link,I),Form("run %06i: link %i ch %02i WF pulse height",RunNumber,Link,I),500,0,500);
@@ -371,16 +375,18 @@ void TrackerDQM::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, Ro
   Hist->dt1rc_vs_adc[0] = Dir->make<TH2F>("dt1rc_vs_adc_0",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
   Hist->dt1rc_vs_adc[1] = Dir->make<TH2F>("dt1rc_vs_adc_1",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
 
-  Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: link %02i:%i:%i fs vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,  30);
-  Hist->bl_vs_ich       = Dir->make<TProfile>("bl_vs_ich"  , Form("run %06i: link %02i:%i:%i bl vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
-  Hist->ph_vs_ich       = Dir->make<TProfile>("ph_vs_ich"  , Form("run %06i: link %02i:%i:%i ph vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
-  Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: link %02i:%i:%i Q vs ich"     ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,1500);
-  Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: link %02i:%i:%i Qt vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
-  Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: link %02i:%i:%i Qt/Q vs ich"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 1);
-  
-  for (int i=0; i<kNChannels; i++) {
-    art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
-    book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
+  if (_fillWfHistograms) {
+    Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: link %02i:%i:%i fs vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,  30);
+    Hist->bl_vs_ich       = Dir->make<TProfile>("bl_vs_ich"  , Form("run %06i: link %02i:%i:%i bl vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->ph_vs_ich       = Dir->make<TProfile>("ph_vs_ich"  , Form("run %06i: link %02i:%i:%i ph vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: link %02i:%i:%i Q vs ich"     ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,1500);
+    Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: link %02i:%i:%i Qt vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
+    Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: link %02i:%i:%i Qt/Q vs ich"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 1);
+    
+    for (int i=0; i<kNChannels; i++) {
+      art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
+      book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
+    }
   }
 }
 
@@ -462,8 +468,8 @@ void TrackerDQM::beginJob() {
   TLOG(TLVL_INFO) << "starting";
 
   //  int           tmp_argc(2);
-  int           tmp_argc(0);
-  char**        tmp_argv(nullptr);
+  // int           tmp_argc(0);
+  // char**        tmp_argv(nullptr);
 
   // tmp_argv    = new char*[2];
   // tmp_argv[0] = new char[100];
@@ -512,38 +518,42 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
   if (_fillHistograms > 0) {
     book_histograms(rn);
 
-//     _canvas[0]->cd(1);
-//     _hist.event[0]->nbtot->Draw();
-//     _canvas[0]->cd(2);
-//     _hist.event[0]->error_code->Draw();
-//     _canvas[0]->cd(3);
-//     _hist.event[0]->nfrag->Draw();
-//     _canvas[0]->cd(4);
-//     _hist.event[0]->fsize->Draw();
+    if (_interactiveMode != 0) {
+      _canvas[0]->cd(1);
+      _hist.event[0]->nbtot->Draw();
+      _canvas[0]->cd(2);
+      _hist.event[0]->error_code->Draw();
+      _canvas[0]->cd(3);
+      _hist.event[0]->nfrag->Draw();
+      _canvas[0]->cd(4);
+      _hist.event[0]->fsize->Draw();
 
-//     _canvas[1]->cd(1);
-//     _hist.event[0]->error_code->Draw();
-//     _canvas[1]->cd(2);
-//     _hist.event[0]->nhits->Draw();
-//     _canvas[1]->cd(3);
-//     _hist.event[0]->n_chid_errors->Draw();
-//     _canvas[1]->cd(4);
-//     _hist.event[0]->n_nchh_errors->Draw();
-// //-----------------------------------------------------------------------------
-// // up to four waveforms in a given channel
-// //-----------------------------------------------------------------------------
-//     _plot_wf.link    = 0;
-//     _plot_wf.channel = 4;
-
-//     if (_plot_wf.channel >= 0) {
-//       // int station = 0;
-//       // int plane   = 0;
-
-//       for (int i=0; i<4; i++) {
-//         _canvas[2]->cd(i+1);
-//         _hist.station[0]->dtc[0].roc[_plot_wf.link].channel[_plot_wf.channel].wf[i]->Draw();
-//       }
-//     }
+      _canvas[1]->cd(1);
+      _hist.event[0]->error_code->Draw();
+      _canvas[1]->cd(2);
+      _hist.event[0]->nhits->Draw();
+      _canvas[1]->cd(3);
+      _hist.event[0]->n_chid_errors->Draw();
+      _canvas[1]->cd(4);
+      _hist.event[0]->n_nchh_errors->Draw();
+//-----------------------------------------------------------------------------
+// up to four waveforms in a given channel
+//-----------------------------------------------------------------------------
+      if (_fillWfHistograms) {
+        _plot_wf.link    = 0;
+        _plot_wf.channel = 4;
+      
+        if (_plot_wf.channel >= 0) {
+          // int station = 0;
+          // int plane   = 0;
+        
+          for (int i=0; i<4; i++) {
+            _canvas[2]->cd(i+1);
+            _hist.station[0]->dtc[0].roc[_plot_wf.link].channel[_plot_wf.channel].wf[i]->Draw();
+          }
+        }
+      }
+    }
   }
 }
 
@@ -648,7 +658,7 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
 // assume that nsamples is known and try to process the waveform        
 //-----------------------------------------------------------------------------
-      if (_fillWaveformHistograms) {
+      if (_fillWfHistograms) {
         int   nsamples = 15+12*(_nADCPackets-1);
         float wform[50];
         
@@ -1065,13 +1075,6 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
       print_fragment(&frag,2+4*nreg);
     }
   }
-//-----------------------------------------------------------------------------
-// go into interactive mode, 
-// fInteractiveMode = 0 : do not stop
-// fInteractiveMode = 1 : stop after each event (event display mode)
-// fInteractiveMode = 2 : stop only in the end of run, till '.q' is pressed
-//-----------------------------------------------------------------------------
-// TModule::analyze(event);
 
   gSystem->ProcessEvents();
 //-----------------------------------------------------------------------------
@@ -1083,11 +1086,11 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
                              AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
                              _edata.error_code);
   }
-  else {
-    TLOG(TLVL_DEBUG) << Form("event %6i:%8i:%8i : ERROR:%i",
-                             AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
-                             _edata.error_code);
-  }
+  // else {
+  //   TLOG(TLVL_DEBUG) << Form("event %6i:%8i:%8i : ERROR:%i",
+  //                            AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
+  //                            _edata.error_code);
+  // }
 }
 
 
