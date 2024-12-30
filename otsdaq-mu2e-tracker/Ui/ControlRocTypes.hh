@@ -180,6 +180,8 @@ namespace trkdaq {
     float     HV_RAIL_1_8V;       // 33
     float     HV_RAIL_2_5V;       // 34
     float     HV_TEMP;            // 35
+
+    float Data(int I) { return *(&I3_3 + I); }
   };
 };
 
