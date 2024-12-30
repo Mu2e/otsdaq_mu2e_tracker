@@ -297,7 +297,7 @@ namespace trkdaq {
     SetLinkMask();
                                         // this should do for now, later - set the partition ID
                                         // at begin run, for example, as follows
-    
+
     uint8_t id           = fDtcID       & 0xff;
     uint8_t event_mode   = fEventMode   & 0xff;
     uint8_t partition_id = fPartitionID & 0xff;
@@ -448,8 +448,8 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // is this really needed ? - probably not
 //-----------------------------------------------------------------------------
-    MonicaVarLinkConfig();
-    MonicaDigiClear();
+    // MonicaVarLinkConfig();
+    // MonicaDigiClear();
 //-----------------------------------------------------------------------------
 // after writing into reg 258, sleep for some time, 
 // then wait till reg 128 returns non-zero

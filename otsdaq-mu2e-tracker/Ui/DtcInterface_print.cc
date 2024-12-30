@@ -262,10 +262,10 @@ namespace trkdaq {
     reg = 72; desc = "Num HB tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask);
       
-    reg = 74; desc = "Num HB tag lost";
+    reg = 73; desc = "Num DATA REQ tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask);
       
-    reg = 73; desc = "Num DATA REQ tag inconsistencies";
+    reg = 74; desc = "Num HB tag lost";
     PrintRocRegister(reg,desc,Format,link_mask);
       
     reg = 75; desc = "Num DATA REQ tag lost";

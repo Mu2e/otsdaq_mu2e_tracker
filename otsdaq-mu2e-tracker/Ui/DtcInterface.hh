@@ -102,6 +102,8 @@ namespace trkdaq {
     int          ControlRoc_SetGain     (int Link, int ChannelID, int PreampType, int Gain     );
     int          ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold);
 
+    int          ConvertSpiData(const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
+
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
 
@@ -116,6 +118,8 @@ namespace trkdaq {
     
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
+    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0xf ; }
+
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
                                         //                2: auto
@@ -128,8 +132,6 @@ namespace trkdaq {
     void         InitRocReadoutMode();
     
     int          GetLinkMask() { return fLinkMask; }
-
-    int          ConvertSpiData  (const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 //-----------------------------------------------------------------------------    
