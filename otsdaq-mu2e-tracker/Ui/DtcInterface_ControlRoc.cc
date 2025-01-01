@@ -107,7 +107,7 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
-    int version(1); // v2: 20w ewaponse version, v1: 18w version
+    int version(1); // v2: 20w response, v1: 18w response
     TLOG(TLVL_DEBUG) << "version: " << version;
 
     const int  reg (265);  // for control_ROC.py(read)
