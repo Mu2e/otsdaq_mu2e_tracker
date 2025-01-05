@@ -134,21 +134,24 @@ namespace trkdaq {
     int          GetLinkMask() { return fLinkMask; }
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
+// if Stream == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
-    void         PrintBuffer     (const void* ptr, int nw);
-    void         PrintFireflyTemp();
+    void         PrintBuffer     (const void* ptr, int nw, std::ostream* Stream = nullptr);
     
-    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc);
-    void         PrintRegister        (uint16_t Register, const char* Title = "");
+    void         PrintFireflyTemp(std::ostream& Stream = std::cout);
+    
+    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
+    void         PrintRegister        (uint16_t Register, const char* Title = "",
+                                       std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value
 // Format = 1 : add short description of each register
 // if Link = -1, print a line per register for each ROC
 //-----------------------------------------------------------------------------
-    void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1);
-    void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1);
-    void         PrintRocStatus   (int Format = 1, int LinkMask = -1);
-    void         PrintStatus      ();
+    void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocStatus   (int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintStatus      (std::ostream& Stream = std::cout);
 
     uint32_t     ReadRegister    (uint16_t Register);
 

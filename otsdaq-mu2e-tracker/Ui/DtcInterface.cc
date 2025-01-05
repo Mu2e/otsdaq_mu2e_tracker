@@ -224,9 +224,10 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
     int rc(0);
-    TLOG(TLVL_DEBUG) << Form("START SampleEdgeMode=%i\n",fSampleEdgeMode);
 
     if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
+
+    TLOG(TLVL_DEBUG) << "START .. PCIE addr:" << fPcieAddr << " SampleEdgeMode:" << fSampleEdgeMode;
 
     // this one doesn't take DTC_Link_ALL gently
     for (int i=0; i<6; i++) {
@@ -263,7 +264,7 @@ namespace trkdaq {
 
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
 
-    TLOG(TLVL_DEBUG) << Form("END\n");
+    TLOG(TLVL_DEBUG) << "END PCIE addr:" << fPcieAddr;
     return rc;
   }
 
@@ -276,7 +277,8 @@ namespace trkdaq {
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
     
-    TLOG(TLVL_DEBUG) << "START : Emulates CFO=" << fEmulateCfo << " ROC ReadoutMode:" << fRocReadoutMode << std::endl; 
+    TLOG(TLVL_DEBUG) << "START : PCIE addr:" << fPcieAddr << " Emulates CFO=" << fEmulateCfo
+                     << " ROC ReadoutMode:" << fRocReadoutMode; 
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
@@ -307,7 +309,7 @@ namespace trkdaq {
     InitRocReadoutMode();
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
-    TLOG(TLVL_DEBUG) << "END" << std::endl;
+    TLOG(TLVL_DEBUG) << "PCIE addr:" << fPcieAddr << " END" << std::endl;
     return rc;
   }
     
@@ -461,13 +463,13 @@ namespace trkdaq {
 
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 // 2024-05-10: is r129 now returning the number of bytes ?
 //-----------------------------------------------------------------------------
     int nb = fDtc->ReadROCRegister(rlink,129,100);
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nb);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nb);
 
     int nw = nb-4;
 
