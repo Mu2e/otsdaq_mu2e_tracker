@@ -18,58 +18,35 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "otsdaq-mu2e-tracker/Ui/DtcInterfaceBase.hh"
 
 namespace trkdaq {
   using roc_serial_t = std::string;
 
-  class DtcInterface { 
-  public:
-    static DtcInterface* fgInstance[2];
+  class DtcInterface : public mu2edaq::DtcInterface { 
+    private:
+      DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
+    public:
+      roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
 
-    DTCLib::DTC*         fDtc;
-    int                  fEnabled;        // if comes from ODB, could be 0
-    int                  fPcieAddr;       // 
-    int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
-                                          // for now assume that all ROCs are doing the same
-                                          // fRocReadoutMode: (fixed_length << 4) | readout_mode
-    int                  fRocReadoutMode; // 0: 'counter patterns' 1:digis 2:checkerboard patterns
-    int                  fRocLaneMask;    // 0xf : all of them
-    int                  fRocNHitsPerLane;// NHits per lane for Mode=2
-    int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
-    int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
-    int                  fJAMode;         // clock_source << 4 | reset
-
-    int                  fOnSpill;        // 1:on-spill, 0:off-spill
-    int                  fEventMode;      // whatever it is, hopefully, together they make 5 bytes
-
-    int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
-    int                  fPartitionID;
-    int                  fMacAddrByte;
-
-    int                  fSleepTimeROCWrite;             // the two are different 
-    int                  fSleepTimeROCReset;             // 
-    //    int                  fPrintLevel;                    // 
+//-----------------------------------------------------------------------------
+// ROC functions
+// if LinkMask=0, use fLinkMask
+//-----------------------------------------------------------------------------
+    void         ResetRoc               (int LinkMask = 0, int SetNewMask = 0);
+    void         RocConfigurePatternMode(int LinkMask = 0);
+    void         RocSetDataVersion      (int Version, int LinkMask=0);
 
     static const char*   fgSpiVarName[TrkSpiDataNWords]; //
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
-  private:
-    DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
-    virtual ~DtcInterface();
-
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
-
-    int PcieAddr() { return fPcieAddr; }
-
-    DTCLib::DTC* Dtc() { return fDtc; }
-
     static const char*  SpiVarName(int I) { return fgSpiVarName[I]; }
-//-----------------------------------------------------------------------------    
-// clock source= 0:internal, 1:RTF (RJ45)
-//-----------------------------------------------------------------------------    
-    int          ConfigureJA(int ClockSource, int Reset = 1);
+    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
+    static const char*  SpiVarNaPrintBufferme(int I) { return fgSpiVarName[I]; }
+
+    std::vector<DTCLib::roc_data_t> ReadDeviceID        (const DTCLib::DTC_Link_ID& Link);
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
@@ -104,45 +81,14 @@ namespace trkdaq {
 
     int          ConvertSpiData(const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
 
-    int          Enabled   () { return fEnabled;    }
-    int          EmulateCfo() { return fEmulateCfo; }
+    void         InitRocReadoutMode() override;
 
-    int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fEventMode); }
-
-    int          DtcID     () { return fDtcID; }
-    
-    int          InitEmulatedCFOReadoutMode();
-
-                                        // EWLength - in 25 ns ticks
-                                        // to be executed on the emulated CFO side
-    
-    void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
-
-    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0xf ; }
-
-                                        // SampleEdgeMode=0: force rising  edge
-                                        //                1: force falling edge
-                                        //                2: auto
-                                        // -1 means use the pre-fetched one
-                                        // success: returns rc=0
-                                        // if rc < 0, can't continue
-    int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
-
-    int          InitReadout       (int EmulateCfo = -1, int RocReadoutMode = -1);
-    void         InitRocReadoutMode();
-    
-    int          GetLinkMask() { return fLinkMask; }
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw, std::ostream* Stream = nullptr);
     
-    void         PrintFireflyTemp(std::ostream& Stream = std::cout);
-    
-    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
-    void         PrintRegister        (uint16_t Register, const char* Title = "",
-                                       std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value
 // Format = 1 : add short description of each register
@@ -151,9 +97,6 @@ namespace trkdaq {
     void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocStatus   (int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintStatus      (std::ostream& Stream = std::cout);
-
-    uint32_t     ReadRegister    (uint16_t Register);
 
     int          ReadSpiData     (int Link, std::vector<uint16_t>& SpiRawData, int PrintLevel = 0);
 
@@ -165,52 +108,13 @@ namespace trkdaq {
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
-    std::vector<DTCLib::roc_data_t> ReadDeviceID        (const DTCLib::DTC_Link_ID& Link);
-    roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
 
     Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
     void         FindAlignments(bool print=false, int LinkMask=0);
-//-----------------------------------------------------------------------------
-// ROC functions
-// if LinkMask=0, use fLinkMask
-//-----------------------------------------------------------------------------
-    void         ResetRoc               (int LinkMask = 0, int SetNewMask = 0);
-
-    int          RocReadoutMode         ()  { return fRocReadoutMode; }
-    
-    void         RocConfigurePatternMode(int LinkMask = 0);
-    void         RocSetDataVersion      (int Version, int LinkMask=0);
-
-    void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
-    
-                                        // 'Value' : 0 or 1
-    void         SetBit       (int Register, int Bit, int Value);
-
-    void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
-//-----------------------------------------------------------------------------
-// event mode is specified in the heartbeat packet, non-zero
-// event mode=0 is reserved, last packet of the train
-//-----------------------------------------------------------------------------
-    void         SetEventMode (int Mode      ) { fEventMode  = Mode      ; }
-    
-                                        // just cache the DTC ID for future, to evolve
-
-    void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
-
-    void         SetLinkMask  (int Mask = 0);
 
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
-    void         SetRocReadoutMode (int Mode ) { fRocReadoutMode  = Mode ; }
-//-----------------------------------------------------------------------------
-// ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
-// bit_6: 1:force       0:auto
-// bit_5: 0:rising edge 1:falling edge
-//-----------------------------------------------------------------------------    
-    void         SetupCfoInterface(int CFOEmulationMode, 
-                                   int ForceCFOEdge    , 
-                                   int EnableCFORxTx   , 
-                                   int EnableAutogenDRP);
+
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
@@ -230,6 +134,72 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     int          MonicaVarPatternConfig(int LinkMask = 0, int LaneMask = -1, int NHits = -1);
   };
+
+  struct RocDataHeaderPacket_t {        // 8 16-byte words in total
+                                        // 16-bit word 0
+    uint16_t            byteCount    : 16;
+                                        // 16-bit word 1
+    uint16_t            unused       : 4;
+    uint16_t            packetType   : 4;
+    uint16_t            linkID       : 3;
+    uint16_t            DtcErrors    : 4;
+    uint16_t            valid        : 1;
+                                        // 16-bit word 2
+    uint16_t            packetCount  : 11;
+    uint16_t            unused2      : 2;
+    uint16_t            subsystemID  : 3;
+                                        // 16-bit words 3-5
+    uint16_t            eventTag[3];
+                                        // 16-bit word 6
+    uint8_t             status       : 8;
+    uint8_t             version      : 8;
+                                        // 16-bit word 7
+    uint8_t             dtcID        : 8;
+    uint8_t             onSpill      : 1;
+    uint8_t             subrun       : 2;
+    uint8_t             eventMode    : 5;
+
+    ulong ewtag() {
+      ulong x1 = eventTag[0];
+      ulong x2 = eventTag[1];
+      ulong x3 = eventTag[2];
+      ulong ewt = x1 | (x2 << 16) | (x3 << 32);
+      return ewt;
+    }
+    
+                                        // decoding status
+      
+    int                 empty     () { return (status & 0x01) == 0; }
+    int                 invalid_dr() { return (status & 0x02); }
+    int                 corrupt   () { return (status & 0x04); }
+    int                 timeout   () { return (status & 0x08); }
+    int                 overflow  () { return (status & 0x10); }
+      
+    int                 error_code() { return (status & 0x1e); }
+  };
+  
+  struct RocData_t {                    // 8 16-byte words in total
+    RocDataHeaderPacket_t header;
+    uint16_t              data[1];
+  };
+  
+  // struct RocData_t {
+  // ushort  nb;
+  // ushort  header;
+  // ushort  n_data_packets;  // n data packets, 16 bytes each
+  // ushort  ewt[3];
+  // ushort  status;
+  // ushort  xxx2;
+  // ushort  data; // array, use it juxsst for memory mapping
+  
+  // int                 empty     () { return (status & 0x01) == 0; }
+  // int                 invalid_dr() { return (status & 0x02); }
+  // int                 corrupt   () { return (status & 0x04); }
+  // int                 timeout   () { return (status & 0x08); }
+  // int                 overflow  () { return (status & 0x10); }
+      
+  // int                 error_code() { return (status & 0x1e); }
+  //};
 
 };
 

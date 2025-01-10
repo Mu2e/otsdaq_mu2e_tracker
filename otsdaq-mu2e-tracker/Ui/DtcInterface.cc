@@ -24,7 +24,7 @@ using namespace DTCLib;
 using namespace std;
 
 namespace trkdaq {
-  
+
   const char* kSpiVarName[TrkSpiDataNWords] = {
     "I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
     "VDMBHV5_0", "V1_8HV"  , "V3_3HV", "V2_5" ,                   //  4
@@ -37,68 +37,16 @@ namespace trkdaq {
     "CAL_RAIL_1V", "CAL_RAIL_1_8V", "CAL_RAIL_2_5V", "CAL_TEMP",  // 28
     "HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
   };
-  
 
-  DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
-  
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
-  
+
 //-----------------------------------------------------------------------------
-  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) {
-    std::string expected_version("");              // dont check
-    std::string sim_file        ("mu2esim.bin");
-    std::string uid             ("");
-      
-    TLOG(TLVL_DEBUG) << "CONSTRUCT DTC: pcie_addr:" << PcieAddr
-                          << " LinkMask:0x" << std::hex << LinkMask
-                          << std::dec
-                          << " SkipInit:" << SkipInit << std::endl;
-    fEnabled         = 1;                // default: enabled
-    fPcieAddr        = PcieAddr;
-    fRocReadoutMode  = 0;                // for now, assume patterns are the default
+  DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) 
+    : mu2edaq::DtcInterface(PcieAddr, LinkMask, SkipInit) {
+    //fRocReadoutMode  = 0;                // for now, assume patterns are the default
     fRocLaneMask     = 0xf;              // all lanes enabled
     fRocNHitsPerLane = 2;                // Monica's default for fRocReadoutMode=2
-    fSampleEdgeMode  = 1;
-    fEmulateCfo      = 0;
-    fJAMode          = 0x11;             // by default, assume RTF clock and reset upon setting
-    
-    fDtcID          = 0;                // needed for multi-DTC DAQ, default:0
-    fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
-    fMacAddrByte    = 0;                //
-
-    fOnSpill        = 0;                // together: 0x0100000001
-    fEventMode      = 1;
-
-    fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
-//-----------------------------------------------------------------------------
-// constructor performs soft reset
-// if SkipInit = true, links are not initialized
-//-----------------------------------------------------------------------------
-    if (SkipInit) {
-                                        // get link mask from the DTC
-      
-      uint32_t link_mask  = ReadRegister(0x9114);
-      fLinkMask = 0;
-      for (int i=0; i<6; i++) {
-        if ((link_mask >> i) & 0x1) {
-          fLinkMask |= (0x1 << 4*i);
-        }
-      }
-    }
-    else {
-      fLinkMask       = LinkMask;
-    }
-    
-    fDtc->SoftReset();
-
-    fSleepTimeROCWrite =  2000;
-    fSleepTimeROCReset =  4000; 
-    //    fDtc->ClearCFOEmulationMode();
-    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-  }
-
-//-----------------------------------------------------------------------------
-  DtcInterface::~DtcInterface() { }
+  };
 
 //-----------------------------------------------------------------------------
 // in many cases, want SkipInit=false
@@ -136,189 +84,44 @@ namespace trkdaq {
                                fgInstance[pcie_addr]->PcieAddr());
       return nullptr;
     }
-    else return fgInstance[pcie_addr];
+    else return dynamic_cast<trkdaq::DtcInterface*>(fgInstance[pcie_addr]);
   }
 
+  //-----------------------------------------------------------------------------
+  roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link) {
 
-//-----------------------------------------------------------------------------
-// Source=0: sync to internal clock ; =1: RTF
-// on success, returns 1
-//-----------------------------------------------------------------------------
-  int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
-    int nmax_iter(10);
-    
-    fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
-    usleep(100000);
-    int ok(0);
-    for (int i=0; i<nmax_iter; i++) {
-      ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
-      usleep(100000);
-      if (ok == 1) break;
-    }
-    
-    // fDtc->FormatJitterAttenuatorCSR();
-
-    int rc = 0;
-    if (ok == 0) {
-      TLOG(TLVL_ERROR) << Form("failed to setup JA for ClockSource=%i and Reset=%i in %i attempts\n",
-                               ClockSource,Reset,nmax_iter);
-      rc = -1;
-    }
-
-    return rc;
-  }
-
-  
-
-//-----------------------------------------------------------------------------
-// according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
-// would be cached for the next time
-// EW length         : in units of 25 ns (clock)
-// EWMOde            : 1 for buffer test
-// EnableClockMarkers: set to 0
-// EnableAutogenDRP  : set to 1
-//-----------------------------------------------------------------------------
-  int DtcInterface::InitEmulatedCFOReadoutMode() {
-    //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
-    int rc(0);
-
-    TLOG(TLVL_DEBUG) << Form("START\n");
-
-    fDtc->DisableCFOEmulation();
-    fDtc->DisableReceiveCFOLink();      // r_0x9114:bit_14 = 0
-                                        // this one doesn't take DTC_Link_ALL gently
+    bool ok(false);
     for (int i=0; i<6; i++) {
-      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
+      int enabled = (fLinkMask >> 4*i) & 1;
+      if (enabled and (i == Link)) {
+        ok = true;
+      }
+    }
+    if (not ok) {
+      TLOG(TLVL_ERROR) << "Link " << int(Link) << " is not enabled" << std::endl; 
+      return "";
     }
 
-    fDtc->DisableAutogenDRP();
-    
-    fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
+    auto returned = this->ReadDeviceID(Link);
 
-    int clock_source = (fJAMode >> 4) & 0x1;
-    int reset        = fJAMode & 0x1;
-    
-    rc = ConfigureJA(clock_source,reset);
-    if (rc < 0) return rc;
-                                        // this one is OK...
-    int EnableClockMarkers = 0;
-    fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
+    stringstream ss;
+    ss << "0x";
 
-    fDtc->EnableCFOEmulatorDRP();                                  // r_0x9100:bit_24 = 1
-    fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
+    // first 16 words are the serial number
+    for (size_t i = 0 ; i < 16 ; i++){
+      ss << hex << returned[i];
 
-    fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
+    }
 
-    fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
-
-    TLOG(TLVL_DEBUG) << Form("END\n");
-    return rc;
+    auto rv = ss.str();
+    return rv;
   }
 
-//-----------------------------------------------------------------------------
-// example
-// write value 0x10800244 to register 0x9100 - disable emulated CFO bits
-// write value 0x00004141 to register 0x9114 - set link mask
-// DTC doesn' know about an external CFO, so it should only prepare itself to receive 
-// EVMs/HBs from the outside
-//-----------------------------------------------------------------------------
-  int DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
-    int rc(0);
-
-    if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
-
-    TLOG(TLVL_DEBUG) << "START .. PCIE addr:" << fPcieAddr << " SampleEdgeMode:" << fSampleEdgeMode;
-
-    // this one doesn't take DTC_Link_ALL gently
-    for (int i=0; i<6; i++) {
-      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
-    }
-
-    // fDtc->HardReset();                  // write 0x9100:bit_00=1
-    fDtc->SoftReset();                 // write 0x9100:bit_31=1   
-
-    fDtc->DisableCFOEmulation  ();         // r_0x9100:bit_30 = 0
-    fDtc->DisableCFOEmulatorDRP();         // r_0x9100:bit_24 = 0
-    fDtc->DisableAutogenDRP    ();         // r_0x9100:bit_23 = 0
-
-    // do it only when the bit is set ? 
-    fDtc->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
-
-    int clock_source = (fJAMode >> 4) & 0x1;
-    int reset        = fJAMode & 0x1;
-    
-    rc = ConfigureJA(clock_source,reset);
-    if (rc < 0) return rc;
-                                        // which ROC links should be enabled ? - all active ?
-    int EnableClockMarkers = 0;         // for now
-                                        // this function handles DTC_Link_ALL correctly
-    fDtc->SetCFO40MHzClockMarkerEnable(DTC_Link_ALL,EnableClockMarkers);
-
-    fDtc->SetExternalCFOSampleEdgeMode(fSampleEdgeMode);
-    
-    fDtc->EnableAutogenDRP();           // r_0x9100:bit_23
-
-    // dtc->SetCFOEmulationMode();      // r_0x9100:bit_15 = 1
-
-    // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
-
-    fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
-
-    TLOG(TLVL_DEBUG) << "END PCIE addr:" << fPcieAddr;
-    return rc;
-  }
-
-//-----------------------------------------------------------------------------
-// Init Readout 
-//-----------------------------------------------------------------------------
-  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
-    int rc(0);
-
-    if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
-    if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
-    
-    TLOG(TLVL_DEBUG) << "START : PCIE addr:" << fPcieAddr << " Emulates CFO=" << fEmulateCfo
-                     << " ROC ReadoutMode:" << fRocReadoutMode; 
-//-----------------------------------------------------------------------------
-// both emulated and external modes perform soft reset of the DTC
-//-----------------------------------------------------------------------------
-    if (fEmulateCfo == 0) {
-      rc = InitExternalCFOReadoutMode();
-    }
-    else {
-//-----------------------------------------------------------------------------
-// bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
-//-----------------------------------------------------------------------------
-      rc = InitEmulatedCFOReadoutMode();
-    }
-    if (rc < 0) return rc;
-//-----------------------------------------------------------------------------
-// the DTC link mask could be reset by the previous DTC hard reset, so restore it
-// also, release all buffers from the previous read - this is the initialization
-//-----------------------------------------------------------------------------
-    SetLinkMask();
-                                        // this should do for now, later - set the partition ID
-                                        // at begin run, for example, as follows
-
-    uint8_t id           = fDtcID       & 0xff;
-    uint8_t event_mode   = fEventMode   & 0xff;
-    uint8_t partition_id = fPartitionID & 0xff;
-    uint8_t mac_byte     = fMacAddrByte & 0xff;
-    fDtc->SetEVBInfo(id,event_mode,partition_id,mac_byte);
-                                           
-    InitRocReadoutMode();
-    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-    
-    TLOG(TLVL_DEBUG) << "PCIE addr:" << fPcieAddr << " END" << std::endl;
-    return rc;
-  }
-    
 //-----------------------------------------------------------------------------
 // fRocReadoutMode is supposed to be already set, don't reinitialize
 // fRocReadoutMode = 0: read ROC-renerated patterns
 //                 = 1: read digis
 
-  
 //-----------------------------------------------------------------------------
 // this si fully tracker-specific
 //-----------------------------------------------------------------------------
@@ -342,33 +145,7 @@ namespace trkdaq {
     }
     TLOG(TLVL_DEBUG) << Form("END   : fRocReadoutMode=%i\n",fRocReadoutMode);
   }
-    
-//-----------------------------------------------------------------------------
-// run plan already defined in InitEmulatedCFOReadoutMode
-// this function can be executed in a loop, after InitEmulatedCFOReadoutMode
-// has been executed once
-//-----------------------------------------------------------------------------
-  void DtcInterface::LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) {
 
-    fDtc->DisableCFOEmulation();
-    fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
-
-    fDtc->SetCFOEmulationEventWindowInterval(EWLength);  
-    fDtc->SetCFOEmulationNumHeartbeats      (NMarkers);
-
-    uint64_t ew_mode = EventMode();     // this really is the event mode
-
-    fDtc->SetCFOEmulationEventMode          (ew_mode  );
-
-    fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
-
-                                        // this command sends the EWM's
-    fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
-
-    TLOG(TLVL_DEBUG+10) << Form("EWLength=%i NMarkers=%i FirstEWTag=%i EventMode=0x%08lx\n",
-                                EWLength,NMarkers,FirstEWTag,ew_mode);
-  }
-  
 //-----------------------------------------------------------------------------
   int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel) {
     const char* keys[] = {
@@ -429,19 +206,6 @@ namespace trkdaq {
     }
 
     return 0;
-  }
-    
-
-//-----------------------------------------------------------------------------
-  uint32_t DtcInterface::ReadRegister(uint16_t Register) {
-
-    uint32_t data;
-    int      timeout(150);
-    
-    mu2edev* dev = fDtc->GetDevice();
-    dev->read_register(Register,timeout,&data);
-    
-    return data;
   }
 
 //-----------------------------------------------------------------------------
@@ -540,206 +304,6 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// ROC reset : write 0x1 to register 14
-//-----------------------------------------------------------------------------
-  void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
-                                   ulong       FirstEWT   ,
-                                   int         PrintLevel,
-                                   int         Validate  ,
-                                   const char* Fn        ) {
-    ulong    ewt      = FirstEWT;
-    bool     match_ts = false;
-    int      nerr_tot  (0);
-    ulong    nbytes_tot(0);
-    ulong    offset    (0);               // used in validation mode
-    int      nerr_roc[6], nerr_roc_tot[6];
-
-    FILE*    file(nullptr);
-    if (Fn != nullptr) {
-//-----------------------------------------------------------------------------
-// check if Fn exists 
-//-----------------------------------------------------------------------------
-      if((file = fopen(Fn,"r")) != NULL) {
-        // file exists
-        fclose(file);
-        cout << "ERROR in " << __func__ << " : file " << Fn << " already exists, BAIL OUT" << endl;
-        return;
-      }
-      else {
-//-----------------------------------------------------------------------------
-// Fn doesn't exist, open it 
-//-----------------------------------------------------------------------------
-        file = fopen(Fn,"w");
-        if (file == nullptr) {
-          cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
-          return;
-        }
-      }
-    }
-//-----------------------------------------------------------------------------
-// reset per-roc error counters
-//-----------------------------------------------------------------------------
-    for (int i=0; i<6; i++) {
-      nerr_roc    [i] = 0;
-      nerr_roc_tot[i] = 0;
-    }
-//-----------------------------------------------------------------------------
-// always read an event into the same external buffer (VSub), 
-// so no problem with the memory management
-//-----------------------------------------------------------------------------
-    int header_printed = 0;
-    while(1) {
-      // sleep(1);
-      DTC_EventWindowTag event_tag = DTC_EventWindowTag(ewt);
-      try {
-        if (PrintLevel > 0) {
-//-----------------------------------------------------------------------------
-// print header
-// if fValidate != 0, there is a lot of printout, so it is better to print header
-// for every event
-//-----------------------------------------------------------------------------
-          if ((Validate and PrintLevel > 1) or (header_printed == 0)) {
-            cout << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
-            cout << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
-            header_printed = 1;
-          }
-        }
-        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
-        int sz = VSub.size();
-        if (sz == 0) {
-          if (PrintLevel > 0) {
-            cout << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
-          }
-          break;
-        }
-//-----------------------------------------------------------------------------
-// a subevent contains data of a single DTC
-//-----------------------------------------------------------------------------
-        int rs[6];
-        std::vector<uint8_t> dtc_block;
-        
-        for (int i=0; i<sz; i++) {
-          DTC_SubEvent* ev  = VSub[i].get();
-          uint64_t ew_tag   = ev->GetEventWindowTag().GetEventWindowTag(true);
-          char*    raw_data = (char*) ev->GetRawBufferPointer();
-
-          int      nbytes  = ev->GetSubEventByteCount();
-//-----------------------------------------------------------------------------
-// create a local copy of the DTC data block
-//-----------------------------------------------------------------------------
-          dtc_block.reserve(nbytes);
-          memcpy(dtc_block.data(),raw_data,nbytes);
-
-          nbytes_tot += nbytes;
-
-          int nerr(0);
-          
-          if (Validate > 0) {
-            // different readout modes - different validation
-            if      ((fRocReadoutMode & 0xf) == 0) {
-              nerr = ValidateVarPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-            else if ((fRocReadoutMode & 0xf) == 1) {
-              nerr = ValidateDigiPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-            else if ((fRocReadoutMode & 0xf) == 2) {
-              nerr = ValidateFixedPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-            
-              
-            nerr_tot += nerr;
-            for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
-          }
-
-          uint8_t* roc_data  = dtc_block.data()+0x30;
-
-          int nb_roc[6];
-          for (int roc=0; roc<6; roc++) {
-            nb_roc[roc] = *((ushort*) roc_data);
-            rs[roc]     = *((ushort*)(roc_data+0x0c));
-            roc_data   += nb_roc[roc];
-          }
-        
-          if (PrintLevel > 0) {
-            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
-                         ewt,i,ew_tag,nbytes,nbytes_tot,
-                         rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
-                         nerr,nerr_tot,
-                         nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
-            if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
-              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
-            }
-          }
-          
-          if (file) {
-//-----------------------------------------------------------------------------
-// write event to output file
-//-----------------------------------------------------------------------------
-            int nbb = fwrite(dtc_block.data(),1,nbytes,file);
-            if (nbb == 0) {
-              TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
-              fclose(file);
-              return;
-            }
-          }
-        }
-        
-        ewt++;                          // event in sequence
-      }
-      catch (...) {
-        TLOG(TLVL_ERROR) << "ERROR reading event_tag:" << event_tag.GetEventWindowTag(true) << " ewt:" << ewt << std::endl;
-        break;
-      }
-    }
-
-    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-//-----------------------------------------------------------------------------
-// print summary
-//-----------------------------------------------------------------------------
-    ulong nev = ewt-FirstEWT;
-    TLOG(TLVL_DEBUG) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate);
-    TLOG(TLVL_DEBUG) << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
-                             nerr_tot,
-                             nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
-                             nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
-//-----------------------------------------------------------------------------
-// to simplify first steps, assume that in a file writing mode all events 
-// are read at once, so close the file on exit
-//-----------------------------------------------------------------------------
-    if (file) {
-      fclose(file);
-    }
-  }
-
-//-----------------------------------------------------------------------------
-// wrapper for DTCLib::DTC::ReadROCBlock
-//-----------------------------------------------------------------------------
-  std::vector<roc_data_t> DtcInterface::ReadROCBlockEnsured(const DTC_Link_ID& Link, const roc_address_t& address){
-    // register 129: number of words to read
-    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 1000));
-    nwords -= 4; // account for low-level headers already consumed on-chip
-
-    std::vector<roc_data_t> rv;
-    bool increment_address = false; // read via fifo
-    fDtc->ReadROCBlock(rv, Link, address, nwords, increment_address, 10000);
-    if (rv.size() != nwords){
-      std::string msg = "Malformed block read";
-      msg += " expected ";
-      msg += std::to_string(nwords);
-      msg += " words, received ";
-      msg += std::to_string(rv.size());
-      msg += " words";
-      throw cet::exception("DtcInterface::ReadROCBlockEnsured") << msg;
-    }
-
-    // reset ddr memory
-    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
-
-    // return
-    return rv;
-  }
-
-//-----------------------------------------------------------------------------
 // assume that only one link is specified (not DTC_Link_ALL)
 // read serial number and device info
 //-----------------------------------------------------------------------------
@@ -777,35 +341,6 @@ namespace trkdaq {
     return rv;
   }
 
-//-----------------------------------------------------------------------------
-  roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link) {
-
-    bool ok(false);
-    for (int i=0; i<6; i++) {
-      int enabled = (fLinkMask >> 4*i) & 1;
-      if (enabled and (i == Link)) {
-        ok = true;
-      }
-    }
-    if (not ok) {
-      TLOG(TLVL_ERROR) << "Link " << int(Link) << " is not enabled" << std::endl; 
-      return "";
-    }
-
-    auto returned = this->ReadDeviceID(Link);
-
-    stringstream ss;
-    ss << "0x";
-
-    // first 16 words are the serial number
-    for (size_t i = 0 ; i < 16 ; i++){
-      ss << hex << returned[i];
-
-    }
-
-    auto rv = ss.str();
-    return rv;
-  }
 
 //-----------------------------------------------------------------------------
 // align ROC fpga/adc signals, and optionally print summary table
@@ -863,134 +398,6 @@ namespace trkdaq {
     }
   }
 
-//-----------------------------------------------------------------------------
-// configure itself to use a CFO
-//-----------------------------------------------------------------------------
-  void DtcInterface::SetBit(int Register, int Bit, int Value) {
-    int tmo_ms(100);
-
-    uint32_t data;
-    fDtc->GetDevice()->read_register(Register,tmo_ms,&data);
-    
-    uint32_t w = (1 << Bit);
-    
-    data = (data ^ w) | (Value << Bit);
-    fDtc->GetDevice()->write_register(Register,tmo_ms,data);
-  }
-
-//-----------------------------------------------------------------------------
-// by default, enable/disable both TX and RX:
-// DTC_LinkEnableMode() = DTC_LinkEnableMode(true,true)
-//-----------------------------------------------------------------------------
-  void DtcInterface::SetLinkMask(int Mask) {
-    if (Mask != 0) fLinkMask = Mask;
-    
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used) fDtc->EnableLink (DTC_Link_ID(i),DTC_LinkEnableMode());
-      else      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode());
-    }
-  }
-
-//-----------------------------------------------------------------------------
-// configure itself to use a CFO
-//-----------------------------------------------------------------------------
-  void DtcInterface::SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge,
-                                       int EnableCFORxTx   , int EnableAutogenDRP) {
-    // int tmo_ms(150);
-
-    if (CFOEmulationMode == 0) fDtc->ClearCFOEmulationMode();
-    else                       fDtc->SetCFOEmulationMode  ();
-
-// ForceCFOEdge: defines bit_6 and bit_5 of the control register 0x9100
-// bit_6: 1:force       0:auto
-// bit_5: 0:rising edge 1:falling edge
-// ForceCFOEdge = 0 : force use of the rising  edge
-//              = 1 : force use of the falling edge
-//              = 2 : auto
-
-    fDtc->SetExternalCFOSampleEdgeMode(ForceCFOEdge);
-
-    if (EnableCFORxTx == 0) {
-      fDtc->DisableReceiveCFOLink ();
-      fDtc->DisableTransmitCFOLink();
-    }
-    else {
-      fDtc->EnableReceiveCFOLink  ();
-      fDtc->EnableTransmitCFOLink ();
-    }
-    
-    if (EnableAutogenDRP == 0) fDtc->DisableAutogenDRP();
-    else                       fDtc->EnableAutogenDRP ();
-  }
-
-
-  struct RocDataHeaderPacket_t {        // 8 16-byte words in total
-                                        // 16-bit word 0
-    uint16_t            byteCount    : 16;
-                                        // 16-bit word 1
-    uint16_t            unused       : 4;
-    uint16_t            packetType   : 4;
-    uint16_t            linkID       : 3;
-    uint16_t            DtcErrors    : 4;
-    uint16_t            valid        : 1;
-                                        // 16-bit word 2
-    uint16_t            packetCount  : 11;
-    uint16_t            unused2      : 2;
-    uint16_t            subsystemID  : 3;
-                                        // 16-bit words 3-5
-    uint16_t            eventTag[3];
-                                        // 16-bit word 6
-    uint8_t             status       : 8;
-    uint8_t             version      : 8;
-                                        // 16-bit word 7
-    uint8_t             dtcID        : 8;
-    uint8_t             onSpill      : 1;
-    uint8_t             subrun       : 2;
-    uint8_t             eventMode    : 5;
-
-    ulong ewtag() {
-      ulong x1 = eventTag[0];
-      ulong x2 = eventTag[1];
-      ulong x3 = eventTag[2];
-      ulong ewt = x1 | (x2 << 16) | (x3 << 32);
-      return ewt;
-    }
-    
-                                        // decoding status
-      
-    int                 empty     () { return (status & 0x01) == 0; }
-    int                 invalid_dr() { return (status & 0x02); }
-    int                 corrupt   () { return (status & 0x04); }
-    int                 timeout   () { return (status & 0x08); }
-    int                 overflow  () { return (status & 0x10); }
-      
-    int                 error_code() { return (status & 0x1e); }
-  };
-  
-  struct RocData_t {                    // 8 16-byte words in total
-    RocDataHeaderPacket_t header;
-    uint16_t              data[1];
-  };
-  
-  // struct RocData_t {
-  // ushort  nb;
-  // ushort  header;
-  // ushort  n_data_packets;  // n data packets, 16 bytes each
-  // ushort  ewt[3];
-  // ushort  status;
-  // ushort  xxx2;
-  // ushort  data; // array, use it juxsst for memory mapping
-  
-  // int                 empty     () { return (status & 0x01) == 0; }
-  // int                 invalid_dr() { return (status & 0x02); }
-  // int                 corrupt   () { return (status & 0x04); }
-  // int                 timeout   () { return (status & 0x08); }
-  // int                 overflow  () { return (status & 0x10); }
-      
-  // int                 error_code() { return (status & 0x1e); }
-  //};
-  
 //-----------------------------------------------------------------------------
 // validate data taken in the tracker ROC pattern generation mode, focus on payload
 // returns number of found errors in the payload data
@@ -1383,6 +790,207 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
     return 0;
   }
+
+//-----------------------------------------------------------------------------
+// ROC reset : write 0x1 to register 14
+//-----------------------------------------------------------------------------
+  void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
+                                   ulong       FirstEWT   ,
+                                   int         PrintLevel,
+                                   int         Validate  ,
+                                   const char* Fn        ) {
+    ulong    ewt      = FirstEWT;
+    bool     match_ts = false;
+    int      nerr_tot  (0);
+    ulong    nbytes_tot(0);
+    ulong    offset    (0);               // used in validation mode
+    int      nerr_roc[6], nerr_roc_tot[6];
+
+    FILE*    file(nullptr);
+    if (Fn != nullptr) {
+//-----------------------------------------------------------------------------
+// check if Fn exists 
+//-----------------------------------------------------------------------------
+      if((file = fopen(Fn,"r")) != NULL) {
+        // file exists
+        fclose(file);
+        cout << "ERROR in " << __func__ << " : file " << Fn << " already exists, BAIL OUT" << endl;
+        return;
+      }
+      else {
+//-----------------------------------------------------------------------------
+// Fn doesn't exist, open it 
+//-----------------------------------------------------------------------------
+        file = fopen(Fn,"w");
+        if (file == nullptr) {
+          cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
+          return;
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// reset per-roc error counters
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      nerr_roc    [i] = 0;
+      nerr_roc_tot[i] = 0;
+    }
+//-----------------------------------------------------------------------------
+// always read an event into the same external buffer (VSub), 
+// so no problem with the memory management
+//-----------------------------------------------------------------------------
+    int header_printed = 0;
+    while(1) {
+      // sleep(1);
+      DTC_EventWindowTag event_tag = DTC_EventWindowTag(ewt);
+      try {
+        if (PrintLevel > 0) {
+//-----------------------------------------------------------------------------
+// print header
+// if fValidate != 0, there is a lot of printout, so it is better to print header
+// for every event
+//-----------------------------------------------------------------------------
+          if ((Validate and PrintLevel > 1) or (header_printed == 0)) {
+            cout << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
+            cout << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
+            header_printed = 1;
+          }
+        }
+        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
+        int sz = VSub.size();
+        if (sz == 0) {
+          if (PrintLevel > 0) {
+            cout << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
+          }
+          break;
+        }
+//-----------------------------------------------------------------------------
+// a subevent contains data of a single DTC
+//-----------------------------------------------------------------------------
+        int rs[6];
+        std::vector<uint8_t> dtc_block;
+        
+        for (int i=0; i<sz; i++) {
+          DTC_SubEvent* ev  = VSub[i].get();
+          uint64_t ew_tag   = ev->GetEventWindowTag().GetEventWindowTag(true);
+          char*    raw_data = (char*) ev->GetRawBufferPointer();
+
+          int      nbytes  = ev->GetSubEventByteCount();
+//-----------------------------------------------------------------------------
+// create a local copy of the DTC data block
+//-----------------------------------------------------------------------------
+          dtc_block.reserve(nbytes);
+          memcpy(dtc_block.data(),raw_data,nbytes);
+
+          nbytes_tot += nbytes;
+
+          int nerr(0);
+          
+          if (Validate > 0) {
+            // different readout modes - different validation
+            if      ((fRocReadoutMode & 0xf) == 0) {
+              nerr = ValidateVarPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
+            }
+            else if ((fRocReadoutMode & 0xf) == 1) {
+              nerr = ValidateDigiPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
+            }
+            else if ((fRocReadoutMode & 0xf) == 2) {
+              nerr = ValidateFixedPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
+            }
+            
+              
+            nerr_tot += nerr;
+            for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
+          }
+
+          uint8_t* roc_data  = dtc_block.data()+0x30;
+
+          int nb_roc[6];
+          for (int roc=0; roc<6; roc++) {
+            nb_roc[roc] = *((ushort*) roc_data);
+            rs[roc]     = *((ushort*)(roc_data+0x0c));
+            roc_data   += nb_roc[roc];
+          }
+        
+          if (PrintLevel > 0) {
+            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
+                         ewt,i,ew_tag,nbytes,nbytes_tot,
+                         rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
+                         nerr,nerr_tot,
+                         nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
+            if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
+              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+            }
+          }
+          
+          if (file) {
+//-----------------------------------------------------------------------------
+// write event to output file
+//-----------------------------------------------------------------------------
+            int nbb = fwrite(dtc_block.data(),1,nbytes,file);
+            if (nbb == 0) {
+              TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
+              fclose(file);
+              return;
+            }
+          }
+        }
+        
+        ewt++;                          // event in sequence
+      }
+      catch (...) {
+        TLOG(TLVL_ERROR) << "ERROR reading event_tag:" << event_tag.GetEventWindowTag(true) << " ewt:" << ewt << std::endl;
+        break;
+      }
+    }
+
+    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// print summary
+//-----------------------------------------------------------------------------
+    ulong nev = ewt-FirstEWT;
+    TLOG(TLVL_DEBUG) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate);
+    TLOG(TLVL_DEBUG) << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+                             nerr_tot,
+                             nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
+                             nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+//-----------------------------------------------------------------------------
+// to simplify first steps, assume that in a file writing mode all events 
+// are read at once, so close the file on exit
+//-----------------------------------------------------------------------------
+    if (file) {
+      fclose(file);
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// wrapper for DTCLib::DTC::ReadROCBlock
+//-----------------------------------------------------------------------------
+  std::vector<roc_data_t> DtcInterface::ReadROCBlockEnsured(const DTC_Link_ID& Link, const roc_address_t& address){
+    // register 129: number of words to read
+    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 1000));
+    nwords -= 4; // account for low-level headers already consumed on-chip
+
+    std::vector<roc_data_t> rv;
+    bool increment_address = false; // read via fifo
+    fDtc->ReadROCBlock(rv, Link, address, nwords, increment_address, 10000);
+    if (rv.size() != nwords){
+      std::string msg = "Malformed block read";
+      msg += " expected ";
+      msg += std::to_string(nwords);
+      msg += " words, received ";
+      msg += std::to_string(rv.size());
+      msg += " words";
+      throw cet::exception("DtcInterface::ReadROCBlockEnsured") << msg;
+    }
+
+    // reset ddr memory
+    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+
+    // return
+    return rv;
+  }
+
 
 };
 

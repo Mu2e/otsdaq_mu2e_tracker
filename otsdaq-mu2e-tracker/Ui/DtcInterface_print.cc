@@ -15,79 +15,6 @@ using namespace std;
 namespace trkdaq {
 
 //-----------------------------------------------------------------------------
-// 'nw' : number of 16-bit words to print.
-// if Stream == nullptr , use TLOG, otherwise - *Stream
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, std::ostream* Stream) {
-
-    ushort*      p16 = (ushort*) ptr;
-
-    int          n(0);
-    std::string  line;
-
-    if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
-    else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
-   
-    for (int i=0; i<nw; i++) {
-      if (n == 0) line = Form(" 0x%08x: ",i*2);
-      ushort  word = p16[i];
-      line += Form("0x%04x ",word);
-      
-      n   += 1;
-      if (n == 8) {
-        if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
-        else                   (*Stream)        << line << std::endl;
-        n = 0;
-      }
-    }
-    
-    if (n != 0) {
-      if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
-      else                   (*Stream)        << line << std::endl;
-    }
-  }
-
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintFireflyTemp(std::ostream& Stream) {
-    int tmo_ms(50);
-    TLOG(TLVL_DEBUG) << "START" << std::endl;
-//-----------------------------------------------------------------------------
-// read RX firefly temp
-//------------------------------------------------------------------------------
-    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-
-    uint data, rx_temp, txrx_temp;
-
-    fDtc->GetDevice()->read_register(0x9288,tmo_ms,&data);
-    rx_temp = data & 0xff;
-//-----------------------------------------------------------------------------
-// read TX/RX firefly temp
-//------------------------------------------------------------------------------
-    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
-
-    fDtc->GetDevice()->read_register(0x92a8,tmo_ms,&data);
-    txrx_temp = data & 0xff;
-
-    Stream << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
-    
-    TLOG(TLVL_DEBUG) << "END" << std::endl;
-  }
-
-//-----------------------------------------------------------------------------
 // print value of the register Reg, for multiple ROCs
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
@@ -132,24 +59,6 @@ namespace trkdaq {
 
     Stream << Form("%-18s%s\n",sreg.data(),text.data());
   }
-
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
-
-    std::string text = Form("(0x%04x)         : ",FirstReg);
-    
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
-      uint32_t reg = FirstReg+4*i;
-      uint32_t iw  = ReadRegister(reg);
-      text        += Form(" 0x%08x",iw);
-    }
-
-    text += Form(" %s",Desc);
-    Stream << Form("%-s\n",text.data());
-  }
-
   
 //-----------------------------------------------------------------------------
 // most of the time LinkMask = -1
@@ -292,12 +201,107 @@ namespace trkdaq {
 
     Stream << "------------------------------------------------------------------------\n";
   }
+//-----------------------------------------------------------------------------
+// 'nw' : number of 16-bit words to print.
+// if Stream == nullptr , use TLOG, otherwise - *Stream
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintBuffer(const void* ptr, int nw, std::ostream* Stream) {
+
+    ushort*      p16 = (ushort*) ptr;
+
+    int          n(0);
+    std::string  line;
+
+    if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
+    else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
+   
+    for (int i=0; i<nw; i++) {
+      if (n == 0) line = Form(" 0x%08x: ",i*2);
+      ushort  word = p16[i];
+      line += Form("0x%04x ",word);
+      
+      n   += 1;
+      if (n == 8) {
+        if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
+        else                   (*Stream)        << line << std::endl;
+        n = 0;
+      }
+    }
+    
+    if (n != 0) {
+      if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
+      else                   (*Stream)        << line << std::endl;
+    }
+  }
+
+};
+
+
+namespace mu2edaq {
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintFireflyTemp(std::ostream& Stream) {
+    int tmo_ms(50);
+    TLOG(TLVL_DEBUG) << "START" << std::endl;
+//-----------------------------------------------------------------------------
+// read RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x9288,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x928c,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    uint data, rx_temp, txrx_temp;
+
+    fDtc->GetDevice()->read_register(0x9288,tmo_ms,&data);
+    rx_temp = data & 0xff;
+//-----------------------------------------------------------------------------
+// read TX/RX firefly temp
+//------------------------------------------------------------------------------
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000400);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92a8,tmo_ms,0x50160000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x92ac,tmo_ms,0x00000002);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+    fDtc->GetDevice()->write_register(0x93a0,tmo_ms,0x00000000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tmo_ms));
+
+    fDtc->GetDevice()->read_register(0x92a8,tmo_ms,&data);
+    txrx_temp = data & 0xff;
+
+    Stream << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
+    
+    TLOG(TLVL_DEBUG) << "END" << std::endl;
+  }
 
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRegister(uint16_t Register, const char* Title, std::ostream& Stream) {
     Stream << Form("(0x%04x) : 0x%08x : %s\n",Register,ReadRegister(Register),Title);
   }
 
+//-----------------------------------------------------------------------------
+
+
+  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
+
+    std::string text = Form("(0x%04x)         : ",FirstReg);
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      uint32_t reg = FirstReg+4*i;
+      uint32_t iw  = ReadRegister(reg);
+      text        += Form(" 0x%08x",iw);
+    }
+
+    text += Form(" %s",Desc);
+    Stream << Form("%-s\n",text.data());
+  }
+  
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintStatus(std::ostream& Stream) {
     Stream << Form("-----------------------------------------------------------------\n");
@@ -350,3 +354,4 @@ namespace trkdaq {
                           
   }
 };
+
