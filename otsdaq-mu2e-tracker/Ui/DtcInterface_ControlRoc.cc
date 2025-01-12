@@ -250,7 +250,6 @@ namespace  trkdaq {
     ResetRoc();
     return 0;
   }
-
   
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain) {
