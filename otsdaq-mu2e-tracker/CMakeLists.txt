@@ -1,4 +1,4 @@
-add_subdirectory(FEInterfaces)
+# don't commit ! add_subdirectory(FEInterfaces)
 add_subdirectory(Generators)
 add_subdirectory(ArtModules)
 add_subdirectory(Ui)
