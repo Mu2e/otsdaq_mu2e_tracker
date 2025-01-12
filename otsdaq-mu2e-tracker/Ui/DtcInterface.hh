@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
@@ -62,7 +63,8 @@ namespace trkdaq {
     int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
                                  int                      LinkMask   = -1   ,
                                  bool                     UpdateMask = false,
-                                 int                      PrintLevel = 0    );
+                                 int                      PrintLevel = 0,    
+                                 std::ostream&            Stream     = std::cout);
 //-----------------------------------------------------------------------------
 // measure thresholds returns an array of thresholds, which needs to be parsed
 // so far, do it internally

@@ -89,7 +89,8 @@ namespace  trkdaq {
   }
 
   
-  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par, int LinkMask, bool UpdateMask, int PrintLevel) {
+int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par, int LinkMask, bool UpdateMask,
+                                    int PrintLevel, std::ostream& Stream) {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -202,54 +203,53 @@ namespace  trkdaq {
       fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
         
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw);
+        PrintBuffer(v2.data(),nw,&Stream);
       }
         
       if (PrintLevel & 0x2) {
         trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) v2.data();
 
 #if READ_ROC_VERSION == 1
-        printf("enable_pulser   : %i\n",o->enable_pulser);
-        printf("num_samples     : %i\n",o->num_samples);
-        printf("num_lookback    : %i\n",o->num_lookback);
-        printf("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-               o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
-        printf("adc_mode        : %i\n",o->adc_mode);
-        printf("tdc_mode        : %i\n",o->tdc_mode);
-        printf("num_triggers    : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
-        printf("digi_read_0xb   : 0x%04x\n",o->digi_read_0xb);
-        printf("digi_read_0xe   : 0x%04x\n",o->digi_read_0xe);
-        printf("digi_read_0xd   : 0x%04x\n",o->digi_read_0xd);
-        printf("digi_read_0xc   : 0x%04x\n",o->digi_read_0xc);
-        printf("mode            : %i\n",o->mode);
-        printf("clock           : %i\n",o->clock);
-        printf("marker_clock    : %i\n",o->marker_clock);
+        Stream << Form("enable_pulser   : %i\n",o->enable_pulser);
+        Stream << Form("num_samples     : %i\n",o->num_samples);
+        Stream << Form("num_lookback    : %i\n",o->num_lookback);
+        Stream << Form("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                       o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+        Stream << Form("adc_mode        : %i\n",o->adc_mode);
+        Stream << Form("tdc_mode        : %i\n",o->tdc_mode);
+        Stream << Form("num_triggers    : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+        Stream << Form("digi_read_0xb   : 0x%04x\n",o->digi_read_0xb);
+        Stream << Form("digi_read_0xe   : 0x%04x\n",o->digi_read_0xe);
+        Stream << Form("digi_read_0xd   : 0x%04x\n",o->digi_read_0xd);
+        Stream << Form("digi_read_0xc   : 0x%04x\n",o->digi_read_0xc);
+        Stream << Form("mode            : %i\n",o->mode);
+        Stream << Form("clock           : %i\n",o->clock);
+        Stream << Form("marker_clock    : %i\n",o->marker_clock);
 #elif READ_ROC_VERSION == 2
-        printf("adc_mode     : %i\n",o->adc_mode);
-        printf("tdc_mode     : %i\n",o->tdc_mode);
-        printf("num_lookback : %i\n",o->num_lookback);
-        printf("num_triggers : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
-        printf("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-               o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
-        printf("num_samples  : %i\n",o->num_samples);
-        printf("enable_pulser : %i\n",o->enable_pulser);
-        printf("marker_clock  : %i\n",o->marker_clock);
-        printf("mode          : %i\n",o->mode);
-        printf("clock         : %i\n",o->clock);
-        printf("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
-        printf("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
-        printf("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
-        printf("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
+        Stream << Form("adc_mode     : %i\n",o->adc_mode);
+        Stream << Form("tdc_mode     : %i\n",o->tdc_mode);
+        Stream << Form("num_lookback : %i\n",o->num_lookback);
+        Stream << Form("num_triggers : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+        Stream << Form("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                       o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+        Stream << Form("num_samples  : %i\n",o->num_samples);
+        Stream << Form("enable_pulser : %i\n",o->enable_pulser);
+        Stream << Form("marker_clock  : %i\n",o->marker_clock);
+        Stream << Form("mode          : %i\n",o->mode);
+        Stream << Form("clock         : %i\n",o->clock);
+        Stream << Form("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
+        Stream << Form("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
+        Stream << Form("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
+        Stream << Form("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
 #endif
       }
     }
 //-----------------------------------------------------------------------------
-// 
+//  is it really needed to reser the ROC in the end ?
 //-----------------------------------------------------------------------------
     ResetRoc();
     return 0;
   }
-
   
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain) {
