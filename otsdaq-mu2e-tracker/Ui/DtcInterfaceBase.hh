@@ -49,6 +49,7 @@ namespace mu2edaq {
 
     int                  fSleepTimeROCWrite;             // the two are different 
     int                  fSleepTimeROCReset;             // 
+    int                  fCounter;
     //    int                  fPrintLevel;                    // 
 
 //-----------------------------------------------------------------------------
@@ -120,6 +121,9 @@ namespace mu2edaq {
     void         SetBit       (int Register, int Bit, int Value);
 
     void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+
+    virtual std::vector<std::string> GetRocRegistersNames(bool history = false);
+    virtual std::vector<uint32_t>    GetRocRegisters     (bool history = false);
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
 // event mode=0 is reserved, last packet of the train

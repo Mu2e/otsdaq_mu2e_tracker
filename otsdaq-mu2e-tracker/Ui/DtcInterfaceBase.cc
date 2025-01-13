@@ -52,6 +52,7 @@ namespace mu2edaq {
     fEventMode      = 1;
 
     fIsCrv          = 0;
+    fCounter        = 0;
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
 //-----------------------------------------------------------------------------
 // constructor performs soft reset
@@ -398,6 +399,42 @@ void DtcInterface::InitRocReadoutMode() {
     else                       fDtc->EnableAutogenDRP ();
   }
 
-};
 
+
+  // This is just an example, needs to be implemented for each subsystem
+  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
+    std::vector<std::string> registers;
+    // Basic ROC registers
+    if(history) {
+      registers.push_back("ROC_HIST_1");
+      registers.push_back("ROC_HIST_2");
+      registers.push_back("ROC_HIST_3");
+    } else {
+      registers.push_back("ROC_NON-HIST_1");
+      registers.push_back("ROC_NON-HIST_2");
+      registers.push_back("ROC_NON-HIST_3");
+      registers.push_back("ROC_NON-HIST_3");
+    }
+    return registers;
+  }
+
+  // This is just an example, needs to be implemented for each subsystem
+  std::vector<uint32_t> DtcInterface::GetRocRegisters(bool history = false) {
+    std::vector<uint32_t> val;
+    // Basic ROC registers
+    if(history) {
+      val.push_back(42);
+      val.push_back(fCounter);
+      val.push_back(fCounter+3);
+      fCounter++;
+    } else {
+      val.push_back(fCounter);
+      val.push_back(42);
+      val.push_back(fCounter-4);
+      val.push_back(fCounter & 0xfe);
+    }
+    return val;
+  }
+
+};
 #endif
