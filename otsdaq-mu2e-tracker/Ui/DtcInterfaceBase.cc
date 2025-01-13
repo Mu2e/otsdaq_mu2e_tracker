@@ -419,21 +419,27 @@ void DtcInterface::InitRocReadoutMode() {
   }
 
   // This is just an example, needs to be implemented for each subsystem
-  std::vector<uint32_t> DtcInterface::GetRocRegisters(bool history = false) {
+  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history = false) {
     std::vector<uint32_t> val;
     // Basic ROC registers
     if(history) {
       val.push_back(42);
       val.push_back(fCounter);
-      val.push_back(fCounter+3);
+      val.push_back(ilink);
       fCounter++;
     } else {
       val.push_back(fCounter);
       val.push_back(42);
-      val.push_back(fCounter-4);
+      val.push_back(ilink);
       val.push_back(fCounter & 0xfe);
     }
     return val;
+  }
+
+  // This is just an example, needs to be implemented for each subsystem
+  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history = false) {
+    auto registers = GetRocRegisters(ilink, history);
+    return std::vector<float>(registers.begin(), registers.end());
   }
 
 };

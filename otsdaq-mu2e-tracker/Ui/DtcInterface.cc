@@ -991,6 +991,91 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return rv;
   }
 
+ // This is just an example, needs to be implemented for each subsystem
+  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
+    std::vector<std::string> roc_var_names;
+    char var_name[128];
+    // Basic ROC registers
+    if(history) {
+      for (int k=0; k<TrkSpiDataNWords; k++) {
+        sprintf(var_name,"%s", SpiVarName(k));
+        roc_var_names.push_back(var_name);
+      }
+    } else {
+      for(const int& reg : RocRegisters) {
+        sprintf(var_name,"reg_%03i",reg);
+        roc_var_names.push_back(var_name);
+      }
+    }
+    return roc_var_names;
+  }
+
+  // This is just an example, needs to be implemented for each subsystem
+  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history = false) {
+    std::vector<uint32_t> roc_reg;
+    // Basic ROC registers
+    if(history) {
+      try { 
+        std::vector<uint16_t> spi_raw_data;
+        ReadSpiData   (ilink,spi_raw_data,0);
+        
+        for (int iw=0; iw<TrkSpiDataNWords; iw++) {
+          roc_reg.emplace_back(spi_raw_data[iw]);
+        }
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed to read DTC:" << fPcieAddr << " ROC:" << ilink << " SPI";
+//-----------------------------------------------------------------------------
+// set ROC status to -1
+//-----------------------------------------------------------------------------
+        // TODO
+      }
+    } else {
+      roc_reg.reserve(trkdaq::RocRegisters.size());
+        try {
+          for (const int reg : trkdaq::RocRegisters) {
+            // ROC registers store 16-bit words, don't know how to declare an array
+            // of shorts for ODBXX, use uint32_t
+            uint32_t dat = fDtc->ReadROCRegister(DTCLib::DTC_Link_ID(ilink),reg,100); 
+            roc_reg.emplace_back(dat);
+          }
+        } catch (...) {
+          TLOG(TLVL_ERROR) << "failed to read DTC:" << fPcieAddr << " ROC:" << ilink << " registers";
+        }
+    }
+    return roc_reg;
+  }
+
+// This is just an example, needs to be implemented for each subsystem
+  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history = false) {
+    std::vector<float> roc_reg;
+    // Basic ROC registers
+    if(history) {
+      try { 
+        std::vector<uint16_t> spi_raw_data;
+        struct TrkSpiData_t   spi;
+        ReadSpiData   (ilink,spi_raw_data,0);
+        ConvertSpiData(spi_raw_data,&spi,0);
+              
+        std::vector<float> roc_spi;
+              
+        for (int iw=0; iw<TrkSpiDataNWords; iw++) {
+          roc_spi.emplace_back(spi.Data(iw));
+        }
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed to read DTC:" << fPcieAddr << " ROC:" << ilink << " SPI";
+//-----------------------------------------------------------------------------
+// set ROC status to -1
+//-----------------------------------------------------------------------------
+        // TODO
+      }
+    } else {
+        auto val = GetRocRegisters(ilink, history);
+        return std::vector<float>(val.begin(), val.end());
+    }
+    return roc_reg;
+  }
 
 };
 

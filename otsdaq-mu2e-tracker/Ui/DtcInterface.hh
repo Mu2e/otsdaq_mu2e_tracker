@@ -24,6 +24,18 @@
 namespace trkdaq {
   using roc_serial_t = std::string;
 
+     // some ROC registers are listed in decimal format, and some - in hex
+    static const std::vector<int> RocRegisters = {
+       0,   18,    8,   15,   16,    7,      6,    4,
+      23,   24,   25,   26,   11,   12,     65,   65,   17,   28,
+      29,   30,   31,   32,   33,   34,      9,   10,   35,   36,
+      13,
+      37,   38,   38,   40,   41,   42,     43,   44,   45,   46,
+      48,   49,   51,   52,   54,   55,     57,   58,
+      72,   73,   74,   75,
+    0x90, 0x91, 0x92, 0x93, 0x94, 0x95
+  };
+
   class DtcInterface : public mu2edaq::DtcInterface { 
     private:
       DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
@@ -84,6 +96,10 @@ namespace trkdaq {
     int          ConvertSpiData(const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
 
     void         InitRocReadoutMode() override;
+
+    std::vector<std::string> GetRocRegistersNames     (           bool history = false) override;
+    std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
+    std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
 
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex

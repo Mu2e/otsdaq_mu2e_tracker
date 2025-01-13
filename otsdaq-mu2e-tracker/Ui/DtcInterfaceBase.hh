@@ -122,8 +122,9 @@ namespace mu2edaq {
 
     void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
 
-    virtual std::vector<std::string> GetRocRegistersNames(bool history = false);
-    virtual std::vector<uint32_t>    GetRocRegisters     (bool history = false);
+    virtual std::vector<std::string> GetRocRegistersNames     (           bool history = false);
+    virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false);
+    virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false);
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
 // event mode=0 is reserved, last packet of the train
