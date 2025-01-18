@@ -84,9 +84,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
   DtcInterface::~DtcInterface() { }
 
-//-----------------------------------------------------------------------------
-// in many cases, want SkipInit=false
-//-----------------------------------------------------------------------------
+  // NEEDS TO BE IMPLEMNTED IN CLASSES THAT INHERIT
   DtcInterface* DtcInterface::Instance(int PcieAddr, uint LinkMask, bool SkipInit) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
@@ -99,7 +97,6 @@ namespace mu2edaq {
         return nullptr;
       }
     }
-
                                     
     TLOG(TLVL_DEBUG) << "pcie_addr:" << pcie_addr
                      << " LinkMask:0x" << std::hex << LinkMask
