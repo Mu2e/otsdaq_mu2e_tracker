@@ -123,7 +123,7 @@ namespace trkdaq {
 //                 = 1: read digis
 
 //-----------------------------------------------------------------------------
-// this si fully tracker-specific
+// this is fully tracker-specific
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
     TLOG(TLVL_DEBUG) << Form("START : fRocReadoutMode=%i\n",fRocReadoutMode);
@@ -131,14 +131,24 @@ namespace trkdaq {
 // this should be the only place where we reset the ROC
 // ROC readout mode (fixed_length << 4) | readout_mode
 //-----------------------------------------------------------------------------
-    // ResetRoc();
+    ResetLinks();       // this seems to be necesary
     
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
       MonicaVarPatternConfig();                  // readout ROC patterns
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
       MonicaVarLinkConfig();                      // readout ROC digis
+
+      ostringstream sout;
+      PrintRocStatus(1,-1,sout);
+      TLOG(TLVL_DEBUG) << "after MonicaVarLinkConfig:\n" << sout.str();
+      
       MonicaDigiClear();                          //
+
+      sout.str("");
+      PrintRocStatus(1,-1,sout);
+      TLOG(TLVL_DEBUG) << "after MonicaDigiClear:\n" << sout.str();
+      
     }
     else {
       TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
@@ -263,25 +273,17 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // preserve historic naming convention- Monica named her script 'var_pattern_config'
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocConfigurePatternMode(int LinkMask) {
-    MonicaVarPatternConfig(LinkMask);
+  void DtcInterface::RocConfigurePatternMode() {
+    MonicaVarPatternConfig();
   }
 
 //-----------------------------------------------------------------------------
 // ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
 // by default, don't redefine the link mask
 //-----------------------------------------------------------------------------
-  void DtcInterface::ResetRoc(int LinkMask, int UpdateMask) {
-    if ((LinkMask != 0) and (UpdateMask != 0)) fLinkMask = LinkMask;
-    
+  void DtcInterface::ResetLink(int Link) {
     int tmo_ms(100);
-    for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i),14,1,false,tmo_ms);  // 1 --> r14: reset ROC
-      }
-    }
-    
+    fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
   }
 
@@ -609,8 +611,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaDigiClear(int LinkMask) {
-    if (LinkMask != 0) SetLinkMask(LinkMask);
+  int DtcInterface::MonicaDigiClear() {
 
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
@@ -675,11 +676,10 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // to be added 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarLinkConfig(int LinkMask, int LaneMask) {
+  int DtcInterface::MonicaVarLinkConfig(int LaneMask) {
     int rc(0);
     
     fRocReadoutMode = 1;                            // 1: read digis
-    if (LinkMask != 0) SetLinkMask(LinkMask);
                                         // bit 13 - disable reset of the counters by the HB next to the null HB
     // int lane_mask = 0x0300 | LaneMask;
     int lane_mask = 0x2300 | LaneMask;
@@ -696,7 +696,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int data_version = 1;
     RocSetDataVersion(data_version);    // Version --> R29
 
-    ResetRoc();                         // use fLinkMask
+    ResetLinks();                         // use fLinkMask
 //-----------------------------------------------------------------------------
 // according to Monica, this is the place for find_alignment and control_roc_read
 // check if all lanes are ready to be read
@@ -732,10 +732,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // buffer test runs would return different results
 // lane mask default: 0xf
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarPatternConfig(int LinkMask, int LaneMask, int NHitsPerLane) {
+  int DtcInterface::MonicaVarPatternConfig(int LaneMask, int NHitsPerLane) {
 
-    ResetRoc();                                      // use fLinkMask
-    if (LinkMask != 0) SetLinkMask(LinkMask);
+    ResetLinks();                                      // use fLinkMask
     int version = 1;
     RocSetDataVersion(version);                      // Version --> R29
 
@@ -814,7 +813,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if((file = fopen(Fn,"r")) != NULL) {
         // file exists
         fclose(file);
-        cout << "ERROR in " << __func__ << " : file " << Fn << " already exists, BAIL OUT" << endl;
+        TLOG(TLVL_ERROR) << "file " << Fn << " already exists, BAIL OUT";
         return;
       }
       else {
@@ -823,7 +822,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
         file = fopen(Fn,"w");
         if (file == nullptr) {
-          cout << "ERROR in " << __func__ << " : failed to open " << Fn << " , BAIL OUT" << endl;
+          TLOG(TLVL_ERROR) <<  "failed to open " << Fn << " , BAIL OUT";
           return;
         }
       }
@@ -949,8 +948,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // print summary
 //-----------------------------------------------------------------------------
     ulong nev = ewt-FirstEWT;
-    TLOG(TLVL_DEBUG) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate);
-    TLOG(TLVL_DEBUG) << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+    TLOG(TLVL_DEBUG) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate)
+                     << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
                              nerr_tot,
                              nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
                              nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);

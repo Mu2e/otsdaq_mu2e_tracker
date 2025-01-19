@@ -14,11 +14,11 @@
 
 #include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 
-#include "DtcInterface.hh"
+#include "DtcInterfaceBase.hh"
 #include "TString.h"    // includes ROOT's Form
 
 #include "TRACE/tracemf.h"
-#define  TRACE_NAME "DtcInterface"
+#define  TRACE_NAME "DtcInterfaceBase"
 
 using namespace DTCLib;
 using namespace std;
@@ -36,8 +36,7 @@ namespace mu2edaq {
       
     TLOG(TLVL_DEBUG) << "CONSTRUCT DTC: pcie_addr:" << PcieAddr
                           << " LinkMask:0x" << std::hex << LinkMask
-                          << std::dec
-                          << " SkipInit:" << SkipInit << std::endl;
+                          << " SkipInit:"   << std::dec << SkipInit;
     fEnabled         = 1;                // default: enabled
     fPcieAddr        = PcieAddr;
     fSampleEdgeMode  = 1;
@@ -97,11 +96,10 @@ namespace mu2edaq {
         return nullptr;
       }
     }
-                                    
-    TLOG(TLVL_DEBUG) << "pcie_addr:" << pcie_addr
+
+    TLOG(TLVL_DEBUG) << "pcie_addr:"   <<             pcie_addr
                      << " LinkMask:0x" << std::hex << LinkMask
-                     << std::dec
-                     << " SkipInit:" << SkipInit << std::endl;
+                     << " SkipInit:"   << std::dec << SkipInit;
     
     if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
     
@@ -122,11 +120,13 @@ namespace mu2edaq {
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
     
-    TLOG(TLVL_DEBUG) << "START : PCIE addr:" << fPcieAddr << " Emulates CFO=" << fEmulateCfo
+    TLOG(TLVL_DEBUG) << "START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
                      << " ROC ReadoutMode:" << fRocReadoutMode; 
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
+    ResetLinks();
+    
     if (fEmulateCfo == 0) {
       rc = InitExternalCFOReadoutMode();
     }
@@ -137,11 +137,6 @@ namespace mu2edaq {
       rc = InitEmulatedCFOReadoutMode();
     }
     if (rc < 0) return rc;
-//-----------------------------------------------------------------------------
-// the DTC link mask could be reset by the previous DTC hard reset, so restore it
-// also, release all buffers from the previous read - this is the initialization
-//-----------------------------------------------------------------------------
-    SetLinkMask();
                                         // this should do for now, later - set the partition ID
                                         // at begin run, for example, as follows
 
@@ -334,6 +329,26 @@ void DtcInterface::InitRocReadoutMode() {
     return data;
   }
 
+
+//-----------------------------------------------------------------------------
+// generic function, should be used after HardReset()
+//-----------------------------------------------------------------------------
+  void DtcInterface::ResetLinks(int LinkMask, int SetNewMask) {
+    if ((LinkMask != 0) and (SetNewMask != 0)) fLinkMask = LinkMask;
+
+    SetLinkMask();
+    
+    for (int i=0; i<6; i++) {
+      int used = (fLinkMask >> 4*i) & 0x1;
+      if (used != 0) ResetLink(i);  // this one is virtual
+    }
+  }
+
+//-----------------------------------------------------------------------------
+// default implementation is empty
+//-----------------------------------------------------------------------------
+  void DtcInterface::ResetLink(int Link) {
+  }
 
 //-----------------------------------------------------------------------------
 // configure itself to use a CFO

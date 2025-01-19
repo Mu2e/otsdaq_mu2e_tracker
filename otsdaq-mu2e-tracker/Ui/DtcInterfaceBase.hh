@@ -113,6 +113,9 @@ namespace mu2edaq {
 // ROC functions
 // if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
+    void         ResetLinks             (int LinkMask = 0, int SetNewMask = 0);
+
+    virtual void ResetLink              (int Link); // no defaults here !
     int          RocReadoutMode         ()  { return fRocReadoutMode; }
     void         SetRocReadoutMode      (int Mode ) { fRocReadoutMode  = Mode ; }
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }

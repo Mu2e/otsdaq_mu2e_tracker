@@ -500,7 +500,7 @@ void DtcGui::reset_roc() {
 //-----------------------------------------------------------------------------
   if (dtel->fData->fName == "DTC") {
     int mask = 1<<4*roc;
-    try         { dtel->fDTC_i->ResetRoc(mask); }
+    try         { dtel->fDTC_i->ResetLinks(mask); }
     catch (...) { *fTextView << Form("ERROR : coudn't reset ROC %i ... BAIL OUT",roc) << std::endl; }
   }
 

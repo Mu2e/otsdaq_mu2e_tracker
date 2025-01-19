@@ -260,9 +260,9 @@ int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 
 //-----------------------------------------------------------------------------
 // LinkMask : hex digit per link, i.e. 0x111 for links 0,1,2
 //-----------------------------------------------------------------------------
-int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
+int dtc_reset_links(int LinkMask, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ResetRoc(LinkMask);
+  dtc_i->ResetLinks(LinkMask);
   return 0;
 }
 

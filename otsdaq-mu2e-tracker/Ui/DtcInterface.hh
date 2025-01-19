@@ -43,11 +43,9 @@ namespace trkdaq {
       roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
 
 //-----------------------------------------------------------------------------
-// ROC functions
-// if LinkMask=0, use fLinkMask
+// ROC functions : if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
-    void         ResetRoc               (int LinkMask = 0, int SetNewMask = 0);
-    void         RocConfigurePatternMode(int LinkMask = 0);
+    void         RocConfigurePatternMode();
     void         RocSetDataVersion      (int Version, int LinkMask=0);
 
     static const char*   fgSpiVarName[TrkSpiDataNWords]; //
@@ -55,11 +53,12 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   public:
-    static const char*  SpiVarName(int I) { return fgSpiVarName[I]; }
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
-    static const char*  SpiVarNaPrintBufferme(int I) { return fgSpiVarName[I]; }
+    static       DtcInterface* Instance             (int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
 
-    std::vector<DTCLib::roc_data_t> ReadDeviceID        (const DTCLib::DTC_Link_ID& Link);
+    static const char*         SpiVarName           (int I) { return fgSpiVarName[I]; }
+    static const char*         SpiVarNamePrintBuffer(int I) { return fgSpiVarName[I]; }
+
+    std::vector<DTCLib::roc_data_t> ReadDeviceID    (const DTCLib::DTC_Link_ID& Link);
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
@@ -142,15 +141,21 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // reset digitizers .. to be called in the beginning of each event 
 //-----------------------------------------------------------------------------
-    int          MonicaDigiClear(int LinkMask = 0);
+    int          MonicaDigiClear();
 //-----------------------------------------------------------------------------
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
-    int          MonicaVarLinkConfig   (int LinkMask = 0, int LaneMask = 0xf);
+    int          MonicaVarLinkConfig   (int LaneMask = 0xf);
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------
-    int          MonicaVarPatternConfig(int LinkMask = 0, int LaneMask = -1, int NHits = -1);
+    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
+//-----------------------------------------------------------------------------
+// overloaded functions of the base class
+//-----------------------------------------------------------------------------
+    virtual void  InitRocReadoutMode() override;
+    virtual void  ResetLink         (int Link) override;
+    
   };
 
   struct RocDataHeaderPacket_t {        // 8 16-byte words in total
