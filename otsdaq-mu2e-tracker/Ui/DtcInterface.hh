@@ -94,11 +94,9 @@ namespace trkdaq {
 
     int          ConvertSpiData(const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
 
-    void         InitRocReadoutMode() override;
-
-    std::vector<std::string> GetRocRegistersNames     (bool history = false) override;
-    std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
-    std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
+    virtual std::vector<std::string> GetRocRegistersNames     (bool history = false) override;
+    virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
+    virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
 
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
