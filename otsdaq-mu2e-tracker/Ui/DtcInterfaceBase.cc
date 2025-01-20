@@ -70,10 +70,9 @@ namespace mu2edaq {
     }
     else {
       fLinkMask       = LinkMask;
+      fDtc->SoftReset();
     }
     
-    fDtc->SoftReset();
-
     fSleepTimeROCWrite =  2000;
     fSleepTimeROCReset =  4000; 
     //    fDtc->ClearCFOEmulationMode();
