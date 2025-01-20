@@ -131,7 +131,7 @@ namespace trkdaq {
 // this should be the only place where we reset the ROC
 // ROC readout mode (fixed_length << 4) | readout_mode
 //-----------------------------------------------------------------------------
-    ResetLinks();       // this seems to be necesary
+// 2025-01-19 PM    ResetLinks();       // forget it ! ... /*this seems to be necesary*/
     
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
       MonicaVarPatternConfig();                  // readout ROC patterns
