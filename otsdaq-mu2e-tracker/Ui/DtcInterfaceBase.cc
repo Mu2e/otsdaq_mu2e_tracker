@@ -296,6 +296,8 @@ void DtcInterface::InitRocReadoutMode() {
 //-----------------------------------------------------------------------------
   void DtcInterface::LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) {
 
+    TLOG(TLVL_DEBUG+1) << "--- START";
+    
     fDtc->DisableCFOEmulation();
     fDtc->SoftReset();                                             // write 0x9100:bit_31 = 1
 
@@ -304,15 +306,18 @@ void DtcInterface::InitRocReadoutMode() {
 
     uint64_t ew_mode = EventMode();     // this really is the event mode
 
+    TLOG(TLVL_DEBUG+1) << " checkpoint 001";
+    
     fDtc->SetCFOEmulationEventMode          (ew_mode  );
 
     fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
 
-                                        // this command sends the EWM's
+                                        // this command sends the EWM's by setting bit30 high
     fDtc->EnableCFOEmulation();         // r_0x9100:bit_30 = 1
 
-    TLOG(TLVL_DEBUG+10) << Form("EWLength=%i NMarkers=%i FirstEWTag=%i EventMode=0x%08lx\n",
+    TLOG(TLVL_DEBUG+1) << Form("EWLength=%i NMarkers=%i FirstEWTag=%i EventMode=0x%08lx\n",
                                 EWLength,NMarkers,FirstEWTag,ew_mode);
+    TLOG(TLVL_DEBUG+1) << "--- END";
   }
     
 

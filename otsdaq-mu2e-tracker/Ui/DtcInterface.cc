@@ -139,15 +139,15 @@ namespace trkdaq {
     else if ((fRocReadoutMode & 0xf) == 1) {
       MonicaVarLinkConfig();                      // readout ROC digis
 
-      ostringstream sout;
-      PrintRocStatus(1,-1,sout);
-      TLOG(TLVL_DEBUG) << "after MonicaVarLinkConfig:\n" << sout.str();
+      // ostringstream sout;
+      // PrintRocStatus(1,-1,sout);
+      // TLOG(TLVL_DEBUG) << "after MonicaVarLinkConfig:\n" << sout.str();
       
       MonicaDigiClear();                          //
 
-      sout.str("");
-      PrintRocStatus(1,-1,sout);
-      TLOG(TLVL_DEBUG) << "after MonicaDigiClear:\n" << sout.str();
+      // sout.str("");
+      // PrintRocStatus(1,-1,sout);
+      // TLOG(TLVL_DEBUG) << "after MonicaDigiClear:\n" << sout.str();
       
     }
     else {
