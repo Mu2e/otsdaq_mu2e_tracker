@@ -124,8 +124,6 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
-    ResetLinks();
-    
     if (fEmulateCfo == 0) {
       rc = InitExternalCFOReadoutMode();
     }
@@ -136,6 +134,12 @@ namespace mu2edaq {
       rc = InitEmulatedCFOReadoutMode();
     }
     if (rc < 0) return rc;
+//-----------------------------------------------------------------------------
+// both of Init_XX_CFOReadoutMode disable all links, need to re-enable
+// do we need to reset the ROCs at this point ?
+//-----------------------------------------------------------------------------
+    ResetLinks();
+    // SetLinkMask();
                                         // this should do for now, later - set the partition ID
                                         // at begin run, for example, as follows
 
@@ -144,7 +148,10 @@ namespace mu2edaq {
     uint8_t partition_id = fPartitionID & 0xff;
     uint8_t mac_byte     = fMacAddrByte & 0xff;
     fDtc->SetEVBInfo(id,event_mode,partition_id,mac_byte);
-                                           
+//-----------------------------------------------------------------------------
+// Init*CFOReadoutMode functions disable all links, at this point the links
+// should still be disabled
+//-----------------------------------------------------------------------------
     InitRocReadoutMode();
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
@@ -377,9 +384,9 @@ void DtcInterface::InitRocReadoutMode() {
     if (Mask != 0) fLinkMask = Mask;
     
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used) fDtc->EnableLink (DTC_Link_ID(i),DTC_LinkEnableMode());
-      else      fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode());
+      int enabled= (fLinkMask >> 4*i) & 0x1;
+      if (enabled) fDtc->EnableLink (DTC_Link_ID(i),DTC_LinkEnableMode());
+      else         fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode());
     }
   }
 
