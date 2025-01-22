@@ -41,9 +41,10 @@ namespace trkdaq {
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
 
 //-----------------------------------------------------------------------------
+// default ROC readout mode:0
+//-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) 
     : mu2edaq::DtcInterface(PcieAddr, LinkMask, SkipInit) {
-    //fRocReadoutMode  = 0;                // for now, assume patterns are the default
     fRocLaneMask     = 0xf;              // all lanes enabled
     fRocNHitsPerLane = 2;                // Monica's default for fRocReadoutMode=2
   };
@@ -297,8 +298,8 @@ namespace trkdaq {
     
     int tmo_ms(100);
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
+      int enabled = (fLinkMask >> 4*i) & 0x1;
+      if (enabled != 0) {
         fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
       }
     }
@@ -338,6 +339,7 @@ namespace trkdaq {
 
     // reset ddr memory
     fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // return
     return rv;
@@ -685,9 +687,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int lane_mask = 0x2300 | LaneMask;
     
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
+      int enabled = (fLinkMask >> 4*i) & 0x1;
+      if (enabled) {
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        TLOG(TLVL_INFO) << "wrote lane_mask:" << std::hex << lane_mask
+                        << " to ROC:" << i <<" reg:8, read back:" << fDtc->ReadROCRegister(DTC_Link_ID(i), 8,100);
       }
     }
     
@@ -708,6 +713,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         if ((u >> 0x8) != LaneMask) {
           // try to recover
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
           // fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
           // and check again
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
@@ -755,6 +761,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // mask bit#12=0: 'ROC counter;
 //-----------------------------------------------------------------------------
           fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000); // configure ROC to send variable length patterns
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
         }
         else {
 //-----------------------------------------------------------------------------
@@ -773,11 +780,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           if (var_pattern_length == 1) mask = mask | 0x00000010;
           else                         mask = mask & 0xffffffef;
           fDtc->WriteROCRegister(DTC_Link_ID(i), 8,mask,false,1000);   // configure ROC to send fixed length patterns
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
           int nhits = NHitsPerLane;
           if (nhits < 0) nhits = fRocNHitsPerLane;
           uint16_t w15 = (nhits & 0x3ff);
           fDtc->WriteROCRegister(DTC_Link_ID(i),15,w15,false,1000);
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
           TLOG(TLVL_DEBUG) << "var_pattern_length:" << var_pattern_length
                            << " reg#08:0x" << std::hex << std::setw(4) << std::setfill('0') << mask
@@ -785,7 +794,6 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         }
       }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     return 0;
   }
@@ -985,6 +993,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
     // reset ddr memory
     fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // return
     return rv;

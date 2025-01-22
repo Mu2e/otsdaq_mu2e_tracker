@@ -89,8 +89,10 @@ namespace  trkdaq {
   }
 
   
-  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par, int LinkMask, bool UpdateMask,
-                                    int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par       ,
+                                    int                      LinkMask  ,
+                                    int                      PrintLevel,
+                                    std::ostream&            Stream    ) {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -116,59 +118,57 @@ namespace  trkdaq {
   
     TLOG(TLVL_DEBUG) << "LinkMask: 0x" << std::hex << LinkMask << std::dec << " PrintLevel:" << PrintLevel;
 
-#if READ_ROC_VERSION == 1
     vec.push_back(Par->adc_mode);
     vec.push_back(Par->tdc_mode);
     vec.push_back(Par->num_lookback);
     
-    uint16_t w1 = Par->num_triggers[0];
-    uint16_t w2 = Par->num_triggers[1];
+    if (Par->version == 1) {
+      uint16_t w1 = Par->v1.num_triggers[0];
+      uint16_t w2 = Par->v1.num_triggers[1];
     
-    vec.push_back(w1);
-    vec.push_back(w2);
+      vec.push_back(w1);
+      vec.push_back(w2);
 
-    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
+      for (int i=0; i<6; i++) vec.push_back(Par->v1.ch_mask[i]); 
 
-    if (Par->num_samples > 63) {
-      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
-      Par->num_samples = 63;
+      if (Par->v1.num_samples > 63) {
+        TLOG(TLVL_WARNING) << "num_samples:" << Par->v1.num_samples << " > 63, truncate to 63" ;
+        Par->v1.num_samples = 63;
+      }
+
+      vec.push_back(Par->v1.num_samples);
+
+      vec.push_back(Par->v1.enable_pulser);
+      vec.push_back(1 );                  // max_total_delay (unused)
+      vec.push_back(Par->v1.marker_clock );
+      // vec.push_back(0 );
+      // vec.push_back(99);
     }
+    else if (Par->version == 2) {
 
-    vec.push_back(Par->num_samples);
+      if (Par->v2.num_samples > 63) {
+        TLOG(TLVL_WARNING) << "num_samples:" << Par->v2.num_samples << " gt 63, truncate to 63" ;
+        Par->v2.num_samples = 63;
+      }
 
-    vec.push_back(Par->enable_pulser);
-    vec.push_back(1 );                  // max_total_delay (unused)
-    vec.push_back(Par->marker_clock );
-    // vec.push_back(0 );
-    // vec.push_back(99);
-#elif READ_ROC_VERSION == 2
-    vec.push_back(Par->adc_mode);
-    vec.push_back(Par->tdc_mode);
-    vec.push_back(Par->num_lookback);
-    
-    if (Par->num_samples > 63) {
-      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
-      Par->num_samples = 63;
+      vec.push_back(Par->v2.num_samples);
+      
+      uint16_t w1 = Par->v2.num_triggers[0];
+      uint16_t w2 = Par->v2.num_triggers[1];
+      
+      vec.push_back(w1);
+      vec.push_back(w2);
+      
+      for (int i=0; i<6; i++) vec.push_back(Par->v2.ch_mask[i]); 
+      
+      vec.push_back(Par->v2.enable_pulser);
+      // vec.push_back(1 );                  // max_total_delay (unused)
+      vec.push_back(Par->v2.marker_clock );
+      vec.push_back(Par->v2.mode  );
+      vec.push_back(Par->v2.clock );
+      // vec.push_back(0 );
+      // vec.push_back(99);
     }
-
-    vec.push_back(Par->num_samples);
-
-    uint16_t w1 = Par->num_triggers[0];
-    uint16_t w2 = Par->num_triggers[1];
-
-    vec.push_back(w1);
-    vec.push_back(w2);
-
-    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
-
-    vec.push_back(Par->enable_pulser);
-    // vec.push_back(1 );                  // max_total_delay (unused)
-    vec.push_back(Par->marker_clock );
-    vec.push_back(Par->mode  );
-    vec.push_back(Par->clock );
-    // vec.push_back(0 );
-    // vec.push_back(99);
-#endif
       
     bool increment_address(false);
 //-----------------------------------------------------------------------------
@@ -178,7 +178,6 @@ namespace  trkdaq {
     int link_mask = fLinkMask;
     if (LinkMask != -1) {
       link_mask = LinkMask;
-      if (UpdateMask) fLinkMask = LinkMask;
     }
 
     for (int i=0; i<6; i++) {
@@ -188,7 +187,7 @@ namespace  trkdaq {
       fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
-      // 0x86 = 0x82 + 4
+                                        // 0x86 = 0x82 + 4
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
@@ -199,49 +198,51 @@ namespace  trkdaq {
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
-      std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
+      std::vector<uint16_t> vout;
+      fDtc->ReadROCBlock(vout,roc,reg,nw,false,100);
         
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw,&Stream);
+        PrintBuffer(vout.data(),nw,&Stream);
       }
         
       if (PrintLevel & 0x2) {
-        trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) v2.data();
-
-#if READ_ROC_VERSION == 1
-        Stream << Form("enable_pulser   : %i\n",o->enable_pulser);
-        Stream << Form("num_samples     : %i\n",o->num_samples);
-        Stream << Form("num_lookback    : %i\n",o->num_lookback);
-        Stream << Form("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-                       o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
-        Stream << Form("adc_mode        : %i\n",o->adc_mode);
-        Stream << Form("tdc_mode        : %i\n",o->tdc_mode);
-        Stream << Form("num_triggers    : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
-        Stream << Form("digi_read_0xb   : 0x%04x\n",o->digi_read_0xb);
-        Stream << Form("digi_read_0xe   : 0x%04x\n",o->digi_read_0xe);
-        Stream << Form("digi_read_0xd   : 0x%04x\n",o->digi_read_0xd);
-        Stream << Form("digi_read_0xc   : 0x%04x\n",o->digi_read_0xc);
-        Stream << Form("mode            : %i\n",o->mode);
-        Stream << Form("clock           : %i\n",o->clock);
-        Stream << Form("marker_clock    : %i\n",o->marker_clock);
-#elif READ_ROC_VERSION == 2
-        Stream << Form("adc_mode     : %i\n",o->adc_mode);
-        Stream << Form("tdc_mode     : %i\n",o->tdc_mode);
-        Stream << Form("num_lookback : %i\n",o->num_lookback);
-        Stream << Form("num_triggers : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
-        Stream << Form("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-                       o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
-        Stream << Form("num_samples  : %i\n",o->num_samples);
-        Stream << Form("enable_pulser : %i\n",o->enable_pulser);
-        Stream << Form("marker_clock  : %i\n",o->marker_clock);
-        Stream << Form("mode          : %i\n",o->mode);
-        Stream << Form("clock         : %i\n",o->clock);
-        Stream << Form("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
-        Stream << Form("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
-        Stream << Form("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
-        Stream << Form("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
-#endif
+        trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) vout.data();
+        if (Par->version == 1) {
+          Stream << Form("enable_pulser   : %i\n",o->v1.enable_pulser);
+          Stream << Form("num_samples     : %i\n",o->v1.num_samples);
+          Stream << Form("num_lookback    : %i\n",o->v1.num_lookback);
+          Stream << Form("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                         o->v1.ch_mask[0],o->v1.ch_mask[1],o->v1.ch_mask[2],
+                         o->v1.ch_mask[3],o->v1.ch_mask[4],o->v1.ch_mask[5]);
+          Stream << Form("adc_mode        : %i\n",o->v1.adc_mode);
+          Stream << Form("tdc_mode        : %i\n",o->v1.tdc_mode);
+          Stream << Form("num_triggers    : %5i %5i\n",o->v1.num_triggers[0],o->v1.num_triggers[1]);
+          Stream << Form("digi_read_0xb   : 0x%04x\n" ,o->v1.digi_read_0xb);
+          Stream << Form("digi_read_0xe   : 0x%04x\n" ,o->v1.digi_read_0xe);
+          Stream << Form("digi_read_0xd   : 0x%04x\n" ,o->v1.digi_read_0xd);
+          Stream << Form("digi_read_0xc   : 0x%04x\n" ,o->v1.digi_read_0xc);
+          Stream << Form("mode            : %i\n"     ,o->v1.mode);
+          Stream << Form("clock           : %i\n"     ,o->v1.clock);
+          Stream << Form("marker_clock    : %i\n"     ,o->v1.marker_clock);
+        }
+        else if (Par->version == 2) {
+          Stream << Form("adc_mode     : %i\n",o->v2.adc_mode);
+          Stream << Form("tdc_mode     : %i\n",o->v2.tdc_mode);
+          Stream << Form("num_lookback : %i\n",o->v2.num_lookback);
+          Stream << Form("num_triggers : %5i %5i\n",o->v2.num_triggers[0],o->v2.num_triggers[1]);
+          Stream << Form("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                         o->v2.ch_mask[0],o->v2.ch_mask[1],o->v2.ch_mask[2],
+                         o->v2.ch_mask[3],o->v2.ch_mask[4],o->v2.ch_mask[5]);
+          Stream << Form("num_samples  : %i\n"     ,o->v2.num_samples);
+          Stream << Form("enable_pulser : %i\n"    ,o->v2.enable_pulser);
+          Stream << Form("marker_clock  : %i\n"    ,o->v2.marker_clock);
+          Stream << Form("mode          : %i\n"    ,o->v2.mode);
+          Stream << Form("clock         : %i\n"    ,o->v2.clock);
+          Stream << Form("digi_read_0xb : 0x%04x\n",o->v2.digi_read_0xb);
+          Stream << Form("digi_read_0xe : 0x%04x\n",o->v2.digi_read_0xe);
+          Stream << Form("digi_read_0xd : 0x%04x\n",o->v2.digi_read_0xd);
+          Stream << Form("digi_read_0xc : 0x%04x\n",o->v2.digi_read_0xc);
+        }
       }
     }
 //-----------------------------------------------------------------------------

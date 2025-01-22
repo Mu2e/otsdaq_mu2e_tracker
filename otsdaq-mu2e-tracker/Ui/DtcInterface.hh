@@ -71,9 +71,8 @@ namespace trkdaq {
                                    int                         LinkMask   = -1,
                                    int                         PrintLevel =  0);
     
-    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par               ,
+    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par          ,
                                  int                      LinkMask   = -1   ,
-                                 bool                     UpdateMask = false,
                                  int                      PrintLevel = 0    ,
                                  std::ostream&            Stream     = std::cout);
 //-----------------------------------------------------------------------------

@@ -28,8 +28,6 @@ enum {
   kAutogenDRPBit         = 23,
 };
 
-// #include "control_roc_read.C"
-
 namespace daq_scripts {
   int EWLength    = 68;                 // in units of 25 ns, = 1700 ns
   int EdgeMode    = 0x0;                // two bits
@@ -174,7 +172,8 @@ int dtc_control_roc_digi_rw(int      Address          ,
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_read(int      LinkMask     = -1,
+int dtc_control_roc_read(int      Version,
+                         int      LinkMask     = -1,
                          int      AdcMode      = 4,
                          int      TdcMode      = 0,
                          int      EnablePulser = 1, 
@@ -188,29 +187,50 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 
   ControlRoc_Read_Input_t par;
   
+  par.version         = Version;
   par.adc_mode        = AdcMode;        // -a
   par.tdc_mode        = TdcMode;        // -t 
   par.num_lookback    = 8;              // -l 
-  par.num_samples     = NumSamples;     // -s
-  par.num_triggers[0] = 10;             // -T 10
-  par.num_triggers[1] = 0;              // -T (high bytes)
-  
-  par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
-  par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
-  par.ch_mask[2]      = (MaskD >>  0) & 0xffff;
-  par.ch_mask[3]      = (MaskD >> 16) & 0xffff;
-  par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
-  par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
-  par.enable_pulser   = EnablePulser;   // -p 1
-  par.marker_clock    = 3;              // -m 3
-  par.mode            = 0;              // 
-  par.clock           = 99;             // 
+  if (Version == 1) {
+    par.v1.num_samples     = NumSamples;     // -s
+    par.v1.num_triggers[0] = 10;             // -T 10
+    par.v1.num_triggers[1] = 0;              // -T (high bytes)
+  
+    par.v1.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+    par.v1.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+    par.v1.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+    par.v1.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+    par.v1.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+    par.v1.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+
+    par.v1.enable_pulser   = EnablePulser;   // -p 1
+    par.v1.marker_clock    = 3;              // -m 3
+    par.v1.mode            = 0;              // 
+    par.v1.clock           = 99;             //
+  }
+  else if (Version == 2) {
+    par.v2.num_samples     = NumSamples;     // -s
+    par.v2.num_triggers[0] = 10;             // -T 10
+    par.v2.num_triggers[1] = 0;              // -T (high bytes)
+  
+    par.v2.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+    par.v2.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+    par.v2.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+    par.v2.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+    par.v2.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+    par.v2.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+
+    par.v2.enable_pulser   = EnablePulser;   // -p 1
+    par.v2.marker_clock    = 3;              // -m 3
+    par.v2.mode            = 0;              // 
+    par.v2.clock           = 99;             //
+  }
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  bool update_mask(false);
   int  print_level(3);
-  dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,print_level);
+  
+  dtc_i->ControlRoc_Read(&par,LinkMask,print_level);
   return 0;
 }
 
