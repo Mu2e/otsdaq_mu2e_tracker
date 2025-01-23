@@ -711,10 +711,11 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (used != 0) {
         uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
         if ((u >> 0x8) != LaneMask) {
-          // try to recover
+          // try to recover - write 1, then - 0 to reg 13
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-          // fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
+          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
           // and check again
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
           if ((u >> 0x8) != LaneMask) {
