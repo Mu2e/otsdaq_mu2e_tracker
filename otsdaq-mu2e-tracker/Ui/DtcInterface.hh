@@ -66,15 +66,20 @@ namespace trkdaq {
     int          ControlRoc(const char* Command, void* Parameters);
 
     // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
-    int          ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t*  Input          ,
-                                   ControlRoc_DigiRW_Output_t* Output         ,
-                                   int                         LinkMask   = -1,
-                                   int                         PrintLevel =  0);
+    int          ControlRoc_DigiRW (ControlRoc_DigiRW_Input_t*  Input          ,
+                                    ControlRoc_DigiRW_Output_t* Output         ,
+                                    int                         LinkMask   = -1,
+                                    int                         PrintLevel =  0);
     
-    int          ControlRoc_Read(ControlRoc_Read_Input_t* Par          ,
-                                 int                      LinkMask   = -1   ,
-                                 int                      PrintLevel = 0    ,
-                                 std::ostream&            Stream     = std::cout);
+    int          ControlRoc_Read   (ControlRoc_Read_Input_t* Par          ,
+                                    int                      LinkMask   = -1   ,
+                                    int                      PrintLevel = 0    ,
+                                    std::ostream&            Stream     = std::cout);
+    
+    int          ControlRoc_ReadSpi(int Link,
+                                    std::vector<uint16_t>&   SpiRawData,
+                                    int                      PrintLevel = 0,
+                                    std::ostream&            Stream     = std::cout);
 //-----------------------------------------------------------------------------
 // measure thresholds returns an array of thresholds, which needs to be parsed
 // so far, do it internally
@@ -91,7 +96,10 @@ namespace trkdaq {
     int          ControlRoc_SetGain     (int Link, int ChannelID, int PreampType, int Gain     );
     int          ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold);
 
-    int          ConvertSpiData(const std::vector<uint16_t>& RawData, TrkSpiData_t* Data, int PrintLevel = 0);
+    int          ConvertSpiData(const std::vector<uint16_t>& RawData,
+                                TrkSpiData_t*                Data   ,
+                                int                          PrintLevel = 0,
+                                std::ostream&                Stream     = std::cout);
 
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false) override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
@@ -112,13 +120,13 @@ namespace trkdaq {
     void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocStatus   (int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
 
-    int          ReadSpiData     (int Link, std::vector<uint16_t>& SpiRawData, int PrintLevel = 0);
-
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                   ulong       FirstTS,
                                   int         PrintData,
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
+
+    int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);

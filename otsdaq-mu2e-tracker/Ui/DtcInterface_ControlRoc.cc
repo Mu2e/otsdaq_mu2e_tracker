@@ -395,4 +395,35 @@ namespace  trkdaq {
   }
   
 
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadSpi(int Link, std::vector<uint16_t>& SpiRawData, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+//-----------------------------------------------------------------------------
+// ReadSPI: reg 258
+//-----------------------------------------------------------------------------
+    RocBlockRead(Link,258,SpiRawData);
+
+    int nw = SpiRawData.size();
+
+    if (nw != TrkSpiDataNWords) {
+      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
+      rc = -1;
+    }
+//-----------------------------------------------------------------------------
+// PrintLevel bit 0: print SPI data in hex 
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x1) != 0) {
+      PrintBuffer(SpiRawData.data(),nw,&Stream);
+    }
+//-----------------------------------------------------------------------------
+// PrintLevel bit 1: parse SPI data and print them
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x2) != 0) {
+      struct TrkSpiData_t spi;
+      ConvertSpiData(SpiRawData,&spi,PrintLevel,Stream);  // &spi[0]
+    }
+
+    return rc;
+  }
+  
 };

@@ -414,7 +414,7 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
   vector<uint16_t>   spi_data;
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSpiData(Link,spi_data,PrintLevel);
+  dtc_i->ControlRoc_ReadSpi(Link,spi_data,PrintLevel);
 }
 
 //-----------------------------------------------------------------------------

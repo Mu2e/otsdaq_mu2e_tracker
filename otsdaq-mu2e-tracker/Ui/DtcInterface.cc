@@ -158,7 +158,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel) {
+  int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream) {
     const char* keys[] = {
       "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
       "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
@@ -212,63 +212,11 @@ namespace trkdaq {
       }
       
       if (PrintLevel > 0) {
-        printf("%-20s : %10.3f\n",keys[i],val[i]);
+        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
       }
     }
 
     return 0;
-  }
-
-//-----------------------------------------------------------------------------
-  int DtcInterface::ReadSpiData(int Link, vector<uint16_t>& SpiRawData, int PrintLevel) {
-    int rc(0);
-//-----------------------------------------------------------------------------
-// is this really needed ? - probably not
-//-----------------------------------------------------------------------------
-    // MonicaVarLinkConfig();
-    // MonicaDigiClear();
-//-----------------------------------------------------------------------------
-// after writing into reg 258, sleep for some time, 
-// then wait till reg 128 returns non-zero
-//-----------------------------------------------------------------------------
-    DTC_Link_ID rlink = DTC_ROC_Links[Link];
-    
-    fDtc->WriteROCRegister   (rlink,258,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(rlink,128,100)) == 0) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
-//-----------------------------------------------------------------------------
-// register 129: number of words to read, currently-  (+ 4) (ask Monica)
-// 2024-05-10: is r129 now returning the number of bytes ?
-//-----------------------------------------------------------------------------
-    int nb = fDtc->ReadROCRegister(rlink,129,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nb);
-
-    int nw = nb-4;
-
-    if (nw != TrkSpiDataNWords) {
-      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
-      rc = -1;
-    }
-
-    fDtc->ReadROCBlock(SpiRawData,rlink,258,nw,false,100); // 
-//-----------------------------------------------------------------------------
-// print SPI data in hex 
-//-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x1) != 0) {
-      PrintBuffer(SpiRawData.data(),nw);
-    }
-//-----------------------------------------------------------------------------
-// parse SPI data and print them
-//-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x2) != 0) {
-      struct TrkSpiData_t spi;
-      ConvertSpiData(SpiRawData,&spi,PrintLevel);  // &spi[0]
-    }
-
-    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -971,6 +919,41 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     }
   }
 
+  
+//-----------------------------------------------------------------------------  
+// 2025-01-31: P.Murat: presently, calls to begin_dcs_transaction() and end_dcs_transaction()
+// are just TODO reminders and don't do anything useful
+//-----------------------------------------------------------------------------
+  int DtcInterface::RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+    auto link_id  = DTC_Link_ID(Link);
+
+    fDtc->GetDevice()->begin_dcs_transaction();
+    
+    fDtc->WriteROCRegister   (link_id,Reg,0x0000,false,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
+    printf("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = fDtc->ReadROCRegister(link_id,129,100); // printf("reg:%03i val:0x%04x\n",129,nw);
+
+    nw -= 4;
+    fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
+//-----------------------------------------------------------------------------
+// does the ROC need to be reset ? Monica says NO.
+//-----------------------------------------------------------------------------
+    fDtc->GetDevice()->end_dcs_transaction();
+
+    return 0;
+  }
+
+
 //-----------------------------------------------------------------------------
 // wrapper for DTCLib::DTC::ReadROCBlock
 //-----------------------------------------------------------------------------
@@ -1026,7 +1009,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     if(history) {
       try { 
         std::vector<uint16_t> spi_raw_data;
-        ReadSpiData   (ilink,spi_raw_data,0);
+        ControlRoc_ReadSpi(ilink,spi_raw_data,0);
         
         for (int iw=0; iw<TrkSpiDataNWords; iw++) {
           roc_reg.emplace_back(spi_raw_data[iw]);
@@ -1063,8 +1046,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       try { 
         std::vector<uint16_t> spi_raw_data;
         struct TrkSpiData_t   spi;
-        ReadSpiData   (ilink,spi_raw_data,0);
-        ConvertSpiData(spi_raw_data,&spi,0);
+        ControlRoc_ReadSpi(ilink,spi_raw_data,0);
+        ConvertSpiData    (spi_raw_data,&spi,0);
               
         std::vector<float> roc_spi;
               
