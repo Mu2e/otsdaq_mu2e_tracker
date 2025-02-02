@@ -50,8 +50,6 @@ namespace mu2edaq {
     int                  fSleepTimeROCWrite;             // the two are different 
     int                  fSleepTimeROCReset;             // 
     int                  fCounter;
-    //    int                  fPrintLevel;                    // 
-
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------

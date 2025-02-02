@@ -26,7 +26,7 @@ namespace trkdaq {
   CfoInterface* CfoInterface::fgInstance = nullptr;
 
 //-----------------------------------------------------------------------------
-  CfoInterface::CfoInterface(int PcieAddr, uint DtcMask, DTC_SimMode SimMode, bool SkipInit) {
+  CfoInterface::CfoInterface(int PcieAddr, uint LinkMask, DTC_SimMode SimMode, bool SkipInit) {
     std::string expected_version("");              // dont check
     std::string sim_file        ("mu2esim.bin");
     std::string uid             ("");
@@ -36,11 +36,11 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // init DTC mask, less 16 DTCs per tine chain
 //-----------------------------------------------------------------------------
-    fDtcMask  = DtcMask;
+    fLinkMask  = LinkMask;
     fJAMode   = 0x11;
     //    int link_mask = 0;
     for (int i=0; i<8; i++) {
-      int ndtcs = (fDtcMask >> 4*i) & 0xf;
+      int ndtcs = (fLinkMask >> 4*i) & 0xf;
       if (ndtcs > 0) fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true ,true ),ndtcs);
       else           fCfo->DisableLink(CFO_Link_ID(i),DTC_LinkEnableMode(false,false));
     }
@@ -55,7 +55,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  CfoInterface* CfoInterface::Instance(int PcieAddr, uint DtcMask) {
+  CfoInterface* CfoInterface::Instance(int PcieAddr, uint LinkMask) {
     int pcie_addr = PcieAddr;
     if (pcie_addr < 0) {
 //-----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ namespace trkdaq {
       }
     }
 
-    if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,DtcMask,DTC_SimMode_NoCFO);
+    if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,LinkMask,DTC_SimMode_NoCFO);
       
     if (fgInstance->PcieAddr() != pcie_addr) {
       TLOG(TLVL_ERROR) << Form("CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
@@ -140,10 +140,10 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  int CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
+  int CfoInterface::InitReadout(const char* RunPlan, uint LinkMask) {
     int rc(0);
 
-    TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
+    TLOG(TLVL_INFO) << Form("runplan: %s  LinkMask:0x%08x\n",RunPlan,LinkMask);
     
     fCfo->DisableLinks();                                    // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
@@ -161,9 +161,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // in the end, re-initialize the time chains defined by the DTC mask
 //-----------------------------------------------------------------------------
-    if (DtcMask != 0) fDtcMask = DtcMask;
+    if (LinkMask != 0) fLinkMask = LinkMask;
     for (int i=0; i<8; i++) {
-      int ndtcs = (fDtcMask >> 4*i) & 0xf;
+      int ndtcs = (fLinkMask >> 4*i) & 0xf;
       if (ndtcs > 0) {
         fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
         TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
@@ -173,30 +173,6 @@ namespace trkdaq {
     return rc;
   }
   
-  // void CfoInterface::InitReadout(const char* RunPlan, uint DtcMask) {
-
-  //   TLOG(TLVL_INFO) << Form("runplan: %s  DtcMask:0x%08x\n",RunPlan,DtcMask);
-
-  //   CfoInterface* cfo_i = this;
-    
-  //   cfo_i->Cfo()->DisableLinks();                                    // Ryan says this is important
-  //   cfo_i->Cfo()->DisableEmbeddedClockMarker();
-  //   cfo_i->Cfo()->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);    //
-  //   cfo_i->Cfo()->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  //   ConfigureJA(1,1); // cfo_configure_ja(1,1)
-  //   cfo_i->Cfo()->SoftReset();
-  //   //     cfo_i->SetRunPlan("../cfo_run_plans/run_066.bin");
-  //   cfo_i->SetRunPlan(RunPlan);
-  //   TLOG(TLVL_INFO) << Form("Run plan: :%s:  :../cfo_run_plans/run_066.bin:\n",RunPlan);
-  //   // cfo_i->SetRunPlan("../cfo_run_plans/run_00001_hz.bin")
-  //   // reset after set seems to be a must... 
-  //   // enable in the end ? 
-  //   cfo_i->Cfo()->EnableLink (CFO_Link_ID(0),DTC_LinkEnableMode(true,true),1);
-
-  //   //    cfo_i->Cfo()->EnableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  //   TLOG(TLVL_INFO) << Form("Done\n");
-  // }
-
 //-----------------------------------------------------------------------------
   uint32_t CfoInterface::ReadRegister(uint16_t Register) {
 
@@ -247,6 +223,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// Fn is a binary file
 // first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
 // (sizeof(mu2e_databuff_t)
 //-----------------------------------------------------------------------------

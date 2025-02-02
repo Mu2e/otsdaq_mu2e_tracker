@@ -20,8 +20,10 @@ namespace trkdaq {
 
     CFOLib::CFO*         fCfo;
     int                  fPcieAddr;
-    uint                 fDtcMask;      // DTC mask, 4 bits per N(DTCs)
+    uint                 fLinkMask;     // DTC link mask, 4 bits per N(DTCs)
+    int                  fEventMode;    // event mode = 0: null heartbeats
     int                  fJAMode;       // clock_source << 4 | reset
+    int                  fEnabled;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -59,7 +61,9 @@ namespace trkdaq {
 // 2. compile and load it
 // 'EWLength' in units of 25 ns (40 MHz clock ticks)
 //-----------------------------------------------------------------------------
-    void         SetJAMode         (int Mode) { fJAMode = Mode; }
+    void         SetEventMode      (int Mode) { fEventMode  = Mode; }
+    void         SetJAMode         (int Mode) { fJAMode     = Mode; }
+    
     void         SetOffspillRunPlan(int NEvents, int EWLength);
   };
 
