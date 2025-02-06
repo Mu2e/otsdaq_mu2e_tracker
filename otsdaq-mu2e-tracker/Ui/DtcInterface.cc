@@ -127,7 +127,7 @@ namespace trkdaq {
 // this is fully tracker-specific
 //-----------------------------------------------------------------------------
   void DtcInterface::InitRocReadoutMode() {
-    TLOG(TLVL_DEBUG) << Form("START : fRocReadoutMode=%i\n",fRocReadoutMode);
+    TLOG(TLVL_DEBUG) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
 //-----------------------------------------------------------------------------
 // this should be the only place where we reset the ROC
 // ROC readout mode (fixed_length << 4) | readout_mode
@@ -154,7 +154,7 @@ namespace trkdaq {
     else {
       TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
     }
-    TLOG(TLVL_DEBUG) << Form("END   : fRocReadoutMode=%i\n",fRocReadoutMode);
+    TLOG(TLVL_DEBUG) << Form("-- END: fRocReadoutMode=%i\n",fRocReadoutMode);
   }
 
 //-----------------------------------------------------------------------------

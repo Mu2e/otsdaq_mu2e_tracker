@@ -105,11 +105,11 @@ void* DtcGui::ReaderThread(void* Context) {
           
           char* roc_data  = data+0x30;
 
-          ushort rs[6];
+          ushort rs[6], rnb[6];
           for (int roc=0; roc<6; roc++) {
-            int nb    = *((ushort*) roc_data);
+            rnb[roc]  = *((ushort*) roc_data);
             rs[roc]   = *((ushort*)(roc_data+0x0c));
-            roc_data += nb;
+            roc_data += rnb[roc];
           }
 
           if (tstamp % print_freq == 0) {
@@ -119,6 +119,7 @@ void* DtcGui::ReaderThread(void* Context) {
               timer.Continue();
               cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
                    << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                   << Form(" %5i %5i %5i %5i %5i %5i",rnb[0],rnb[1],rnb[2],rnb[3],rnb[4],rnb[5])
                    << Form(" %3i %5i\n",nerr,nerr_tot);
               if (tc->fPrintLevel > 10) {
                 dtc_i->PrintBuffer(dtc_block->GetRawBufferPointer(),dtc_block->GetSubEventByteCount()/2);
@@ -132,6 +133,7 @@ void* DtcGui::ReaderThread(void* Context) {
                 timer.Continue();
                 cout << Form("%8.2f %8.2f %10lu  %1i  %10lu %6i %13li",ct,rt,tstamp,i,ew_tag,nbytes,nbytes_tot)
                      << Form(" 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x",rs[0],rs[1],rs[2],rs[3],rs[4],rs[5])
+                     << Form(" %5i %5i %5i %5i %5i %5i",rnb[0],rnb[1],rnb[2],rnb[3],rnb[4],rnb[5])
                      << Form(" %3i %5i %5i %5i %5i %5i %5i %5i \n",nerr,nerr_tot,
                              nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
               }
