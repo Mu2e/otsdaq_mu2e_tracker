@@ -207,11 +207,11 @@ void DtcInterface::InitRocReadoutMode() {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
     int rc(0);
 
-    TLOG(TLVL_DEBUG) << Form("START\n");
+    TLOG(TLVL_DEBUG) << Form("-- START");
 
-    fDtc->DisableCFOEmulation();
-    fDtc->DisableReceiveCFOLink();      // r_0x9114:bit_14 = 0
-                                        // this one doesn't take DTC_Link_ALL gently
+    fDtc->DisableCFOEmulation();                                   // r_0x9100:bit_30 = 0
+    fDtc->DisableReceiveCFOLink();                                 // r_0x9114:bit_14 = 0
+                                                                   // this one doesn't take DTC_Link_ALL gently
     for (int i=0; i<6; i++) {
       fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
     }
@@ -224,8 +224,8 @@ void DtcInterface::InitRocReadoutMode() {
     int reset        = fJAMode & 0x1;
     
     rc = ConfigureJA(clock_source,reset);
-    if (rc < 0) return rc;
-                                        // this one is OK...
+    fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
+                                                                   // this one is OK...
     int EnableClockMarkers = 0;
     fDtc->SetCFO40MHzClockMarkerEnable      (DTC_Link_ALL,EnableClockMarkers);
 
@@ -234,9 +234,9 @@ void DtcInterface::InitRocReadoutMode() {
 
     fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
 
-    fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
-
-    TLOG(TLVL_DEBUG) << Form("END\n");
+    fDtc->EnableTransmitCFOLink();
+    
+    TLOG(TLVL_DEBUG) << "-- END, rc:" << rc;
     return rc;
   }
 

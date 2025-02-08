@@ -410,6 +410,6 @@ int DtcGui::manage_reader_thread() {
     TThread::UnLock();
   }
 
-  TLOG(TLVL_DEBUG) << Form("END fReaderTC.fRunning=%i\n",fReaderTC.fRunning);
+  TLOG(TLVL_DEBUG) << Form("END   fReaderTC.fRunning=%i\n",fReaderTC.fRunning);
   return rc;
 }

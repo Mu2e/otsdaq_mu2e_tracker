@@ -69,7 +69,8 @@ namespace trkdaq {
     int          ControlRoc_DigiRW (ControlRoc_DigiRW_Input_t*  Input          ,
                                     ControlRoc_DigiRW_Output_t* Output         ,
                                     int                         LinkMask   = -1,
-                                    int                         PrintLevel =  0);
+                                    int                         PrintLevel =  0,
+                                    std::ostream&               Stream     = std::cout);
     
     int          ControlRoc_Read   (ControlRoc_Read_Input_t* Par          ,
                                     int                      LinkMask   = -1   ,

@@ -16,21 +16,24 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc(const char* Command, void* Par) {
     return 0;
   }
-  
+
+
 //-----------------------------------------------------------------------------
-// digi_rw over the fiber: reg 263 
+// digi_rw over the fiber: reg 263
+// if Link = -1, use fLinkMask, otherwise operate assuming a single link
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t* Input,
-                                      ControlRoc_DigiRW_Output_t* Output,
-                                      int LinkMask,
-                                      int PrintLevel) {
+  int DtcInterface::ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t*  Input     ,
+                                      ControlRoc_DigiRW_Output_t* Output    ,
+                                      int                         Link      ,
+                                      int                         PrintLevel,
+                                      std::ostream&               Stream    ) {
 //-----------------------------------------------------------------------------
     const int  reg (263);  // for digi_rw
     
     std::vector<uint16_t> vec;
   
-    vec.push_back(Input->rw);
-    vec.push_back(Input->hvcal);
+    vec.push_back(Input->rw     );
+    vec.push_back(Input->hvcal  );
     vec.push_back(Input->address);
     vec.push_back(Input->data[0]);
     vec.push_back(Input->data[1]);
@@ -40,9 +43,7 @@ namespace  trkdaq {
 // if LinkMask != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
 //-----------------------------------------------------------------------------
     int link_mask = fLinkMask;
-    if (LinkMask != -1) {
-      link_mask = LinkMask;
-    }
+    if (Link != -1) link_mask = (1 << 4*Link);
 //-----------------------------------------------------------------------------
 // loop over the links and execute
 //-----------------------------------------------------------------------------
@@ -55,42 +56,46 @@ namespace  trkdaq {
       
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+      Stream << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      Stream << Form("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
       std::vector<uint16_t> v2;
       fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
 
       if (PrintLevel > 0) {
-        printf(" ---------------- link %i\n",i);
-        PrintBuffer(v2.data(),nw);
-        if (PrintLevel > 1) {
+        Stream << " ---------------- link:" << i << std::endl;
+        if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+        if (PrintLevel & 0x2) {
+          
           trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
           
-          printf("rw           : %i\n",o->rw);
-          printf("hvcal        : 0x%04x\n",o->hvcal);
-          printf("address      : 0x%04x\n",o->address);
-          printf("data[32 bit] : 0x%02x%02x\n",o->data[1],o->data[0]);
-          printf("adc_num      : 0x%04x\n",o->adc_num);
-          printf("adc_mask     : 0x%04x\n",o->adc_mask);
+          Stream << Form("rw           : %i\n"        ,o->rw);
+          Stream << Form("hvcal        : 0x%04x\n"    ,o->hvcal);
+          Stream << Form("address      : 0x%04x\n"    ,o->address);
+          Stream << Form("data[32 bit] : 0x%04x%04x\n",o->data[1],o->data[0]);
+          Stream << Form("adc_num      : 0x%04x\n"    ,o->adc_num);
+          Stream << Form("adc_mask     : 0x%04x\n"    ,o->adc_mask);
         }
       }
     }
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    ResetLinks();
+    // ResetLinks();
     return 0;
   }
 
   
+//-----------------------------------------------------------------------------
+// if Link = -1, use fLinkMask, otherwise operate assuming a single link
+//-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par       ,
-                                    int                      LinkMask  ,
+                                    int                      Link      ,
                                     int                      PrintLevel,
                                     std::ostream&            Stream    ) {
 //-----------------------------------------------------------------------------
@@ -116,7 +121,7 @@ namespace  trkdaq {
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
   
-    TLOG(TLVL_DEBUG) << "LinkMask: 0x" << std::hex << LinkMask << std::dec << " PrintLevel:" << PrintLevel;
+    TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
 
     vec.push_back(Par->adc_mode);
     vec.push_back(Par->tdc_mode);
@@ -176,8 +181,8 @@ namespace  trkdaq {
 // in addition, if UpdateMask=true, update the DTC link mask (fLinkMask)
 //-----------------------------------------------------------------------------
     int link_mask = fLinkMask;
-    if (LinkMask != -1) {
-      link_mask = LinkMask;
+    if (Link != -1) {
+      link_mask = (1 << 4*Link);
     }
 
     for (int i=0; i<6; i++) {
@@ -246,9 +251,9 @@ namespace  trkdaq {
       }
     }
 //-----------------------------------------------------------------------------
-//  is it really needed to reser the ROC in the end ?
+//  is it really needed to reser the ROC in the end ? - no
 //-----------------------------------------------------------------------------
-    ResetLinks();
+    // ResetLinks();
     return 0;
   }
   
