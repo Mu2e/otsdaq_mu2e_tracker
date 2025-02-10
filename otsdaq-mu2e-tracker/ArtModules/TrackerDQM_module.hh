@@ -279,7 +279,7 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         eflg_vs_evt;
 
     TH2F*         nh_vs_ch;
-    TH2F*         nh_vs_adc1;
+    TH2F*         nh_vs_adc0;
 
     TH2F*         dt0r_vs_ch;
     TH2F*         dt1r_vs_ch;
@@ -295,7 +295,7 @@ class TrackerDQM : public art::EDAnalyzer {
     TH2F*         dt1rc_vs_adc[2];
 
     TH1F*         nhits_vs_ich;
-    TH1F*         nhits_vs_adc[2];
+    TH1F*         nhits_vs_adc;
 
     TProfile*     fs_vs_ich;
     TProfile*     bl_vs_ich;
