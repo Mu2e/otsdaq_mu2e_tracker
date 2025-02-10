@@ -401,7 +401,69 @@ namespace  trkdaq {
   
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_ReadSpi(int Link, std::vector<uint16_t>& SpiRawData, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream) {
+    const char* keys[] = {
+      "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
+      "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
+      "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
+      "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
+      "CAL_RAIL_1V(mV)","CAL_RAIL_1.8V(mV)","CAL_RAIL_2.5V(mV)","CAL_TEMP(CELSIUS)",
+      "HV_RAIL_1V(mV)","HV_RAIL_1.8V(mV)","HV_RAIL_2.5V(mV)","HV_TEMP(CELSIUS)"
+    };
+//-----------------------------------------------------------------------------
+// primary source : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
+//-----------------------------------------------------------------------------
+    struct constants_t {
+      float iconst  = 3.3 /(4096*0.006*20);
+      float iconst5 = 3.25/(4096*0.500*20);
+      float iconst1 = 3.25/(4096*0.005*20);
+      float toffset = 0.509;
+      float tslope  = 0.00645;
+      float tconst  = 0.000806;
+      float tlm45   = 0.080566;  
+    } constants;
+
+    int nw = Data.size();
+    
+    float* val = (float*) Spi;
+
+    for (int i=0; i<nw; i++) {
+      if (i==20 or i==21 or i==22) {
+        val[i] = Data[i]*constants.tlm45;
+      }
+      else if (i==0 or i==1 or i==2 or i==12 or i==13) {
+        val[i] = Data[i]*constants.iconst;
+      }
+      else if (i==3 or i==14) {
+        val[i] = Data[i]*constants.iconst5 ;
+      }
+      else if (i==4 or i==5 or i==6 or i==7 or i==16 or i==17 or i==18 or i==19) {
+        val[i] = Data[i]*3.3*2/4096 ; 
+      }
+      else if (i==15) {
+        val[i] = Data[i]*3.3/4096;
+      }
+      else if (i==23) {
+        val[i] = Data[i]*3.3/4096;
+      }
+      else if (i==8 or i==9 or i==10 or i==11) {
+        val[i] = Data[i];
+      }
+      else if (i > 23) {
+        if   ((i%4) < 3) val[i] = Data[i]/8.;
+        else             val[i] = Data[i]/16.-273.15;
+      }
+      
+      if (PrintLevel > 0) {
+        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
+      }
+    }
+
+    return 0;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
@@ -431,4 +493,121 @@ namespace  trkdaq {
     return rc;
   }
   
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadSpi_1(TrkSpiData_t* Spi, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+//-----------------------------------------------------------------------------
+// ReadSPI: reg 258
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> data;
+    RocBlockRead(Link,258,data);
+
+    int nw = data.size();
+
+    if (nw != TrkSpiDataNWords) {
+      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
+      rc = -1;
+    }
+//-----------------------------------------------------------------------------
+// PrintLevel bit 0: print SPI data in hex
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x1) != 0) PrintBuffer(data.data(),nw,&Stream);
+//-----------------------------------------------------------------------------
+// PrintLevel bit 1: parse SPI data and print them
+//-----------------------------------------------------------------------------
+    ConvertSpiData(data,Spi,PrintLevel,Stream);  // &spi[0]
+
+    return rc;
+  }
+  
+
+//-----------------------------------------------------------------------------
+// pay with performance for compactness
+// if Link = -1, a git commit for last enabled link is returned
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    int reg{272};
+//-----------------------------------------------------------------------------
+// ReadGitCommit: reg 
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> data;
+
+    int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
+
+    for (int i=0; 0<6; i++) {
+      int link_enabled = (link_mask >> 4*i) & 0x1;
+      if (link_enabled) {
+        RocBlockRead(i,reg,data);
+        int nw = data.size();
+        if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
+        data.emplace_back(0);
+        
+        char* ptr = (char*) data.data();
+        GitCommit = ptr;
+
+        if (PrintLevel & 0x2) Stream << std::format("GitCommit:{}\n",GitCommit);
+      }
+    }
+    
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// if Link = -1, interested in printing
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadIlp(std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    int reg{273};
+//-----------------------------------------------------------------------------
+
+    int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
+
+    if (Link == -1) {
+      for (int i=0; 0<6; i++) {
+        int link_enabled = (link_mask >> 4*i) & 0x1;
+        if (link_enabled) {
+          RocBlockRead(i,reg,Data);
+          int nw = Data.size();
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+        }
+      }
+    }
+    else {
+      RocBlockRead(Link,reg,Data);
+      int nw = Data.size();
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+    }
+    
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// no data conversion
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_GetKey (std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    int reg{274};
+    
+    int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
+
+    if (Link == -1) {
+      for (int i=0; 0<6; i++) {
+        int link_enabled = (link_mask >> 4*i) & 0x1;
+        if (link_enabled) {
+          RocBlockRead(i,reg,Data);
+          int nw = Data.size();
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+        }
+      }
+    }
+    else {
+      RocBlockRead(Link,reg,Data);
+      int nw = Data.size();
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+    }
+
+    return rc;
+  }
+    
 };

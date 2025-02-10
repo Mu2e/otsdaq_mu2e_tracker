@@ -158,68 +158,6 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream) {
-    const char* keys[] = {
-      "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
-      "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
-      "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
-      "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
-      "CAL_RAIL_1V(mV)","CAL_RAIL_1.8V(mV)","CAL_RAIL_2.5V(mV)","CAL_TEMP(CELSIUS)",
-      "HV_RAIL_1V(mV)","HV_RAIL_1.8V(mV)","HV_RAIL_2.5V(mV)","HV_TEMP(CELSIUS)"
-    };
-//-----------------------------------------------------------------------------
-// primary source : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
-//-----------------------------------------------------------------------------
-    struct constants_t {
-      float iconst  = 3.3 /(4096*0.006*20);
-      float iconst5 = 3.25/(4096*0.500*20);
-      float iconst1 = 3.25/(4096*0.005*20);
-      float toffset = 0.509;
-      float tslope  = 0.00645;
-      float tconst  = 0.000806;
-      float tlm45   = 0.080566;  
-    } constants;
-
-    int nw = Data.size();
-    
-    float* val = (float*) Spi;
-
-    for (int i=0; i<nw; i++) {
-      if (i==20 or i==21 or i==22) {
-        val[i] = Data[i]*constants.tlm45;
-      }
-      else if (i==0 or i==1 or i==2 or i==12 or i==13) {
-        val[i] = Data[i]*constants.iconst;
-      }
-      else if (i==3 or i==14) {
-        val[i] = Data[i]*constants.iconst5 ;
-      }
-      else if (i==4 or i==5 or i==6 or i==7 or i==16 or i==17 or i==18 or i==19) {
-        val[i] = Data[i]*3.3*2/4096 ; 
-      }
-      else if (i==15) {
-        val[i] = Data[i]*3.3/4096;
-      }
-      else if (i==23) {
-        val[i] = Data[i]*3.3/4096;
-      }
-      else if (i==8 or i==9 or i==10 or i==11) {
-        val[i] = Data[i];
-      }
-      else if (i > 23) {
-        if   ((i%4) < 3) val[i] = Data[i]/8.;
-        else             val[i] = Data[i]/16.-273.15;
-      }
-      
-      if (PrintLevel > 0) {
-        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
-      }
-    }
-
-    return 0;
-  }
-
-//-----------------------------------------------------------------------------
 // preserve historic naming convention- Monica named her script 'var_pattern_config'
 //-----------------------------------------------------------------------------
   void DtcInterface::RocConfigurePatternMode() {
@@ -937,11 +875,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-    printf("reg:%03i val:0x%04x\n",128,u);
+    TLOG(TLVL_DEBUG) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(link_id,129,100); // printf("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(link_id,129,100);
+    TLOG(TLVL_DEBUG) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
 
     nw -= 4;
     fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
@@ -1009,7 +948,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     if(history) {
       try { 
         std::vector<uint16_t> spi_raw_data;
-        ControlRoc_ReadSpi(ilink,spi_raw_data,0);
+        ControlRoc_ReadSpi(spi_raw_data,ilink,0);
         
         for (int iw=0; iw<TrkSpiDataNWords; iw++) {
           roc_reg.emplace_back(spi_raw_data[iw]);
@@ -1046,7 +985,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       try { 
         std::vector<uint16_t> spi_raw_data;
         struct TrkSpiData_t   spi;
-        ControlRoc_ReadSpi(ilink,spi_raw_data,0);
+        ControlRoc_ReadSpi(spi_raw_data,ilink,0);
         ConvertSpiData    (spi_raw_data,&spi,0);
               
         std::vector<float> roc_spi;

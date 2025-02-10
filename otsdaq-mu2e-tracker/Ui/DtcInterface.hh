@@ -76,11 +76,36 @@ namespace trkdaq {
                                     int                      LinkMask   = -1   ,
                                     int                      PrintLevel = 0    ,
                                     std::ostream&            Stream     = std::cout);
+
+//-----------------------------------------------------------------------------
+// if Line = -1, not interested in the output, only in the printout
+// if OK, the read functions return Nwords
+//   -1: failure
+//-----------------------------------------------------------------------------
+    int          ControlRoc_ReadGitCommit(std::string&       GitCommit       ,
+                                          int                Link       = -1 ,
+                                          int                PrintLevel = 0  ,
+                                          std::ostream&      Stream     = std::cout);
     
-    int          ControlRoc_ReadSpi(int Link,
-                                    std::vector<uint16_t>&   SpiRawData,
-                                    int                      PrintLevel = 0,
+    int          ControlRoc_ReadIlp(std::vector<uint16_t>&   RawData         ,
+                                    int                      Link       = -1 ,
+                                    int                      PrintLevel = 0  ,
                                     std::ostream&            Stream     = std::cout);
+    
+    int          ControlRoc_GetKey (std::vector<uint16_t>&   RawData         ,
+                                    int                      Link       = -1 ,
+                                    int                      PrintLevel = 0  ,
+                                    std::ostream&            Stream     = std::cout);
+    
+    int          ControlRoc_ReadSpi(std::vector<uint16_t>&   SpiRawData     ,
+                                    int                      Link       = -1,
+                                    int                      PrintLevel = 0 ,
+                                    std::ostream&            Stream     = std::cout);
+
+    int          ControlRoc_ReadSpi_1(TrkSpiData_t*          Spi,
+                                      int                    Link       = -1,
+                                      int                    PrintLevel = 0 ,
+                                      std::ostream&          Stream     = std::cout);
 //-----------------------------------------------------------------------------
 // measure thresholds returns an array of thresholds, which needs to be parsed
 // so far, do it internally

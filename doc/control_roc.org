@@ -335,21 +335,63 @@ set_digi_rw -s 0
 
 * TODO control_ROC command implementation over the fiber                     
 
-|--------------------+--------+-----------------------------------------------------------|
-| command            | status | comments                                                  |
-|--------------------+--------+-----------------------------------------------------------|
-| digi_rw            |        | implemented                                               |
-|--------------------+--------+-----------------------------------------------------------|
-| readSPI            | OK     | implemented                                               |
-| find_alignment     |        | implemented by Ed, minor wrinkle - parameter order, stars |
-| set_preamp_thresh  |        |                                                           |
-| measure_thresholds |        | ok                                                        |
-| pulser_on          |        |                                                           |
-| readDeviceID       |        |                                                           |
-| set_digi_rw        |        | shouldn't need, all goes over the fiber                   |
-| rates              |        |                                                           |
-| read               | OK     | implemented                                               |
-|--------------------+--------+-----------------------------------------------------------|
+|--------------------+------+--------+-----------------------------------------------------------|
+| command            | addr | status | comments                                                  |
+|--------------------+------+--------+-----------------------------------------------------------|
+| digi_rw            |      |        | implemented                                               |
+|--------------------+------+--------+-----------------------------------------------------------|
+| read_spi           |  258 | OK     | implemented                                               |
+| find_alignment     |      |        | implemented by Ed, minor wrinkle - parameter order, stars |
+| set_preamp_thresh  |      |        |                                                           |
+| measure_thresholds |      |        | ok                                                        |
+| pulser_on          |      |        |                                                           |
+| readDeviceID       |      |        | somewhat - check the byte order                           |
+| set_digi_rw        |      |        | shouldn't be needed, all goes over the fiber              |
+| rates              |      |        |                                                           |
+| read               |      | OK     | implemented                                               |
+| read_git_rev       |  272 |        |                                                           |
+| read_dilp          |  273 |        |                                                           |
+| get_key            |  274 |        |                                                           |
+|--------------------+------+--------+-----------------------------------------------------------|
+
+1)  READGITREV   from  ADDR = 272
+       -  initiated by simple DCS_WRITE to ADDR of any value,
+         followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to NWORDS
+      -  NWORDS = N-4 words, where N is the number returned by a simple DCS_READ of addr 129
+
+      The returned words Word[i] are a string of bytes which should be decoded
+      into an ASCII string equal to "bc03ed5cda33bb9d4e0d66af56f2bad7a6c87e15"
+
+2) READILP  from ADDR  273
+      -  initiated by simple DCS_WRITE to ADDR of any value,
+        followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
+        (ie DCS_READ of addr 129 should return 8)
+ 
+      The 4 returned words Word[3:0] should be parsed like this:  
+   
+        keys = ['ILPID','TEMP','PRESSURE']
+        values = [ "0x{:2x}".format(d[0]),   "{:.1f}".format(d[1] / 100.),   "{:.1f}".format(d[2] / 524288.0]
+        
+        where:    d[0] = Word[0]
+                  d[1] = Word[1]
+                  d[2] = (Word[2] & 0x0000_FFFF) + (Word[3]<<16 & 0xFFFF_0000)
+
+3) GETKEY  from ADDR  274
+      -  initiated by simple DCS_WRITE to ADDR of any value,
+         followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
+        (ie DCS_READ of addr 129 should return 8)
+
+        The 4 returned words Word[3:0] should be parsed like this: 
+
+        keys = ['TEMP[degC]','2.5V','5.1V','DCDCTEMP']
+        temp = float(d[0])/4096*3300/10
+        v2p5 = float(d[1])/4096*3.355
+        v5p1 = float(d[2])/4096*3.355*2
+        dcdctemp = float(d[3])/4096*3300/10
+        values = [round(temp,2), round(v2p5,3), round(v5p1,3), round(dcdctemp,2)]
+        rd = dict(list(zip(keys, values)))
+
+       where   d[i] = Word[i],  i=0 to 3
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
@@ -531,7 +573,6 @@ ll & hv_tot(3 downto 0) & hv_tdc(23 downto 0)
 "00" & adc8(9 downto 0) & adc7(9 downto 0) & adc6(9 downto 0)
 "00" & adc11(9 downto 0) & adc10(9 downto 0) & adc9(9 downto 0)
 "00" & adc14(9 downto 0) & adc13(9 downto 0) & adc12(9 downto 0)
-
 
 * 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
