@@ -6,6 +6,7 @@
 * control_ROC commands                                                       
 ** digi_rw   [-w 1]                                                          
 - it looks that '-w 1' means *write*
+-  "-h 0 writes to both HV/CAL"
 
     - digi_rw -h 2 -a 2
     - digi_rw -h 2 -a 1
@@ -392,6 +393,35 @@ set_digi_rw -s 0
         rd = dict(list(zip(keys, values)))
 
        where   d[i] = Word[i],  i=0 to 3
+
+4) PULSER_ON  via "rocUtil block_write -a 268 -w 5" 
+where the 5 words to be passed are:
+
+chan_1in8   = dtcbuffer[0];                        // -c     integer 0 to 7
+chan_mask   = dtcbuffer[1];                        // -C     8-bit mask (not clear to me
+                                                   // why needed because it is derived by "chan_1in8"...maybe we can remove?) 
+dutyCycle   = dtcbuffer[2];                        // -y
+pulserDelay = (dtcbuffer[4]>>16)  &  dtcbuffer[3]; // -d    integer equal to int(1./pulserFreq * 1000000)
+
+The "rocUtil block_read -a 268 -c 4" will return these words
+
+         *(registers_1_addr + CRDCS_WRITE_TX) = chan_mask;
+         *(registers_1_addr + CRDCS_WRITE_TX) = dutyCycle;
+         *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF);
+         *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF0000)>>16;
+
+
+5) MEASURE_THRESHOLD via "rocUtil block_write -a 270 -w 7"
+
+         where the 7 words to be passed are:
+
+         chan_num        = dtcbuffer[0];                           // -c
+         channel_mask[0] = (dtcbuffer[2]>>16)  &  dtcbuffer[1];    // -C
+         channel_mask[1] = (dtcbuffer[4]>>16)  &  dtcbuffer[3];    // -D
+         channel_mask[2] = (dtcbuffer[6]>>16)  &  dtcbuffer[5];    // -E 
+
+The "rocUtil block_read -a 270 -c 288" will return 288 thresholds
+
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)

@@ -234,7 +234,9 @@ void DtcInterface::InitRocReadoutMode() {
 
     fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
 
-    fDtc->EnableTransmitCFOLink();
+    fDtc->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
+
+    // ROC links are disabled here, but re-enabled later, in InitReadout()
     
     TLOG(TLVL_DEBUG) << "-- END, rc:" << rc;
     return rc;
@@ -288,6 +290,9 @@ void DtcInterface::InitRocReadoutMode() {
     // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
 
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
+    //    fDtc->EnableTransmitCFOLink();      // r_0x9114:bit_06 = 1 (if the dTC is in the middle of the chain)
+
+    // ROC links are disabled here, but re-enabled later, in InitReadout()
 
     TLOG(TLVL_DEBUG) << "END PCIE addr:" << fPcieAddr;
     return rc;
