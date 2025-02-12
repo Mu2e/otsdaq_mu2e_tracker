@@ -10,7 +10,7 @@ cet_make_library(
   DtcGui_commands.cc  
   DtcGui_threads.cc  
   LIBRARIES PUBLIC
-  otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Ui
+  otsdaq-mu2e-tracker::Ui
   ROOT::Gui
   )
 
@@ -18,15 +18,15 @@ cet_make_library(
 include(ArtDictionary)
 art_dictionary(
   DICTIONARY_LIBRARIES
-  otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Gui
-#  artdaq_core_mu2e::artdaq-core-mu2e_Overlays
-#  mu2e_pcie_utils::CFOInterface
-#  mu2e_pcie_utils::DTCInterface
+  otsdaq-mu2e-tracker::Gui
+#  artdaq-core-mu2e::Overlays
+#  mu2e-pcie-utils::CFOInterface
+#  mu2e-pcie-utils::DTCInterface
 )
 
 install_headers()
 install_source()
-# artdaq_core_mu2e::artdaq-core-mu2e_Overlays
+# artdaq-core-mu2e::Overlays
 #
 
 set (dict_name "otsdaq-mu2e-tracker_Gui_dict")

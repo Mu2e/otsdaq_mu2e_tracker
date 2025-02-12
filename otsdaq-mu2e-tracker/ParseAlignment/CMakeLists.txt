@@ -7,7 +7,7 @@ cet_make_library(
         PrintLegacyTable.cc
 	LIBRARIES
 	cetlib_except::cetlib_except
-        mu2e_pcie_utils::DTCInterface
+        mu2e-pcie-utils::DTCInterface
         )
 
 install_headers()
