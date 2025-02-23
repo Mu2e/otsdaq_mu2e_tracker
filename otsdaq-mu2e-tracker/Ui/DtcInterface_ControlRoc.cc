@@ -38,6 +38,14 @@ namespace  trkdaq {
     vec.push_back(Input->data[0]);
     vec.push_back(Input->data[1]);
     
+    if (PrintLevel > 0) {
+      Stream << Form("Input->rw           : %i\n"    ,Input->rw);
+      Stream << Form("Input->hwcal        : 0x%04x\n",Input->hvcal);
+      Stream << Form("Input->address      : 0x%04x\n",Input->address);
+      Stream << Form("Input->data[0]      : 0x%04x\n",Input->data[0]);
+      Stream << Form("Input->data[1]      : 0x%94x\n",Input->data[1]);
+    }
+    
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // if LinkMask != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
@@ -294,7 +302,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    ResetLink(Link);
+    // ResetLink(Link);
     return 0;
   }
 
@@ -383,7 +391,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    ResetLink(Link);
+    // ResetLink(Link);
     return 0;
   }
 
@@ -443,6 +451,7 @@ namespace  trkdaq {
 
       printf(" i, hw, cal, tot : %3i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
     }
+    // ResetLink(Link);
     return 0;
   }
   
@@ -537,6 +546,7 @@ namespace  trkdaq {
       ConvertSpiData(SpiRawData,&spi,PrintLevel,Stream);  // &spi[0]
     }
 
+    // ResetLink(Link);
     return rc;
   }
   

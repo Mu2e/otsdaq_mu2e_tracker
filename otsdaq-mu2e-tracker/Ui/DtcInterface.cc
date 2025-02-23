@@ -889,6 +889,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
     fDtc->GetDevice()->end_dcs_transaction();
 
+    // ResetLink(Link);
     return 0;
   }
 

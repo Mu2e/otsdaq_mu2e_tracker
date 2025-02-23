@@ -397,6 +397,12 @@ void TrackerDQM::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, 
   Hist->nbtot           = Dir->make<TH1F>("nbtot"      , Form("run %06i: nbytes total" ,RunNumber), 1000, 0., 100000.);
   Hist->nfrag           = Dir->make<TH1F>("nfrag"      , Form("run %06i: n fragments"  ,RunNumber),  100, 0.,    100.);
   Hist->fsize           = Dir->make<TH1F>("fsize"      , Form("run %06i: fragment size",RunNumber), 1000, 0., 100000.);
+
+  Hist->n_nb_errors     = Dir->make<TH1F>("n_nb_err"   , Form("run %06i: N nb errors"  ,RunNumber),  100, 0.,    100.);
+  Hist->n_nws_errors    = Dir->make<TH1F>("n_nws_err"  , Form("run %06i: N nws errors" ,RunNumber),  100, 0.,    100.);
+  Hist->n_lid_errors    = Dir->make<TH1F>("n_lid_err"  , Form("run %06i: N lid errors" ,RunNumber),  100, 0.,    100.);
+  Hist->n_cid_errors    = Dir->make<TH1F>("n_cid_err"  , Form("run %06i: N cid errors" ,RunNumber),  100, 0.,    100.);
+  Hist->n_nch_errors    = Dir->make<TH1F>("n_nch_err"  , Form("run %06i: N nch errors" ,RunNumber),  100, 0.,    100.);
   Hist->valid           = Dir->make<TH1F>("valid"      , Form("run %06i: valid code"   ,RunNumber),  100, 0.,    100.);
 
   Hist->n_empty         = Dir->make<TH1F>("nempt"      , Form("run %06i: N(empty)"     ,RunNumber),  100, 0.,    100.);
@@ -467,19 +473,19 @@ void TrackerDQM::book_histograms(int RunNumber) {
 void TrackerDQM::beginJob() {
   TLOG(TLVL_INFO) << "starting";
 
-  //  int           tmp_argc(2);
+  int           tmp_argc(2);
   // int           tmp_argc(0);
-  // char**        tmp_argv(nullptr);
+  char**        tmp_argv(nullptr);
 
-  // tmp_argv    = new char*[2];
-  // tmp_argv[0] = new char[100];
-  // tmp_argv[1] = new char[100];
+  tmp_argv    = new char*[2];
+  tmp_argv[0] = new char[100];
+  tmp_argv[1] = new char[100];
 
-  // strcpy(tmp_argv[0],"-b");
-  // strcpy(tmp_argv[1],Form("--web=server:%d",_port));
+  strcpy(tmp_argv[0],"-b");
+  strcpy(tmp_argv[1],Form("--web=server:%d",_port));
 
-  // _app = new TApplication("TrackerDQM", &tmp_argc, tmp_argv);
-  // gROOT->SetWebDisplay(Form("server:%d",_port));
+  _app = new TApplication("TrackerDQM", &tmp_argc, tmp_argv);
+  gROOT->SetWebDisplay(Form("server:%d",_port));
 
   // app->Run()
   // _app->Run(true);
@@ -489,10 +495,10 @@ void TrackerDQM::beginJob() {
 
 //-----------------------------------------------------------------------------
 void TrackerDQM::endJob() {
-  // delete _app;
-  // delete _canvas[0];
-  // delete _canvas[1];
-  // delete _canvas[2];
+  delete _app;
+  delete _canvas[0];
+  delete _canvas[1];
+  delete _canvas[2];
 }
 
 //-----------------------------------------------------------------------------
@@ -502,16 +508,16 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
   if (_initialized != 0) return;
   _initialized = 1;
 
-  // _canvas[0] = new TCanvas("canvas_000");
-  // _canvas[0]->Divide(2,2);
+  _canvas[0] = new TCanvas("canvas_000");
+  _canvas[0]->Divide(2,2);
 
-  // _canvas[1] = new TCanvas("canvas_001");
-  // _canvas[1]->Divide(2,2);
+  _canvas[1] = new TCanvas("canvas_001");
+  _canvas[1]->Divide(2,2);
 
-  // _canvas[2] = new TCanvas("canvas_002");
-  // _canvas[2]->Divide(2,2);
+  _canvas[2] = new TCanvas("canvas_002");
+  _canvas[2]->Divide(2,2);
 
-  //  _browser   = new TBrowser();
+  _browser   = new TBrowser();
 //-----------------------------------------------------------------------------
 // as a last step, book histograms - need to know the number of active links
 //-----------------------------------------------------------------------------
@@ -533,9 +539,9 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
       _canvas[1]->cd(2);
       _hist.event[0]->nhits->Draw();
       _canvas[1]->cd(3);
-      _hist.event[0]->n_chid_errors->Draw();
+      _hist.event[0]->n_cid_errors->Draw();
       _canvas[1]->cd(4);
-      _hist.event[0]->n_nchh_errors->Draw();
+      _hist.event[0]->n_nch_errors->Draw();
 //-----------------------------------------------------------------------------
 // up to four waveforms in a given channel
 //-----------------------------------------------------------------------------
@@ -811,7 +817,13 @@ int TrackerDQM::fill_histograms() {
       fill_station_histograms(_hist.station[1],&_edata);
     }
   }
-
+//-----------------------------------------------------------------------------
+// update plots
+//-----------------------------------------------------------------------------
+  for (int i=0; i<3; i++) {
+    _canvas[i]->Modified();
+    //    _canvas[i]->Update();
+  }
   return 0;
 }
 
@@ -830,9 +842,9 @@ int TrackerDQM::init_event(const art::Event& AnEvent) {
   _edata.nerr_tot      = 0;
 
   _edata.n_nb_errors   = 0;
-  _edata.n_nwfs_errors = 0;
-  _edata.n_chid_errors = 0;
-  _edata.n_nchh_errors = 0;
+  _edata.n_nws_errors  = 0;
+  _edata.n_cid_errors  = 0;
+  _edata.n_nch_errors  = 0;
 
   _edata.n_empty       = 0;
   _edata.n_invalid_dr  = 0;

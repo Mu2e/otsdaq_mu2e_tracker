@@ -240,10 +240,10 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         nhits;
     TH1F*         fsize;
     TH1F*         n_nb_errors;
-    TH1F*         n_nwfs_errors;
-    TH1F*         n_linkid_errors;
-    TH1F*         n_chid_errors;
-    TH1F*         n_nchh_errors;
+    TH1F*         n_nws_errors;
+    TH1F*         n_lid_errors;
+    TH1F*         n_cid_errors;
+    TH1F*         n_nch_errors;
     TH1F*         valid;
 
     TH1F*         error_code;
@@ -388,10 +388,10 @@ class TrackerDQM : public art::EDAnalyzer {
     int           valid;
       
     int           n_nb_errors;     // 0x01 : wrong event size
-    int           n_nwfs_errors;   // 0x02 : hit reported too many wafeform samples
-    int           n_linkid_errors; // 0x04 : hit reported wrond channel ID
-    int           n_chid_errors;   // 0x08 : hit reported wrond channel ID
-    int           n_nchh_errors;   // 0x10 : too many hits in one channel
+    int           n_nws_errors;    // 0x02 : too many wf samples
+    int           n_lid_errors;    // 0x04 : wrong link ID
+    int           n_cid_errors;    // 0x08 : wrond hit channel ID
+    int           n_nch_errors;    // 0x10 : too many hits/channel
       
     int           n_empty;
     int           n_invalid_dr;
