@@ -17,7 +17,8 @@
 #include <random>
 #include <vector>
 
-namespace demo {
+namespace demo
+{
 /**
  * \brief ToySim is a simple type of fragment generator intended to be
  * studied by new users of artdaq as an example of how to create such
@@ -34,16 +35,17 @@ namespace demo {
  */
 class ToySim : public artdaq::CommandableFragmentGenerator
 {
-public:
+  public:
 	/**
 	 * \brief ToySim Constructor
 	 * \param ps ParameterSet used to configure ToySim
 	 *
 	 * The ToySim FragmentGenerator accepts the following configuration paramters:
-	 * "timestamp_scale_factor" (Default: 1): How much to increment the timestamp Fragment Header field for each event
-	 * "distribution_type" (REQUIRED): Which type of distribution to use when generating data. See ToyHW
-	 * for more information "rollover_subrun_interval" (Default: 0): If this ToySim has fragment_id 0, will cause
-	 * the system to rollover subruns every N events. 0 (default) disables.
+	 * "timestamp_scale_factor" (Default: 1): How much to increment the timestamp Fragment
+	 * Header field for each event "distribution_type" (REQUIRED): Which type of
+	 * distribution to use when generating data. See ToyHW for more information
+	 * "rollover_subrun_interval" (Default: 0): If this ToySim has fragment_id 0, will
+	 * cause the system to rollover subruns every N events. 0 (default) disables.
 	 */
 	explicit ToySim(fhicl::ParameterSet const& ps);
 
@@ -52,11 +54,11 @@ public:
 	 */
 	virtual ~ToySim();
 
-private:
-	ToySim(ToySim const&) = delete;
-	ToySim(ToySim&&) = delete;
+  private:
+	ToySim(ToySim const&)            = delete;
+	ToySim(ToySim&&)                 = delete;
 	ToySim& operator=(ToySim const&) = delete;
-	ToySim& operator=(ToySim&&) = delete;
+	ToySim& operator=(ToySim&&)      = delete;
 
 	/**
 	 * \brief The "getNext_" function is used to implement user-specific
@@ -91,12 +93,12 @@ private:
 	 */
 	void stopNoMutex() override {}
 
-	std::unique_ptr<ToyHW> hardware_interface_;
+	std::unique_ptr<ToyHW>        hardware_interface_;
 	artdaq::Fragment::timestamp_t timestamp_;
 	artdaq::Fragment::timestamp_t starting_timestamp_;
-	int timestampScale_;
-	size_t sequence_id_scale_;
-	size_t initial_sequence_id_;
+	int                           timestampScale_;
+	size_t                        sequence_id_scale_;
+	size_t                        initial_sequence_id_;
 
 	int rollover_subrun_interval_;
 
@@ -109,13 +111,13 @@ private:
 
 	char* readout_buffer_;
 
-	FragmentType fragment_type_;
+	FragmentType            fragment_type_;
 	ToyHW::DistributionType distribution_type_;
-	int generated_fragments_per_event_;
-	bool exception_on_config_;
-	bool dies_on_config_;
+	int                     generated_fragments_per_event_;
+	bool                    exception_on_config_;
+	bool                    dies_on_config_;
 
-	bool lazy_mode_;  // See Issue #22810
+	bool                                      lazy_mode_;  // See Issue #22810
 	std::set<artdaq::Fragment::sequence_id_t> lazily_handled_requests_;
 };
 }  // namespace demo

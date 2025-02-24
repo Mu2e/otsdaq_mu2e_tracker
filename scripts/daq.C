@@ -6,9 +6,9 @@
 #include "TH1.h"
 #include "TStopwatch.h"
 
-#include "dtcInterfaceLib/DTC.h"
 #include "cfoInterfaceLib/CFO.h"
 #include "cfoInterfaceLib/CFO_Compiler.hh"
+#include "dtcInterfaceLib/DTC.h"
 
 using namespace CFOLib;
 using namespace DTCLib;
@@ -22,32 +22,36 @@ using namespace DTCLib;
 
 using namespace trkdaq;
 
-// DTC control register : 0x9100 
-enum { 
-  kCFOEmulationEnableBit = 30,
-  kAutogenDRPBit         = 23,
+// DTC control register : 0x9100
+enum
+{
+	kCFOEmulationEnableBit = 30,
+	kAutogenDRPBit         = 23,
 };
 
 // #include "control_roc_read.C"
 
-namespace daq_scripts {
-  int EWLength    = 68;                 // in units of 25 ns, = 1700 ns
-  int EdgeMode    = 0x0;                // two bits
-  int CFOLinkMask = 0x1;
-};
+namespace daq_scripts
+{
+int EWLength    = 68;   // in units of 25 ns, = 1700 ns
+int EdgeMode    = 0x0;  // two bits
+int CFOLinkMask = 0x1;
+};  // namespace daq_scripts
 
 //-----------------------------------------------------------------------------
-void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
+void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink)
+{
+	CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
+	if(cfo_i == nullptr)
+		return;
 
-  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
-  if (cfo_i == nullptr) return;
-
-  // comment out , for now 
-  // CFO* cfo = cfo_i->Cfo();
+	// comment out , for now
+	// CFO* cfo = cfo_i->Cfo();
 
 	// cfo->ResetDelayRegister();	                 // reset 0x9380
 	// cfo->DisableLinks();	                       // reset 0x9114
-	//                                              // configure the DTC (to configure the ROC in a loop)
+	//                                              // configure the DTC (to configure the
+	//                                              ROC in a loop)
 	// cfo->EnableLink(xLink, DTC_LinkEnableMode(true, true)); // enable Tx and Rx
 	// cfo->EnableDelayMeasureMode(xLink);
 	// cfo->EnableDelayMeasureNow(xLink);
@@ -60,114 +64,119 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 	// cfo->ResetDelayRegister();
 	// cfo->DisableLinks();
 
-  // 	printf(" delay = %ui\n",delay);
-
+	// 	printf(" delay = %ui\n",delay);
 }
 
 //-----------------------------------------------------------------------------
 // ROOT CLI
 //-----------------------------------------------------------------------------
-void cfo_soft_reset(int PcieAddress = -1) {
-  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
-  cfo_i->Cfo()->SoftReset();
+void cfo_soft_reset(int PcieAddress = -1)
+{
+	CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
+	cfo_i->Cfo()->SoftReset();
 }
 
 //-----------------------------------------------------------------------------
-void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
-  CFOLib::CFO_Compiler compiler;
+void cfo_compile_run_plan(const char* InputFn, const char* OutputFn)
+{
+	CFOLib::CFO_Compiler compiler;
 
-  std::string fn1(InputFn );
-  std::string fn2(OutputFn);
+	std::string fn1(InputFn);
+	std::string fn2(OutputFn);
 
-  compiler.processFile(fn1,fn2);
+	compiler.processFile(fn1, fn2);
 }
 
 //-----------------------------------------------------------------------------
 // assume one timing chain
 //-----------------------------------------------------------------------------
-int cfo_init_readout_ext(const char* RunPlan, uint DtcMask) {
-  int rc(0);
-  CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
-  rc = cfo_i->InitReadout(RunPlan,DtcMask);
-  return rc;
+int cfo_init_readout_ext(const char* RunPlan, uint DtcMask)
+{
+	int           rc(0);
+	CfoInterface* cfo_i = CfoInterface::Instance();  // assume already initialized
+	rc                  = cfo_i->InitReadout(RunPlan, DtcMask);
+	return rc;
 }
 
 //-----------------------------------------------------------------------------
-void cfo_launch_run_plan(int PcieAddress = -1) {
-  CfoInterface::Instance(PcieAddress)->LaunchRunPlan(); 
+void cfo_launch_run_plan(int PcieAddress = -1)
+{
+	CfoInterface::Instance(PcieAddress)->LaunchRunPlan();
 }
 
 //-----------------------------------------------------------------------------
 // default: 1700 ns
 //-----------------------------------------------------------------------------
-void cfo_set_event_window(int EWLength = 68) {
-  daq_scripts::EWLength = EWLength;
-}
+void cfo_set_event_window(int EWLength = 68) { daq_scripts::EWLength = EWLength; }
 //-----------------------------------------------------------------------------
 // first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
 // (the sizeof(mu2e_databuff_t) 0
 //-----------------------------------------------------------------------------
-void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1) {
-
-  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
-  cfo_i->SetRunPlan(Fn);
+void cfo_set_run_plan(const char* Fn = "commands.bin", int PcieAddress = -1)
+{
+	CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
+	cfo_i->SetRunPlan(Fn);
 }
 
 //-----------------------------------------------------------------------------
 // doesn't seem to be needed - launch does this anyway
 //-----------------------------------------------------------------------------
-void cfo_reset_run_plan(int PcieAddress = -1) {
-  CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo(); 
+void cfo_reset_run_plan(int PcieAddress = -1)
+{
+	CFO* cfo = CfoInterface::Instance(PcieAddress)->Cfo();
 
-  cfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-  cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-  cfo->SoftReset();
+	cfo->DisableBeamOnMode(CFO_Link_ID::CFO_Link_ALL);
+	cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+	cfo->SoftReset();
 }
 
 //-----------------------------------------------------------------------------
 // for convenience (CLI)
 //-----------------------------------------------------------------------------
-int cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  return CfoInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1)
+{
+	return CfoInterface::Instance(PcieAddress)->ConfigureJA(Clock, Reset);
 }
 
 //-----------------------------------------------------------------------------
-int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1)
+{
+	return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock, Reset);
 }
-
 
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_digi_rw(int      Address          ,
-                            int      Rw               , // 0:read, 1:write
-                            int      HvCal            , // 0: both, 1:hv 2:cal 3: ???
-                            int      Data             ,
-                            int      LinkMask     = -1,
-                            int      PcieAddr     = -1) {
-  
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+int dtc_control_roc_digi_rw(int Address,
+                            int Rw,     // 0:read, 1:write
+                            int HvCal,  // 0: both, 1:hv 2:cal 3: ???
+                            int Data,
+                            int LinkMask = -1,
+                            int PcieAddr = -1)
+{
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  ControlRoc_DigiRW_Input_t  par;
-  ControlRoc_DigiRW_Output_t output;
-  
-  par.rw        = Rw;        // -a
-  par.hvcal     = HvCal;        // -t 
-  par.address   = Address;        // -t 
-  par.data[0]   = (Data >>  0) & 0xFFFF;
-  par.data[1]   = (Data >> 16) & 0xFFFF;
-  
-  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  int print_level(2);
-  dtc_i->ControlRoc_DigiRW(&par,&output,LinkMask,print_level);
-  if (Rw == 0) { // read
-    return (((int (output.data[1])) << 16) | output.data[0]) ;
-  }
-  else {
-    return 0;
-  }
+	ControlRoc_DigiRW_Input_t  par;
+	ControlRoc_DigiRW_Output_t output;
+
+	par.rw      = Rw;       // -a
+	par.hvcal   = HvCal;    // -t
+	par.address = Address;  // -t
+	par.data[0] = (Data >> 0) & 0xFFFF;
+	par.data[1] = (Data >> 16) & 0xFFFF;
+
+	printf("dtc_i->fLinkMask: 0x%04x\n", dtc_i->fLinkMask);
+	int print_level(2);
+	dtc_i->ControlRoc_DigiRW(&par, &output, LinkMask, print_level);
+	if(Rw == 0)
+	{  // read
+		return (((int(output.data[1])) << 16) | output.data[0]);
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -177,41 +186,41 @@ int dtc_control_roc_digi_rw(int      Address          ,
 int dtc_control_roc_read(int      LinkMask     = -1,
                          int      AdcMode      = 4,
                          int      TdcMode      = 0,
-                         int      EnablePulser = 1, 
+                         int      EnablePulser = 1,
                          uint32_t MaskC        = 0xFFFFFFFF,
                          uint32_t MaskD        = 0xFFFFFFFF,
                          uint32_t MaskE        = 0xFFFFFFFF,
                          int      NumSamples   = 1,
-                         int      PcieAddr     = -1) {
-  
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+                         int      PcieAddr     = -1)
+{
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  ControlRoc_Read_Input_t par;
-  
-  par.adc_mode        = AdcMode;        // -a
-  par.tdc_mode        = TdcMode;        // -t 
-  par.num_lookback    = 8;              // -l 
-  par.num_samples     = NumSamples;     // -s
-  par.num_triggers[0] = 10;             // -T 10
-  par.num_triggers[1] = 0;              // -T (high bytes)
-  
-  par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
-  par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
-  par.ch_mask[2]      = (MaskD >>  0) & 0xffff;
-  par.ch_mask[3]      = (MaskD >> 16) & 0xffff;
-  par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
-  par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+	ControlRoc_Read_Input_t par;
 
-  par.enable_pulser   = EnablePulser;   // -p 1
-  par.marker_clock    = 3;              // -m 3
-  par.mode            = 0;              // 
-  par.clock           = 99;             // 
+	par.adc_mode        = AdcMode;     // -a
+	par.tdc_mode        = TdcMode;     // -t
+	par.num_lookback    = 8;           // -l
+	par.num_samples     = NumSamples;  // -s
+	par.num_triggers[0] = 10;          // -T 10
+	par.num_triggers[1] = 0;           // -T (high bytes)
 
-  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
-  bool update_mask(false);
-  int  print_level(3);
-  dtc_i->ControlRoc_Read(&par,LinkMask,update_mask,print_level);
-  return 0;
+	par.ch_mask[0] = (MaskC >> 0) & 0xffff;
+	par.ch_mask[1] = (MaskC >> 16) & 0xffff;
+	par.ch_mask[2] = (MaskD >> 0) & 0xffff;
+	par.ch_mask[3] = (MaskD >> 16) & 0xffff;
+	par.ch_mask[4] = (MaskE >> 0) & 0xffff;
+	par.ch_mask[5] = (MaskE >> 16) & 0xffff;
+
+	par.enable_pulser = EnablePulser;  // -p 1
+	par.marker_clock  = 3;             // -m 3
+	par.mode          = 0;             //
+	par.clock         = 99;            //
+
+	printf("dtc_i->fLinkMask: 0x%04x\n", dtc_i->fLinkMask);
+	bool update_mask(false);
+	int  print_level(3);
+	dtc_i->ControlRoc_Read(&par, LinkMask, update_mask, print_level);
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -220,27 +229,31 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 // EnableClockMarkers: set to 0
 // EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-int dtc_init_emulated_cfo_readout_mode(int PcieAddr = -1) { 
-  //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
+int dtc_init_emulated_cfo_readout_mode(int PcieAddr = -1)
+{
+	//                                 int EWMode, int EnableClockMarkers, int
+	//                                 EnableAutogenDRP) {
 
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  int rc = dtc_i->InitEmulatedCFOReadoutMode();
-  return rc;
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+	int           rc    = dtc_i->InitEmulatedCFOReadoutMode();
+	return rc;
 }
 
 //-----------------------------------------------------------------------------
-int dtc_init_readout(int EmulateCfo, int RocReadoutMode, int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  int rc = dtc_i->InitReadout(EmulateCfo,RocReadoutMode);
-  return rc;
+int dtc_init_readout(int EmulateCfo, int RocReadoutMode, int PcieAddr = -1)
+{
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+	int           rc    = dtc_i->InitReadout(EmulateCfo, RocReadoutMode);
+	return rc;
 }
 
 //-----------------------------------------------------------------------------
-int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);    // assume already initialized
-  dtc_i->SetRocReadoutMode(ReadoutMode);                     // 0:patterns 1:digis
-  dtc_i->InitRocReadoutMode();
-  return 0;
+int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1)
+{
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);  // assume already initialized
+	dtc_i->SetRocReadoutMode(ReadoutMode);                   // 0:patterns 1:digis
+	dtc_i->InitRocReadoutMode();
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -248,22 +261,28 @@ int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
 // don't validate
 // a read should always end with releasing  buffers ???
 //-----------------------------------------------------------------------------
-int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 0, int PcieAddr = -1, const char* OutputFn = nullptr) {
-  std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
+int dtc_read_subevents(uint64_t    FirstTS    = 0,
+                       int         PrintLevel = 1,
+                       int         Validate   = 0,
+                       int         PcieAddr   = -1,
+                       const char* OutputFn   = nullptr)
+{
+	std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintLevel,Validate,OutputFn);
-  
-  return list_of_subevents.size();
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+	dtc_i->ReadSubevents(list_of_subevents, FirstTS, PrintLevel, Validate, OutputFn);
+
+	return list_of_subevents.size();
 }
 
 //-----------------------------------------------------------------------------
 // LinkMask : hex digit per link, i.e. 0x111 for links 0,1,2
 //-----------------------------------------------------------------------------
-int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ResetRoc(LinkMask);
-  return 0;
+int dtc_reset_roc(int LinkMask, int PcieAddr = -1)
+{
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+	dtc_i->ResetRoc(LinkMask);
+	return 0;
 }
 
 // struct RocData_t {
@@ -275,7 +294,7 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 //   ushort  xxx2;
 //   ushort  data; // array, use it just for memory mapping
 // };
-  
+
 //-----------------------------------------------------------------------------
 // returns number of found errors in the payload data
 //-----------------------------------------------------------------------------
@@ -296,7 +315,7 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 // // calculate offsets just once
 // //-----------------------------------------------------------------------------
 //   static int   initialized(0);
-  
+
 //   if (initialized == 0) {
 //     //    calculate_offsets(nhits,offset);
 //     initialized = 1;
@@ -321,8 +340,8 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 //   int nerr     = 0;
 
 //   if (nb_dtc != nb_rocs+0x30) {
-//     if (PrintData > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x 0x%04x\n",nb_dtc,nb_rocs);
-//     nerr += 1;
+//     if (PrintData > 0) printf("ERROR: nb_dtc, nb_rocs : 0x%04x
+//     0x%04x\n",nb_dtc,nb_rocs); nerr += 1;
 //   }
 // //-----------------------------------------------------------------------------
 // // event length checks out, check ROC payload
@@ -335,43 +354,48 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 // // validate ROC header
 // //-----------------------------------------------------------------------------
 //     // ... TODO
-//     ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) | (ulong(roc->ewt[2]) << 32);
+//     ulong ewtag_roc = ulong(roc->ewt[0]) | (ulong(roc->ewt[1]) << 16) |
+//     (ulong(roc->ewt[2]) << 32);
 
 //     if (ewtag_roc != EwTag) {
-//       if (PrintData > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx 0x%08lx\n",i,EwTag,ewtag_roc);
-//       nerr += 1;
+//       if (PrintData > 0) printf("ERROR: roc EwTag ewt_roc : %i 0x%08lx
+//       0x%08lx\n",i,EwTag,ewtag_roc); nerr += 1;
 //     }
-    
-//     if (roc->nb > 0x10) { 
+
+//     if (roc->nb > 0x10) {
 // //-----------------------------------------------------------------------------
 // // non-zero payload
 // //-----------------------------------------------------------------------------
 //       uint*   pattern  = (uint*) &roc->data;
 //       if (PrintData > 10) printf("data[0]  = nb = 0x%04x\n",pattern[0]);
- 
+
 //       int npackets     = roc->n_data_packets;
-//       int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number is stored somewhere)
+//       int npackets_exp = nhits[ewt]*2;       // assume two packets per hit (this number
+//       is stored somewhere)
 
 //       if (npackets != npackets_exp) {
-//         if (PrintData > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i %5i %5i\n",
+//         if (PrintData > 0) printf("ERROR: EwTag roc npackets npackets_exp: 0x%08lx %i
+//         %5i %5i\n",
 //                                   EwTag,i,npackets,npackets_exp);
 //         nerr += 1;
 //       }
-      
+
 //       if (PrintData > 10) {
-//         printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i %10lu\n",
+//         printf("EwTag, ewt, npackets, npackets_exp,  offset: %10lu %3i %2i %2i
+//         %10lu\n",
 //                EwTag,  ewt, npackets, npackets_exp, *Offset);
 //       }
 
 //       uint nw      = npackets*4;        // N 4-byte words
-    
+
 //       for (uint i=0; i<nw; i++) {
 //         uint exp_pattern = (i+*Offset) & 0xffffffff;
-    
+
 //         if (pattern[i] != exp_pattern) {
 //           nerr += 1;
 //           if (PrintData > 0) {
-//             printf("ERROR: EwTag, ewt i  payload[i]  offset exp_word: %10lu %3i %3i 0x%08x 0x%08lx 0x%08x\n",
+//             printf("ERROR: EwTag, ewt i  payload[i]  offset exp_word: %10lu %3i %3i
+//             0x%08x 0x%08lx 0x%08x\n",
 //                    EwTag, ewt, i, pattern[i],*Offset,exp_pattern);
 //           }
 //         }
@@ -379,10 +403,11 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 //     }
 //     roc = (RocData_t*) (((char*) roc) + roc->nb);
 //   }
-  
+
 //   *Offset += 2*4*nhits[ewt];
 
-//   if (PrintData > 10) printf("EwTag = %10lx, nb_dtc = %i nerr = %i\n",EwTag,nb_dtc,nerr);
+//   if (PrintData > 10) printf("EwTag = %10lx, nb_dtc = %i nerr =
+//   %i\n",EwTag,nb_dtc,nerr);
 
 //   return nerr;
 // }
@@ -390,11 +415,12 @@ int dtc_reset_roc(int LinkMask, int PcieAddr = -1) {
 //-----------------------------------------------------------------------------
 // do this per ROC
 //-----------------------------------------------------------------------------
-void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
-  vector<uint16_t>   spi_data;
+void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1)
+{
+	vector<uint16_t> spi_data;
 
-  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSpiData(Link,spi_data,PrintLevel);
+	DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+	dtc_i->ReadSpiData(Link, spi_data, PrintLevel);
 }
 
 //-----------------------------------------------------------------------------
@@ -405,75 +431,82 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 //        RR : ROC readout mode : 00 : ROC patterns   01: digis 02: patterns fixed size
 //        XX : reserved
 //-----------------------------------------------------------------------------
-int dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
-                                 int         Mode     = 0x01   ,
-                                 uint64_t    FirstTS  = 0      ,
-                                 const char* OutputFn = nullptr) {
-  int pcie_addr(-1), rc(0);                                 // assume initialized
-  
-  DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized
+int dtc_buffer_test_emulated_cfo(int         NEvents  = 3,
+                                 int         Mode     = 0x01,
+                                 uint64_t    FirstTS  = 0,
+                                 const char* OutputFn = nullptr)
+{
+	int pcie_addr(-1), rc(0);  // assume initialized
 
-  int print_level      = (Mode >>  0) & 0xff;
-  int validation_level = (Mode >>  8) & 0xff;
-  int roc_readout_mode = (Mode >> 16) & 0xff;
-                                                     // 68x25ns = 1700 ns
-                                                     // this call doesn't send EWMs
-  int emulate_cfo = 1;
-  rc = dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
-  if (rc < 0) return rc;
-                                                    // in emulated mode, always read after
-  
-  dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength,NEvents+1,FirstTS); //
+	DtcInterface* dtc_i =
+	    DtcInterface::Instance(pcie_addr);  // assume already initialized
 
-  dtc_read_subevents(FirstTS,print_level,validation_level,pcie_addr,OutputFn);
+	int print_level      = (Mode >> 0) & 0xff;
+	int validation_level = (Mode >> 8) & 0xff;
+	int roc_readout_mode = (Mode >> 16) & 0xff;
+	// 68x25ns = 1700 ns
+	// this call doesn't send EWMs
+	int emulate_cfo = 1;
+	rc              = dtc_i->InitReadout(emulate_cfo, roc_readout_mode);
+	if(rc < 0)
+		return rc;
+	// in emulated mode, always read after
 
-  return rc;
+	dtc_i->LaunchRunPlanEmulatedCfo(daq_scripts::EWLength, NEvents + 1, FirstTS);  //
+
+	dtc_read_subevents(FirstTS, print_level, validation_level, pcie_addr, OutputFn);
+
+	return rc;
 }
 
 //-----------------------------------------------------------------------------
-int dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
-                                  int         Mode      = 0x1           ,
-                                  uint        DtcMask   = 0x1           ,
-                                  const char* OutputFn  = nullptr       ) {
-  int pcie_addr = -1; // assume initialized
-  int rc(0);
+int dtc_buffer_test_external_cfo(const char* RunPlan  = "commands.bin",
+                                 int         Mode     = 0x1,
+                                 uint        DtcMask  = 0x1,
+                                 const char* OutputFn = nullptr)
+{
+	int pcie_addr = -1;  // assume initialized
+	int rc(0);
 
-  int print_level      = (Mode >>  0) & 0xff;
-  int validation_level = (Mode >>  8) & 0xff;
-  int roc_readout_mode = (Mode >> 16) & 0xff;
+	int print_level      = (Mode >> 0) & 0xff;
+	int validation_level = (Mode >> 8) & 0xff;
+	int roc_readout_mode = (Mode >> 16) & 0xff;
 
-  int emulate_cfo = 0;
-  rc = dtc_init_readout(emulate_cfo,roc_readout_mode,pcie_addr);
-  if (rc < 0) return rc;
-//-----------------------------------------------------------------------------
-// for now, assume only one time chain, but provide for future
-//-----------------------------------------------------------------------------
-  cfo_init_readout_ext(RunPlan,DtcMask);      // for now, assume one time chain
-  cfo_launch_run_plan();
-//-----------------------------------------------------------------------------
-// read events
-//-----------------------------------------------------------------------------
-  uint64_t first_ts = 0;
-  dtc_read_subevents(first_ts,print_level,validation_level,pcie_addr,OutputFn);
-  return rc;
+	int emulate_cfo = 0;
+	rc              = dtc_init_readout(emulate_cfo, roc_readout_mode, pcie_addr);
+	if(rc < 0)
+		return rc;
+	//-----------------------------------------------------------------------------
+	// for now, assume only one time chain, but provide for future
+	//-----------------------------------------------------------------------------
+	cfo_init_readout_ext(RunPlan, DtcMask);  // for now, assume one time chain
+	cfo_launch_run_plan();
+	//-----------------------------------------------------------------------------
+	// read events
+	//-----------------------------------------------------------------------------
+	uint64_t first_ts = 0;
+	dtc_read_subevents(first_ts, print_level, validation_level, pcie_addr, OutputFn);
+	return rc;
 }
 
 //-----------------------------------------------------------------------------
 // .L dtc_gui.C
 //  x = dtc_gui("test",1)
 //-----------------------------------------------------------------------------
-DtcGui* dtc_gui(const char* Project = "test", int DebugLevel = 0) {
-  // 950x1000: dimensions of the main frame
-  DtcGui* x = new DtcGui(Project,gClient->GetRoot(),950,1000,DebugLevel);
-  return x;
-} 
+DtcGui* dtc_gui(const char* Project = "test", int DebugLevel = 0)
+{
+	// 950x1000: dimensions of the main frame
+	DtcGui* x = new DtcGui(Project, gClient->GetRoot(), 950, 1000, DebugLevel);
+	return x;
+}
 
 //-----------------------------------------------------------------------------
-void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link) {
-  auto dtc_i = DtcInterface::Instance(dtc_pcie);
-  auto dtc = dtc_i->Dtc();
-  dtc->WriteROCRegister(DTC_Link_ID(roc_link), 8, 0x30F, false, 100);
-  dtc->WriteROCRegister(DTC_Link_ID(roc_link), 29, 1, false, 100);
+void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link)
+{
+	auto dtc_i = DtcInterface::Instance(dtc_pcie);
+	auto dtc   = dtc_i->Dtc();
+	dtc->WriteROCRegister(DTC_Link_ID(roc_link), 8, 0x30F, false, 100);
+	dtc->WriteROCRegister(DTC_Link_ID(roc_link), 29, 1, false, 100);
 }
 
 void daq() {}

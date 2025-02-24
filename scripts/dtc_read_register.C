@@ -6,18 +6,18 @@
 #include "dtc_init.C"
 
 //-----------------------------------------------------------------------------
-uint32_t dtc_read_register(uint16_t Register, int PcieAddress = -1) {
+uint32_t dtc_read_register(uint16_t Register, int PcieAddress = -1)
+{
+	DTC* dtc = dtc_init(PcieAddress);
 
-  DTC* dtc = dtc_init(PcieAddress);
-  
-  mu2edev* dev = dtc->GetDevice();
+	mu2edev* dev = dtc->GetDevice();
 
-  uint32_t data;
+	uint32_t data;
 
-  int timeout(150);
-  dev->read_register(Register,timeout,&data);
+	int timeout(150);
+	dev->read_register(Register, timeout, &data);
 
-  return data;
+	return data;
 }
 
 #endif
