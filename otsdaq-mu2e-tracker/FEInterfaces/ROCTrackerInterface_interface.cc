@@ -11,20 +11,20 @@ using namespace ots;
 
 //=========================================================================================
 ROCTrackerInterface::ROCTrackerInterface(
-    const std::string&       rocUID,
-    const ConfigurationTree& theXDAQContextConfigTree,
-    const std::string&       theConfigurationPath)
-    : ROCPolarFireCoreInterface(rocUID, theXDAQContextConfigTree, theConfigurationPath)
+	const std::string&       rocUID,
+	const ConfigurationTree& theXDAQContextConfigTree,
+	const std::string&       theConfigurationPath)
+	: ROCPolarFireCoreInterface(rocUID, theXDAQContextConfigTree, theConfigurationPath)
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
 	__COUT_INFO__ << "ROCTrackerInterface instantiated with link: " << linkID_
-	              << " and EventWindowDelayOffset = " << delay_ << __E__;
+				  << " and EventWindowDelayOffset = " << delay_ << __E__;
 
 	__CFG_COUT__ << "Constructor..." << __E__;
 
 	ConfigurationTree rocTypeLink =
-	    Configurable::getSelfNode().getNode("ROCTypeLinkTable");
+		Configurable::getSelfNode().getNode("ROCTypeLinkTable");
 
 	TrackerParameter_1_ = rocTypeLink.getNode("NumberParam1").getValue<int>();
 
@@ -34,23 +34,23 @@ ROCTrackerInterface::ROCTrackerInterface(
 	__FE_COUTV__(TrackerParameter_2_);
 
 	registerFEMacroFunction("ROC Status",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::GetStatus),
-	                        std::vector<std::string>{},          // inputs parameters
-	                        std::vector<std::string>{"Status"},  // output parameters
-	                        1);  // requiredUserPermissions
+							static_cast<FEVInterface::frontEndMacroFunction_t>(
+								&ROCTrackerInterface::GetStatus),
+							std::vector<std::string>{},          // inputs parameters
+							std::vector<std::string>{"Status"},  // output parameters
+							1);  // requiredUserPermissions
 
 	registerFEMacroFunction(
-	    "Read ROC Error Counter",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::ReadROCErrorCounter),
-	    std::vector<std::string>{"Address to read, Default := 0]"},  // inputs parameters
-	    std::vector<std::string>{"Status"},                          // output parameters
-	    1);  // requiredUserPermissions
-	         // registerFEMacroFunction(
-	         //     "ReadROCTrackerFIFO",
-	         //     static_cast<FEVInterface::frontEndMacroFunction_t>(
-	         //         &ROCTrackerInterface::ReadTrackerFIFO),
+		"Read ROC Error Counter",
+		static_cast<FEVInterface::frontEndMacroFunction_t>(
+			&ROCTrackerInterface::ReadROCErrorCounter),
+		std::vector<std::string>{"Address to read, Default := 0]"},  // inputs parameters
+		std::vector<std::string>{"Status"},                          // output parameters
+		1);  // requiredUserPermissions
+			 // registerFEMacroFunction(
+			 //     "ReadROCTrackerFIFO",
+			 //     static_cast<FEVInterface::frontEndMacroFunction_t>(
+			 //         &ROCTrackerInterface::ReadTrackerFIFO),
 	//     std::vector<std::string>{"NumberOfTimesToReadFIFO"},  // inputs parameters
 	//     std::vector<std::string>{},                           // output parameters
 	//     1);                                                   //
@@ -120,8 +120,8 @@ ROCTrackerInterface::~ROCTrackerInterface(void)
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
 {
 	__FE_COUT__ << "Calling Tracker write ROC Emulator register: link number " << std::dec
-	            << linkID_ << ", address = " << address
-	            << ", write data = " << data_to_write << __E__;
+				<< linkID_ << ", address = " << address
+				<< ", write data = " << data_to_write << __E__;
 
 	return;
 
@@ -145,12 +145,12 @@ uint16_t ROCTrackerInterface::readEmulatorRegister(uint16_t address)
 
 //==================================================================================================
 void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
-                                            uint16_t               address,
-                                            uint16_t               wordCount,
-                                            bool                   incrementAddress)
+											uint16_t               address,
+											uint16_t               wordCount,
+											bool                   incrementAddress)
 {
 	__CFG_COUT__ << "Tracker emulator block read "
-	             << "wordCount= " << wordCount << __E__;
+				 << "wordCount= " << wordCount << __E__;
 
 	// make up some bogus data. Right now hardwired, could be read in as a parameter...
 	double input_data = 15;
@@ -158,7 +158,7 @@ void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
 	for(unsigned int i = 0; i < wordCount; ++i)
 	{
 		double rand_data =
-		    input_data + 0.5 * (input_data * (((double)rand() / (RAND_MAX)) - 0.5));
+			input_data + 0.5 * (input_data * (((double)rand() / (RAND_MAX)) - 0.5));
 		__CFG_COUT__ << "rand_data= " << rand_data << __E__;
 		data.push_back(rand_data);
 		//		data.push_back(address + (incrementAddress?i:0));
@@ -170,8 +170,8 @@ void ROCTrackerInterface::configure(void)
 try
 {
 	__CFG_COUT__
-	    << "Tracker configure, first configure back-end communication with DTC... "
-	    << __E__;
+		<< "Tracker configure, first configure back-end communication with DTC... "
+		<< __E__;
 	ROCPolarFireCoreInterface::configure();
 
 	//__COUT_INFO__ << "Tracker configure, next configure front-end... " << __E__;
@@ -250,7 +250,7 @@ bool ROCTrackerInterface::running(void)
 	FIFOdepth          = readRegister(35);
 
 	std::cout << "TRK FIFOdepth " << FIFOdepth << " Event number " << event_number_
-	          << std::endl;
+			  << std::endl;
 
 	unsigned counter = 0;  // don't wait forever
 
@@ -422,8 +422,8 @@ void ROCTrackerInterface::GetStatus(__ARGS__)
 	   << std::dec << readVal << ")" << __E__;
 	os << "\t\t"
 	   << "bit[9:8]=[enable_marker,enable_clock]"
-	      "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
-	      "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
+		  "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
+		  "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
 	   << __E__;
 
 	address = 18;
@@ -433,8 +433,8 @@ void ROCTrackerInterface::GetStatus(__ARGS__)
 	   << std::dec << readVal << ")" << __E__;
 	os << "\t\t"
 	   << "bit[9:8]=[enable_marker,enable_clock]"
-	      "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
-	      "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
+		  "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
+		  "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
 	   << __E__;
 
 	address = 72;
@@ -468,26 +468,26 @@ void ROCTrackerInterface::GetStatus(__ARGS__)
 	uint32_t doubleRegVal = 0;
 
 	std::vector<DTCLib::roc_address_t> doubleReads = {
-	    23, 25, 64, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 48, 51, 54, 57};
+		23, 25, 64, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 48, 51, 54, 57};
 
 	std::vector<std::string> doubleReadCaptions = {
-	    "SIZE_FIFO_FULL[28]+STORE_POS[25:24]+STORE_CNT[19:0]",   // 23,
-	    "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]",  // 25,
-	    "no. EVM seen",                                          // 64,
-	    "no. HB seen",                                           // 27,
-	    "no. null HB seen:",                                     // 29,
-	    "no. HB on hold",                                        // 31,
-	    "no. PREFETCH seen",                                     // 33,
-	    "no. DATA REQ seen",                                     // 35,
-	    "no. DATA REQ read from DDR",                            // 37,
-	    "no. DATA REQ sent to DTC",                              // 39,
-	    "no. DATA REQ with null data",                           // 41,
-	    "last SPILL TAG",                                        // 43,
-	    "last HB tag",                                           // 45,
-	    "last PREFETCH tag",                                     // 48,
-	    "last FETCHED tag",                                      // 51,
-	    "last DATA REQ tag",                                     // 54,
-	    "OFFSET tag",                                            // 57
+		"SIZE_FIFO_FULL[28]+STORE_POS[25:24]+STORE_CNT[19:0]",   // 23,
+		"SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]",  // 25,
+		"no. EVM seen",                                          // 64,
+		"no. HB seen",                                           // 27,
+		"no. null HB seen:",                                     // 29,
+		"no. HB on hold",                                        // 31,
+		"no. PREFETCH seen",                                     // 33,
+		"no. DATA REQ seen",                                     // 35,
+		"no. DATA REQ read from DDR",                            // 37,
+		"no. DATA REQ sent to DTC",                              // 39,
+		"no. DATA REQ with null data",                           // 41,
+		"last SPILL TAG",                                        // 43,
+		"last HB tag",                                           // 45,
+		"last PREFETCH tag",                                     // 48,
+		"last FETCHED tag",                                      // 51,
+		"last DATA REQ tag",                                     // 54,
+		"OFFSET tag",                                            // 57
 	};
 
 	for(size_t i = 0; i < doubleReads.size(); ++i)

@@ -1,14 +1,14 @@
-# -*- mode:tcl -*- 
+# -*- mode:tcl -*-
 #------------------------------------------------------------------------------
 # defaults for running in a DQM client mode
 #------------------------------------------------------------------------------
 otsdaq_mu2e_tracker : {
-    
+
     TrackerDQM : { module_type:TrackerDQM
         analyzeFragments    : 1           ## set to 0 to print only
         interactiveMode     : 1           ##
         fillHistograms      : 1
-        fillWfHistograms    : 1           ## 
+        fillWfHistograms    : 1           ##
         plotWaveforms       : [ -1, -1]   ## nothing
         validateADCPatterns : 0           ## no validation by default
 
@@ -22,7 +22,7 @@ otsdaq_mu2e_tracker : {
                                "bit0:0",
                                "bit1:0"
                               ]
-        
+
         minNBytes           : -1
         maxNBytes           : 1000000
         maxFragmentSize     : 20000       ## to catch obvious errors
@@ -44,7 +44,7 @@ otsdaq_mu2e_tracker : {
         refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
         refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
-# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
+# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------

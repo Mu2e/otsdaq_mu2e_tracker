@@ -1,4 +1,4 @@
-# -*- mode:tcl -*- 
+# -*- mode:tcl -*-
 #------------------------------------------------------------------------------
 # usage: artdaqDriver -c driver_tracker_vst.fcl
 #------------------------------------------------------------------------------
@@ -59,8 +59,8 @@ fragment_receiver: {
     maxEventsPerSubrun     : 500000           ## 500K events/subrun
 
     readDTCRegisters             : 0          ## 1
-        #  generated_fragments_per_event: 2          ## shouldn't need that any longer 
-    fragment_ids                 : [ 0, 11 ]  ## fake data + registers   
+        #  generated_fragments_per_event: 2          ## shouldn't need that any longer
+    fragment_ids                 : [ 0, 11 ]  ## fake data + registers
 
     nEventsDbg                   : 10         ## don't need to dump more
     debugLevel                   : 1
@@ -69,13 +69,13 @@ fragment_receiver: {
     fragment_type          : Mu2e        #generator data fragment type
 
     max_fragment_size_bytes: 0x100000
-    
+
     destinations: {
     }
 
     routing_table_config: {
         use_routing_manager: false
-    } 
+    }
 }
 
 event_builder: {
@@ -133,5 +133,3 @@ outputs: {
 # 	}
 #     }
 # }
-
-

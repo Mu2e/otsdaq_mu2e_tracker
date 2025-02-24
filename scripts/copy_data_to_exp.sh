@@ -1,10 +1,10 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash
 #------------------------------------------------------------------------------
-# copies data from local /scratch/mu2e/.. area on an online machine 
+# copies data from local /scratch/mu2e/.. area on an online machine
 # to offline /exp/mu2e/data/projects/...
 # so far , used only for the tracker
 #
-# call format: copy_data_to_exp.sh run1 run2 [doit] 
+# call format: copy_data_to_exp.sh run1 run2 [doit]
 #
 # if run2>run1 is defined, the range of runs is copied
 # if "doit" is undefined, the script only prints the commands to be executed
@@ -27,9 +27,9 @@ for rn in `seq $rn1 $rn2` ; do
         dsid=raw.mu2e.trkvst.$dsconf.art
         cmd="scp $f murat@mu2egpvm06:$dest/$dsid/."
         echo "$cmd"
-        if [ ".$doit" != "." ] ; then 
+        if [ ".$doit" != "." ] ; then
             # echo doit=$doit
-            $cmd ; echo rc=$? ; 
+            $cmd ; echo rc=$? ;
         fi
     done
 done
