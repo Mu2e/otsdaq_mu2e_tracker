@@ -1801,7 +1801,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd)
 		}
 
 		if(hit->ErrorFlags != 0)
-		{   // 4 bits
+		{  // 4 bits
 			//-----------------------------------------------------------------------------
 			// 2024-11-21 Richie: MSB to LSB: ewm overlap, missed last hit, fifo was full.
 			// 0x1: fifo was full

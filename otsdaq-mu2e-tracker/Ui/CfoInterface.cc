@@ -266,8 +266,10 @@ void CfoInterface::PrintStatus()
 	PrintRegister(0x9240, "Transmit Byte   Count Link 0               ");
 	PrintRegister(0x9260, "Transmit Packet Count Link 0               ");
 
-	PrintRegister(0x9500, "CFO Jitter Attenuator CSR                  ");  // CFO_Register_JitterAttenuatorCSR
-	                                                                       // = 0x9500,
+	PrintRegister(
+	    0x9500,
+	    "CFO Jitter Attenuator CSR                  ");  // CFO_Register_JitterAttenuatorCSR
+	                                                     // = 0x9500,
 }
 
 //-----------------------------------------------------------------------------

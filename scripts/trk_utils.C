@@ -184,8 +184,8 @@ void monica_var_link_config(int LinkMask = 0, int PcieAddr = -1)
 // 				uint16_t* wordPtr = static_cast<uint16_t*>(readPtr) + (word - 1);
 // 				if ((*wordPtr == 0xcafe) or (*wordPtr == 0xdead)) {
 // 					printf(" Buffer Timeout detected! word=%5lu data: 0x%04x\n",word,
-// *wordPtr); 					DTCLib::Utilities::PrintBuffer(readPtr, 16, 0, /*TLVL_TRACE*/4 + 3); 					timeout
-// = true; 					break;
+// *wordPtr); 					DTCLib::Utilities::PrintBuffer(readPtr, 16, 0,
+// /*TLVL_TRACE*/4 + 3); 					timeout = true; 					break;
 // 				}
 //       }
 //     }

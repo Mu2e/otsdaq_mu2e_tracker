@@ -58,9 +58,10 @@ demo::ToySim::ToySim(fhicl::ParameterSet const& ps)
 
 	if(exception_on_config_)
 	{
-		throw cet::exception("ToySim") << "This is an engineered exception designed for "
-		                                  "testing purposes, set "  // NOLINT(cert-err60-cpp)
-		                                  "by the exception_on_config FHiCL variable";
+		throw cet::exception("ToySim")
+		    << "This is an engineered exception designed for "
+		       "testing purposes, set "  // NOLINT(cert-err60-cpp)
+		       "by the exception_on_config FHiCL variable";
 	}
 	if(dies_on_config_)
 	{
