@@ -177,7 +177,7 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
 
-    printf("... TrackerDQM: bit=%3i is set to %i \n",index,_debugBit[index]);
+    TLOG(TLVL_DEBUG) << Form("... TrackerDQM: bit=%4i is set to %i\n",index,_debugBit[index]);
   }
 //-----------------------------------------------------------------------------
 // for now, assume only one station, but implement data structures handling 
@@ -382,11 +382,11 @@ void TrackerDQM::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, Ro
     Hist->q_vs_ich        = Dir->make<TProfile>("q_vs_ich"   , Form("run %06i: link %02i:%i:%i Q vs ich"     ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,1500);
     Hist->qt_vs_ich       = Dir->make<TProfile>("qt_vs_ich"  , Form("run %06i: link %02i:%i:%i Qt vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 500);
     Hist->qtq_vs_ich      = Dir->make<TProfile>("qtq_vs_ich" , Form("run %06i: link %02i:%i:%i Qt/Q vs ich"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0, 1);
+  }
     
-    for (int i=0; i<kNChannels; i++) {
-      art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
-      book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
-    }
+  for (int i=0; i<kNChannels; i++) {
+    art::TFileDirectory chan_dir = Dir->mkdir(Form("ch_%02i",i));
+    book_channel_histograms(&chan_dir,RunNumber,&Hist->channel[i],Link,i);
   }
 }
 
@@ -430,7 +430,7 @@ void TrackerDQM::book_histograms(int RunNumber) {
   for (int i=0; i<kNEventHistSets; i++) book_event_histset[i] = 0;
   
   book_event_histset[ 0] = 1;		// all events
-  book_event_histset[ 1] = 1;	        // events with the error code = 0
+  book_event_histset[ 1] = 0;	        // events with the error code = 0
   char folder_name[100];
   for (int i=0; i<kNEventHistSets; i++) {
     if (book_event_histset[i] != 0) {
@@ -446,7 +446,7 @@ void TrackerDQM::book_histograms(int RunNumber) {
   for (int i=0; i<kNStationHistSets; i++) book_station_histset[i] = 0;
 
   book_station_histset[ 0] = 1;		// all events
-  book_station_histset[ 1] = 1;	        // events with the error code = 0
+  book_station_histset[ 1] = 0;	        // events with the error code = 0
 
   for (int ist=0; ist<kNStationHistSets; ist++) {
     if (book_station_histset[ist] != 0) {
@@ -473,32 +473,34 @@ void TrackerDQM::book_histograms(int RunNumber) {
 void TrackerDQM::beginJob() {
   TLOG(TLVL_INFO) << "starting";
 
-  int           tmp_argc(2);
-  // int           tmp_argc(0);
-  char**        tmp_argv(nullptr);
+  if (_interactiveMode != 0) {
+    int           tmp_argc(2);
+    // int           tmp_argc(0);
+    char**        tmp_argv(nullptr);
 
-  tmp_argv    = new char*[2];
-  tmp_argv[0] = new char[100];
-  tmp_argv[1] = new char[100];
+    tmp_argv    = new char*[2];
+    tmp_argv[0] = new char[100];
+    tmp_argv[1] = new char[100];
 
-  strcpy(tmp_argv[0],"-b");
-  strcpy(tmp_argv[1],Form("--web=server:%d",_port));
-
-  _app = new TApplication("TrackerDQM", &tmp_argc, tmp_argv);
-  gROOT->SetWebDisplay(Form("server:%d",_port));
-
-  // app->Run()
-  // _app->Run(true);
-  // delete [] tmp_argv;
+    strcpy(tmp_argv[0],"-b");
+    strcpy(tmp_argv[1],Form("--web=server:%d",_port));
+    
+    _app = new TApplication("TrackerDQM", &tmp_argc, tmp_argv);
+    gROOT->SetWebDisplay(Form("server:%d",_port));
+    
+    // app->Run()
+    // _app->Run(true);
+    // delete [] tmp_argv;
+  }
 
 }
 
 //-----------------------------------------------------------------------------
 void TrackerDQM::endJob() {
-  delete _app;
-  delete _canvas[0];
-  delete _canvas[1];
-  delete _canvas[2];
+  // delete _app;
+  // delete _canvas[0];
+  // delete _canvas[1];
+  // delete _canvas[2];
 }
 
 //-----------------------------------------------------------------------------
@@ -507,17 +509,6 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
 
   if (_initialized != 0) return;
   _initialized = 1;
-
-  _canvas[0] = new TCanvas("canvas_000");
-  _canvas[0]->Divide(2,2);
-
-  _canvas[1] = new TCanvas("canvas_001");
-  _canvas[1]->Divide(2,2);
-
-  _canvas[2] = new TCanvas("canvas_002");
-  _canvas[2]->Divide(2,2);
-
-  _browser   = new TBrowser();
 //-----------------------------------------------------------------------------
 // as a last step, book histograms - need to know the number of active links
 //-----------------------------------------------------------------------------
@@ -525,6 +516,17 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
     book_histograms(rn);
 
     if (_interactiveMode != 0) {
+      _canvas[0] = new TCanvas("canvas_000");
+      _canvas[0]->Divide(2,2);
+
+      _canvas[1] = new TCanvas("canvas_001");
+      _canvas[1]->Divide(2,2);
+
+      _canvas[2] = new TCanvas("canvas_002");
+      _canvas[2]->Divide(2,2);
+      
+      _browser   = new TBrowser();
+
       _canvas[0]->cd(1);
       _hist.event[0]->nbtot->Draw();
       _canvas[0]->cd(2);
@@ -584,7 +586,9 @@ void TrackerDQM::fill_dtc_histograms(DtcHist_t* Hist, StationData_t* Sd, int IDt
     
 //-----------------------------------------------------------------------------
 void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
-    
+
+  TLOG(TLVL_DEBUG) << "Rd->link:" << Rd->link << " Rd->nbytes:" << Rd->nbytes << " Rb->nhits:" << Rd->nhits;
+  
   Hist->nbytes->Fill      (Rd->nbytes);
   Hist->npackets->Fill    (Rd->npackets);
   Hist->nhits->Fill       (Rd->nhits);
@@ -812,17 +816,19 @@ int TrackerDQM::fill_histograms() {
     fill_event_histograms  (_hist.event[0],&_edata);
     fill_station_histograms(_hist.station[0],&_edata);
 
-    if ((_fillHistograms > 1) and (_edata.error_code == 0)) {
-      fill_event_histograms  (_hist.event[1],&_edata);
-      fill_station_histograms(_hist.station[1],&_edata);
-    }
+    // if ((_fillHistograms > 1) and (_edata.error_code == 0)) {
+    //   fill_event_histograms  (_hist.event[1],&_edata);
+    //   fill_station_histograms(_hist.station[1],&_edata);
+    // }
   }
+  if (_interactiveMode != 0) {
 //-----------------------------------------------------------------------------
 // update plots
 //-----------------------------------------------------------------------------
-  for (int i=0; i<3; i++) {
-    _canvas[i]->Modified();
-    //    _canvas[i]->Update();
+    for (int i=0; i<3; i++) {
+      _canvas[i]->Modified();
+      //    _canvas[i]->Update();
+    }
   }
   return 0;
 }
@@ -1004,9 +1010,8 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  if (_diagLevel > 0) {
-    printf(" Event : %06i:%08i%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
-  }
+  TLOG(TLVL_INFO) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
+  printf("%s\n",Form(" Event : %06i:%06i:%08i", AnEvent.run(),AnEvent.subRun(),AnEvent.event()));
   
   int ifrag = 0;
 
@@ -1023,7 +1028,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
       _edata.nerr_tot    += 1;
       _edata.n_nb_errors += 1;
       
-      TLOG(TLVL_DEBUG) << Form("event %i:%i:%i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
+      TLOG(TLVL_DEBUG+1) << Form("event %i:%i:%i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
                                AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
                                kNBytesErrorBit,nbytes);
     }
@@ -1070,7 +1075,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // event data un(re)packed , fill histograms
 //-----------------------------------------------------------------------------
-  if (_analyzeFragments != 0) {
+  if (_fillHistograms != 0) {
     fill_histograms();
   }
 //-----------------------------------------------------------------------------
@@ -1103,6 +1108,8 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
   //                            AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
   //                            _edata.error_code);
   // }
+  TLOG(TLVL_INFO) << Form(" -- DONE\n");
+  printf("%s\n",Form(" -- DONE"));
 }
 
 
@@ -1110,7 +1117,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 // assume that we only have tracker fragment(s)
 //-----------------------------------------------------------------------------
 void TrackerDQM::print_message(const char* Message) {
-  printf("TrackerDQM: event %6i:%8i%8i %s\n",
+  TLOG(TLVL_INFO) << Form("TrackerDQM: event %06i:%06i:%08i %s\n",
          _edata._event->run(),
          _edata._event->subRun(),
          _edata._event->event(),

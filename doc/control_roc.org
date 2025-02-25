@@ -1,6 +1,7 @@
 #+startup:fold -*- buffer-read-only:t -*- 
 * ------------------------------------------------------------------------------
-* source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+* source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py 
+- a full list of commands - on the top of the file
 * local repo : file:~mu2etrk/products/trackerScripts
 * ------------------------------------------------------------------------------
 * control_ROC commands                                                       
@@ -90,6 +91,7 @@ This is how the inputs are used to generate the outputs
     - set_preamp_thresh -c 45 -d 420 -hv 0
 ** measure_thresholds [-c channel]                                           
     - measure_thresholds -c 91 : channel 91
+** TODO program_digi 
 ** pulser_on -c 3 -d 10000 -y 200                                            
     -c 3 : (go by 8) : pulse channels 3,11,19,27,35,43,51,59,67,75,83 91
 ** [#B] readDeviceID                                                         
@@ -336,24 +338,25 @@ set_digi_rw -s 0
 
 * TODO control_ROC command implementation over the fiber                     
 
-|--------------------+------+--------+-----------------------------------------------------------|
-| command            | addr | status | comments                                                  |
-|--------------------+------+--------+-----------------------------------------------------------|
-| digi_rw            |      |        | implemented                                               |
-|--------------------+------+--------+-----------------------------------------------------------|
-| read_spi           |  258 | OK     | implemented                                               |
-| find_alignment     |      |        | implemented by Ed, minor wrinkle - parameter order, stars |
-| set_preamp_thresh  |      |        |                                                           |
-| measure_thresholds |      |        | ok                                                        |
-| pulser_on          |      |        |                                                           |
-| readDeviceID       |      |        | somewhat - check the byte order                           |
-| set_digi_rw        |      |        | shouldn't be needed, all goes over the fiber              |
-| rates              |      |        |                                                           |
-| read               |      | OK     | implemented                                               |
-| read_git_rev       |  272 |        |                                                           |
-| read_dilp          |  273 |        |                                                           |
-| get_key            |  274 |        |                                                           |
-|--------------------+------+--------+-----------------------------------------------------------|
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| command            | addr | status                  | comments                                                  |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| digi_rw            |      |                         | implemented                                               |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| read_spi           |  258 | OK                      | implemented                                               |
+| find_alignment     |      | OK                      | implemented by Ed, minor wrinkle - parameter order, stars |
+| get_key            |  274 | implemented, not tested |                                                           |
+| measure_thresholds |      | implemented, not tested | ok                                                        |
+| program_digi       |      |                         |                                                           |
+| pulser_on          |      | implemented, not tested |                                                           |
+| readDeviceID       |      | implemented             | check the byte order                                      |
+| rates              |      |                         |                                                           |
+| read               |      | OK                      | tested to the extent needed                               |
+| read_git_rev       |  272 | implemented, not tested |                                                           |
+| read_ilp           |  273 | implemented, not tested |                                                           |
+| set_digi_rw        |      | implemented, not tested | shouldn't be needed, all goes over the fiber              |
+| set_preamp_thresh  |      | implemented, not tested |                                                           |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
 
 1)  READGITREV   from  ADDR = 272
        -  initiated by simple DCS_WRITE to ADDR of any value,
