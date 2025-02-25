@@ -71,6 +71,8 @@ physics: {
             nSamplesBL          : 10
             minPulseHeight      : 5.
             port                : 8877
+            interactiveMode     : 0
+            fillHistograms      : 0
             plotWaveforms       : [ -1, -1]  ## nothing
         }
     }
