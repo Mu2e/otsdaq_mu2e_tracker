@@ -350,13 +350,18 @@ set_digi_rw -s 0
 | program_digi       |      |                         |                                                           |
 | pulser_on          |      | implemented, not tested |                                                           |
 | readDeviceID       |      | implemented             | check the byte order                                      |
-| rates              |      |                         |                                                           |
+| rates              |  271 |                         |                                                           |
 | read               |      | OK                      | tested to the extent needed                               |
 | read_git_rev       |  272 | implemented, not tested |                                                           |
 | read_ilp           |  273 | implemented, not tested |                                                           |
 | set_digi_rw        |      | implemented, not tested | shouldn't be needed, all goes over the fiber              |
 | set_preamp_thresh  |      | implemented, not tested |                                                           |
 |--------------------+------+-------------------------+-----------------------------------------------------------|
+
+
+0.1) READRATES: ADDR 271
+
+it takes 8 input parameters: lookback_number (def=100),  samples_number (def=10), and the 6 channel masks
 
 1)  READGITREV   from  ADDR = 272
        -  initiated by simple DCS_WRITE to ADDR of any value,
@@ -367,11 +372,11 @@ set_digi_rw -s 0
       into an ASCII string equal to "bc03ed5cda33bb9d4e0d66af56f2bad7a6c87e15"
 
 2) READILP  from ADDR  273
-      -  initiated by simple DCS_WRITE to ADDR of any value,
+      - initiated by simple DCS_WRITE to ADDR of any value,
         followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
         (ie DCS_READ of addr 129 should return 8)
  
-      The 4 returned words Word[3:0] should be parsed like this:  
+        The 4 returned words Word[3:0] should be parsed like this:  
    
         keys = ['ILPID','TEMP','PRESSURE']
         values = [ "0x{:2x}".format(d[0]),   "{:.1f}".format(d[1] / 100.),   "{:.1f}".format(d[2] / 524288.0]
@@ -380,20 +385,20 @@ set_digi_rw -s 0
                   d[1] = Word[1]
                   d[2] = (Word[2] & 0x0000_FFFF) + (Word[3]<<16 & 0xFFFF_0000)
 
-3) GETKEY  from ADDR  274
+3) GETKEY from ADDR  274
       -  initiated by simple DCS_WRITE to ADDR of any value,
          followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
-        (ie DCS_READ of addr 129 should return 8)
+         (ie DCS_READ of addr 129 should return 8)
 
         The 4 returned words Word[3:0] should be parsed like this: 
 
-        keys = ['TEMP[degC]','2.5V','5.1V','DCDCTEMP']
-        temp = float(d[0])/4096*3300/10
-        v2p5 = float(d[1])/4096*3.355
-        v5p1 = float(d[2])/4096*3.355*2
+        keys     = ['TEMP[degC]','2.5V','5.1V','DCDCTEMP']
+        temp     = float(d[0])/4096*3300/10
+        v2p5     = float(d[1])/4096*3.355
+        v5p1     = float(d[2])/4096*3.355*2
         dcdctemp = float(d[3])/4096*3300/10
-        values = [round(temp,2), round(v2p5,3), round(v5p1,3), round(dcdctemp,2)]
-        rd = dict(list(zip(keys, values)))
+        values   = [round(temp,2), round(v2p5,3), round(v5p1,3), round(dcdctemp,2)]
+        rd       = dict(list(zip(keys, values)))
 
        where   d[i] = Word[i],  i=0 to 3
 
@@ -406,6 +411,7 @@ chan_mask   = dtcbuffer[1];                        // -C     8-bit mask (not cle
 dutyCycle   = dtcbuffer[2];                        // -y
 pulserDelay = (dtcbuffer[4]>>16)  &  dtcbuffer[3]; // -d    integer equal to int(1./pulserFreq * 1000000)
 
+
 The "rocUtil block_read -a 268 -c 4" will return these words
 
          *(registers_1_addr + CRDCS_WRITE_TX) = chan_mask;
@@ -413,6 +419,7 @@ The "rocUtil block_read -a 268 -c 4" will return these words
          *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF);
          *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF0000)>>16;
 
+4.5)  PULSER_OFF is addr=269 
 
 5) MEASURE_THRESHOLD via "rocUtil block_write -a 270 -w 7"
 
@@ -424,6 +431,22 @@ The "rocUtil block_read -a 268 -c 4" will return these words
          channel_mask[2] = (dtcbuffer[6]>>16)  &  dtcbuffer[5];    // -E 
 
 The "rocUtil block_read -a 270 -c 288" will return 288 thresholds
+
+6) readSerialNumber
+
+   s=struct.Struct(‘16B32B2H’)
+   d            = s.unpack(data)
+   DeviceSerial = ‘’
+   DesignInfo   = ‘’
+   for i in range(16):
+     DeviceSerial = “{:02x}“.format(d[i]) + DeviceSerial
+   for i in range(32):
+     DesignInfo = “{:02x}“.format(d[i+16]) + DesignInfo
+
+   DeviceSerial = ‘0x’+DeviceSerial
+   DesignInfo   = ‘0x’+DesignInfo
+   keys   = [‘DeviceSerial’,‘DesignInfo’,‘DesignVer’,‘BackLevelVer’]
+   values = [DeviceSerial, DesignInfo, “0x{:04x}“.format(d[48]), “0x{:04x}“.format(d[49])]
 
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
@@ -467,11 +490,11 @@ python3 diagnostic.py -m V -tv 30 -f settings_pasha_002.dat -p /dev/ttyUSB0
 python3 control_ROC.py --ts 1
 measure_thresholds                                
 # (this should show the CAL thresholds (third column) about between
-# 17-20mV ? there is one channel 28 that is nor working)
+# 17-20mV ? there is one channel 28 that is not working)
 pulser_on -c 4 -d 1000 -y 200
 # -d 1000: 50kHz , -d 10000 : 5kHz
 # -y 200 : about 4 us, -y 10 : 200ns 
-# Charge injection works in modulo 8. In other words, '-c 0' will pulse channels 0,8,16,etc. 
+# Charge injection works in modulo 8. In other wcords, '-c 0' will pulse channels 0,8,16,etc. 
 # In the example above, -c 4 will pulse channels 4, 12,20, etc. 
 # Of course, there will be cross talk, so other channels will show, 
 # but that can be easily rejected offline. 

@@ -506,12 +506,16 @@ void TrackerDQM::endJob() {
 //-----------------------------------------------------------------------------
 void TrackerDQM::beginRun(const art::Run& aRun) {
   int rn  = aRun.run();
-
+  TLOG(TLVL_DEBUG) << "run_number:" << rn
+                   << " _initialized:" << _initialized 
+                   << " _fillHistograms:" << _fillHistograms
+                   << " _interactiveMode:" << _interactiveMode ;
+  
   if (_initialized != 0) return;
   _initialized = 1;
 //-----------------------------------------------------------------------------
 // as a last step, book histograms - need to know the number of active links
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------- 
   if (_fillHistograms > 0) {
     book_histograms(rn);
 

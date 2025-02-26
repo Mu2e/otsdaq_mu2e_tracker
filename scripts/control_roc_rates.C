@@ -53,11 +53,11 @@ void control_roc_rates(int Link, int PrintLevel = 0) {
   
   int roc_mask        = 1 << (4*Link);
 
-  dtc->WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
+  //  dtc->WriteROCRegister(roc,14,0x01,false,1000);  // reset the roc
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
-// chan mask always includes the first channel
+// ch_mask always includes the first channel
 //-----------------------------------------------------------------------------
   vector<uint16_t> vec;
 

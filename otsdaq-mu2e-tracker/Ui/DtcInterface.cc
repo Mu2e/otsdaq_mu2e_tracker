@@ -108,8 +108,8 @@ namespace trkdaq {
     stringstream ss;
     ss << "0x";
 
-    // first 16 words are the serial number
-    for (size_t i = 0 ; i < 16 ; i++){
+    // first 16 words are the serial number, print it in the right order
+    for (int i = 15 ; i >= 0 ; i--){
       ss << hex << returned[i];
 
     }
@@ -223,11 +223,6 @@ namespace trkdaq {
     // read back payload
     rv = this->ReadROCBlockEnsured(Link, 260);
 
-    // reset ddr memory
-    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-    // return
     return rv;
   }
 
@@ -915,9 +910,10 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       throw cet::exception("DtcInterface::ReadROCBlockEnsured") << msg;
     }
 
-    // reset ddr memory
-    fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    // P.M. don't need to reset the DDR
+    // // reset ddr memory
+    // fDtc->WriteROCRegister(Link, 14, 0x01, false, 1000);
+    // std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // return
     return rv;

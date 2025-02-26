@@ -346,13 +346,33 @@ namespace  trkdaq {
       PrintBuffer(v2.data(),nw);
     }
     else {
-      TLOG(TLVL_ERROR) << Form("wrong number of words : nw = %i, expected = 4");
+      TLOG(TLVL_ERROR) << Form("wrong number of words : nw = %i, expected = 4",nw);
       rc = -1;
     }
 
     return rc;
   }
 
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+//-----------------------------------------------------------------------------
+// PULSER_OFF: reg 269
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> res;
+    RocBlockRead(Link,PULSER_OFF,res);
+
+    int nw = res.size();
+    TLOG(TLVL_DEBUG) << "nw:" << nw; 
+
+    if (PrintLevel & 0x1) {
+      PrintBuffer(res.data(),nw,&Stream);
+    }
+
+    return rc;
+  }
+  
 
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold) {
@@ -667,4 +687,51 @@ namespace  trkdaq {
     return rc;
   }
     
+
+  int  DtcInterface::ControlRoc_ReadDeviceID(int                    Link      ,
+                                             ControlRoc_DeviceID_t& DevId     ,
+                                             int                    PrintLevel,
+                                             std::ostream&          Stream    ) {
+
+    std::vector<uint16_t> dat = ReadDeviceID(DTC_Link_ID(Link));
+
+    std::stringstream ss;
+    ss << "0x";
+
+    // first 16 bytes are the serial number
+    for (int i = 15 ; i >= 0 ; i--) ss << std::format("{:02x}",dat[i]);
+
+    DevId.DeviceSerial = ss.str();
+
+    ss.str({});
+    ss.clear();
+    ss << "0x";
+    // next 32 bytes are the designInfo
+    for (int i = 47 ; i >= 16 ; i--) ss << std::format("{:02x}",dat[i]);
+    DevId.DesignInfo = ss.str();
+
+    ss.str({});
+    ss.clear();
+    ss << "0x";
+    // next 2 bytes are the designInfo
+    for (int i = 49 ; i >= 48 ; i--) ss << std::format("{:02x}",dat[i]);
+    DevId.DesignVer = ss.str();
+
+    ss.str({});
+    ss.clear();
+    ss << "0x";
+    // next 2 bytes are the designInfo
+    for (int i = 51 ; i >= 50 ; i--) ss << std::format("{:02x}",dat[i]);
+    DevId.BackLevelVer = ss.str();
+
+
+    if (PrintLevel & 0x1) {
+      Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer); 
+      Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo); 
+      Stream << std::format("DesignVer   :{}\n",DevId.DesignVer); 
+      Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial); 
+    }
+
+    return 0;
+  }
 };

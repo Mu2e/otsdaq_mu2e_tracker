@@ -11,6 +11,13 @@
 #define READ_ROC_VERSION 1
 
 namespace trkdaq {
+
+  enum {
+    PULSER_OFF = 269,
+    READRATES  = 271,
+  };
+
+  
   struct ControlRoc_Read_Input_t_V1 {
     uint16_t    num_triggers[2];        // num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
     uint16_t    ch_mask[6];             // channel_mask[0] = (dtcbuffer[6] << 16) + dtcbuffer[5];  // -C
@@ -109,6 +116,13 @@ namespace trkdaq {
     uint16_t    data[2];             // 
     uint16_t    adc_num;             //
     uint16_t    adc_mask;
+  };
+ 
+  struct ControlRoc_DeviceID_t {
+    std::string    BackLevelVer;
+    std::string    DesignInfo;
+    std::string    DesignVer;
+    std::string    DeviceSerial;
   };
  
 //-----------------------------------------------------------------------------
