@@ -686,8 +686,89 @@ namespace  trkdaq {
 
     return rc;
   }
-    
 
+//-----------------------------------------------------------------------------
+// at this point, assume just one Link. If needed, make it more general (a mask) later
+//-----------------------------------------------------------------------------
+  int  DtcInterface::ControlRoc_Rates(int Link, ControlRoc_Rates_t& Par, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+//-----------------------------------------------------------------------------
+// convert into enum
+// DTC has already been initialized, don't reco
+//-----------------------------------------------------------------------------
+    DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
+    DTCLib::DTC*  dtc   = dtc_i->Dtc();
+  
+    int roc_mask        = 1 << (4*Link);
+
+    auto roc  = DTC_Link_ID(Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg ***  (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+// ch_mask always includes the first channel
+//-----------------------------------------------------------------------------
+    vector<uint16_t> vec;
+
+    vec.push_back(Par.num_lookback);
+    vec.push_back(Par.num_samples );
+
+    for (int i=0; i<6; i++) {
+      vec.push_back(Par.chan_mask[i]);
+    }
+  
+    dtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+
+  // 0x86 = 0x82 + 4
+    uint16_t u; 
+    while ((u = dtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+    printf("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+
+    nw = nw-4;
+    vector<uint16_t> v2;
+    dtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
+//-----------------------------------------------------------------------------
+// print output - in two formats
+//-----------------------------------------------------------------------------
+    if (PrintLevel & 0x1) {
+      print_buffer(v2.data(),nw);
+    }
+
+    if (PrintLevel & 9x2) {
+//-----------------------------------------------------------------------------
+// formatted printout
+// should be 96*3*2+2*2 = 580 16-bit words
+// 3 words per channel (straw)
+//-----------------------------------------------------------------------------
+      if (nw != 580) {
+        printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
+        return;
+      }
+
+      Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)\n";
+      Stream << "------------------------------------------------\n");
+      int loc(0);
+      for (int ich=0; ich<96; ich++) {
+        loc           = 6*ich;
+        int rate_hv   = int(data[loc  ])+(int(data[loc+1]) << 16);
+        int rate_cal  = int(data[loc+2])+(int(data[loc+3]) << 16);
+        int rate_coic = int(data[loc+4])+(int(data[loc+5]) << 16);
+        Stream << std::format(" {:5d} {:10d} {:10d} {:10d}\n",ich,rate_hv, rate_cal, rate_coic);
+      }
+      // finally, the last two words - total counts
+      loc = 576;
+      int iw1   = int(data[loc  ])+(int(data[loc+1]) << 16);
+      int iw2   = int(data[loc+2])+(int(data[loc+3]) << 16);
+      Stream << std::format(" total_hv: {:10d} total_cal: {:10d}\n",iw1,iw2);
+    }
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
   int  DtcInterface::ControlRoc_ReadDeviceID(int                    Link      ,
                                              ControlRoc_DeviceID_t& DevId     ,
                                              int                    PrintLevel,

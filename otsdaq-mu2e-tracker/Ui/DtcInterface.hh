@@ -75,6 +75,12 @@ namespace trkdaq {
     int          ControlRoc_PulserOn (int Link, int Channel0, int ChannelMask, int DutyCycle, int PulserDelay);
     int          ControlRoc_PulserOff(int Link, int PrintLevel = 0, std::ostream& Stream= std::cout);
     
+    int          ControlRoc_Rates    (int Link           ,
+                                      int NumLookback = 100,
+                                      int NumSamples  =  10,
+                                      int PrintLevel  =   0,
+                                      std::ostream& Stream = std::sout);
+
     int          ControlRoc_Read   (ControlRoc_Read_Input_t* Par          ,
                                     int                      LinkMask   = -1   ,
                                     int                      PrintLevel = 0    ,

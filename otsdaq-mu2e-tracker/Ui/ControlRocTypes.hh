@@ -14,7 +14,7 @@ namespace trkdaq {
 
   enum {
     PULSER_OFF = 269,
-    READRATES  = 271,
+    REG_READRATES = 271,
   };
 
   
@@ -123,6 +123,12 @@ namespace trkdaq {
     std::string    DesignInfo;
     std::string    DesignVer;
     std::string    DeviceSerial;
+  };
+ 
+  struct ControlRoc_Rates_t {
+    uint16_t    num_lookback;     // default : 100 = dtcbuffer[0];                                  // -a
+    uint16_t    num_samples;      // default :  10 = dtcbuffer[1];                                  // -t
+    uint16_t    chan_mask[6];     // default : all channels (0xffff) 
   };
  
 //-----------------------------------------------------------------------------
