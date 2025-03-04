@@ -17,37 +17,43 @@
 // PatternMatch: 1 per channel: packed into  6 x unsigned short = 96 x 1 bits
 //                                  Total: 127 x unsigned short
 
-class AlignmentIteration{
-  class ChannelMask{
-    public:
-      ChannelMask(unsigned int, unsigned int, unsigned int);
-      bool TestBit(unsigned int);
-    protected:
-      unsigned int lo;
-      unsigned int md;
-      unsigned int hi;
-    private:
-      /**/
-  };
+class AlignmentIteration
+{
+	class ChannelMask
+	{
+	  public:
+		ChannelMask(unsigned int, unsigned int, unsigned int);
+		bool TestBit(unsigned int);
+
+	  protected:
+		unsigned int lo;
+		unsigned int md;
+		unsigned int hi;
+
+	  private:
+		/**/
+	};
 
   public:
-    static const unsigned int payload_size; // 127 words, as above
-    static const unsigned int channel_count; // 96 channels
+	static const unsigned int payload_size;   // 127 words, as above
+	static const unsigned int channel_count;  // 96 channels
 
-    AlignmentIteration() = default;
-    AlignmentIteration(unsigned int, words_t);
+	AlignmentIteration() = default;
+	AlignmentIteration(unsigned int, words_t);
 
-    unsigned int Index() const;
-    int ADCPhase() const;
-    std::vector<AlignmentChannel> Channels() const;
+	unsigned int                  Index() const;
+	int                           ADCPhase() const;
+	std::vector<AlignmentChannel> Channels() const;
+
   protected:
-    unsigned int index;
-    int adc_phase;
-    std::vector<AlignmentChannel> channels;
+	unsigned int                  index;
+	int                           adc_phase;
+	std::vector<AlignmentChannel> channels;
 
-    unsigned int construct_concatenated_word(const words_t&, size_t, size_t, size_t);
+	unsigned int construct_concatenated_word(const words_t&, size_t, size_t, size_t);
+
   private:
-    /**/
+	/**/
 };
 
 #endif

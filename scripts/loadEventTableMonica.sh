@@ -12,4 +12,3 @@ while [ $ii -le $((0xa3FC)) ]; do
 #  my_cntl write $ii 0
   ii=$(( $ii + 4 ))
 done
-

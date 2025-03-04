@@ -28,7 +28,7 @@ echo "Disabling EWMs"
 my_cntl write 0x91a8 0x0
 echo "EWM deltaT set to "`my_cntl read 0x91a8`
 
-## setup ROC for simulated increasing counter pattern      
+## setup ROC for simulated increasing counter pattern
 echo " "
 #reset link and reconfigure
 echo "Resetting $LINK"

@@ -6,7 +6,6 @@
 
 using namespace ots;
 
-
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "FE-ROCTrackerInterface"
 
@@ -19,8 +18,8 @@ ROCTrackerInterface::ROCTrackerInterface(
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
-	__COUT_INFO__ << "ROCTrackerInterface instantiated with link: "
-	               << linkID_ << " and EventWindowDelayOffset = " << delay_ << __E__;
+	__COUT_INFO__ << "ROCTrackerInterface instantiated with link: " << linkID_
+	              << " and EventWindowDelayOffset = " << delay_ << __E__;
 
 	__CFG_COUT__ << "Constructor..." << __E__;
 
@@ -34,40 +33,40 @@ ROCTrackerInterface::ROCTrackerInterface(
 	__FE_COUTV__(TrackerParameter_1_);
 	__FE_COUTV__(TrackerParameter_2_);
 
-
 	registerFEMacroFunction("ROC Status",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::GetStatus),
-	                        std::vector<std::string>{}, //inputs parameters
-	                        std::vector<std::string>{"Status"}, //output parameters
+	                        std::vector<std::string>{},          // inputs parameters
+	                        std::vector<std::string>{"Status"},  // output parameters
 	                        1);  // requiredUserPermissions
 
-	registerFEMacroFunction("Read ROC Error Counter",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::ReadROCErrorCounter),
-	                        std::vector<std::string>{"Address to read, Default := 0]"}, //inputs parameters
-	                        std::vector<std::string>{"Status"}, //output parameters
-	                        1);  // requiredUserPermissions		
-	// registerFEMacroFunction(
-	//     "ReadROCTrackerFIFO",
-	//     static_cast<FEVInterface::frontEndMacroFunction_t>(
-	//         &ROCTrackerInterface::ReadTrackerFIFO),
+	registerFEMacroFunction(
+	    "Read ROC Error Counter",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::ReadROCErrorCounter),
+	    std::vector<std::string>{"Address to read, Default := 0]"},  // inputs parameters
+	    std::vector<std::string>{"Status"},                          // output parameters
+	    1);  // requiredUserPermissions
+	         // registerFEMacroFunction(
+	         //     "ReadROCTrackerFIFO",
+	         //     static_cast<FEVInterface::frontEndMacroFunction_t>(
+	         //         &ROCTrackerInterface::ReadTrackerFIFO),
 	//     std::vector<std::string>{"NumberOfTimesToReadFIFO"},  // inputs parameters
 	//     std::vector<std::string>{},                           // output parameters
-	//     1);                                                   // requiredUserPermissions
+	//     1);                                                   //
+	//     requiredUserPermissions
 
-
-
-
-	 try {
-	  inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
-	} catch (...) {
-	  __CFG_COUT__ << "inputTemperature field not defined. Defaulting..."
-	               << __E__;
-	  inputTemp_ = 15.;
+	try
+	{
+		inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
+	}
+	catch(...)
+	{
+		__CFG_COUT__ << "inputTemperature field not defined. Defaulting..." << __E__;
+		inputTemp_ = 15.;
 	}
 
-	 temp1_.noiseTemp(inputTemp_);
+	temp1_.noiseTemp(inputTemp_);
 }
 
 // void ROCTrackerInterface::ReadTrackerFIFO(__ARGS__)
@@ -89,7 +88,6 @@ ROCTrackerInterface::ROCTrackerInterface(
 
 // 	__FE_COUTV__(NumberOfTimesToReadFIFO);
 
-
 // 	for(unsigned i = 0; i < NumberOfTimesToReadFIFO; i++)
 // 	{
 
@@ -105,7 +103,6 @@ ROCTrackerInterface::ROCTrackerInterface(
 // 		}
 
 // 	}
-
 
 // 	for(auto& argOut : argsOut)
 // 		__FE_COUT__ << argOut.first << ": " << argOut.second << __E__;
@@ -135,39 +132,42 @@ uint16_t ROCTrackerInterface::readEmulatorRegister(uint16_t address)
 {
 	__CFG_COUT__ << "Tracker emulator read" << __E__;
 
-        // if(address == 6 || address == 7)
-		return ROCPolarFireCoreInterface::readEmulatorRegister(address);	
+	// if(address == 6 || address == 7)
+	return ROCPolarFireCoreInterface::readEmulatorRegister(address);
 	// if(address == ADDRESS_FIRMWARE_VERSION)
 	// 	return 0x5;
 	// else if(address == ADDRESS_MYREGISTER)
 	//  	return temp1_.GetBoardTempC();
 	// else
-		return 0xBAFD;
+	return 0xBAFD;
 
 }  // end readEmulatorRegister()
 
 //==================================================================================================
-void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& 	data,
-						uint16_t 		address,
-						uint16_t		wordCount,
-						bool			incrementAddress)
+void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
+                                            uint16_t               address,
+                                            uint16_t               wordCount,
+                                            bool                   incrementAddress)
 {
-	__CFG_COUT__ << "Tracker emulator block read " << "wordCount= "<<wordCount<< __E__;
+	__CFG_COUT__ << "Tracker emulator block read "
+	             << "wordCount= " << wordCount << __E__;
 
-// make up some bogus data. Right now hardwired, could be read in as a parameter...
-    double input_data = 15;  
+	// make up some bogus data. Right now hardwired, could be read in as a parameter...
+	double input_data = 15;
 
-	for(unsigned int i=0;i<wordCount;++i) {
-          	double rand_data = input_data + 0.5 * (input_data * (((double)rand() / (RAND_MAX)) - 0.5));
-	  	__CFG_COUT__ << "rand_data= "<<rand_data<< __E__;
+	for(unsigned int i = 0; i < wordCount; ++i)
+	{
+		double rand_data =
+		    input_data + 0.5 * (input_data * (((double)rand() / (RAND_MAX)) - 0.5));
+		__CFG_COUT__ << "rand_data= " << rand_data << __E__;
 		data.push_back(rand_data);
-//		data.push_back(address + (incrementAddress?i:0));
-}		
+		//		data.push_back(address + (incrementAddress?i:0));
+	}
 }  // end readEmulatorBlock()
 
-
 //==================================================================================================
-void ROCTrackerInterface::configure(void) try
+void ROCTrackerInterface::configure(void)
+try
 {
 	__CFG_COUT__
 	    << "Tracker configure, first configure back-end communication with DTC... "
@@ -186,12 +186,17 @@ catch(const std::runtime_error& e)
 catch(...)
 {
 	__FE_SS__ << "Unknown error caught. Check printouts!" << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  // one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__FE_SS_THROW__;
 }
 
@@ -211,8 +216,6 @@ void ROCTrackerInterface::start(std::string runNumber)
 	event_number_           = 0;
 
 	//	DataProducerBase::registerToBuffer();
-
-
 
 	return;
 }
@@ -264,30 +267,34 @@ bool ROCTrackerInterface::running(void)
 
 	if(FIFOdepth > 0 && FIFOdepth != 65535)
 	{
+		// this is actually DCS values, I think. I'm not sure.
 
-	  // this is actually DCS values, I think. I'm not sure.
-
-//
-//		readBlock(val, 42 , FIFOdepth, 0);
-//
-//		std::string* buffer;
-//		buffer = FEVInterface::getNextBuffer();
-//
-//		//std::string        buffer;
-//		buffer->resize(8);  // NOTE: this is inexpensive according to
-//		                   // Lorenzo/documentation in C++11 (only increases size once
-//		                   // and doesn't decrease size)
-//		memcpy((void*)buffer /*dest*/, (void*)&val /*src*/, FIFOdepth /*numOfBytes*/);
-//
-//	    	// size() and length() are equivalent
-//		__FE_COUT__ << "Writing to buffer " << buffer->size() << " bytes!" << __E__;
-//		__FE_COUT__ << "Writing to buffer length " << buffer->length() << " bytes!"
-//		            << __E__;
-//
-//		__FE_COUT__ << "Buffer Data: "
-//		            << BinaryStringMacros::binaryNumberToHexString(*buffer) << __E__;
-//
-//		FEVInterface::copyToNextBuffer(*buffer);
+		//
+		//		readBlock(val, 42 , FIFOdepth, 0);
+		//
+		//		std::string* buffer;
+		//		buffer = FEVInterface::getNextBuffer();
+		//
+		//		//std::string        buffer;
+		//		buffer->resize(8);  // NOTE: this is inexpensive according to
+		//		                   // Lorenzo/documentation in C++11 (only increases size
+		// once
+		//		                   // and doesn't decrease size)
+		//		memcpy((void*)buffer /*dest*/, (void*)&val /*src*/, FIFOdepth
+		///*numOfBytes*/);
+		//
+		//	    	// size() and length() are equivalent
+		//		__FE_COUT__ << "Writing to buffer " << buffer->size() << " bytes!" <<
+		//__E__;
+		//		__FE_COUT__ << "Writing to buffer length " << buffer->length() << "
+		// bytes!"
+		//		            << __E__;
+		//
+		//		__FE_COUT__ << "Buffer Data: "
+		//		            << BinaryStringMacros::binaryNumberToHexString(*buffer) <<
+		//__E__;
+		//
+		//		FEVInterface::copyToNextBuffer(*buffer);
 	}
 	else
 	{
@@ -362,14 +369,11 @@ bool ROCTrackerInterface::emulatorWorkLoop(void)
 	//	}
 }  // end emulatorWorkLoop()
 
-
-
 //==================================================================================================
-// Copied from Calorimter on 
+// Copied from Calorimter on
 void ROCTrackerInterface::ReadROCErrorCounter(__ARGS__)
 {
 	__COUT_INFO__ << "ReadROCErrorCounter()" << __E__;
-
 
 	unsigned int errAddr = __GET_ARG_IN__("Address to read, Default := 0]", uint16_t, 0);
 	__FE_COUTV__(errAddr);
@@ -377,157 +381,132 @@ void ROCTrackerInterface::ReadROCErrorCounter(__ARGS__)
 	writeRegister(ROC_ADDRESS_ERRCNT, errAddr);
 	writeRegister(ROC_ADDRESS_IS_PATTERN, 64);
 
-	std::stringstream os;
+	std::stringstream  os;
 	DTCLib::roc_data_t readVal;
-    readVal = readRegister(ROC_ADDRESS_ERRCNT);
+	readVal = readRegister(ROC_ADDRESS_ERRCNT);
 
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << errAddr << " (" << std::dec << errAddr << 
-		std::hex << "): data 0x" << readVal << " (" << std::dec << 
-		readVal << ")\n" << __E__;
-
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << errAddr
+	   << " (" << std::dec << errAddr << std::hex << "): data 0x" << readVal << " ("
+	   << std::dec << readVal << ")\n"
+	   << __E__;
 
 	writeRegister(ROC_ADDRESS_IS_PATTERN, 0);
 
-
 	__COUT_INFO__ << "end ReadROCErrorCounter()" << __E__;
 
-	__SET_ARG_OUT__("Status",os.str());
+	__SET_ARG_OUT__("Status", os.str());
 
-
-} //end ReadROCErrorCounter()
+}  // end ReadROCErrorCounter()
 
 //==================================================================================================
 void ROCTrackerInterface::GetStatus(__ARGS__)
 {
-	//copied from Monica's va_read_all.sh
+	// copied from Monica's va_read_all.sh
 
 	DTCLib::roc_data_t readVal;
-	
-	std::stringstream os;
+
+	std::stringstream     os;
 	DTCLib::roc_address_t address;
 
 	address = 0x0;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): data 0x" << readVal << " (" << std::dec << 
-		readVal << ")\n" << __E__;
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): data 0x" << readVal << " ("
+	   << std::dec << readVal << ")\n"
+	   << __E__;
 
-	
 	address = 0x8;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): data 0x" << readVal << " (" << std::dec << 
-		readVal << ")" << __E__;
-	os << "\t\t" << "bit[9:8]=[enable_marker,enable_clock]"
-			"\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
-			"\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n" << __E__;
-
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): data 0x" << readVal << " ("
+	   << std::dec << readVal << ")" << __E__;
+	os << "\t\t"
+	   << "bit[9:8]=[enable_marker,enable_clock]"
+	      "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
+	      "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
+	   << __E__;
 
 	address = 18;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): data 0x" << readVal << " (" << std::dec << 
-		readVal << ")" << __E__;
-	os << "\t\t" << "bit[9:8]=[enable_marker,enable_clock]"
-			"\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
-			"\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n" << __E__;
-
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): data 0x" << readVal << " ("
+	   << std::dec << readVal << ")" << __E__;
+	os << "\t\t"
+	   << "bit[9:8]=[enable_marker,enable_clock]"
+	      "\n\t\t bit[7:4]=[en_int_ewm,en_free_ewm,error_en,pattern_en]"
+	      "\n\t\t bit[3:0]=en_lanes[HV1,HV0,CAl1,CAL0]\n"
+	   << __E__;
 
 	address = 72;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): hbtag error 0x" << readVal << " (" << std::dec << 
-		readVal << ") \n" << __E__;
-
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): hbtag error 0x" << readVal
+	   << " (" << std::dec << readVal << ") \n"
+	   << __E__;
 
 	address = 73;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): dreq error 0x" << readVal << " (" << std::dec << 
-		readVal << ") \n" << __E__;		
-
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): dreq error 0x" << readVal << " ("
+	   << std::dec << readVal << ") \n"
+	   << __E__;
 
 	address = 74;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): hblost 0x" << readVal << " (" << std::dec << 
-		readVal << ") \n" << __E__;
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): hblost 0x" << readVal << " ("
+	   << std::dec << readVal << ") \n"
+	   << __E__;
 
 	address = 75;
 	readVal = readRegister(address);
-	os << std::hex << std::setprecision(4) << std::setfill('0') <<
-		"address 0x" << address << " (" << std::dec << address << 
-		std::hex << "): evm lost 0x" << readVal << " (" << std::dec << 
-		readVal << ") \n" << __E__;		
+	os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x" << address
+	   << " (" << std::dec << address << std::hex << "): evm lost 0x" << readVal << " ("
+	   << std::dec << readVal << ") \n"
+	   << __E__;
 
 	uint32_t doubleRegVal = 0;
 
-
 	std::vector<DTCLib::roc_address_t> doubleReads = {
-		23,
-		25,
-		64,
-		27,
-		29,
-		31,
-		33,
-		35,
-		37,
-		39,
-		41,
-		43,
-		45,
-		48,
-		51,
-		54,
-		57
-	};
+	    23, 25, 64, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 48, 51, 54, 57};
 
 	std::vector<std::string> doubleReadCaptions = {
-		"SIZE_FIFO_FULL[28]+STORE_POS[25:24]+STORE_CNT[19:0]", 	//23,
-		"SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]", //25,
-		"no. EVM seen", //64,
-		"no. HB seen", //27,
-		"no. null HB seen:", //29,
-		"no. HB on hold", //31,
-		"no. PREFETCH seen", //33,
-		"no. DATA REQ seen", //35,
-		"no. DATA REQ read from DDR", //37,
-		"no. DATA REQ sent to DTC", //39,
-		"no. DATA REQ with null data", //41,
-		"last SPILL TAG", //43,
-		"last HB tag", //45,
-		"last PREFETCH tag", //48,
-		"last FETCHED tag", //51,
-		"last DATA REQ tag", //54,
-		"OFFSET tag", //57
+	    "SIZE_FIFO_FULL[28]+STORE_POS[25:24]+STORE_CNT[19:0]",   // 23,
+	    "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]",  // 25,
+	    "no. EVM seen",                                          // 64,
+	    "no. HB seen",                                           // 27,
+	    "no. null HB seen:",                                     // 29,
+	    "no. HB on hold",                                        // 31,
+	    "no. PREFETCH seen",                                     // 33,
+	    "no. DATA REQ seen",                                     // 35,
+	    "no. DATA REQ read from DDR",                            // 37,
+	    "no. DATA REQ sent to DTC",                              // 39,
+	    "no. DATA REQ with null data",                           // 41,
+	    "last SPILL TAG",                                        // 43,
+	    "last HB tag",                                           // 45,
+	    "last PREFETCH tag",                                     // 48,
+	    "last FETCHED tag",                                      // 51,
+	    "last DATA REQ tag",                                     // 54,
+	    "OFFSET tag",                                            // 57
 	};
 
-	for(size_t i=0; i<doubleReads.size(); ++i)
+	for(size_t i = 0; i < doubleReads.size(); ++i)
 	{
-		address = doubleReads[i];
-		readVal = readRegister(address);
-		doubleRegVal = readVal;	
-		readVal = readRegister(++address);
+		address      = doubleReads[i];
+		readVal      = readRegister(address);
+		doubleRegVal = readVal;
+		readVal      = readRegister(++address);
 		doubleRegVal |= readVal << 16;
 
-		os << std::hex << std::setprecision(4) << std::setfill('0') <<
-			"address 0x" << address-1 << " (" << std::dec << address-1 << 
-			std::setprecision(8) <<
-			std::hex << "): data 0x" << doubleRegVal << " (" << std::dec << 
-			doubleRegVal << ")" << __E__;
+		os << std::hex << std::setprecision(4) << std::setfill('0') << "address 0x"
+		   << address - 1 << " (" << std::dec << address - 1 << std::setprecision(8)
+		   << std::hex << "): data 0x" << doubleRegVal << " (" << std::dec << doubleRegVal
+		   << ")" << __E__;
 		os << "\t\t" << doubleReadCaptions[i] << "\n" << __E__;
-	} //end double read register loop
+	}  // end double read register loop
 
-	__SET_ARG_OUT__("Status",os.str());
+	__SET_ARG_OUT__("Status", os.str());
 
-} //end GetStatus()
+}  // end GetStatus()
 
 DEFINE_OTS_INTERFACE(ROCTrackerInterface)
