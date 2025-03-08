@@ -58,7 +58,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // PCIE address is not specified, check environment
 //-----------------------------------------------------------------------------
-      if (getenv("DTCLIB_DTC") != nullptr) pcie_addr = atoi(getenv("DTCLIB_DTC"));
+      if (getenv("DTCLIB_DTC") != nullptr) {
+        pcie_addr = atoi(getenv("DTCLIB_DTC"));
+      }
       else {
         TLOG(TLVL_ERROR) << Form("PcieAddr < 0 and $DTCLIB_DTC is not defined. BAIL out\n");
         return nullptr;
@@ -73,22 +75,41 @@ namespace trkdaq {
       }
     }
                                     
-    TLOG(TLVL_DEBUG) << "pcie_addr:" << pcie_addr
+    TLOG(TLVL_DEBUG) << "inputs      : TRK PcieAddr: " << PcieAddr
+                     << " pcie_addr:" << pcie_addr 
+                     << " fgInstance[pcie_addr]:0x" << std::hex << fgInstance[pcie_addr] 
                      << " LinkMask:0x" << std::hex << LinkMask
                      << std::dec
                      << " SkipInit:" << SkipInit << std::endl;
     
-    if (fgInstance[pcie_addr] == nullptr) fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
+    trkdaq::DtcInterface* dtc_i (nullptr);
     
-    if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
-      TLOG(TLVL_ERROR) << Form("DtcInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
-                               fgInstance[pcie_addr]->PcieAddr());
-      return nullptr;
+    if (fgInstance[pcie_addr] == nullptr) {
+      fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
+      dtc_i = fgInstance[pcie_addr];
+      TLOG(TLVL_DEBUG) << "instantiated: TRK pcie_addr:" << pcie_addr
+                       << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
+                       << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
     }
-    else return dynamic_cast<trkdaq::DtcInterface*>(fgInstance[pcie_addr]);
+    else {
+//-----------------------------------------------------------------------------
+// already unutualized, double-check
+//-----------------------------------------------------------------------------
+      if (fgInstance[pcie_addr]->PcieAddr() != pcie_addr) {
+        TLOG(TLVL_ERROR) << Form("DtcInterface::Instance already initialized with PcieAddress = %i. BAIL out\n", 
+                                 fgInstance[pcie_addr]->PcieAddr());
+      }
+      else {
+        dtc_i = dynamic_cast<trkdaq::DtcInterface*>(fgInstance[pcie_addr]);
+        TLOG(TLVL_DEBUG) << "instantiated: TRK pcie_addr:" << pcie_addr
+                         << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
+                         << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
+      }
+    }
+    return dtc_i;
   }
 
-  //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
   roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link) {
 
     bool ok(false);
@@ -175,7 +196,7 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// Version --> R29
+// Version --> R29k
 // as thre is no point inhaving different ROCs with different data versions, assume
 // that specifying the mask means that we want it to be redefined
 //-----------------------------------------------------------------------------
@@ -196,20 +217,12 @@ namespace trkdaq {
 // assume that only one link is specified (not DTC_Link_ALL)
 // read serial number and device info
 //-----------------------------------------------------------------------------
-  vector<roc_data_t> DtcInterface::ReadDeviceID(const DTCLib::DTC_Link_ID& Link) {
+  vector<roc_data_t> DtcInterface::ReadDeviceID(DTCLib::DTC_Link_ID Link, int PrintLevel, std::ostream& Stream) {
     vector<roc_data_t> rv;
-//-----------------------------------------------------------------------------
-// make sure the link is enabled, othrwise risk corrupting memory if Link value is random 
-//-----------------------------------------------------------------------------
-    bool ok(false);
-    for (int i=0; i<6; i++) {
-      int enabled = (fLinkMask >> 4*i) & 1;
-      if (enabled and (i == Link)) {
-        ok = true;
-      }
-    }
-    if (not ok) {
-      TLOG(TLVL_ERROR) << "Link " << int(Link) << " is not enabled" << std::endl; 
+
+    int ilink = int(Link);
+    if (not LinkEnabled(ilink)) {
+      Stream << "ERROR: Link " << ilink << " is not enabled" << std::endl; 
       return rv;
     }
                                         // reset only ROC in question
@@ -222,6 +235,10 @@ namespace trkdaq {
 
     // read back payload
     rv = this->ReadROCBlockEnsured(Link, 260);
+
+    if (PrintLevel & 0x1) {
+      PrintBuffer(rv.data(),rv.size(),&Stream);
+    }
 
     return rv;
   }
@@ -268,11 +285,12 @@ namespace trkdaq {
 // align ROC fpga/adc signals, and optionally print summary table
 //-----------------------------------------------------------------------------
   void DtcInterface::FindAlignments(bool print, int LinkMask) {
-    // reset link mask if desired
-    if (LinkMask != 0) fLinkMask = LinkMask;
+
+    int link_mask = fLinkMask;
+    if (LinkMask != -1) link_mask = LinkMask;
 
     for (int i = 0 ; i < 6 ; i++){
-      int used = (fLinkMask >> 4*i) & 0x1;
+      int used = (link_mask >> 4*i) & 0x1;
       if (used != 0) {
         auto link = DTC_Link_ID(i);
         auto alignment = FindAlignment(link);
@@ -317,7 +335,7 @@ int DtcInterface::ValidateDigiPatterns (ushort* DtcData, ulong EwTag, ulong* Off
         nerr += 1;
       }
 //-----------------------------------------------------------------------------
-// check hit straaw ID
+// check hit straaw ID - TODO: correct the chid check
 //-----------------------------------------------------------------------------
       int ich = hit->StrawIndex;
 
@@ -973,7 +991,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     }
     return roc_reg;
   }
-
+  //-----------------------------------------------------------------------------
 // This is just an example, needs to be implemented for each subsystem
   std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history = false) {
     std::vector<float> roc_reg;
@@ -1005,6 +1023,45 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return roc_reg;
   }
 
+//-----------------------------------------------------------------------------
+// 
+  std::string DtcInterface::GetRocID(int Link) {
+    if (not LinkEnabled(Link)) {
+      TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
+      return std::string("READ_ERROR");
+    }
+    
+    ControlRoc_DeviceID_t devid;
+    int rc = ControlRoc_ReadDeviceID(Link,devid);
+    if (rc == 0) {
+      return devid.DeviceSerial;
+    }
+  }
+
+  std::string DtcInterface::GetRocDesignInfo(int Link) {
+    if (not LinkEnabled(Link)) {
+      TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
+      return std::string("READ_ERROR");
+    }
+    
+    ControlRoc_DeviceID_t devid;
+    int rc = ControlRoc_ReadDeviceID(Link,devid);
+    if (rc == 0) {
+      return devid.DesignInfo;
+    }
+  }
+
+  std::string DtcInterface::GetRocFwGitCommit(int Link) {
+    std::string s("READ_ERROR");
+
+    if (LinkEnabled(Link)) {
+      ControlRoc_ReadGitCommit(s,Link);
+    }
+    else {
+      TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
+    }
+    return s;
+  }
 };
 
 #endif

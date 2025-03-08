@@ -86,7 +86,7 @@ namespace mu2edaq {
     
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
-    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0xf ; }
+    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
 
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
@@ -122,10 +122,6 @@ namespace mu2edaq {
     void         SetBit       (int Register, int Bit, int Value);
 
     void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
-
-    virtual std::vector<std::string> GetRocRegistersNames     (           bool history = false);
-    virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false);
-    virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false);
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
 // event mode=0 is reserved, last packet of the train
@@ -148,6 +144,19 @@ namespace mu2edaq {
                                    int EnableCFORxTx   , 
                                    int EnableAutogenDRP);
 
+//-----------------------------------------------------------------------------
+// to be redefined in the derived classes
+//-----------------------------------------------------------------------------
+    virtual std::vector<std::string> GetRocRegistersNames     (           bool history = false);
+    virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false);
+    virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false);
+
+//-----------------------------------------------------------------------------
+// ROC ID, firmware version ID, and the corresponding git commit
+//-----------------------------------------------------------------------------
+    virtual std::string              GetRocID         (int Link);
+    virtual std::string              GetRocDesignInfo (int Link);
+    virtual std::string              GetRocFwGitCommit(int Link);
   };
 
 };

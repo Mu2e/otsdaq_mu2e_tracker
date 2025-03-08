@@ -13,8 +13,9 @@
 namespace trkdaq {
 
   enum {
-    PULSER_OFF = 269,
-    REG_READRATES = 271,
+    PULSER_OFF        = 269,
+    REG_READRATES     = 271,
+    REG_READGITCOMMIT = 272,
   };
 
   

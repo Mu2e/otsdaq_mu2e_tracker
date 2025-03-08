@@ -292,16 +292,16 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
 void TrackerDQM::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber, ChannelHist_t* Hist, int Link, int I) {
 
   Hist->nhits   = Dir->make<TH1F>(Form("ch_%i_%02i_nhits" ,Link,I),Form("run %06i: link %i ch %02i nhits"  ,RunNumber,Link,I), 50, -0.5, 49.5);
-  Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
-  Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i ch %02i time[0]",RunNumber,Link,I),1000, 0., 100.);  // us
-  Hist->t0  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_0"  ,Link,I),Form("run %06i: link %i ch %02i t0[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-  Hist->t0  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_1"  ,Link,I),Form("run %06i: link %i ch %02i t0[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-  Hist->t1  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_0"  ,Link,I),Form("run %06i: link %i ch %02i t1[0]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
-  Hist->t1  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_1"  ,Link,I),Form("run %06i: link %i ch %02i t1[1]  ",RunNumber,Link,I),1000,-20., 80.);  // ns
+  Hist->time[0] = Dir->make<TH1F>(Form("ch_%i_%02i_time0" ,Link,I),Form("run %06i: link %i ch %02i t0,us"  ,RunNumber,Link,I),1000, 0., 100.);  // us
+  Hist->time[1] = Dir->make<TH1F>(Form("ch_%i_%02i_time1" ,Link,I),Form("run %06i: link %i ch %02i t1,us"  ,RunNumber,Link,I),1000, 0., 100.);  // us
+  Hist->t0  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_0"  ,Link,I),Form("run %06i: link %i ch %02i t0,ns"  ,RunNumber,Link,I),1000,-20., 80.);  // ns
+  Hist->t0  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t0_1"  ,Link,I),Form("run %06i: link %i ch %02i t1,ns"  ,RunNumber,Link,I),1000,-20., 80.);  // ns
+  Hist->t1  [0] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_0"  ,Link,I),Form("run %06i: link %i ch %02i EW-t0,ns",RunNumber,Link,I),1000,-20., 80.);  // ns
+  Hist->t1  [1] = Dir->make<TH1F>(Form("ch_%i_%02i_t1_1"  ,Link,I),Form("run %06i: link %i ch %02i EW-t1,ns",RunNumber,Link,I),1000,-20., 80.);  // ns
   Hist->tot [0] = Dir->make<TH1F>(Form("ch_%i_%02i_tot0"  ,Link,I),Form("run %06i: link %i ch %02i tot[0]" ,RunNumber,Link,I), 100, 0., 100.);
   Hist->tot [1] = Dir->make<TH1F>(Form("ch_%i_%02i_tot1"  ,Link,I),Form("run %06i: link %i ch %02i tot[1]" ,RunNumber,Link,I), 100, 0., 100.);
   Hist->pmp     = Dir->make<TH1F>(Form("ch_%i_%02i_pmp"   ,Link,I),Form("run %06i: link %i ch %02i pmp"    ,RunNumber,Link,I), 100, 0.,  10.);
-  Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,I) ,500, -25,25);
+  Hist->dt01[0] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_0",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [0],ns",RunNumber,Link,I) ,1000, -50,50);
   Hist->dt01[1] = Dir->make<TH1F>(Form("ch_%i_%02i_dt01_1",Link,I),Form("run %06i: link %i ch %02i T0(i)-T1(i) [1],ns",RunNumber,Link,I) ,500, -2500,2500);
   Hist->dt0     = Dir->make<TH1F>(Form("ch_%i_%02i_dt0"   ,Link,I),Form("run %06i: link %i ch %02i T0(i+1)-T0(i)",RunNumber,Link,I)      ,50000,  0.,50);
   Hist->dt1     = Dir->make<TH1F>(Form("ch_%i_%02i_dt1"   ,Link,I),Form("run %06i: link %i ch %02i T1(i+1)-T1(i)",RunNumber,Link,I)      ,50000,  0.,50);
@@ -415,6 +415,9 @@ void TrackerDQM::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, 
   Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: N errors"     ,RunNumber), 1000, 0.,   2000.);
   Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: N err vs evt" ,RunNumber), 1000, 0.,   5000000.);
   Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt", Form("run %06i: eflag vs evt" ,RunNumber), 1000, 0.,   5000000.);
+
+  Hist->t4mt2[0]        = Dir->make<TH1F>("t4mt2_0"    , Form("run %06i: t4[0]-t2[0]"  ,RunNumber), 25000, -25000,  25000);
+  Hist->t4mt2[1]        = Dir->make<TH1F>("t4mt2_1"    , Form("run %06i: t4[1]-t2[1]"  ,RunNumber), 25000, -25000,  25000);
 }
 
 
@@ -790,6 +793,11 @@ void TrackerDQM::fill_event_histograms(EventHist_t* Hist, EventData_t* Ed) {
   Hist->nerr_vs_evt->Fill  (Ed->_event->event(),Ed->nerr_tot);
   int eflg = (Ed->nerr_tot > 0);
   Hist->eflg_vs_evt->Fill  (Ed->_event->event(),eflg        );
+
+  Hist->t4mt2[0]->Fill  (Ed->tcorr[4][0]-Ed->tcorr[2][0]);
+  Hist->t4mt2[1]->Fill  (Ed->tcorr[4][1]-Ed->tcorr[2][1]);
+
+  TLOG(TLVL_DEBUG+1) << "tcorr[4],tcorr[2]:" << Ed->tcorr[4][0] << " " << Ed->tcorr[4][1] << " " << Ed->tcorr[2][0] << " " << Ed->tcorr[2][1] ;
 }
 
 //-----------------------------------------------------------------------------
@@ -985,6 +993,10 @@ void TrackerDQM::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragm
     else if (_rocDataFormat == kDigiCheckerBoard) {
       analyze_roc_data(dh,rd);
     }
+    else {
+                                        // data
+      analyze_roc_data(dh,rd);
+    }
 //-----------------------------------------------------------------------------
 // update station error counters
 //-----------------------------------------------------------------------------
@@ -1014,8 +1026,8 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_INFO) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
-  printf("%s\n",Form(" Event : %06i:%06i:%08i", AnEvent.run(),AnEvent.subRun(),AnEvent.event()));
+  TLOG(TLVL_DEBUG) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
+  if (_diagLevel > 1) printf("%s\n",Form(" Event : %06i:%06i:%08i", AnEvent.run(),AnEvent.subRun(),AnEvent.event()));
   
   int ifrag = 0;
 
@@ -1102,7 +1114,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 // in the end, print a line per event with errors
 // or print the same line for all events if in debug mode
 //----------------------------------------------------------------------------- 
-  if (_edata.error_code != 0) {
+  if ((_diagLevel > 0) and (_edata.error_code != 0)) {
     TLOG(TLVL_ERROR) << Form("event %6i:%8i:%8i : ERROR:%i",
                              AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
                              _edata.error_code);
@@ -1112,8 +1124,8 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
   //                            AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
   //                            _edata.error_code);
   // }
-  TLOG(TLVL_INFO) << Form(" -- DONE\n");
-  printf("%s\n",Form(" -- DONE"));
+  TLOG(TLVL_DEBUG) << Form(" -- DONE\n");
+  if (_diagLevel > 1) printf("%s\n",Form(" -- DONE"));
 }
 
 
@@ -1295,7 +1307,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
       break;
     }
 
-    int ich = hit->StrawIndex;
+    int ich = hit->StrawIndex & 0x7f;
 
     if (ich > 128) ich = ich-128;
 
@@ -1322,7 +1334,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 // hit pattern words should repeat
 // for the 'checkerboard', pattern #4, it is as follows
 //-----------------------------------------------------------------------------
-    if (_validateADCPatterns >= 0) {
+    if (_validateADCPatterns > 0) {
       uint16_t pattern[4] = {0x56aa, 0x2aa5, 0xa955, 0x155a};
       uint16_t* w = (uint16_t*) hit;
       int nw = 2+_nADCPackets*8;
@@ -1389,28 +1401,37 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
     int iref = _referenceChannel[link][fpga];
     int nhr  = Rd->channel[iref].nhits();
-    if ((nhr > 0) and (nh > 0)) {
+    if (nh > 0) { 
+      int t0  = correctedTDC(chd->hit[0]->TDC0());
+      int t1  = correctedTDC(chd->hit[0]->TDC1());
+
+      if (i == 1) {
+        _edata.tcorr[Rd->link][0] = t0 ;
+        _edata.tcorr[Rd->link][1] = t1 ;
+      }
+          
+      
+      if ((nhr > 0) and (nh > 0)) {
 //-----------------------------------------------------------------------------
 // at least one hit in both reference and test channels
 //-----------------------------------------------------------------------------
-      int t0r = correctedTDC(rch->hit[0]->TDC0());
-      int t1r = correctedTDC(rch->hit[0]->TDC1());
-      int t0  = correctedTDC(chd->hit[0]->TDC0());
-      int t1  = correctedTDC(chd->hit[0]->TDC1());
-          
-      float dt_over_2(_dt/2);
-          
-      chd->dt0r   = (t0-t0r)*_tdc_bin_ns;        // convert to ns  
+        int t0r = correctedTDC(rch->hit[0]->TDC0());
+        int t1r = correctedTDC(rch->hit[0]->TDC1());
 
-      chd->dt0r_c = chd->dt0r;
-      if (chd->dt0r >  dt_over_2/2) chd->dt0r_c = chd->dt0r + _gen_offset[i] - _dt;
-      if (chd->dt0r < -dt_over_2/2) chd->dt0r_c = chd->dt0r + _gen_offset[i];
+        float dt_over_2(_dt/2);
           
-      chd->dt1r   = (t1-t1r)*_tdc_bin_ns;        // convert to ns
+        chd->dt0r   = (t0-t0r)*_tdc_bin_ns;        // convert to ns  
 
-      chd->dt1r_c = chd->dt1r;
-      if (chd->dt1r >  dt_over_2/2) chd->dt1r_c = chd->dt1r + _gen_offset[i] - _dt;
-      if (chd->dt1r < -dt_over_2/2) chd->dt1r_c = chd->dt1r + _gen_offset[i];
+        chd->dt0r_c = chd->dt0r;
+        if (chd->dt0r >  dt_over_2/2) chd->dt0r_c = chd->dt0r + _gen_offset[i] - _dt;
+        if (chd->dt0r < -dt_over_2/2) chd->dt0r_c = chd->dt0r + _gen_offset[i];
+          
+        chd->dt1r   = (t1-t1r)*_tdc_bin_ns;        // convert to ns
+        
+        chd->dt1r_c = chd->dt1r;
+        if (chd->dt1r >  dt_over_2/2) chd->dt1r_c = chd->dt1r + _gen_offset[i] - _dt;
+        if (chd->dt1r < -dt_over_2/2) chd->dt1r_c = chd->dt1r + _gen_offset[i];
+      }
     }
   }
 //-----------------------------------------------------------------------------

@@ -257,6 +257,8 @@ class TrackerDQM : public art::EDAnalyzer {
 
     TH1F*         nerr_vs_evt;
     TH1F*         eflg_vs_evt;
+
+    TH1F*         t4mt2[2];
   };
 //-----------------------------------------------------------------------------
 // per-ROC histograms (or per-panel) histograms
@@ -400,6 +402,8 @@ class TrackerDQM : public art::EDAnalyzer {
     int           n_overflows;
     int           error_code;
     int           nerr_tot;
+
+    float         tcorr[6][2];  // one per ROC,  for each end, a hack per plane
 
     StationData_t station[kNStations];
 

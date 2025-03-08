@@ -136,6 +136,17 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 
 
 //-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
+  trkdaq::ControlRoc_DeviceID_t dt;
+  
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------

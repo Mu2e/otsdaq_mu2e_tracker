@@ -604,7 +604,6 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    int reg{272};
 //-----------------------------------------------------------------------------
 // ReadGitCommit: reg 
 //-----------------------------------------------------------------------------
@@ -612,16 +611,19 @@ namespace  trkdaq {
 
     int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
 
-    for (int i=0; 0<6; i++) {
+    for (int i=0; i<6; i++) {
       int link_enabled = (link_mask >> 4*i) & 0x1;
+      // Stream << "link:" << i << " link_enabled:" << link_enabled << std::endl;
       if (link_enabled) {
-        RocBlockRead(i,reg,data);
+        RocBlockRead(i,REG_READGITCOMMIT,data);
         int nw = data.size();
         if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
-        data.emplace_back(0);
+
+        std::stringstream ss;
+
+        for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
         
-        char* ptr = (char*) data.data();
-        GitCommit = ptr;
+        GitCommit = ss.str();
 
         if (PrintLevel & 0x2) Stream << std::format("GitCommit:{}\n",GitCommit);
       }
@@ -699,7 +701,7 @@ namespace  trkdaq {
     DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
     DTCLib::DTC*  dtc   = dtc_i->Dtc();
   
-    int roc_mask        = 1 << (4*Link);
+    //    int roc_mask        = 1 << (4*Link);
 
     auto roc  = DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
@@ -707,7 +709,7 @@ namespace  trkdaq {
 // then wait till reg 128 returns 0x8000
 // ch_mask always includes the first channel
 //-----------------------------------------------------------------------------
-    vector<uint16_t> vec;
+    std::vector<uint16_t> vec;
 
     vec.push_back(Par.num_lookback);
     vec.push_back(Par.num_samples );
@@ -729,16 +731,16 @@ namespace  trkdaq {
     int nw = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
 
     nw = nw-4;
-    vector<uint16_t> v2;
+    std::vector<uint16_t> v2;
     dtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x1) {
-      print_buffer(v2.data(),nw);
+      PrintBuffer(v2.data(),nw,&Stream);
     }
 
-    if (PrintLevel & 9x2) {
+    if (PrintLevel & 0x2) {
 //-----------------------------------------------------------------------------
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
@@ -746,23 +748,23 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
       if (nw != 580) {
         printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
-        return;
+        return -1;
       }
 
       Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)\n";
-      Stream << "------------------------------------------------\n");
+      Stream << "------------------------------------------------\n";
       int loc(0);
       for (int ich=0; ich<96; ich++) {
         loc           = 6*ich;
-        int rate_hv   = int(data[loc  ])+(int(data[loc+1]) << 16);
-        int rate_cal  = int(data[loc+2])+(int(data[loc+3]) << 16);
-        int rate_coic = int(data[loc+4])+(int(data[loc+5]) << 16);
+        int rate_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
+        int rate_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
+        int rate_coic = int(v2[loc+4])+(int(v2[loc+5]) << 16);
         Stream << std::format(" {:5d} {:10d} {:10d} {:10d}\n",ich,rate_hv, rate_cal, rate_coic);
       }
       // finally, the last two words - total counts
       loc = 576;
-      int iw1   = int(data[loc  ])+(int(data[loc+1]) << 16);
-      int iw2   = int(data[loc+2])+(int(data[loc+3]) << 16);
+      int iw1   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
+      int iw2   = int(v2[loc+2])+(int(v2[loc+3]) << 16);
       Stream << std::format(" total_hv: {:10d} total_cal: {:10d}\n",iw1,iw2);
     }
     return rc;
@@ -777,33 +779,31 @@ namespace  trkdaq {
     std::vector<uint16_t> dat = ReadDeviceID(DTC_Link_ID(Link));
 
     std::stringstream ss;
-    ss << "0x";
-
     // first 16 bytes are the serial number
     for (int i = 15 ; i >= 0 ; i--) ss << std::format("{:02x}",dat[i]);
 
-    DevId.DeviceSerial = ss.str();
+    DevId.DeviceSerial = "'"+ss.str()+"'";
 
     ss.str({});
     ss.clear();
-    ss << "0x";
+    //    ss << "0x";
     // next 32 bytes are the designInfo
     for (int i = 47 ; i >= 16 ; i--) ss << std::format("{:02x}",dat[i]);
-    DevId.DesignInfo = ss.str();
+    DevId.DesignInfo = "'"+ss.str()+"'";
 
     ss.str({});
     ss.clear();
-    ss << "0x";
-    // next 2 bytes are the designInfo
+    // ss << "0x";
+    // next 2 bytes are the design version
     for (int i = 49 ; i >= 48 ; i--) ss << std::format("{:02x}",dat[i]);
-    DevId.DesignVer = ss.str();
+    DevId.DesignVer = "'"+ss.str()+"'";
 
     ss.str({});
     ss.clear();
-    ss << "0x";
-    // next 2 bytes are the designInfo
+    // ss << "0x";
+    // next 2 bytes are the backlevel vesrsion, whatever it is
     for (int i = 51 ; i >= 50 ; i--) ss << std::format("{:02x}",dat[i]);
-    DevId.BackLevelVer = ss.str();
+    DevId.BackLevelVer = "'"+ss.str()+"'";
 
 
     if (PrintLevel & 0x1) {

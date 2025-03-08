@@ -1,6 +1,7 @@
 # don't commit ! add_subdirectory(FEInterfaces)
-add_subdirectory(Generators)
 add_subdirectory(ArtModules)
+add_subdirectory(Generators)
+add_subdirectory(Nt)
 add_subdirectory(Ui)
 add_subdirectory(Gui)
 add_subdirectory(ParseAlignment)

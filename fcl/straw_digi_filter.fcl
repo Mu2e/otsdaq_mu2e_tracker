@@ -14,6 +14,7 @@
 # #include "Offline/fcl/minimalMessageService.fcl"# 
 #include "Offline/fcl/standardProducers.fcl"
 #include "Offline/fcl/standardServices.fcl"
+#include "Offline/DAQ/fcl/prolog.fcl"
 #include "otsdaq-mu2e-tracker/fcl/prolog.fcl"
 #------------------------------------------------------------------------------
 process_name: TrackerDQM
@@ -27,16 +28,23 @@ source: { module_type : RootInput
 #------------------------------------------------------------------------------
 # output
 #------------------------------------------------------------------------------
-#outputs: {
-#    dumpOutput: { module_type : FileDumperOutput
-#        wantProductFriendlyClassName : true
-#    }
-#}
+outputs:  {
+    defaultOutput :  {
+        module_type   :   RootOutput
+        fileName      :   "straw_digi_filter.art"
+
+#        outputCommands: [
+#                         "drop *_*_*_*",
+#                         "keep *_*_*_*"
+#                        ]
+    }
+}
 #------------------------------------------------------------------------------
 # job configuration
 #------------------------------------------------------------------------------
 physics: {
-    producers: {}
+    producers: { @table::DAQ.producers}
+    filters  : { @table::otsdaq_mu2e_tracker.filters}
 
     analyzers: {
         TrackerDQM : { @table::otsdaq_mu2e_tracker.TrackerDQM
@@ -60,13 +68,14 @@ physics: {
         }
     }
 
-    p1            : [    ]
+    p1            : [ StrawDigisFromArtdaqFragments, StrawDigiFilter ]
     trigger_paths : [ p1 ]
 
-    e1            : [ TrackerDQM ]
+    e1            : [ defaultOutput ] ##  TrackerDQM ]
     end_paths     : [ e1 ]
 }
 
+physics.filters.StrawDigiFilter.strawDigiCollection : "StrawDigisFromArtdaqFragments"
 #------------------------------------------------------------------------------
-services.TFileService.fileName : "trackerDQM_%06r.root"
+services.TFileService.fileName : "straw_digi_filter.%06r.hist"
 services.scheduler.wantSummary : true

@@ -15,6 +15,8 @@
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
+// TODO : first, add ewtag, then remove the structure below and uncomment the incl
+// #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
@@ -40,13 +42,11 @@ namespace trkdaq {
     private:
       DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
     public:
-      roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
-
 //-----------------------------------------------------------------------------
 // ROC functions : if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
-    void         RocConfigurePatternMode();
-    void         RocSetDataVersion      (int Version, int LinkMask=0);
+    void                       RocConfigurePatternMode();
+    void                       RocSetDataVersion      (int Version, int LinkMask=0);
 
     static const char*   fgSpiVarName[TrkSpiDataNWords]; //
 //-----------------------------------------------------------------------------
@@ -57,8 +57,6 @@ namespace trkdaq {
 
     static const char*         SpiVarName           (int I) { return fgSpiVarName[I]; }
     static const char*         SpiVarNamePrintBuffer(int I) { return fgSpiVarName[I]; }
-
-    std::vector<DTCLib::roc_data_t> ReadDeviceID    (const DTCLib::DTC_Link_ID& Link);
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
@@ -75,11 +73,7 @@ namespace trkdaq {
     int          ControlRoc_PulserOn (int Link, int Channel0, int ChannelMask, int DutyCycle, int PulserDelay);
     int          ControlRoc_PulserOff(int Link, int PrintLevel = 0, std::ostream& Stream= std::cout);
     
-    int          ControlRoc_Rates    (int Link           ,
-                                      int NumLookback = 100,
-                                      int NumSamples  =  10,
-                                      int PrintLevel  =   0,
-                                      std::ostream& Stream = std::sout);
+    int          ControlRoc_Rates    (int Link, ControlRoc_Rates_t& Par, int PrintLevel, std::ostream& Stream);
 
     int          ControlRoc_Read   (ControlRoc_Read_Input_t* Par          ,
                                     int                      LinkMask   = -1   ,
@@ -140,10 +134,13 @@ namespace trkdaq {
                                 int                          PrintLevel = 0,
                                 std::ostream&                Stream     = std::cout);
 
-    virtual std::vector<std::string> GetRocRegistersNames     (bool history = false) override;
+    virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
     virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
 
+    virtual std::string              GetRocID         (int Link) override;
+    virtual std::string              GetRocDesignInfo (int Link) override;
+    virtual std::string              GetRocFwGitCommit(int Link) override;
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
@@ -171,7 +168,7 @@ namespace trkdaq {
                                                         const DTCLib::roc_address_t& address);
 
     Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
-    void         FindAlignments(bool print=false, int LinkMask=0);
+    void         FindAlignments(bool print=false, int LinkMask=-1);
 
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
@@ -199,7 +196,12 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     virtual void  InitRocReadoutMode() override;
     virtual void  ResetLink         (int Link) override;
+
     
+    roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
+    std::vector<DTCLib::roc_data_t> ReadDeviceID    (DTCLib::DTC_Link_ID Link,
+                                                     int                 PrintLevel = 0,
+                                                     std::ostream&       Stream     = std::cout);
   };
 
   struct RocDataHeaderPacket_t {        // 8 16-byte words in total

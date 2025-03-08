@@ -470,5 +470,14 @@ void DtcInterface::InitRocReadoutMode() {
     return std::vector<float>(registers.begin(), registers.end());
   }
 
+//-----------------------------------------------------------------------------
+// to be overriden in derived subdetector-specific classes
+// ROC ID, ROC firmware ID , and the corresponding git commit
+//-----------------------------------------------------------------------------
+  std::string  DtcInterface::GetRocID         (int Link) { return std::string("undefined"); }
+  std::string  DtcInterface::GetRocDesignInfo (int Link) { return std::string("undefined"); }
+  std::string  DtcInterface::GetRocFwGitCommit(int Link) { return std::string("undefined"); }
+
+
 };
 #endif
