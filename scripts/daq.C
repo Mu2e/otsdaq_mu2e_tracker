@@ -136,13 +136,12 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 
 
 //-----------------------------------------------------------------------------
-// just print the ROC information
+// test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
-  trkdaq::ControlRoc_DeviceID_t dt;
-  
+int dtc_control_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
+  dtc_i->FindAlignments(1,LinkMask);
   return 0;
 }
 
@@ -183,10 +182,10 @@ int dtc_control_roc_digi_rw(int      Address          ,
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_read(int      Version,
-                         int      LinkMask     = -1,
+int dtc_control_roc_read(int      LinkMask     = -1,
                          int      AdcMode      = 4,
                          int      TdcMode      = 0,
+                         int      NumLookback  = 8,
                          int      EnablePulser = 1, 
                          uint32_t MaskC        = 0xFFFFFFFF,
                          uint32_t MaskD        = 0xFFFFFFFF,
@@ -198,45 +197,26 @@ int dtc_control_roc_read(int      Version,
 
   ControlRoc_Read_Input_t par;
   
-  par.version         = Version;
+  par.version         = 2;
   par.adc_mode        = AdcMode;        // -a
   par.tdc_mode        = TdcMode;        // -t 
-  par.num_lookback    = 8;              // -l 
+  par.num_lookback    = NumLookback;    //  
 
-  if (Version == 1) {
-    par.v1.num_samples     = NumSamples;     // -s
-    par.v1.num_triggers[0] = 10;             // -T 10
-    par.v1.num_triggers[1] = 0;              // -T (high bytes)
+  par.v2.num_samples     = NumSamples;     // -s
+  par.v2.num_triggers[0] = 10;             // -T 10
+  par.v2.num_triggers[1] = 0;              // -T (high bytes)
   
-    par.v1.ch_mask[0]      = (MaskC >>  0) & 0xffff;
-    par.v1.ch_mask[1]      = (MaskC >> 16) & 0xffff;
-    par.v1.ch_mask[2]      = (MaskD >>  0) & 0xffff;
-    par.v1.ch_mask[3]      = (MaskD >> 16) & 0xffff;
-    par.v1.ch_mask[4]      = (MaskE >>  0) & 0xffff;
-    par.v1.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+  par.v2.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+  par.v2.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+  par.v2.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+  par.v2.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+  par.v2.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+  par.v2.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
-    par.v1.enable_pulser   = EnablePulser;   // -p 1
-    par.v1.marker_clock    = 3;              // -m 3
-    par.v1.mode            = 0;              // 
-    par.v1.clock           = 99;             //
-  }
-  else if (Version == 2) {
-    par.v2.num_samples     = NumSamples;     // -s
-    par.v2.num_triggers[0] = 10;             // -T 10
-    par.v2.num_triggers[1] = 0;              // -T (high bytes)
-  
-    par.v2.ch_mask[0]      = (MaskC >>  0) & 0xffff;
-    par.v2.ch_mask[1]      = (MaskC >> 16) & 0xffff;
-    par.v2.ch_mask[2]      = (MaskD >>  0) & 0xffff;
-    par.v2.ch_mask[3]      = (MaskD >> 16) & 0xffff;
-    par.v2.ch_mask[4]      = (MaskE >>  0) & 0xffff;
-    par.v2.ch_mask[5]      = (MaskE >> 16) & 0xffff;
-
-    par.v2.enable_pulser   = EnablePulser;   // -p 1
-    par.v2.marker_clock    = 3;              // -m 3
-    par.v2.mode            = 0;              // 
-    par.v2.clock           = 99;             //
-  }
+  par.v2.enable_pulser   = EnablePulser;   // -p 1
+  par.v2.marker_clock    = 3;              // -m 3
+  par.v2.mode            = 0;              // 
+  par.v2.clock           = 99;             //
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
   int  print_level(3);
@@ -244,6 +224,18 @@ int dtc_control_roc_read(int      Version,
   dtc_i->ControlRoc_Read(&par,LinkMask,print_level);
   return 0;
 }
+
+//-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
+  trkdaq::ControlRoc_DeviceID_t dt;
+  
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only

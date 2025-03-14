@@ -6,8 +6,6 @@
 
 // ClassImp(DaqEvent)
 
-// std::vector<DaqStrawDigi>  DaqEvent::fgSd;
-
 //-----------------------------------------------------------------------------
 DaqEvent::DaqEvent() { // : TObject () {
   nsd = 0;

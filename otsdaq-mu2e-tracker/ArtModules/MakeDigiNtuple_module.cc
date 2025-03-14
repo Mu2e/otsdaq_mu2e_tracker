@@ -205,7 +205,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 
   _art_event = &ArtEvent;
   
-  print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()),0);
+  print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()),1);
 
   int rc = getData(ArtEvent);
   if (rc < 0) return;
@@ -223,9 +223,9 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 //-----------------------------------------------------------------------------
 // fill ntuple
 //-----------------------------------------------------------------------------
-  _event->run    = ArtEvent.run();
-  _event->subrun = ArtEvent.subRun();
-  _event->evt    = ArtEvent.event();
+  _event->run = ArtEvent.run();
+  _event->srn = ArtEvent.subRun();
+  _event->evn = ArtEvent.event();
   _event->sd->Clear();
   
   DaqStrawDigi nt_sd;
@@ -258,7 +258,7 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
 
   _tree->Fill();
 
-  print_("-- END",0);
+  print_("-- END",1);
 }
 
 

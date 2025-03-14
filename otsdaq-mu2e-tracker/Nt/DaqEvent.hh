@@ -9,9 +9,8 @@
 class DaqEvent { // : public TObject {
 public:
   int            run;
-  int            subrun;
-  int            evt;
-  int            dummy;
+  int            srn;                   // subrun number
+  int            evn;                   // event number
   int            nsd;         // number of straw digis in event
   TClonesArray*  sd;
   // int            ncalodigis;          // number of calo digis
@@ -22,11 +21,13 @@ public:
   // TClonesArray*  stmdigis;
 
   //   static std::vector<DaqStrawDigi> fgSd;
+
+  DaqStrawDigi* sdigi(int I) { return (DaqStrawDigi*) sd->At(I); }
   
   DaqEvent();
   ~DaqEvent();
 
-  //  ClassDef(DaqEvent,1)
+  // ClassDef(DaqEvent,1)
 };
 
 #endif

@@ -136,7 +136,8 @@ Vadim's cheatsheet: file:images/vadim_digi_pattern_codes.png
     -m 3   : mode  ... need -m 3 for internal pulser 
     -l 8   : defines the look-back number of ADC samples for the waveform readout (may want to set to 0) 
     -p 0/1 : 0: 
-    -t     : triggering 
+    -t     : triggering
+    -s     : number of samples (?)
     channels go as follows -C : first 32, -D : next 32, -E: last 32
 
    - read -a 0 -t 0 -s 1 -l 8 -T 10 -m 0 -p 0
@@ -452,6 +453,8 @@ The "rocUtil block_read -a 270 -c 288" will return 288 thresholds
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+- from the ROOT prompt:
+root [2] dtc_control_roc_digi_rw(0x85,1,0,1) 
 
 * setting up preamps to generate pulses [by Vadim]                           
 ** 1) run control_ROC, find_alignment, exit                                  

@@ -39,7 +39,7 @@ physics: {
     producers: {}
 
     analyzers: {
-        TrackerDQM : { @table::otsdaq_mu2e_tracker.TrackerDQM
+        TrackerDQM : { @table::otsdaq_mu2e_tracker.analyzers.TrackerDQM
             analyzeFragments    : 1           ## set to 0 to print only
             fillHistograms      : 1
             interactiveMode     : 0
