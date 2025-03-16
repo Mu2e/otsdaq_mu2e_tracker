@@ -5,13 +5,13 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 
 char maybe_asterisk(bool condition){
-  if (condition){
+  if (condition) {
     return '*';
   }
   return ' ';
 }
 
-void print_legacy_table(const Alignment& alignment){
+void print_legacy_table(const Alignment& alignment, std::ostream& Stream) {
   std::string divider = "--";
   for (size_t i = 0 ; i < 7 ; i++){
     divider += "---------";
@@ -22,30 +22,30 @@ void print_legacy_table(const Alignment& alignment){
     }
   }
 
-  std::cout << "('EyeMonitorWidth', "
+  Stream << "('EyeMonitorWidth', "
             << alignment.EyeMonitorWidth()
             << ")"
             << std::endl;
-  std::cout << "('IfPatternCheck', "
+  Stream << "('IfPatternCheck', "
             << alignment.IfPatternCheck()
             << ")"
             << std::endl;
-  std::cout << "('FaultedADC', "
+  Stream << "('FaultedADC', "
             << alignment.FaultedADC()
             << ")"
             << std::endl;
 
-  std::cout.setf(std::ios_base::left);
+  Stream.setf(std::ios_base::left);
   for (const auto& iteration: alignment.Iterations()){
-    std::cout << "******   Iteration " 
+    Stream << "******   Iteration " 
               << iteration.Index()
               << "   ******"
               << std::endl;
 
     print_legacy_leading_row("ADCPhase", iteration.ADCPhase(), "", "Alignment",
-                             "Bitslip", "", "Pttn 0x263");
+                             "Bitslip", "", "Pttn 0x263", Stream);
     print_legacy_row("ADC#", "Straw#", "Active", "Complete",
-                     "Error", "Done", "Step", "Fail");
+                     "Error", "Done", "Step", "Fail", Stream);
 
     bool check = alignment.IfPatternCheck();
     const auto& channels = iteration.Channels();
@@ -62,9 +62,9 @@ void print_legacy_table(const Alignment& alignment){
       const auto fail = maybe_asterisk(channel.PatternMatch() && check);
 
       if (i % 8 == 0){
-        std::cout << divider << std::endl;
+        Stream << divider << std::endl;
       }
-      print_legacy_row(adc, straw, active, complete, error, done, step, fail);
+      print_legacy_row(adc, straw, active, complete, error, done, step, fail, Stream);
     }
   }
 }

@@ -6,12 +6,12 @@
 # 
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
-BEGIN_PROLOG
-  STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
-  STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
-  GEN_ID              : "particleGun"                        #    ignore GEN_ID check
-  PDG_ID              : 0                                    # 0: ignore PDG_ID
-END_PROLOG
+# BEGIN_PROLOG
+#   STN_COMPRESS_MCS    : "compressDigiMCs"                    # "compressRecoMCs" looks dangerous
+#   STN_VDHITS_COLL_TAG : "compressDigiMCs:virtualdetector"    #
+#   GEN_ID              : "particleGun"                        #    ignore GEN_ID check
+#   PDG_ID              : 0                                    # 0: ignore PDG_ID
+# END_PROLOG
 
 #include "Offline/fcl/minimalMessageService.fcl"
 #include "Offline/fcl/standardServices.fcl"

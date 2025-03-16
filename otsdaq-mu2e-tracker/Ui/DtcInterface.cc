@@ -284,7 +284,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // align ROC fpga/adc signals, and optionally print summary table
 //-----------------------------------------------------------------------------
-  void DtcInterface::FindAlignments(bool print, int LinkMask) {
+  void DtcInterface::FindAlignments(bool print, int LinkMask, std::ostream& Stream) {
 
     int link_mask = fLinkMask;
     if (LinkMask != -1) link_mask = LinkMask;
@@ -295,7 +295,7 @@ namespace trkdaq {
         auto link = DTC_Link_ID(i);
         auto alignment = FindAlignment(link);
         if (print) {
-          print_legacy_table(alignment);
+          print_legacy_table(alignment,Stream);
         }
       }
     }

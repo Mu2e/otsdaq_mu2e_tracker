@@ -129,9 +129,9 @@ void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket
 // done
 //-----------------------------------------------------------------------------
     if (Wp->q < 100) {
-      TLOG(TLVL_DEBUG) << "event=" << _edata._event->run() << ":"
-                       << _edata._event->subRun() << ":" << _edata._event->event() 
-                       << " Q=" << Wp->q;
+      TLOG(TLVL_DEBUG+1) << "event=" << _edata._event->run() << ":"
+                         << _edata._event->subRun() << ":" << _edata._event->event() 
+                         << " Q=" << Wp->q;
     }
   }
 
@@ -177,7 +177,7 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
     sscanf(key,"bit%i:%i",&index,&value);
     _debugBit[index]  = value;
 
-    TLOG(TLVL_DEBUG) << Form("... TrackerDQM: bit=%4i is set to %i\n",index,_debugBit[index]);
+    TLOG(TLVL_DEBUG+1) << Form("... TrackerDQM: bit=%4i is set to %i\n",index,_debugBit[index]);
   }
 //-----------------------------------------------------------------------------
 // for now, assume only one station, but implement data structures handling 
@@ -474,7 +474,7 @@ void TrackerDQM::book_histograms(int RunNumber) {
 
 //-----------------------------------------------------------------------------
 void TrackerDQM::beginJob() {
-  TLOG(TLVL_INFO) << "starting";
+  TLOG(TLVL_DEBUG+1) << "starting";
 
   if (_interactiveMode != 0) {
     int           tmp_argc(2);
@@ -594,7 +594,7 @@ void TrackerDQM::fill_dtc_histograms(DtcHist_t* Hist, StationData_t* Sd, int IDt
 //-----------------------------------------------------------------------------
 void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
 
-  TLOG(TLVL_DEBUG) << "Rd->link:" << Rd->link << " Rd->nbytes:" << Rd->nbytes << " Rb->nhits:" << Rd->nhits;
+  TLOG(TLVL_DEBUG+1) << "Rd->link:" << Rd->link << " Rd->nbytes:" << Rd->nbytes << " Rb->nhits:" << Rd->nhits;
   
   Hist->nbytes->Fill      (Rd->nbytes);
   Hist->npackets->Fill    (Rd->npackets);
@@ -820,7 +820,8 @@ int TrackerDQM::fill_station_histograms(StationHist_t* Hist, EventData_t* Data) 
 // if in error, only histogram the error code
 //-----------------------------------------------------------------------------
 int TrackerDQM::fill_histograms() {
-
+  TLOG(TLVL_DEBUG+1) << "-- START : _fillHistograms:" << _fillHistograms
+                     << " _interactiveMode:" << _interactiveMode;
 //-----------------------------------------------------------------------------
 // later, all error handling will move to analyze_roc_data()
 //-----------------------------------------------------------------------------
@@ -835,7 +836,7 @@ int TrackerDQM::fill_histograms() {
   }
   if (_interactiveMode != 0) {
 //-----------------------------------------------------------------------------
-// update plots
+// update predefined plots
 //-----------------------------------------------------------------------------
     for (int i=0; i<3; i++) {
       _canvas[i]->Modified();
@@ -1026,7 +1027,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // proxy for event histograms
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_DEBUG) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
+  TLOG(TLVL_DEBUG+1) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
   if (_diagLevel > 1) printf("%s\n",Form(" Event : %06i:%06i:%08i", AnEvent.run(),AnEvent.subRun(),AnEvent.event()));
   
   int ifrag = 0;
@@ -1079,9 +1080,9 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
   if (_diagLevel > 1) {
     if ((_edata.nbtot >= _minNBytes) and (_edata.nbtot <= _maxNBytes)) {
-      TLOG(TLVL_DEBUG) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
-                               AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
-                               _edata.nfrag, _edata.nbtot);
+      TLOG(TLVL_DEBUG+1) << Form(" Run : %5i subrun: %5i event: %8i nfrag: %3i nbytes: %5i\n", 
+                                 AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
+                                 _edata.nfrag, _edata.nbtot);
     }
   }
 //-----------------------------------------------------------------------------
@@ -1119,12 +1120,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
                              AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
                              _edata.error_code);
   }
-  // else {
-  //   TLOG(TLVL_DEBUG) << Form("event %6i:%8i:%8i : ERROR:%i",
-  //                            AnEvent.run(),AnEvent.subRun(),AnEvent.event(),
-  //                            _edata.error_code);
-  // }
-  TLOG(TLVL_DEBUG) << Form(" -- DONE\n");
+  TLOG(TLVL_DEBUG+1) << Form(" -- DONE\n");
   if (_diagLevel > 1) printf("%s\n",Form(" -- DONE"));
 }
 
@@ -1134,10 +1130,10 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 void TrackerDQM::print_message(const char* Message) {
   TLOG(TLVL_INFO) << Form("TrackerDQM: event %06i:%06i:%08i %s\n",
-         _edata._event->run(),
-         _edata._event->subRun(),
-         _edata._event->event(),
-         Message);
+                          _edata._event->run(),
+                          _edata._event->subRun(),
+                          _edata._event->event(),
+                          Message);
 }
 //-----------------------------------------------------------------------------
 // NWords : the number of short words

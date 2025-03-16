@@ -39,7 +39,7 @@ physics: {
     producers: {}
 
     analyzers: {
-        trackerDQM : { @table::otsdaq_mu2e_tracker.TrackerDQM
+        trackerDQM : { @table::otsdaq_mu2e_tracker.analyzers.TrackerDQM
             analyzeFragments    : 0           ## set to 0 to print only
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event

@@ -24,6 +24,7 @@
 #include <string>
 #include <memory>
 
+#include "TH1.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
@@ -57,6 +58,7 @@ public:
   struct Config {
     fhicl::Atom<art::InputTag>  sdCollTag    {fhicl::Name("sdCollTag"    ), fhicl::Comment("straw digi coll tag"       ),"undefined"};
     fhicl::Atom<int>            diagLevel    {fhicl::Name("diagLevel"    ), fhicl::Comment("diagnostic level"          ),0};
+    fhicl::Atom<std::string>    outputDir    {fhicl::Name("outputDir"    ), fhicl::Comment("output directory"          ),"./"};
     fhicl::Atom<int>            saveWaveforms{fhicl::Name("saveWaveforms"), fhicl::Comment("save StrawDigiADCWaveforms"),0};
   };
 
@@ -80,7 +82,9 @@ public:
 
   int              diagLevel_;
   art::InputTag    sdCollTag_;          // straw digi collection tag
+  std::string      outputDir_;
   int              saveWaveforms_;
+  
   int              n_adc_samples_;
 
   const mu2e::StrawDigiCollection*             _sdc;
@@ -94,6 +98,7 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     art::EDAnalyzer{config},
     diagLevel_    (config().diagLevel    ()),
     sdCollTag_    (config().sdCollTag    ()),
+    outputDir_    (config().outputDir    ()),
     saveWaveforms_(config().saveWaveforms())
 {
   if (saveWaveforms_ == 0) n_adc_samples_ = 0;
@@ -113,10 +118,16 @@ void mu2e::MakeDigiNtuple::print_(const std::string& Message, int DiagLevel,
 
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::beginRun(const art::Run& ArtRun) {
-  _file = new TFile(Form("make_digi_ntuple_%06i.root",ArtRun.run()),"RECREATE");
+
+  art::ServiceHandle<art::TFileService> tfs;
+  TH1::AddDirectory(kFALSE);
+
+  
+  //  _file = new TFile(Form("%s/make_digi_ntuple_%06i.root",outputDir_.data(),ArtRun.run()),"RECREATE");
   TTree::SetMaxTreeSize(8000000000LL);
 
-  _tree = new TTree("digis","digis");
+  //  _tree = new TTree("digis","digis");
+  _tree = tfs->make<TTree>("digis","digis");
 
   _event = new DaqEvent();
   
@@ -142,9 +153,9 @@ void mu2e::MakeDigiNtuple::beginJob() {
 
 //-----------------------------------------------------------------------------
 void mu2e::MakeDigiNtuple::endJob() {
-  _file->Write();
-  _file->Close();
-  delete _file;
+  // _file->Write();
+  // _file->Close();
+  // delete _file;
 }
 
 //-----------------------------------------------------------------------------

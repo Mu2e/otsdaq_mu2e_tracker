@@ -167,8 +167,8 @@ namespace trkdaq {
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
 
-    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
-    void         FindAlignments(bool print=false, int LinkMask=-1);
+    Alignment    FindAlignment (DTCLib::DTC_Link_ID Link);
+    void         FindAlignments(bool print=false, int LinkMask=-1, std::ostream& Stream = std::cout);
 
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
