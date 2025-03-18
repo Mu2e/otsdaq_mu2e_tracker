@@ -1,24 +1,24 @@
-# -*- mode:tcl -*- 
+# -*- mode:tcl -*-
 #------------------------------------------------------------------------------
 # P.M.
 # module labels can't have underscores in them....
-# when running the ARTDAQ 'demo' example, at any time, can submit in a separate window 
-# a DQM client (of course, setup the Mu2e online environment first): 
-# 
+# when running the ARTDAQ 'demo' example, at any time, can submit in a separate window
+# a DQM client (of course, setup the Mu2e online environment first):
+#
 # mu2e -c config/demo/dqm_client01.fcl
 #
 # the job will be just receiving events and filling a few histograms shown on two canvases:
 # - http://localhost:8877/win1/
 # - http://localhost:8877/win2/
 #------------------------------------------------------------------------------
-# #include "Offline/fcl/minimalMessageService.fcl"# 
+# #include "Offline/fcl/minimalMessageService.fcl"#
 #include "Offline/fcl/standardProducers.fcl"
 #include "Offline/fcl/standardServices.fcl"
 #------------------------------------------------------------------------------
 process_name: TrackerDQM
 
 services: {
-    ArtdaqSharedMemoryServiceInterface: { service_provider: ArtdaqSharedMemoryService 
+    ArtdaqSharedMemoryServiceInterface: { service_provider: ArtdaqSharedMemoryService
         waiting_time        : 1
         resume_after_timeout: true
     }
@@ -79,7 +79,7 @@ TransferPluginConfig: {
                           { rank:  1 host: "localhost"},   ## eventbuilder01
                           { rank:  0 host: "localhost"}    ## boardreader01
                          ]
-    
+
     max_fragment_size_words : 1048576
     source_rank             : 3          ## dispatcher
     destination_rank        : 100        ## DQM client
@@ -90,7 +90,7 @@ source: {
     dispatcherHost      : "localhost"
     dispatcherPort      : 10500   ## 18103, 18500 was OK         ## dispatcher01 port number is declared explicitly
     commanderPluginType : xmlrpc
-    transfer_plugin     : @local::TransferPluginConfig 
+    transfer_plugin     : @local::TransferPluginConfig
 #------------------------------------------------------------------------------
 # dispatcher_config seems to be the part sent to the server
 #------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ source: {
         filter_paths : [ ]
         unique_label : "DQMClient01"  ## this is the one to be renamed
         services: {
-            ArtdaqSharedMemoryServiceInterface: { service_provider: ArtdaqSharedMemoryService 
+            ArtdaqSharedMemoryServiceInterface: { service_provider: ArtdaqSharedMemoryService
                 waiting_time        : 100
                 resume_after_timeout: false
             }
@@ -117,7 +117,7 @@ source: {
             }
 
             dispatcherTransferOutput: { module_type: TransferOutput
-                transfer_plugin: @local::TransferPluginConfig 
+                transfer_plugin: @local::TransferPluginConfig
             }
         }
 
@@ -189,7 +189,7 @@ physics: {
             refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
             refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
-# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed 
+# if rootMacro is non-empty, it defines the name of a ROOT macro to be executed
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------

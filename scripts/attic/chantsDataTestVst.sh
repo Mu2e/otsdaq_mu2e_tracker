@@ -38,9 +38,9 @@ my_cntl write 0x91BC 0x10 >/dev/null
 
 ## Send data
 ## *** 0x91f0 becomes reserved register from DTC2021Feb18_10: use 0x91a8 in its place ****
-## event marker interval in 200 MHz clk cycles (value of 0 will disable) 
+## event marker interval in 200 MHz clk cycles (value of 0 will disable)
 # my_cntl write 0x91f0 0x0 >/dev/null
-## event marker interval in 200 MHz clk cycles (value of 0 will disable) 
+## event marker interval in 200 MHz clk cycles (value of 0 will disable)
 #my_cntl write 0x91f4 0x4000000 >/dev/null
 #my_cntl write 0x91f4 0x0 >/dev/null
 ## Emulator start interval time
@@ -56,7 +56,7 @@ my_cntl write 0x9158 0x1 >/dev/null
 
 ## this "writes" are done in library now
 ##    enable stand-alone clock (no CFO) by turning on CF) emulation mode
-#my_cntl write 0x9100 0x40808004 >/dev/null   
+#my_cntl write 0x9100 0x40808004 >/dev/null
 ## disable transmission
 ## also needed to restart EWM after a DTC_Reset
 #my_cntl write 0x9100 0x40808404 > /dev/null
@@ -73,8 +73,8 @@ my_cntl write 0x9100 0x808404 > /dev/null
 my_cntl write 0x91c0 0xffffffff
 my_cntl write 0x91c4 0xffffffff
 
-DTCLIB_SIM_ENABLE=N 
+DTCLIB_SIM_ENABLE=N
 
-## needed after programming DTC 
+## needed after programming DTC
 ## not needed in version May_05_10 even after first flashing...
 #DTC_Reset

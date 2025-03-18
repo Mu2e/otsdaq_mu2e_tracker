@@ -16,21 +16,24 @@
 // Iteration blocks: N per routine:         N x 127 x unsigned short
 // FaultedADC:       1 per routine:               1 x unsigned short
 
-class Alignment{
+class Alignment
+{
   public:
-    Alignment(words_t);
+	Alignment(words_t);
 
-    unsigned int EyeMonitorWidth() const;
-    bool IfPatternCheck() const;
-    unsigned int FaultedADC() const;
-    std::vector<AlignmentIteration> Iterations() const;
+	unsigned int                    EyeMonitorWidth() const;
+	bool                            IfPatternCheck() const;
+	unsigned int                    FaultedADC() const;
+	std::vector<AlignmentIteration> Iterations() const;
+
   protected:
-    unsigned int eye_monitor_width;
-    bool if_pattern_check;
-    unsigned int faulted_adc;
-    std::vector<AlignmentIteration> iterations;
+	unsigned int                    eye_monitor_width;
+	bool                            if_pattern_check;
+	unsigned int                    faulted_adc;
+	std::vector<AlignmentIteration> iterations;
+
   private:
-    /**/
+	/**/
 };
 
 #endif
