@@ -4,7 +4,7 @@
 void plot_time_residuals(int RunNumber) {
 
   TFile* f = TFile::Open(Form("/scratch/mu2e/mu2etrk_pasha_304/digi_ntuples/make_digi_ntuple_%06i.root",RunNumber));
-  TTree* t = (TTree*) f->Get("digis");
+  TTree* t = (TTree*) f->Get("MakeDigiNtuple/digis");
   
   t->SetAlias("dt01"    ,"evt.sd.tdc0-evt.sd.tdc1");
   
