@@ -8,7 +8,7 @@
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 find_package(cetmodules)
 
-project(otsdaq_mu2e_tracker VERSION 3.03.01)
+project(otsdaq-mu2e-tracker VERSION 3.03.01)
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -24,10 +24,10 @@ cet_set_compiler_flags(
 # it looks that these packages are looked for only after cet_cmake_env
 #------------------------------------------------------------------------------
 find_package(artdaq            3.12.07 REQUIRED EXPORT)
-find_package(artdaq_core       3.09.16 REQUIRED EXPORT)
-find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
-find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
-find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
+find_package(artdaq-core       3.09.16 REQUIRED EXPORT)
+find_package(artdaq-core-demo  1.11.00 REQUIRED EXPORT)
+find_package(otsdaq-mu2e       1.02.00 REQUIRED EXPORT)
+find_package(mu2e-pcie-utils   3.02.00 REQUIRED EXPORT)
 find_package(ROOT              6.32.08 REQUIRED EXPORT)
 
 # message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )

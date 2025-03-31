@@ -162,7 +162,7 @@ namespace trkdaq {
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
 
-    int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res);
+    int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);

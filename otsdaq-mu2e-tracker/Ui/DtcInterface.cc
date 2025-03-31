@@ -875,7 +875,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // 2025-01-31: P.Murat: presently, calls to begin_dcs_transaction() and end_dcs_transaction()
 // are just TODO reminders and don't do anything useful
 //-----------------------------------------------------------------------------
-  int DtcInterface::RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res) {
+  int DtcInterface::RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected) {
+    int rc(0);
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -897,13 +898,16 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
     nw -= 4;
     fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
+    fDtc->GetDevice()->end_dcs_transaction();
+    
+    if ((NExpected > 0) and (nw != NExpected)) {
+      TLOG(TLVL_ERROR) << "WRONG NUMBER OF WORDS: NExpected:" << NExpected << " nw:" << nw;
+      rc = -1;
+    }
 //-----------------------------------------------------------------------------
 // does the ROC need to be reset ? Monica says NO.
 //-----------------------------------------------------------------------------
-    fDtc->GetDevice()->end_dcs_transaction();
-
-    // ResetLink(Link);
-    return 0;
+    return rc;
   }
 
 

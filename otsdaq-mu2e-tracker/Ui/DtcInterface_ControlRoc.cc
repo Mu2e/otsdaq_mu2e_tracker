@@ -48,7 +48,7 @@ namespace  trkdaq {
     
     bool increment_address(false);
 //-----------------------------------------------------------------------------
-// if LinkMask != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
+// if Link != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
 //-----------------------------------------------------------------------------
     int link_mask = fLinkMask;
     if (Link != -1) link_mask = (1 << 4*Link);
@@ -604,6 +604,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
+    int nw_expected(40);
 //-----------------------------------------------------------------------------
 // ReadGitCommit: reg 
 //-----------------------------------------------------------------------------
@@ -615,15 +616,18 @@ namespace  trkdaq {
       int link_enabled = (link_mask >> 4*i) & 0x1;
       // Stream << "link:" << i << " link_enabled:" << link_enabled << std::endl;
       if (link_enabled) {
-        RocBlockRead(i,REG_READGITCOMMIT,data);
-        int nw = data.size();
-        if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
-
-        std::stringstream ss;
-
-        for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
-        
-        GitCommit = ss.str();
+        int rc = RocBlockRead(i,REG_READGITCOMMIT,data,nw_expected);
+        if (rc < 0) {
+          GitCommit = "READ_ERROR";
+        }
+        else {
+          std::stringstream ss;
+          int nw = data.size();
+          if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
+          
+          for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
+          GitCommit = ss.str();
+        }
 
         if (PrintLevel & 0x2) Stream << std::format("GitCommit:{}\n",GitCommit);
       }

@@ -6,13 +6,13 @@ cet_make_library(
         SOURCE          
         DtcInterface.cc DtcInterfaceBase.cc DtcInterface_print.cc DtcInterface_ControlRoc.cc CfoInterface.cc
         LIBRARIES PUBLIC
-	otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_ParseAlignment
+	otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata
-        artdaq_core::artdaq-core_Data
-        # artdaq-core-demo::artdaq-core-demo_Overlays
+        artdaq-core::Data
+        # artdaq-core-demo::Overlays
         cetlib_except::cetlib_except
-        mu2e_pcie_utils::CFOInterface
-        mu2e_pcie_utils::DTCInterface
+        mu2e-pcie-utils::CFOInterface
+        mu2e-pcie-utils::DTCInterface
         ROOT::Core
         )
         
@@ -20,10 +20,10 @@ include(ArtDictionary)
 
 art_dictionary(
   DICTIONARY_LIBRARIES
-  otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_Ui
-  artdaq_core_mu2e::artdaq-core-mu2e_Overlays
-  mu2e_pcie_utils::CFOInterface
-  mu2e_pcie_utils::DTCInterface
+  otsdaq-mu2e-tracker::Ui
+  artdaq-core-mu2e::Overlays
+  mu2e-pcie-utils::CFOInterface
+  mu2e-pcie-utils::DTCInterface
 )
 
 get_target_property(DictCompileOptions otsdaq-mu2e-tracker_Ui_dict COMPILE_OPTIONS)

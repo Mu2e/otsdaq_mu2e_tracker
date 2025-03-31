@@ -147,7 +147,7 @@ int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
-// if Link != -1, Link is a single link (0-5)
+// if Link != -1, Link is a single link number (0-5)
 //-----------------------------------------------------------------------------
 int dtc_control_roc_digi_rw(int      Address          ,
                             int      Rw               , // 0:read, 1:write
