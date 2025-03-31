@@ -147,13 +147,13 @@ int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
-// if LinkMask != -1, operate on the specified links only
+// if Link != -1, Link is a single link (0-5)
 //-----------------------------------------------------------------------------
 int dtc_control_roc_digi_rw(int      Address          ,
                             int      Rw               , // 0:read, 1:write
                             int      HvCal            , // 0: both, 1:hv 2:cal 3: ???
                             int      Data             ,
-                            int      LinkMask     = -1,
+                            int      Link         = -1,
                             int      PcieAddr     = -1) {
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
@@ -169,7 +169,7 @@ int dtc_control_roc_digi_rw(int      Address          ,
   
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
   int print_level(2);
-  dtc_i->ControlRoc_DigiRW(&par,&output,LinkMask,print_level);
+  dtc_i->ControlRoc_DigiRW(&par,&output,Link,print_level);
   if (Rw == 0) { // read
     return (((int (output.data[1])) << 16) | output.data[0]) ;
   }
