@@ -57,9 +57,11 @@ public:
 
   struct Config {
     fhicl::Atom<art::InputTag>  sdCollTag    {fhicl::Name("sdCollTag"    ), fhicl::Comment("straw digi coll tag"       ),"undefined"};
+    fhicl::Atom<int>            debugMode    {fhicl::Name("debugMode"    ), fhicl::Comment("debug mode"                ),0};
     fhicl::Atom<int>            diagLevel    {fhicl::Name("diagLevel"    ), fhicl::Comment("diagnostic level"          ),0};
     fhicl::Atom<std::string>    outputDir    {fhicl::Name("outputDir"    ), fhicl::Comment("output directory"          ),"./"};
     fhicl::Atom<int>            saveWaveforms{fhicl::Name("saveWaveforms"), fhicl::Comment("save StrawDigiADCWaveforms"),0};
+    fhicl::Atom<int>            ewLength     {fhicl::Name("ewLength"     ), fhicl::Comment("event window length, in units of 25 ns"),1000};
   };
 
   // --- C'tor/d'tor:
@@ -80,12 +82,16 @@ public:
   virtual void beginJob();
   virtual void endJob  ();
 
+  int              debugMode_;
   int              diagLevel_;
   art::InputTag    sdCollTag_;          // straw digi collection tag
   std::string      outputDir_;
   int              saveWaveforms_;
   
   int              n_adc_samples_;
+  int              ewLength_;           // it is up to the user to make sure it is set correctly
+  double           tdc_bin_;            // TDC bin, in us
+  double           tdc_bin_ns_;         // TDC bin, ns
 
   const mu2e::StrawDigiCollection*             _sdc;
   const mu2e::StrawDigiADCWaveformCollection*  _sdawfc;
@@ -99,9 +105,14 @@ mu2e::MakeDigiNtuple::MakeDigiNtuple(const art::EDAnalyzer::Table<Config>& confi
     diagLevel_    (config().diagLevel    ()),
     sdCollTag_    (config().sdCollTag    ()),
     outputDir_    (config().outputDir    ()),
-    saveWaveforms_(config().saveWaveforms())
+    saveWaveforms_(config().saveWaveforms()),
+    ewLength_     (config().ewLength     ())
 {
   if (saveWaveforms_ == 0) n_adc_samples_ = 0;
+
+  tdc_bin_             = (5/256.*1e-3);       // TDC bin width (Richie), in us
+  tdc_bin_ns_          = tdc_bin_*1e3;        // convert to ns
+
 }
 
 
@@ -215,8 +226,10 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   //  int const packet_size(16); // in bytes
 
   _art_event = &ArtEvent;
-  
-  print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()),1);
+
+  if (debugMode_ > 0) {
+    print_(std::format("-- START event:{}:{}:{}",ArtEvent.run(),ArtEvent.subRun(),ArtEvent.event()),1);
+  }
 
   int rc = getData(ArtEvent);
   if (rc < 0) return;
@@ -241,7 +254,9 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
   
   DaqStrawDigi nt_sd;
   //   DaqEvent::fgSd.clear();
-  print_(std::format("_nstrawdigis:{}",_nstrawdigis),1);
+  if (debugMode_ > 0) {
+    print_(std::format("_nstrawdigis:{}",_nstrawdigis),1);
+  }
   for (int i=0; i<_nstrawdigis; i++) {
     const mu2e::StrawDigi*            sd    = &_sdc->at(i);
     const mu2e::StrawDigiADCWaveform* sdawf = &_sdawfc->at(i);
@@ -261,15 +276,33 @@ void mu2e::MakeDigiNtuple::analyze(const art::Event& ArtEvent) {
     // for (int is=0; is<ns; is++) {
     //   nt_sd.adc[is] = sdawf->samples()[is];
     // }
+
+    if (debugMode_  > 0) {
+      if (diagLevel_ == 11) {
+//-----------------------------------------------------------------------------
+// for all hits, print hit times assuming contiguous timing
+//-----------------------------------------------------------------------------
+        double t0_offset  = _event->evn*ewLength_*25;                  // in ns
+        double t0         = t0_offset + nt_sd->tdc0*tdc_bin_ns_;
+        double t1         = t0_offset + nt_sd->tdc1*tdc_bin_ns_;
+        printf("%8i %5i %8i %8i %12.4lf %12.4lf %6i %6i %6i 0x%04x\n",
+               _event->evn,
+               (int) nt_sd->sid,
+               nt_sd->tdc0, nt_sd->tdc1,
+               t0, t1,
+               nt_sd->tot0, nt_sd->tot1,
+               nt_sd->pmp, nt_sd->flag);
+      }
+    }
   }
 
   //  _event->sd = DaqEvent::fgSd.data();
 
-  print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsd),1);
+  if (debugMode_ > 0) print_(std::format("_event->strawdigis->GetEntries():{}",_event->nsd),1);
 
   _tree->Fill();
 
-  print_("-- END",1);
+  if (debugMode_ > 0) print_("-- END",1);
 }
 
 

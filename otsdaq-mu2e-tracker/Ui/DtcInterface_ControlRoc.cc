@@ -416,8 +416,10 @@ namespace  trkdaq {
   }
 
 
-//-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_MeasureThresholds(int Link, uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
+//-----------------------------------------------------------------------------
+// Link: link number
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_MeasureThresholds(int Link, int PrintLevel, uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -428,9 +430,9 @@ namespace  trkdaq {
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-    // uint16_t chan_mask[6] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-
-
+    if (PrintLevel) {
+      printf("--------- link:%i thresholds ----------------\n",Link);
+    }
     std::vector<uint16_t> vec;
 
     vec.push_back((MaskC      ) & 0xffff);
@@ -447,11 +449,12 @@ namespace  trkdaq {
     // 0x86 = 0x82 + 4
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    printf("reg:%03i val:0x%04x\n",128,u);
+    if (PrintLevel & 0x1) printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,129,100);
+    if (PrintLevel & 0x1) printf("reg:%03i val:0x%04x\n",129,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
@@ -461,17 +464,20 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     fDtc->WriteROCRegister(roc,14,0x01,false,1000); 
 
-    PrintBuffer(v2.data(),nw);
+    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw);
     // expect nw=288 = 96*3, if not - in trouble
-  
-    for (int i=0; i<96; i++) {
-      float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
-      float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
-      float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
 
-      printf(" i, hw, cal, tot : %3i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+    if (PrintLevel &0x2) {
+      printf(" chID     thr(CAL)    thr(HV)    sum\n");
+      printf("--------------------------------------\n");
+      for (int i=0; i<96; i++) {
+        float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
+        float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
+        float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
+
+        printf(" %4i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+      }
     }
-    // ResetLink(Link);
     return 0;
   }
   

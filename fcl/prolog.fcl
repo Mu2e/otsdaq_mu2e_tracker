@@ -58,6 +58,7 @@ otsdaq_mu2e_tracker : {
         }
         
         MakeDigiNtuple: { module_type:MakeDigiNtuple
+            debugMode     : 0
             diagLevel     : 0
 	    sdCollTag     : "StrawDigisFromArtdaqFragments"   #
             saveWaveforms : 0

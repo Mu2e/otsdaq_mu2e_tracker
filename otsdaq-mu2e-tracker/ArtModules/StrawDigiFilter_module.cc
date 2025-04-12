@@ -33,10 +33,10 @@ namespace ots
       using Name    = fhicl::Name;
       using Comment = fhicl::Comment;
       fhicl::Atom<std::string>   strawDigiCollection  {Name("strawDigiCollection"), Comment("StrawDigiCollection label"), "StrawDigisFromArtdaqFragments" };
-      fhicl::Atom<unsigned>      minNStrawDigis       {Name("minNStrawDigis")     , Comment("minNStrawDigis")            };
-      fhicl::Atom<unsigned>      minNPlanes           {Name("minNPlanes")         , Comment("Minimum planes hit")     ,0 };
-      fhicl::Atom<int>           debugLevel           {Name("debugLevel")         , Comment("Debug printout level")   ,0 };
-      fhicl::Atom<bool>          noFilter             {Name("noFilter")           , Comment("Don't filter anything")  ,0 };
+      fhicl::Atom<unsigned>      minNStrawDigis       {Name("minNStrawDigis")     , Comment("minNStrawDigis")         , 0};
+      fhicl::Atom<unsigned>      minNPlanes           {Name("minNPlanes")         , Comment("Minimum planes hit")     , 0};
+      fhicl::Atom<int>           debugLevel           {Name("debugLevel")         , Comment("Debug Level")            , 0};
+      fhicl::Atom<bool>          noFilter             {Name("noFilter")           , Comment("Don't filter anything")  , 0};
     };
 
     using Parameters = art::EDFilter::Table<Config>;

@@ -30,23 +30,28 @@ int TrackerDQM::dtcIndex(int DtcID) {
 }
 
 //-----------------------------------------------------------------------------
+// fixed by Richie
+//-----------------------------------------------------------------------------
 unsigned int reverseBits(unsigned int num) {
-  unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
+  // unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
 
-  unsigned int reversedNum = 0;
-  for (unsigned int i = 0; i < numOfBits; ++i) {
-    if ((num & (1 << i)) != 0)
-      reversedNum |= 1 << ((numOfBits - 1) - i);
-  }
+  // unsigned int reversedNum = 0;
+  // for (unsigned int i = 0; i < numOfBits; ++i) {
+  //   if ((num & (1 << i)) != 0)
+  //     reversedNum |= 1 << ((numOfBits - 1) - i);
+  // }
+
+  unsigned int reversedNum = num;
 
   return reversedNum;
 }
 
 //-----------------------------------------------------------------------------
-// is this still in play ?
+// is this still in play ? - no, fixed by Richie
 //-----------------------------------------------------------------------------
 unsigned int correctedTDC(unsigned int TDC) {
-  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+  //  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+  uint32_t corrected_tdc = TDC;
   return corrected_tdc;
 }
 

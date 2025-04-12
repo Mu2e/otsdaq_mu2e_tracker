@@ -116,11 +116,13 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // measure thresholds returns an array of thresholds, which needs to be parsed
 // so far, do it internally
+// PrintLevel: bit 0: hex printout, bit 1: parsed printout
 //-----------------------------------------------------------------------------
-    int          ControlRoc_MeasureThresholds(int      Link,
-                                              uint32_t MaskC = 0xFFFFFFFF,
-                                              uint32_t MaskD = 0xFFFFFFFF,
-                                              uint32_t MaskE = 0xFFFFFFFF);
+    int          ControlRoc_MeasureThresholds(int      Link            ,
+                                              int      PrintLevel = 0x2,
+                                              uint32_t MaskC      = 0xFFFFFFFF,
+                                              uint32_t MaskD      = 0xFFFFFFFF,
+                                              uint32_t MaskE      = 0xFFFFFFFF);
 //-----------------------------------------------------------------------------
 // PreampType: 0:HV 1:CAL, or vice versa
 // do one channel at a time
