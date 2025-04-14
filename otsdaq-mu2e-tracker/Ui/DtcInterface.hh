@@ -17,6 +17,9 @@
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
+#include "otsdaq-mu2e-tracker/Ui/BisectionSearch.hh"
+#include "otsdaq-mu2e-tracker/Ui/PreampChannel.hh"
+#include "otsdaq-mu2e-tracker/Ui/PreampThreshold.hh"
 #include "otsdaq-mu2e-tracker/Ui/TrkSpiData.hh"
 
 namespace trkdaq {
@@ -106,8 +109,27 @@ namespace trkdaq {
     std::vector<DTCLib::roc_data_t> ReadDeviceID        (const DTCLib::DTC_Link_ID& Link);
     roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
 
-    Alignment    FindAlignment(DTCLib::DTC_Link_ID Link);
-    void         FindAlignments(bool print=false, int LinkMask=0);
+    Alignment FindAlignment(DTCLib::DTC_Link_ID Link);
+    void      FindAlignments(bool print=false, int LinkMask=0);
+
+    // TODO revisit these signatures --- what should be vectorized, what not...
+    void      ProgramThreshold(const DTCLib::DTC_Link_ID& Link,
+                               const PreampChannel& channel,
+                               const DTCLib::roc_data_t dac);
+    std::vector<PreampThreshold>
+              QueryThresholds(const DTCLib::DTC_Link_ID& Link);
+    double    ProgramAndQueryThreshold(const DTCLib::DTC_Link_ID& Link,
+                                       const PreampChannel& channel,
+                                       const DTCLib::roc_data_t dac);
+    bool      SetThreshold(const DTCLib::DTC_Link_ID& Link,
+                           const PreampChannel& channel,
+                           const double threshold,
+                           const double tolerance);
+    bool      SetThresholds(const DTCLib::DTC_Link_ID& Link,
+                            const std::vector<PreampChannel>& channels,
+                            std::vector<double>& thresholds,
+                            const double tolerance);
+ 
 //-----------------------------------------------------------------------------
 // ROC functions
 // if LinkMask=0, use fLinkMask

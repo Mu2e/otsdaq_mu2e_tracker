@@ -5,6 +5,7 @@
 cet_make_library(
         SOURCE          
         DtcInterface.cc DtcInterface_print.cc CfoInterface.cc
+        PreampChannel.cc PreampThreshold.cc
         LIBRARIES PUBLIC
 	otsdaq_mu2e_tracker::otsdaq-mu2e-tracker_ParseAlignment
         artdaq::DAQdata

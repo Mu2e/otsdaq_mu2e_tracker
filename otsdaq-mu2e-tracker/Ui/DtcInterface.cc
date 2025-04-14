@@ -612,7 +612,7 @@ namespace trkdaq {
   }
 
   // read serial number and device info
-  vector<roc_data_t> DtcInterface::ReadDeviceID(const DTCLib::DTC_Link_ID& Link){
+  vector<roc_data_t> DtcInterface::ReadDeviceID(const DTC_Link_ID& Link){
     this->ResetRoc();
     // write nothing to trigger query
     vector<roc_data_t> empty;
@@ -629,7 +629,7 @@ namespace trkdaq {
     return rv;
   }
 
-  roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link){
+  roc_serial_t DtcInterface::ReadSerialNumber(const DTC_Link_ID& Link){
     auto returned = this->ReadDeviceID(Link);
 
     stringstream ss;
@@ -699,6 +699,165 @@ namespace trkdaq {
         }
       }
     }
+  }
+
+
+  void DtcInterface::ProgramThreshold(const DTC_Link_ID& Link,
+                                      const PreampChannel& channel,
+                                      const roc_data_t dac){
+    // write parameters into roc to initiate routine
+    vector<roc_data_t> writeable = {
+      static_cast<uint16_t>(channel.Channel()), // channel number
+      dac,                                      // programmed value
+      static_cast<uint16_t>(channel.Side()),    // hv/cal side
+    };
+
+    // register 267: set threshold
+    bool increment_address = false; // read via fifo
+    fDtc->WriteROCBlock(Link, 267, writeable, false, increment_address, 100);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
+
+    // TODO there is a confirmation readback
+    // then, wait till reg 128 returns non-zero
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000){
+      // idle
+    }
+
+    // read back payload and validate against input parameters
+    auto returned = this->ReadROCBlockEnsured(Link, 267);
+    if (returned.size() != writeable.size()){
+      string msg = "block read of bad length: expected "
+                 + to_string(writeable.size())
+                 + ", got "
+                 + to_string(returned.size());
+      throw cet::exception("DtcInterface::ProgramThreshold") << msg;
+    }
+    if (channel.Side() == PreampChannel::Parity::hv){
+      writeable[0] += 96;
+    }
+    for (size_t i = 0 ; i < returned.size() ; i++){
+      if (returned[i] != writeable[i]){
+        string msg = "back readback value at index "
+                   + to_string(i)
+                   + ", expected "
+                   + to_string(writeable[i])
+                   + ", got "
+                   + to_string(returned[i]);
+        throw cet::exception("DtcInterface::ProgramThreshold") << msg;
+      }
+    }
+  }
+
+  vector<PreampThreshold> DtcInterface::QueryThresholds(const DTC_Link_ID& Link){
+    // write parameters into roc to initiate routine
+    vector<roc_data_t> writeable = {
+      0xFFFF,                        // bitmask for channels  0 - 15
+      0xFFFF,                        // bitmask for channels 16 - 31
+      0xFFFF,                        // bitmask for channels 32 - 47
+      0xFFFF,                        // bitmask for channels 48 - 63
+      0xFFFF,                        // bitmask for channels 64 - 79
+      0xFFFF,                        // bitmask for channels 80 - 95
+    };
+
+    // register 270: measure thresholds
+    bool increment_address = false; // read via fifo
+    fDtc->WriteROCBlock(Link, 270, writeable, false, increment_address, 100);
+    std::this_thread::sleep_for(std::chrono::microseconds(gSleepTimeROCWrite));
+
+    // then, wait till reg 128 returns non-zero
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000){
+      // idle
+    }
+
+    // read back payload
+    auto returned = this->ReadROCBlockEnsured(Link, 270);
+
+    // TODO magic numbers = bad
+    if (returned.size() != 288){
+      string msg = "incomplete threshold vector: size = "
+                 + to_string(returned.size());
+      throw cet::exception("DtcInterface::QueryThresholds") << msg << endl;
+    }
+
+    // TODO magic numbers = bad
+    vector<PreampThreshold> rv;
+    for (size_t i = 0 ; i < 96 ; i++){
+      size_t h_idx =   0 + i;
+      size_t c_idx =  96 + i;
+      size_t t_idx = 192 + i;
+
+      double c_threshold = PreampThreshold::ComputeAnalogValue(returned[c_idx]);
+      double h_threshold = PreampThreshold::ComputeAnalogValue(returned[h_idx]);
+      double t_threshold = PreampThreshold::ComputeAnalogValue(returned[t_idx]);
+
+      rv.emplace_back(c_threshold, h_threshold, t_threshold);
+
+      /* FIXME rm debug block
+      if (returned[c_idx] != 65535 || returned[h_idx] != 65535 || returned[t_idx] != 65535){
+        cout << i << ": "
+             << returned[c_idx] << " "
+             << returned[h_idx] << " "
+             << returned[t_idx] << endl;
+      }
+      */
+    }
+
+    return rv;
+  }
+
+  double DtcInterface::ProgramAndQueryThreshold(const DTC_Link_ID& Link,
+                                                const PreampChannel& channel,
+                                                const roc_data_t dac){
+    this->ProgramThreshold(Link, channel, dac);
+    auto queried = this->QueryThresholds(Link);
+    auto thresholds = queried.at(channel.Channel());
+    auto rv = thresholds.GetThreshold(channel.Side());
+    return rv;
+  }
+
+  bool DtcInterface::SetThreshold(const DTC_Link_ID& Link,
+                                  const PreampChannel& channel,
+                                  const double threshold,
+                                  const double tolerance){
+    roc_data_t lower = 0;
+    roc_data_t upper = 1023;
+    auto f = [this,Link,channel] (roc_data_t dac) -> double {
+      auto rv = this->ProgramAndQueryThreshold(Link, channel, dac);
+      cout << dac  << ": " << rv << endl;
+      return rv;
+    };
+    auto dac = bisection_search(f, -threshold, tolerance, lower, upper);
+    auto measured = this->ProgramAndQueryThreshold(Link, channel, dac);
+
+    // return whether or not the search was successful
+    auto rv = false;
+    if (fabs(measured - threshold) < tolerance){
+      rv = true;
+    }
+
+    return rv;
+  }
+
+  bool DtcInterface::SetThresholds(const DTC_Link_ID& Link,
+                                   const std::vector<PreampChannel>& channels,
+                                   std::vector<double>& thresholds,
+                                   const double tolerance){
+    if (channels.size() != thresholds.size()){
+      string msg = "Mismatched channel/threshold count when setting thresholds";
+      msg += to_string(channels.size()) + " channels vs "
+           + to_string(thresholds.size()) + " thresholds";
+      throw cet::exception("DtcInterface::SetThresholds") << msg << endl;
+    }
+
+    // if any channel fails to set, return false
+    bool rv = true;
+    for (size_t i = 0 ; i < channels.size() ; i++){
+      rv &= this->SetThreshold(Link, channels[i], thresholds[i], tolerance);
+    }
+
+    return rv;
   }
 
 //-----------------------------------------------------------------------------

@@ -17,7 +17,7 @@ cet_set_compiler_flags(
         DIAGS VIGILANT
         WERROR  
         NO_UNDEFINED
-        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread #-g -O0 -v # Equivalent to debug qualifier, for testing
+        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g #-O0 -v # Equivalent to debug qualifier, for testing
 )
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env

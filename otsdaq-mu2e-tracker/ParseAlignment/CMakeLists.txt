@@ -5,8 +5,8 @@ cet_make_library(
         AlignmentChannel.cc
         AlignmentIteration.cc
         PrintLegacyTable.cc
-	LIBRARIES
-	cetlib_except
+        LIBRARIES
+        cetlib_except
         mu2e_pcie_utils::DTCInterface
         )
 
