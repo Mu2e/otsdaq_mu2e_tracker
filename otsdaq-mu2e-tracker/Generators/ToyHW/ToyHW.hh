@@ -8,9 +8,11 @@
 #include <chrono>
 #include <random>
 
-class ToyHW {
-public:
-	typedef uint16_t data_t;  ///< The type used to represent ADC counts (which are 12 or 14 bits, for TOY1 or TOY2)
+class ToyHW
+{
+  public:
+	typedef uint16_t data_t;  ///< The type used to represent ADC counts (which are 12 or
+	                          ///< 14 bits, for TOY1 or TOY2)
 
 	/**
 	 * \brief Construct and configure ToyHW
@@ -79,23 +81,24 @@ public:
 		uninit2         // like uninitialized, but do memcpy
 	};
 
-private:
+  private:
 	bool taking_data_;
 
 	std::size_t nADCChannels_;
 	std::size_t maxADCcounts_;
 	std::size_t change_after_N_seconds_;
-	std::size_t pause_after_N_seconds_;  // sleep this many seconds every change_after_N_seconds_
-	std::size_t nADCChannels_after_N_seconds_;
-	bool        exception_after_N_seconds_;
-	bool        exit_after_N_seconds_;
-	bool        abort_after_N_seconds_;
-	bool        hang_after_N_seconds_;
+	std::size_t
+	    pause_after_N_seconds_;  // sleep this many seconds every change_after_N_seconds_
+	std::size_t        nADCChannels_after_N_seconds_;
+	bool               exception_after_N_seconds_;
+	bool               exit_after_N_seconds_;
+	bool               abort_after_N_seconds_;
+	bool               hang_after_N_seconds_;
 	demo::FragmentType fragment_type_;
-	std::size_t maxADCvalue_;
-	std::size_t throttle_usecs_;
-	std::size_t usecs_between_sends_;
-  //	DistributionType distribution_type_;
+	std::size_t        maxADCvalue_;
+	std::size_t        throttle_usecs_;
+	std::size_t        usecs_between_sends_;
+	//	DistributionType distribution_type_;
 
 	using time_type = decltype(std::chrono::steady_clock::now());
 

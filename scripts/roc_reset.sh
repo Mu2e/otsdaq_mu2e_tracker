@@ -3,7 +3,7 @@
 # reset ROC corresponding to a given link, assume default DTC ID ($DTCLIB_DTC)
 #------------------------------------------------------------------------------
 link=$1
-if [[ ".$link" == "." ]] ; then 
+if [[ ".$link" == "." ]] ; then
     echo "ERROR: define link ID"
     return
 elif [ $link -lt 0 -o  $link -gt 5 ] ; then

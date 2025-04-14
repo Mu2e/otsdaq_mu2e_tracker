@@ -37,7 +37,7 @@ CRC+=4*$LINK
 
 echo "Link $LINK:"
 echo "        #DTCReq    : " `my_cntl read $DTCREQ`
-echo "        #HB        : " `my_cntl read $HB` 
+echo "        #HB        : " `my_cntl read $HB`
 echo "        #DataHeader: " `my_cntl read $HEAD`
 echo "        #Payloads  : " `my_cntl read $PAY`
 echo "        #CRC errors: " `my_cntl read $CRC`
@@ -119,4 +119,3 @@ echo "        #CRC errors: " `my_cntl read $CRC`
 
 #echo " #CRC errors:" `my_cntl read 0x9570`
 #echo " "
-

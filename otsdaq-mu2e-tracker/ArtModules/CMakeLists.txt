@@ -1,7 +1,7 @@
 #
 cet_build_plugin(TrackerDQM art::module LIBRARIES REG
 art_root_io::TFileService_service
-artdaq_core_mu2e::artdaq-core-mu2e_Data
+artdaq-core-mu2e::Data
 ROOT::Hist
 ROOT::Tree
 ROOT::Core
@@ -11,4 +11,4 @@ Offline::RecoDataProducts
 )
 
 
-# cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq_core_demo::artdaq-core-demo_Overlays)
+# cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq-core-demo::Overlays)

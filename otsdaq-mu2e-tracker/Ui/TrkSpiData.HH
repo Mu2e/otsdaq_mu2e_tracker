@@ -2,6 +2,7 @@
 #define __TrkSpiData_hh__
 
 namespace trkdaq {
+  
 //-----------------------------------------------------------------------------
 // Tracker ROC raw SPI data (mapping of the array of shorts
 //-----------------------------------------------------------------------------
@@ -42,10 +43,9 @@ namespace trkdaq {
     uint16_t  HV_RAIL_1_8V;       // 33
     uint16_t  HV_RAIL_2_5V;       // 34
     uint16_t  HV_TEMP;            // 35
-
-    static int     nWords () { return sizeof(TrkSpiRawData_t)/sizeof(uint16_t); }
   };
 
+  int const TrkSpiDataNWords = sizeof(TrkSpiRawData_t)/sizeof(uint16_t); 
 //-----------------------------------------------------------------------------
 // converted data
 //-----------------------------------------------------------------------------
@@ -86,8 +86,6 @@ namespace trkdaq {
     float     HV_RAIL_1_8V;       // 33
     float     HV_RAIL_2_5V;       // 34
     float     HV_TEMP;            // 35
-
-    static    int    nWords () { return sizeof(TrkSpiData_t)/sizeof(float); }
   };
 };
 

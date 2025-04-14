@@ -8,30 +8,48 @@
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 find_package(cetmodules)
 
-project(otsdaq_mu2e_tracker VERSION 3.02.00)
+project(otsdaq-mu2e-tracker VERSION 4.00.00)
 
 include(CetCMakeEnv)
 cet_cmake_env()
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 cet_set_compiler_flags(
         DIAGS VIGILANT
-        WERROR  
+        # WERROR
         NO_UNDEFINED
-        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g #-O0 -v # Equivalent to debug qualifier, for testing
+        EXTRA_FLAGS -fpermissive -Wno-unused-parameter -pthread -g  -O0 # -O0 -v Equivalent to debug qualifier, for testing
 )
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env
 #------------------------------------------------------------------------------
 find_package(artdaq            3.12.07 REQUIRED EXPORT)
-find_package(artdaq_core       3.09.16 REQUIRED EXPORT)
-find_package(artdaq_core_demo  1.11.00 REQUIRED EXPORT)
-find_package(otsdaq_mu2e       1.02.00 REQUIRED EXPORT)
-find_package(mu2e_pcie_utils   3.02.00 REQUIRED EXPORT)
+find_package(artdaq-core       3.09.16 REQUIRED EXPORT)
+find_package(artdaq-core-demo  1.11.00 REQUIRED EXPORT)
+find_package(otsdaq-mu2e       1.02.00 REQUIRED EXPORT)
+find_package(mu2e-pcie-utils   3.02.00 REQUIRED EXPORT)
+
+# message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )
+#
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#   message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+
+# if (DEFINED ENV{MIDASSYS})
+#    message(-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=.$ENV{MIDASSYS}. )
+#    find_package(Midas REQUIRED)
+# else()
+#    message("-- P.Murat: no MIDASSYS")
+# endif()
 
 # XDAQ Extra setup
-include_directories($ENV{XDAQ_INC} $ENV{XDAQ_INC}/linux)
+include_directories($ENV{XDAQ_ROOT}/include)
 
 find_package(Offline           10.00.00 REQUIRED)
+include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
+link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )
@@ -58,17 +76,5 @@ add_subdirectory(otsdaq-mu2e-tracker)
 
 # Test Programs
 #add_subdirectory(test)
-
-# Data
-#FILE(COPY ConfigurationDataExamples DESTINATION Data)
-#INSTALL(DIRECTORY ConfigurationDataExamples DESTINATION ${product}/${version}/Data)
-#FILE(COPY XDAQConfigurations DESTINATION Data)
-#INSTALL(DIRECTORY XDAQConfigurations DESTINATION ${product}/${version}/Data)
-#FILE(COPY ServiceData DESTINATION Data)
-#INSTALL(DIRECTORY ServiceData DESTINATION ${product}/${version}/Data)
-#FILE(COPY Data DESTINATION .)
-#INSTALL(DIRECTORY Data DESTINATION ${product}/${version})
-#FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ServiceData/LoginData)
-#INSTALL(DIRECTORY DESTINATION ${product}/${version}/Data/ServiceData/LoginData)
 
 cet_cmake_config()

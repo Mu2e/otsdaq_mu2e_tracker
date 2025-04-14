@@ -1,4 +1,4 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash
 if [ $# -lt 2 ]; then
     echo "link_enable command expects two argument: LINK_NO and USE_LANE mask"
 fi
@@ -9,7 +9,7 @@ fi
     LINK=$1
 USE_LANE=$2
 #------------------------------------------------------------------------------
-# USE_LANE is a bit code 
+# USE_LANE is a bit code
 #------------------------------------------------------------------------------
 # disable markers to make DCS commands more robust : my_cntl write 0x91a8 0x0
 # ./ewm_disable.sh
@@ -26,7 +26,7 @@ sleep 1
 if   [ $USE_LANE -eq  1 ]; then echo "to receive data only from CAL lane 0"
 elif [ $USE_LANE -eq  5 ]; then echo "to receive data from both CAL lanes"
 elif [ $USE_LANE -eq 15 ]; then echo "to receive data from all 4 lanes"
-fi  
+fi
 
 # after adding external clock and evmarker control to the ROC,
 # one needs to write bit(8)=1 and bit(9)=1 on register 8, ie 0x300 (0r 768)
@@ -35,5 +35,5 @@ SET_LANE=$(( $USE_LANE + $ENABLES ))
 #SET_LANE=$(($USE_LANE))
 echo "SET_LANE=" $SET_LANE
 
-# setup ROC for SERDES lane inputs      
+# setup ROC for SERDES lane inputs
 rocUtil write_register -a 8  -w $SET_LANE -l $LINK > /dev/null   # only lane 0

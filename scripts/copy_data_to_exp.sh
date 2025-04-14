@@ -1,11 +1,12 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash
 #------------------------------------------------------------------------------
-# copies data from local /scratch/mu2e/.. area on an online machine 
+# copies data from local /scratch/mu2e/.. area on an online machine
 # to offline /exp/mu2e/data/projects/...
 # so far , used only for the tracker
 #
-# call format: copy_data_to_exp.sh run1 run2 [doit] 
+# call format: copy_data_to_exp.sh run1 run2 [doit]
 #
+# if run2>run1 is defined, the range of runs is copied
 # if "doit" is undefined, the script only prints the commands to be executed
 #------------------------------------------------------------------------------
 rn1=`printf "%06i" $1`
@@ -14,15 +15,21 @@ if [ ".$2" != "." ] ; then rn2=$2 ; else rn2=$rn1 ; fi
 doit=$3
 
 echo rn1=$rn1 rn2=$rn2 doit=$doit
+name_stub=${USER}_`echo $MU2E_DAQ_DIR | awk -F / '{print $NF}'`
+
+dest=/exp/mu2e/data/projects/vst/datasets
 
 for rn in `seq $rn1 $rn2` ; do
     irn=`printf "%06i" $rn`
-    for f in `ls /scratch/mu2e/$DAQ_USER_STUB/$TFM_CONFIG_NAME/data/raw.mu2e.trkvst.annex.${irn}_*` ; do 
-        cmd="scp $f murat@mu2egpvm06:/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/."
+    for f in `ls /scratch/mu2e/$name_stub/data/raw.mu2e.trkvst.*.*.art | grep $rn` ; do
+        bn=`basename $f`
+        dsconf=`echo $bn | awk -F . '{print $4}'`
+        dsid=raw.mu2e.trkvst.$dsconf.art
+        cmd="scp $f murat@mu2egpvm06:$dest/$dsid/."
         echo "$cmd"
-        if [ ".$doit" != "." ] ; then 
+        if [ ".$doit" != "." ] ; then
             # echo doit=$doit
-            $cmd ; echo rc=$? ; 
+            $cmd ; echo rc=$? ;
         fi
     done
 done

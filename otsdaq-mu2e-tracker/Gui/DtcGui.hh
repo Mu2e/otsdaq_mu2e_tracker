@@ -5,8 +5,8 @@
 #ifndef __otsdaq_mu2e_tracker_DtcGui_hh__
 #define __otsdaq_mu2e_tracker_DtcGui_hh__
 
-#include "stdlib.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 #include "TApplication.h"
 #include "TThread.h"
@@ -136,215 +136,253 @@
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 //-----------------------------------------------------------------------------
-class DtcGui {
-  // RQ_OBJECT("DtcGui")
-public: 
+class DtcGui
+{
+	// RQ_OBJECT("DtcGui")
+  public:
+	enum
+	{
+		kIN_PROGRESS = 0,
+		kSUBMITTED   = 1,
+		kCOMPLETED   = 2
+	};
 
-  enum { 
-    kIN_PROGRESS = 0,
-    kSUBMITTED   = 1,
-    kCOMPLETED   = 2
-  };
+	struct RocData_t
+	{
+		TString fName;  //
+		int     fLink;
+	};
 
-  struct RocData_t {
-    TString fName;         // 
-    int     fLink;
-  };
+	struct DtcData_t
+	{
+		TString fName;  // expect fName to be uppercased
+		int     fPcieAddr;
+		int     fLinkMask;  // active links, for DTC - ROCs, for CFO: nDTCs
+		int     fRocReadoutMode;
+		int     fRocLaneMask;
+		int     fRocNHitsPerLane;
 
-  struct DtcData_t {
-    TString    fName;         // expect fName to be uppercased
-    int        fPcieAddr;
-    int        fLinkMask;     // active links, for DTC - ROCs, for CFO: nDTCs
-    int        fReadoutMode;
+		int fJAMode;
+		int fOnSpill;
 
-    RocData_t  fRocData[6];
-    RocData_t* fActiveRoc;
+		int fDtcID;  // 4 pieces to be written to 0x9154
+		int fEventMode;
+		int fPartitionID;
+		int fMacAddrByte;
 
-    DtcData_t(const char* Name = "", int PcieAddr = 0) {
-      fName         = Name; 
-      fPcieAddr    = PcieAddr;
-      fLinkMask    = 0;             // by default, not reading anything
-      fReadoutMode = 0;             // 0:patterns 1:digis
+		int fEmulateCfo;
 
-      fActiveRoc = nullptr;
-      for (int i=0;i<6; i++) {
-        fRocData[i].fName = Form("ROC%i",i);
-        fRocData[i].fLink = i;
-      }
-    }
+		RocData_t  fRocData[6];
+		RocData_t* fActiveRoc;
 
-    int IsDtc() { return fName == "DTC"; }
-    int IsCfo() { return fName == "CFO"; }
-  };
+		DtcData_t(const char* Name = "", int PcieAddr = 0)
+		{
+			fName            = Name;
+			fPcieAddr        = PcieAddr;
+			fLinkMask        = 0;  // by default, not reading anything
+			fRocReadoutMode  = 0;  // 0:patterns 1:digis
+			fRocLaneMask     = 0xf;
+			fRocNHitsPerLane = 2;  // Monicas's default
+			fJAMode          = 0;
+			fOnSpill         = 0;
+			fDtcID           = -1;
+			fPartitionID     = -1;
+			fEventMode       = 1;
+			fMacAddrByte     = -1;
 
+			fActiveRoc = nullptr;
+			for(int i = 0; i < 6; i++)
+			{
+				fRocData[i].fName = Form("ROC%i", i);
+				fRocData[i].fLink = i;
+			}
+		}
 
-  struct RocTabElement_t {
-    TGCompositeFrame* fFrame;
-    TGTabElement*     fTab;             // its own tab element
+		int IsDtc() { return fName == "DTC"; }
+		int IsCfo() { return fName == "CFO"; }
+	};
 
-    TGTextEntry*      fRegW;
-    TGTextEntry*      fRegR;
-    TGTextEntry*      fValW;
-    TGLabel*          fValR;
+	struct RocTabElement_t
+	{
+		TGCompositeFrame* fFrame;
+		TGTabElement*     fTab;  // its own tab element
 
-    Pixel_t           fColor;
-  };
+		TGTextEntry* fRegW;
+		TGTextEntry* fRegR;
+		TGTextEntry* fValW;
+		TGLabel*     fValR;
 
-  struct DtcTabElement_t {
-    TGCompositeFrame* fFrame;
-    TGTabElement*     fTab;             // its own tab element
+		Pixel_t fColor;
+	};
 
-    TGTextEntry*      fRegW;
-    TGTextEntry*      fRegR;
-    TGTextEntry*      fValW;
-    TGLabel*          fValR;
-    TGTextEntry*      fTimeChainLink;   // CFO only
-    TGTextEntry*      fDtcMask;         // CFO only
-    TGTextEntry*      fRunPlan;         // CFO only
+	struct DtcTabElement_t
+	{
+		TGCompositeFrame* fFrame;
+		TGTabElement*     fTab;  // its own tab element
 
-    TGNumberEntry*    fEmulateCfo;
-    TGNumberEntry*    fRocReadoutMode;
+		TGTextEntry* fRegW;
+		TGTextEntry* fRegR;
+		TGTextEntry* fValW;
+		TGLabel*     fValR;
+		TGTextEntry* fTimeChainLink;  // CFO only
+		TGTextEntry* fDtcMask;        // CFO only
+		TGTextEntry* fRunPlan;        // CFO only
 
-    trkdaq::DtcInterface* fDTC_i;       // driver interface
-    trkdaq::CfoInterface* fCFO_i;
+		TGNumberEntry* fEmulateCfo;
+		TGNumberEntry* fRocReadoutMode;
+		TGTextEntry*   fJAMode;  // 0xAB A:source B:reset
 
-    Pixel_t           fColor;
+		trkdaq::DtcInterface* fDTC_i;  // driver interface
+		trkdaq::CfoInterface* fCFO_i;
 
-    TGTab*            fRocTab;
-    RocTabElement_t   fRocTel[6];
-    RocTabElement_t*  fActiveRocTel;
-    int               fActiveRocID;
-    Pixel_t           fRocTabColor;    	// non-active roc tab tip
-    DtcData_t*        fData;
-  };
+		Pixel_t fColor;
 
-  trkdaq::CfoInterface* fCFO_i;         // need  one accessible from here
+		TGTab*           fRocTab;
+		RocTabElement_t  fRocTel[6];
+		RocTabElement_t* fActiveRocTel;
+		int              fActiveRocID;
+		Pixel_t          fRocTabColor;  // non-active roc tab tip
+		DtcData_t*       fData;
+	};
 
-  TGMainFrame*        fMainFrame;
-  TGTab*              fDtcTab ;
-  TGHorizontalFrame*  fButtonsFrame;
-  TGTextViewostream*  fTextView;
-  TGVerticalFrame*    fContents;
+	trkdaq::CfoInterface* fCFO_i;  // need  one accessible from here
 
-  TString             fHostname;
+	TGMainFrame*       fMainFrame;
+	TGTab*             fDtcTab;
+	TGHorizontalFrame* fButtonsFrame;
+	TGTextViewostream* fTextView;
+	TGVerticalFrame*   fContents;
 
-  TString             fDevice;
-  TString             fIStage;
-  TString             fTime;
+	TString fHostname;
 
-  int                 fNDtcs;            // on a machine
+	TString fDevice;
+	TString fIStage;
+	TString fTime;
 
-  DtcTabElement_t     fDtcTel[2];
+	int fNDtcs;  // on a machine
 
-  TGTabElement*       fActiveDtcTab;
-  int                 fActiveDtcID;
+	DtcTabElement_t fDtcTel[2];
 
-  DtcData_t           fDtcData[2];
-  DtcData_t*          fActiveDtc;
+	TGTabElement* fActiveDtcTab;
+	int           fActiveDtcID;
 
-  int                 fNRocs;
+	DtcData_t  fDtcData[2];
+	DtcData_t* fActiveDtc;
 
-  TGNumberEntry*      fNEvents;         // DTC , CFO emulation
-  TGNumberEntry*      fEWLength;        // DTC , CFO emulation
-  TGNumberEntry*      fFirstTS;         // DTC , CFO emulation
-  TGNumberEntry*      fSleepUS;         // DTC , CFO emulation, microseconds
-  TGNumberEntry*      fPrintFreq;       // DTC , CFO emulation, used by the DTC reading thread
-  int                 fCfoPrintFreq;
+	int fNRocs;
+	//-----------------------------------------------------------------------------
+	// fields set from GUI
+	//-----------------------------------------------------------------------------
+	TGNumberEntry* fNEvents;    // DTC , CFO emulation
+	TGNumberEntry* fEWLength;   // DTC , CFO emulation
+	TGNumberEntry* fFirstTS;    // DTC , CFO emulation
+	TGNumberEntry* fSleepUS;    // DTC , CFO emulation, microseconds
+	TGNumberEntry* fPrintFreq;  // DTC , CFO emulation, used by the DTC reading thread
+	int            fCfoPrintFreq;
 
-  int                 fValidate;
+	int fValidate;
 
-  Pixel_t             fGreen;           // completed stage tab tip
-  Pixel_t             fYellow;          // active tab tip
-  Pixel_t             fDtcTabColor;	// non-active tab tip
-  Pixel_t             fSubmittedColor;
-  Pixel_t             fValidatedColor;
-  Pixel_t             fRunningColor;
-  Pixel_t             fStoppedColor;
+	Pixel_t fGreen;        // completed stage tab tip
+	Pixel_t fYellow;       // active tab tip
+	Pixel_t fDtcTabColor;  // non-active tab tip
+	Pixel_t fSubmittedColor;
+	Pixel_t fValidatedColor;
+	Pixel_t fRunningColor;
+	Pixel_t fStoppedColor;
 
-  int                 fDebugLevel;
-//-----------------------------------------------------------------------------
-// threads
-//-----------------------------------------------------------------------------
-  struct ThreadContext_t {
-    TThread*         fTp;               // thread pointer
-    DtcTabElement_t* fDtel;
-    int              fRunning;          // 0: stopped 1:running
-    int              fStop;             // end marker
-    int              fCmd;              // command
-    int              fPrintLevel;
-    int              fPause;
-    int              fSleepTimeMs;
-  };
-  
-  ThreadContext_t  fEmuCfoTC;
-  ThreadContext_t  fExtCfoTC;
-  ThreadContext_t  fReaderTC;
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
-  DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
-  virtual ~DtcGui();
+	int fDebugLevel;
+	//-----------------------------------------------------------------------------
+	// threads
+	//-----------------------------------------------------------------------------
+	struct ThreadContext_t
+	{
+		TThread*         fTp;  // thread pointer
+		DtcTabElement_t* fDtel;
+		int              fRunning;  // 0: stopped 1:running
+		int              fStop;     // end marker
+		int              fCmd;      // command
+		int              fPrintLevel;
+		int              fPause;
+		int              fSleepTimeMs;
+	};
 
-  void     DoDtcTab          (Int_t id);
-  void     DoRocTab          (Int_t id);
+	ThreadContext_t fEmuCfoTC;
+	ThreadContext_t fExtCfoTC;
+	ThreadContext_t fReaderTC;
+	//-----------------------------------------------------------------------------
+	//
+	//-----------------------------------------------------------------------------
+	DtcGui(
+	    const char* Project, const TGWindow* p, UInt_t w, UInt_t h, int DebugLevel = 0);
+	virtual ~DtcGui();
 
-  void     BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
-  void     BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
-  void     BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocData_t* RocData);
+	void DoDtcTab(Int_t id);
+	void DoRocTab(Int_t id);
 
-  void     BuildGui          (const TGWindow *Parent, UInt_t Width, UInt_t Height);
+	void BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
+	void BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
+	void BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocData_t* RocData);
 
-  int      InitRunConfiguration(const char* Project);
+	void BuildGui(const TGWindow* Parent, UInt_t Width, UInt_t Height);
 
-  static   void* ReaderThread(void* Context);
-  static   void* EmuCfoThread(void* Context);
-  static   void* ExtCfoThread(void* Context);
+	int InitRunConfiguration(const char* Project);
 
-  int      manage_reader_thread ();
-  int      manage_emu_cfo_thread();
-  int      manage_ext_cfo_thread();
+	static void* ReaderThread(void* Context);
+	static void* EmuCfoThread(void* Context);
+	static void* ExtCfoThread(void* Context);
 
-  void     cfo_print_status    (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     cfo_soft_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     cfo_hard_reset      (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     cfo_launch_run_plan ();
-  void     cfo_enable_beam_off ();
-  void     cfo_disable_beam_off();
-  void     cfo_init_readout    (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	int manage_reader_thread();
+	int manage_emu_cfo_thread();
+	int manage_ext_cfo_thread();
 
-  void     configure_roc_pattern_mode();
+	void cfo_print_status(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void cfo_soft_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void cfo_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void cfo_launch_run_plan();
+	void cfo_enable_beam_off();
+	void cfo_disable_beam_off();
+	void cfo_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
 
-  void     clear_output       ();
+	void cfo_set_ja_mode();
 
-  void     dtc_soft_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_hard_reset     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_init_readout   (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_read_subevents (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void configure_roc_pattern_mode();
 
-  int      execute_command    ();
-  void     exit               ();
+	void clear_output();
 
-  void     init_external_cfo_readout_mode();
+	void dtc_soft_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void dtc_hard_reset(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void dtc_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void dtc_read_subevents(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void dtc_set_ja_mode();
 
-  void     dtc_launch_run_plan_emulated_cfo(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	int  execute_command();
+	void exit();
 
-  void     dtc_print_firefly_temp (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     dtc_print_all_rocs     (DtcTabElement_t* Dtel, TGTextViewostream* TextView);
-  void     print_dtc_status   ();
-  void     print_roc_status   ();
+	void init_external_cfo_readout_mode();
 
-  void     read_dtc_register  ();
-  void     read_roc_register  ();
-  void     read_subevents     ();
-  void     reset_roc          ();
+	void dtc_launch_run_plan_emulated_cfo(DtcTabElement_t*   Dtel,
+	                                      TGTextViewostream* TextView);
 
-  void     set_nevents         ();
-  void     set_emulate_cfo     ();
-  void     set_roc_readout_mode();
+	void dtc_print_firefly_temp(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void dtc_print_all_rocs(DtcTabElement_t* Dtel, TGTextViewostream* TextView);
+	void print_dtc_status();
+	void print_roc_status();
 
-  void     write_dtc_register  ();
-  void     write_roc_register  ();
+	void read_dtc_register();
+	void read_roc_register();
+	void read_subevents();
+	void reset_roc();
 
-}; 
+	void set_ew_length();
+	void set_first_ts();
+	void set_nevents();
+	void set_emulate_cfo();
+	void set_print_freq();
+	void set_roc_readout_mode();
+	void set_sleep_us();
+
+	void write_dtc_register();
+	void write_roc_register();
+};
 
 #endif
