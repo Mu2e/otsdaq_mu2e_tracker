@@ -307,8 +307,15 @@ namespace  trkdaq {
   }
 
 
-//-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_PulserOn(int Link, int Channel0, int ChannelMask, int DutyCycle, int PulserDelay) {
+//-----------------------------------------------------------------------------
+// from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+// chan_mask = int(get_key_value(keys,"C"),16) 
+// oddoreven = int(get_key_value(keys,"P"),16)
+// channel   = int(get_key_value(keys,"c",-1)) - has to be set !
+// delay     = int(get_key_value(keys,"d",1000))
+// dutycycle = int(get_key_value(keys,"y",10))
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_PulserOn(int Link, int Channel0, int DutyCycle, int PulserDelay, int ChannelMask) {
     int rc (0), reg(268);
 //-----------------------------------------------------------------------------
 // convert into enum
@@ -468,14 +475,27 @@ namespace  trkdaq {
     // expect nw=288 = 96*3, if not - in trouble
 
     if (PrintLevel &0x2) {
+      int mask[3];
+      mask[0] = MaskC;
+      mask[1] = MaskD;
+      mask[2] = MaskE;
+//-----------------------------------------------------------------------------
+// print thresholds only for the channels defined by the mask
+//-----------------------------------------------------------------------------
       printf(" chID     thr(CAL)    thr(HV)    sum\n");
       printf("--------------------------------------\n");
       for (int i=0; i<96; i++) {
-        float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
-        float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
-        float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
+        int iw = i/32;
+        int ib = i -iw*32;
 
-        printf(" %4i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+        if (((mask[iw] >> ib) & 0x1) == 1) {
+        
+          float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
+          float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
+          float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
+
+          printf(" %4i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+        }
       }
     }
     return 0;
@@ -702,7 +722,8 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // at this point, assume just one Link. If needed, make it more general (a mask) later
 //-----------------------------------------------------------------------------
-  int  DtcInterface::ControlRoc_Rates(int Link, ControlRoc_Rates_t& Par, int PrintLevel, std::ostream& Stream) {
+  int  DtcInterface::ControlRoc_Rates(int Link, int PrintLevel, ControlRoc_Rates_t* Par,
+                                      std::ostream& Stream) {
     int rc(0);
 //-----------------------------------------------------------------------------
 // convert into enum
@@ -710,7 +731,22 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
     DTCLib::DTC*  dtc   = dtc_i->Dtc();
-  
+
+    ControlRoc_Rates_t par;
+    if (Par != nullptr) {
+      par = *Par;
+    }
+
+    TLOG(TLVL_DEBUG) << "par:{" << par.num_lookback << ","
+                     << par.num_samples << ","
+                     << std::hex
+                     << "0x" << par.chan_mask[0] << ","
+                     << "0x" << par.chan_mask[1] << ","
+                     << "0x" << par.chan_mask[2] << ","
+                     << "0x" << par.chan_mask[3] << ","
+                     << "0x" << par.chan_mask[4] << ","
+                     << "0x" << par.chan_mask[5] << "}";
+      
     //    int roc_mask        = 1 << (4*Link);
 
     auto roc  = DTC_Link_ID(Link);
@@ -721,11 +757,11 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
 
-    vec.push_back(Par.num_lookback);
-    vec.push_back(Par.num_samples );
+    vec.push_back(par.num_lookback);
+    vec.push_back(par.num_samples );
 
     for (int i=0; i<6; i++) {
-      vec.push_back(Par.chan_mask[i]);
+      vec.push_back(par.chan_mask[i]);
     }
   
     dtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);

@@ -86,7 +86,7 @@ namespace trkdaq {
     
     if (fgInstance[pcie_addr] == nullptr) {
       fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
-      dtc_i = fgInstance[pcie_addr];
+      dtc_i = (trkdaq::DtcInterface*) fgInstance[pcie_addr];
       TLOG(TLVL_DEBUG) << "instantiated: TRK pcie_addr:" << pcie_addr
                        << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
                        << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
@@ -292,11 +292,32 @@ namespace trkdaq {
     for (int i = 0 ; i < 6 ; i++){
       int used = (link_mask >> 4*i) & 0x1;
       if (used != 0) {
-        auto link = DTC_Link_ID(i);
+        auto link      = DTC_Link_ID(i);
         auto alignment = FindAlignment(link);
+
+        int nsteps_tot   = 0;
+        int max_steps_ch = -1;
+        int worst_ch     = -1;
+        for (const auto& iteration: alignment.Iterations()) {
+          const auto& channels = iteration.Channels();
+          for (size_t i = 0 ; i < channels.size() ; i++){
+            auto channel = channels[i];
+            int step     = (int) channel.BitSlipStep();
+            nsteps_tot  += step;
+            if (step > max_steps_ch) {
+              max_steps_ch = step;
+              worst_ch     = i;
+            }
+          }
+        }
+
         if (print) {
           print_legacy_table(alignment,Stream);
         }
+
+        Stream << "-- FindAlignments link:" << i << " nsteps_tot:" << nsteps_tot
+               << " worst_ch:" << worst_ch
+               << " max_steps_ch:" << max_steps_ch << std::endl;
       }
     }
   }

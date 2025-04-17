@@ -2,6 +2,7 @@
 #define __CLING__ 1
 
 #include "iostream"
+#include "nlohmann/json.hpp"
 
 #include "TH1.h"
 #include "TStopwatch.h"
@@ -147,6 +148,17 @@ int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
 
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
+//-----------------------------------------------------------------------------
+int dtc_control_roc_measure-thresholds(int Link, int PrintLevel = 2, int PcieAddr = -1) {
+  uint32_t mask[3] = {0xffffffff,0xffffffff,0xffffffff};
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ControlRoc_MeasureThresholds(Link,PrintLevel,mask[0],mask[1],mask[2]);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// test of the 'READ' command implementation over the fiber
 // if Link != -1, Link is a single link number (0-5)
 //-----------------------------------------------------------------------------
 int dtc_control_roc_digi_rw(int      Address          ,
@@ -228,11 +240,62 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 //-----------------------------------------------------------------------------
 // just print the ROC information
 //-----------------------------------------------------------------------------
+int dtc_control_roc_rates(int Link, int PcieAddr = -1) {
+  trkdaq::ControlRoc_Rates_t par;
+  par.num_lookback=100;
+  par.num_samples =10;
+  par.chan_mask[0]=0xffff;
+  par.chan_mask[1]=0xffff;
+  par.chan_mask[2]=0xffff;
+  par.chan_mask[3]=0xffff;
+  par.chan_mask[4]=0xffff;
+  par.chan_mask[5]=0xffff;
+  
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  dtc_i->ControlRoc_Rates(Link,2,&par,std::cout);
+
+  // also need to normalize: 1366./4436388./5e-9
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
 int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
   trkdaq::ControlRoc_DeviceID_t dt;
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.json", int PcieAddr = -1) {
+  auto dtc_i = trkdaq::DtcInterface::Instance(-1);
+
+  std::ifstream ifs(Fn);
+  nlohmann::json jf = nlohmann::json::parse(ifs);
+
+  for (auto& elm : jf.items()) {
+    nlohmann::json o = elm.value();
+    int ich  = o["channel"];
+    int gain = o["gain"];
+    int thr  = o["threshold"];
+    std::string type = o["type"];
+
+    int cal_hv(-1);
+    
+    if      (type == "cal") cal_hv = 0;
+    else if (type == "hv" ) cal_hv = 1;
+    
+    std::cout << ich << " " << gain << " " << std::setw(3) << thr << " " << type << std::endl;;
+
+    dtc_i->ControlRoc_SetThreshold(Link,ich,cal_hv,thr );
+    dtc_i->ControlRoc_SetGain     (Link,ich,cal_hv,gain);
+  }
+  
   return 0;
 }
 

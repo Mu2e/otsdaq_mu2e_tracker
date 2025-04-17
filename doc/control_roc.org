@@ -548,8 +548,8 @@ set_digi_rw -s 0
 * 1) after each DIGIs power up, run control_ROC.py on trackerpi1/trackerpi5  
 1. start control_ROC.py on the PI
    1.a : let serial drive commands to DIGI
-   1.b : do alignment, what is alignment ?
-   1.c : read smth, why ?
+   1.b : do timing alignment
+   1.c : run 'read' command to initializa the digi readout mode 
    1.d : in the end, let fiber drive commands to DIGI
 #+begin_src     set_digi_rw -s 1                                             
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
@@ -694,7 +694,6 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
  - 0x000000b0: 0x00ac 0xe195 0x1406 0xe147 0x0406 0x0041 0x56aa 0x2aa5 : hit #4 data 
  - 0x000000c0: 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 : hit #4 data 
 * 6.5) channel map - sequence in which the channels are supposed to come     
-
 #+begin_src c++ 
 uint8_t hvcal=1; // 1:CAL 2:HV 0:both
 
