@@ -102,10 +102,10 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // if Link = -1, use fLinkMask, otherwise operate assuming a single link
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t* Par       ,
-                                    int                      Link      ,
-                                    int                      PrintLevel,
-                                    std::ostream&            Stream    ) {
+  int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t0* Par       ,
+                                    int                       Link      ,
+                                    int                       PrintLevel,
+                                    std::ostream&             Stream    ) {
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -124,64 +124,35 @@ namespace  trkdaq {
 */    
 //-----------------------------------------------------------------------------
     int version(1); // v2: 20w response, v1: 18w response
-    TLOG(TLVL_DEBUG) << "version: " << version;
 
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
-  
+    
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
-
+    
     vec.push_back(Par->adc_mode);
     vec.push_back(Par->tdc_mode);
     vec.push_back(Par->num_lookback);
     
-    if (Par->version == 1) {
-      uint16_t w1 = Par->v1.num_triggers[0];
-      uint16_t w2 = Par->v1.num_triggers[1];
-    
-      vec.push_back(w1);
-      vec.push_back(w2);
-
-      for (int i=0; i<6; i++) vec.push_back(Par->v1.ch_mask[i]); 
-
-      if (Par->v1.num_samples > 63) {
-        TLOG(TLVL_WARNING) << "num_samples:" << Par->v1.num_samples << " > 63, truncate to 63" ;
-        Par->v1.num_samples = 63;
-      }
-
-      vec.push_back(Par->v1.num_samples);
-
-      vec.push_back(Par->v1.enable_pulser);
-      vec.push_back(1 );                  // max_total_delay (unused)
-      vec.push_back(Par->v1.marker_clock );
-      // vec.push_back(0 );
-      // vec.push_back(99);
+    if (Par->num_samples > 63) {
+      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
+      Par->num_samples = 63;
     }
-    else if (Par->version == 2) {
 
-      if (Par->v2.num_samples > 63) {
-        TLOG(TLVL_WARNING) << "num_samples:" << Par->v2.num_samples << " gt 63, truncate to 63" ;
-        Par->v2.num_samples = 63;
-      }
-
-      vec.push_back(Par->v2.num_samples);
+    vec.push_back(Par->num_samples);
       
-      uint16_t w1 = Par->v2.num_triggers[0];
-      uint16_t w2 = Par->v2.num_triggers[1];
+    uint16_t w1 = Par->num_triggers[0];
+    uint16_t w2 = Par->num_triggers[1];
       
-      vec.push_back(w1);
-      vec.push_back(w2);
+    vec.push_back(w1);
+    vec.push_back(w2);
       
-      for (int i=0; i<6; i++) vec.push_back(Par->v2.ch_mask[i]); 
+    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
       
-      vec.push_back(Par->v2.enable_pulser);
-      // vec.push_back(1 );                  // max_total_delay (unused)
-      vec.push_back(Par->v2.marker_clock );
-      vec.push_back(Par->v2.mode  );
-      vec.push_back(Par->v2.clock );
-      // vec.push_back(0 );
-      // vec.push_back(99);
-    }
+    vec.push_back(Par->enable_pulser);
+    vec.push_back(Par->marker_clock );
+    vec.push_back(Par->mode  );
+    vec.push_back(Par->clock );
       
     bool increment_address(false);
 //-----------------------------------------------------------------------------
@@ -192,10 +163,10 @@ namespace  trkdaq {
     if (Link != -1) {
       link_mask = (1 << 4*Link);
     }
-
+    
     for (int i=0; i<6; i++) {
       int used = (link_mask >> 4*i) & 0x1;
-      if (not used)                                           continue;
+      if (not used)                                         continue;
       auto roc  = DTC_Link_ID(i);
       fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -209,52 +180,35 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
-
+      
       nw = nw-4;
       std::vector<uint16_t> vout;
       fDtc->ReadROCBlock(vout,roc,reg,nw,false,100);
-        
-      if (PrintLevel & 0x1) {
-        PrintBuffer(vout.data(),nw,&Stream);
-      }
-        
-      if (PrintLevel & 0x2) {
-        trkdaq::ControlRoc_Read_Output_t* o = (trkdaq::ControlRoc_Read_Output_t*) vout.data();
-        if (Par->version == 1) {
-          Stream << Form("enable_pulser   : %i\n",o->v1.enable_pulser);
-          Stream << Form("num_samples     : %i\n",o->v1.num_samples);
-          Stream << Form("num_lookback    : %i\n",o->v1.num_lookback);
-          Stream << Form("ch_mask         : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-                         o->v1.ch_mask[0],o->v1.ch_mask[1],o->v1.ch_mask[2],
-                         o->v1.ch_mask[3],o->v1.ch_mask[4],o->v1.ch_mask[5]);
-          Stream << Form("adc_mode        : %i\n",o->v1.adc_mode);
-          Stream << Form("tdc_mode        : %i\n",o->v1.tdc_mode);
-          Stream << Form("num_triggers    : %5i %5i\n",o->v1.num_triggers[0],o->v1.num_triggers[1]);
-          Stream << Form("digi_read_0xb   : 0x%04x\n" ,o->v1.digi_read_0xb);
-          Stream << Form("digi_read_0xe   : 0x%04x\n" ,o->v1.digi_read_0xe);
-          Stream << Form("digi_read_0xd   : 0x%04x\n" ,o->v1.digi_read_0xd);
-          Stream << Form("digi_read_0xc   : 0x%04x\n" ,o->v1.digi_read_0xc);
-          Stream << Form("mode            : %i\n"     ,o->v1.mode);
-          Stream << Form("clock           : %i\n"     ,o->v1.clock);
-          Stream << Form("marker_clock    : %i\n"     ,o->v1.marker_clock);
+
+      if (PrintLevel > 0) {
+        Stream << "--------------- link :" << i << std::endl;
+        if (PrintLevel & 0x1) {
+          PrintBuffer(vout.data(),nw,&Stream);
         }
-        else if (Par->version == 2) {
-          Stream << Form("adc_mode     : %i\n",o->v2.adc_mode);
-          Stream << Form("tdc_mode     : %i\n",o->v2.tdc_mode);
-          Stream << Form("num_lookback : %i\n",o->v2.num_lookback);
-          Stream << Form("num_triggers : %5i %5i\n",o->v2.num_triggers[0],o->v2.num_triggers[1]);
-          Stream << Form("ch_mask      : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-                         o->v2.ch_mask[0],o->v2.ch_mask[1],o->v2.ch_mask[2],
-                         o->v2.ch_mask[3],o->v2.ch_mask[4],o->v2.ch_mask[5]);
-          Stream << Form("num_samples  : %i\n"     ,o->v2.num_samples);
-          Stream << Form("enable_pulser : %i\n"    ,o->v2.enable_pulser);
-          Stream << Form("marker_clock  : %i\n"    ,o->v2.marker_clock);
-          Stream << Form("mode          : %i\n"    ,o->v2.mode);
-          Stream << Form("clock         : %i\n"    ,o->v2.clock);
-          Stream << Form("digi_read_0xb : 0x%04x\n",o->v2.digi_read_0xb);
-          Stream << Form("digi_read_0xe : 0x%04x\n",o->v2.digi_read_0xe);
-          Stream << Form("digi_read_0xd : 0x%04x\n",o->v2.digi_read_0xd);
-          Stream << Form("digi_read_0xc : 0x%04x\n",o->v2.digi_read_0xc);
+      
+        if (PrintLevel & 0x2) {
+          trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
+          Stream << Form("adc_mode      : %i\n",o->adc_mode);
+          Stream << Form("tdc_mode      : %i\n",o->tdc_mode);
+          Stream << Form("num_lookback  : %i\n",o->num_lookback);
+          Stream << Form("num_triggers  : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+          Stream << Form("ch_mask       : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+                         o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],
+                         o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+          Stream << Form("num_samples   : %i\n"     ,o->num_samples);
+          Stream << Form("enable_pulser : %i\n"    ,o->enable_pulser);
+          Stream << Form("marker_clock  : %i\n"    ,o->marker_clock);
+          Stream << Form("mode          : %i\n"    ,o->mode);
+          Stream << Form("clock         : %i\n"    ,o->clock);
+          Stream << Form("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
+          Stream << Form("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
+          Stream << Form("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
+          Stream << Form("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
         }
       }
     }
@@ -326,7 +280,7 @@ namespace  trkdaq {
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
-    vec.push_back(uint16_t(Channel0));
+    //    vec.push_back(uint16_t(Channel0));
     vec.push_back(uint16_t(ChannelMask));
     vec.push_back(uint16_t(DutyCycle));
     vec.push_back(uint16_t((PulserDelay >  0) & 0xffff));
@@ -426,7 +380,8 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // Link: link number
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_MeasureThresholds(int Link, int PrintLevel, uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
+  int DtcInterface::ControlRoc_MeasureThresholds(int Link, int PrintLevel, std::ostream& Stream,
+                                                 uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -437,9 +392,8 @@ namespace  trkdaq {
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-    if (PrintLevel) {
-      printf("--------- link:%i thresholds ----------------\n",Link);
-    }
+    if (PrintLevel) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
+
     std::vector<uint16_t> vec;
 
     vec.push_back((MaskC      ) & 0xffff);
@@ -456,12 +410,16 @@ namespace  trkdaq {
     // 0x86 = 0x82 + 4
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    if (PrintLevel & 0x1) printf("reg:%03i val:0x%04x\n",128,u);
+    if (PrintLevel & 0x1) {
+      Stream << std::format("reg:{:03d} val:0x{:04x}",128,u) << std::endl;
+      // Stream << std::format("reg:{:03d}",128);
+      // Stream << std::format(" val:0x{:04x}",u) << std::endl;
+    }
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
     int nw = fDtc->ReadROCRegister(roc,129,100);
-    if (PrintLevel & 0x1) printf("reg:%03i val:0x%04x\n",129,nw);
+    if (PrintLevel & 0x1) Stream << std::format("reg:{:03d} val:0x{:04x}",129,nw) << std::endl;
 
     nw = nw-4;
     std::vector<uint16_t> v2;
@@ -469,12 +427,12 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    fDtc->WriteROCRegister(roc,14,0x01,false,1000); 
+    // fDtc->WriteROCRegister(roc,14,0x01,false,1000); 
 
-    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw);
+    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
     // expect nw=288 = 96*3, if not - in trouble
 
-    if (PrintLevel &0x2) {
+    if (PrintLevel & 0x2) {
       int mask[3];
       mask[0] = MaskC;
       mask[1] = MaskD;
@@ -494,7 +452,7 @@ namespace  trkdaq {
           float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
           float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
 
-          printf(" %4i %10.3f %10.3f %10.3f\n",i,hw,cal,tot);
+          Stream << std::format(" {:4d} {:10.3f} {:10.3f} {:10.3f}",i,hw,cal,tot) << std::endl;
         }
       }
     }

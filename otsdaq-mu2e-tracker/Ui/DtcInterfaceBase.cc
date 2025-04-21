@@ -430,7 +430,7 @@ void DtcInterface::InitRocReadoutMode() {
 
 
   // This is just an example, needs to be implemented for each subsystem
-  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
+  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history) {
     std::vector<std::string> registers;
     // Basic ROC registers
     if(history) {
@@ -447,7 +447,7 @@ void DtcInterface::InitRocReadoutMode() {
   }
 
   // This is just an example, needs to be implemented for each subsystem
-  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history = false) {
+  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history) {
     std::vector<uint32_t> val;
     // Basic ROC registers
     if(history) {
@@ -465,7 +465,7 @@ void DtcInterface::InitRocReadoutMode() {
   }
 
   // This is just an example, needs to be implemented for each subsystem
-  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history = false) {
+  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history) {
     auto registers = GetRocRegisters(ilink, history);
     return std::vector<float>(registers.begin(), registers.end());
   }

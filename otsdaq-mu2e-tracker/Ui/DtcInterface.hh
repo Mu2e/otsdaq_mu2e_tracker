@@ -81,10 +81,10 @@ namespace trkdaq {
     int          ControlRoc_Rates    (int Link, int PrintLevel = 0x2, ControlRoc_Rates_t* Par = nullptr,
                                       std::ostream& Stream = std::cout);
 
-    int          ControlRoc_Read   (ControlRoc_Read_Input_t* Par          ,
-                                    int                      LinkMask   = -1   ,
-                                    int                      PrintLevel = 0    ,
-                                    std::ostream&            Stream     = std::cout);
+    int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par          ,
+                                    int                       LinkMask   = -1   ,
+                                    int                       PrintLevel = 0    ,
+                                    std::ostream&             Stream     = std::cout);
 
     int          ControlRoc_ReadDeviceID(int                    Link,
                                          ControlRoc_DeviceID_t& DevId,
@@ -124,11 +124,12 @@ namespace trkdaq {
 // so far, do it internally
 // PrintLevel: bit 0: hex printout, bit 1: parsed printout
 //-----------------------------------------------------------------------------
-    int          ControlRoc_MeasureThresholds(int      Link            ,
-                                              int      PrintLevel = 0x2,
-                                              uint32_t MaskC      = 0xFFFFFFFF,
-                                              uint32_t MaskD      = 0xFFFFFFFF,
-                                              uint32_t MaskE      = 0xFFFFFFFF);
+    int          ControlRoc_MeasureThresholds(int           Link            ,
+                                              int           PrintLevel = 0x2,
+                                              std::ostream& Stream     = std::cout ,
+                                              uint32_t      MaskC      = 0xFFFFFFFF,
+                                              uint32_t      MaskD      = 0xFFFFFFFF,
+                                              uint32_t      MaskE      = 0xFFFFFFFF);
 //-----------------------------------------------------------------------------
 // PreampType: 0:HV 1:CAL, or vice versa
 // do one channel at a time

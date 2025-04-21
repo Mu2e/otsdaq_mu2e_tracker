@@ -18,22 +18,10 @@ namespace trkdaq {
     REG_READGITCOMMIT = 272,
   };
 
-  
-  struct ControlRoc_Read_Input_t_V1 {
-    uint16_t    num_triggers[2];        // num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
-    uint16_t    ch_mask[6];             // channel_mask[0] = (dtcbuffer[6] << 16) + dtcbuffer[5];  // -C
-                                        // channel_mask[1] = (dtcbuffer[8] << 16) + dtcbuffer[7];    // -D
-                                        // channel_mask[2] = (dtcbuffer[10] << 16) + dtcbuffer[9];    // -E
-    uint16_t    num_samples;            // = dtcbuffer[11];                     // -s
-    uint16_t    enable_pulser;          // = (uint8_t) dtcbuffer[12];         // -p
-    uint16_t    max_total_delay;        // = dtcbuffer[13];  not used ???     // -d (def 1)
-
-    uint16_t    marker_clock;           // = (uint8_t) dtcbuffer[14];          // -m
-    uint16_t    mode;                   // need to set mode=0
-    uint16_t    clock;                  // need to set clock=99
-  };
-
-  struct ControlRoc_Read_Input_t_V2 {
+  struct ControlRoc_Read_Input_t0 {
+    uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2* 
+    uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2* 
+    uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2* 
     uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63  // *v2* 
 
     uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]                 // *v2* 
@@ -46,42 +34,7 @@ namespace trkdaq {
     uint16_t    clock;                  // [15] need to set clock=99                   // *v2*
   };
 
-  struct ControlRoc_Read_Input_t {
-    int         version;                // 1 or 2
-    uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2* 
-    uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2* 
-    uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2* 
-    union {
-      ControlRoc_Read_Input_t_V1  v1;
-      ControlRoc_Read_Input_t_V2  v2;
-    };
-  };
-  
-  
- 
-//-----------------------------------------------------------------------------
-// output parameters : same as input , plus four words
-//-----------------------------------------------------------------------------
-  struct ControlRoc_Read_Output_t_V1 {
-    // this is v1
-    uint16_t    enable_pulser;          // [0] *(registers_1_addr + CRDCS_WRITE_TX) = enable_pulser;
-    uint16_t    num_samples;            // [1] *(registers_1_addr + CRDCS_WRITE_TX) = num_samples;
-    uint16_t    num_lookback;           // [2] *(registers_1_addr + CRDCS_WRITE_TX) = num_lookback;
-    uint16_t    ch_mask[6];             // [4-9]
-    uint16_t    adc_mode;               // [10] *(registers_1_addr + CRDCS_WRITE_TX) = adc_mode;
-    uint16_t    tdc_mode;               // [11] *(registers_1_addr + CRDCS_WRITE_TX) = tdc_mode;
-    uint16_t    num_triggers[2];        // [12-13]
-    uint16_t    digi_read_0xb;          // [14]
-    uint16_t    digi_read_0xe;          // [15]
-    uint16_t    digi_read_0xd;          // [16]
-    uint16_t    digi_read_0xc;          // [17]
-    uint16_t    mode;                   // [18]
-    uint16_t    clock;                  // need to set clock=99
-    uint16_t    marker_clock;           //
-  };
-
-  struct ControlRoc_Read_Output_t_V2 {
-    // this is v2
+  struct ControlRoc_Read_Output_t0 {
     uint16_t    adc_mode;               // [0]                  // *v2* 
     uint16_t    tdc_mode;               // [1]                  // *v2* 
     uint16_t    num_lookback;           // [2]                  // *v2* 
@@ -96,11 +49,6 @@ namespace trkdaq {
     uint16_t    digi_read_0xe;          // [17]                 // *v2* 
     uint16_t    digi_read_0xd;          // [18]                 // *v2* 
     uint16_t    digi_read_0xc;          // [19]                 // *v2* 
-  };
-
-  union ControlRoc_Read_Output_t {
-    ControlRoc_Read_Output_t_V1 v1;
-    ControlRoc_Read_Output_t_V2 v2;
   };
 
   struct ControlRoc_DigiRW_Input_t {

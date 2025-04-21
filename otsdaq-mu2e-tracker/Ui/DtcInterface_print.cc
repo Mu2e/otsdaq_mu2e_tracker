@@ -212,13 +212,13 @@ namespace trkdaq {
     int          n(0);
     std::string  line;
 
-    if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
-    else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
+    // if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
+    // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
    
     for (int i=0; i<nw; i++) {
-      if (n == 0) line = Form(" 0x%08x: ",i*2);
+      if (n == 0) line = Form("0x%08x:",i*2);
       ushort  word = p16[i];
-      line += Form("0x%04x ",word);
+      line += Form(" 0x%04x",word);
       
       n   += 1;
       if (n == 8) {

@@ -150,10 +150,10 @@ int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_measure-thresholds(int Link, int PrintLevel = 2, int PcieAddr = -1) {
+int dtc_control_roc_measure_thresholds(int Link, int PrintLevel = 2, int PcieAddr = -1) {
   uint32_t mask[3] = {0xffffffff,0xffffffff,0xffffffff};
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ControlRoc_MeasureThresholds(Link,PrintLevel,mask[0],mask[1],mask[2]);
+  dtc_i->ControlRoc_MeasureThresholds(Link,PrintLevel,std::cout,mask[0],mask[1],mask[2]);
   return 0;
 }
 
@@ -207,28 +207,27 @@ int dtc_control_roc_read(int      LinkMask     = -1,
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  ControlRoc_Read_Input_t par;
+  ControlRoc_Read_Input_t0 par;
   
-  par.version         = 2;
   par.adc_mode        = AdcMode;        // -a
   par.tdc_mode        = TdcMode;        // -t 
   par.num_lookback    = NumLookback;    //  
 
-  par.v2.num_samples     = NumSamples;     // -s
-  par.v2.num_triggers[0] = 10;             // -T 10
-  par.v2.num_triggers[1] = 0;              // -T (high bytes)
+  par.num_samples     = NumSamples;     // -s
+  par.num_triggers[0] = 10;             // -T 10
+  par.num_triggers[1] = 0;              // -T (high bytes)
   
-  par.v2.ch_mask[0]      = (MaskC >>  0) & 0xffff;
-  par.v2.ch_mask[1]      = (MaskC >> 16) & 0xffff;
-  par.v2.ch_mask[2]      = (MaskD >>  0) & 0xffff;
-  par.v2.ch_mask[3]      = (MaskD >> 16) & 0xffff;
-  par.v2.ch_mask[4]      = (MaskE >>  0) & 0xffff;
-  par.v2.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+  par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+  par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+  par.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+  par.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+  par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+  par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
-  par.v2.enable_pulser   = EnablePulser;   // -p 1
-  par.v2.marker_clock    = 3;              // -m 3
-  par.v2.mode            = 0;              // 
-  par.v2.clock           = 99;             //
+  par.enable_pulser   = EnablePulser;   // -p 1
+  par.marker_clock    = 3;              // -m 3
+  par.mode            = 0;              // 
+  par.clock           = 99;             //
 
   printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
   int  print_level(3);

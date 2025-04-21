@@ -1,5 +1,6 @@
 #!/usr/bin/bash 
 #------------------------------------------------------------------------------
+# file: otsdaq-mu2e-tracker/scripts/copy_data_to_exp.sh
 # copies data from local /scratch/mu2e/.. area on an online machine 
 # to offline /exp/mu2e/data/projects/...
 # so far , used only for the tracker
@@ -17,15 +18,13 @@ doit=$3
 echo rn1=$rn1 rn2=$rn2 doit=$doit
 name_stub=${USER}_`echo $MU2E_DAQ_DIR | awk -F / '{print $NF}'`
 
-dest=/exp/mu2e/data/projects/vst/datasets
-
 for rn in `seq $rn1 $rn2` ; do
     irn=`printf "%06i" $rn`
-    for f in `ls /scratch/mu2e/$name_stub/data/raw.mu2e.trkvst.*.*.art | grep $rn` ; do
+    for f in `ls /data/tracker/vst/$name_stub/data/raw.mu2e.trk.vst.*.art | grep $rn` ; do
         bn=`basename $f`
         dsconf=`echo $bn | awk -F . '{print $4}'`
-        dsid=raw.mu2e.trkvst.$dsconf.art
-        cmd="scp $f murat@mu2egpvm06:$dest/$dsid/."
+        dsid=raw.mu2e.trk.vst.art
+        cmd="scp $f murat@mu2egpvm06:/exp/mu2e/data/projects/vst/datasets/$dsid/."
         echo "$cmd"
         if [ ".$doit" != "." ] ; then 
             # echo doit=$doit
