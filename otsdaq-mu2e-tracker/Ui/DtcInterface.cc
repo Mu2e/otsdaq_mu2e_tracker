@@ -295,17 +295,19 @@ namespace trkdaq {
         auto link      = DTC_Link_ID(i);
         auto alignment = FindAlignment(link);
 
-        int nsteps_tot   = 0;
+        int n_non_null   =  0;
+        int nsteps_tot   =  0;
         int max_steps_ch = -1;
         int worst_ch     = -1;
         for (const auto& iteration: alignment.Iterations()) {
           const auto& channels = iteration.Channels();
           for (size_t i = 0 ; i < channels.size() ; i++){
             auto channel = channels[i];
-            int step     = (int) channel.BitSlipStep();
-            nsteps_tot  += step;
-            if (step > max_steps_ch) {
-              max_steps_ch = step;
+            int nsteps     = (int) channel.BitSlipStep();
+            if (nsteps > 0) n_non_null++;
+            nsteps_tot  += nsteps;
+            if (nsteps > max_steps_ch) {
+              max_steps_ch = nsteps;
               worst_ch     = i;
             }
           }
@@ -315,7 +317,8 @@ namespace trkdaq {
           print_legacy_table(alignment,Stream);
         }
 
-        Stream << "-- FindAlignments link:" << i << " nsteps_tot:" << nsteps_tot
+        Stream << "-- FindAlignments link:" << i << " n_non_null:" << n_non_null
+               << " nsteps_tot:" << nsteps_tot
                << " worst_ch:" << worst_ch
                << " max_steps_ch:" << max_steps_ch << std::endl;
       }

@@ -75,8 +75,8 @@ namespace trkdaq {
   };
  
   struct ControlRoc_Rates_t {
-    uint16_t    num_lookback;  // default : 100 = dtcbuffer[0];                                  // -a
-    uint16_t    num_samples ;  // default :  10 = dtcbuffer[1];                                  // -t
+    uint16_t    num_lookback;       // default : 100 = dtcbuffer[0];                                  // -a
+    uint16_t    num_samples ;       // default :  10 = dtcbuffer[1];                                  // -t
     uint16_t    chan_mask[6];       // default : all channels (0xffff)
 
     ControlRoc_Rates_t() : num_lookback(100), num_samples(10) {

@@ -123,7 +123,7 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
-    int version(1); // v2: 20w response, v1: 18w response
+//    int version(1); // v2: 20w response, v1: 18w response
 
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
@@ -265,50 +265,69 @@ namespace  trkdaq {
 // from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
 // chan_mask = int(get_key_value(keys,"C"),16) 
 // oddoreven = int(get_key_value(keys,"P"),16)
-// channel   = int(get_key_value(keys,"c",-1)) - has to be set !
+// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
 // delay     = int(get_key_value(keys,"d",1000))
 // dutycycle = int(get_key_value(keys,"y",10))
+// FirstChanelMask : a bit mask, defines the first pulsd channel, the rest pulsed: first+8*i
+//                   0x10 : first pulsed channel is channel 4, max value : 0x80
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_PulserOn(int Link, int Channel0, int DutyCycle, int PulserDelay, int ChannelMask) {
+  int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
+                                        int PrintLevel, std::ostream& Stream) {
     int rc (0), reg(268);
-//-----------------------------------------------------------------------------
-// convert into enum
-//-----------------------------------------------------------------------------
-    auto roc  = DTC_Link_ID(Link);
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:" << FirstChannelMask
+                     << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 //-----------------------------------------------------------------------------
 // write parameters into reg 267 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
-    //    vec.push_back(uint16_t(Channel0));
-    vec.push_back(uint16_t(ChannelMask));
+    vec.push_back(uint16_t(FirstChannelMask));
     vec.push_back(uint16_t(DutyCycle));
-    vec.push_back(uint16_t((PulserDelay >  0) & 0xffff));
-    vec.push_back(uint16_t((PulserDelay > 16) & 0xffff));
+    vec.push_back(uint16_t((PulserDelay >>  0) & 0xffff));
+    vec.push_back(uint16_t((PulserDelay >> 16) & 0xffff));
     
     bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+//-----------------------------------------------------------------------------
+// Link = -1 means all links
+//-----------------------------------------------------------------------------
+    int l1(Link), l2(Link+1);
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+    
+    for (int i=l1; i<l2; i++) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+      auto roc  = DTC_Link_ID(i);
+      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      int nw = fDtc->ReadROCRegister(roc,129,100);
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
 
-    nw = nw-4;
-    if (nw == 4) {
-      std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
-      PrintBuffer(v2.data(),nw);
-    }
-    else {
-      TLOG(TLVL_ERROR) << Form("wrong number of words : nw = %i, expected = 4",nw);
-      rc = -1;
+      nw = nw-4;
+      if (nw == 4) {
+        std::vector<uint16_t> v2;
+        fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
+
+        if (PrintLevel & 0x1) {
+          PrintBuffer(v2.data(),nw,&Stream);
+        }
+      }
+      else {
+        TLOG(TLVL_ERROR) << Form("wrong number of words : nw = %i, expected = 4",nw);
+        rc = -1;
+        break;
+      }
     }
 
     return rc;
@@ -318,19 +337,27 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
+    
+    int l1(Link), l2(Link+1);
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+    
+    for (int i=l1; i<l2; i++) {
 //-----------------------------------------------------------------------------
 // PULSER_OFF: reg 269
 //-----------------------------------------------------------------------------
-    std::vector<uint16_t> res;
-    RocBlockRead(Link,PULSER_OFF,res);
+      std::vector<uint16_t> res;
+      RocBlockRead(i,PULSER_OFF,res);
 
-    int nw = res.size();
-    TLOG(TLVL_DEBUG) << "nw:" << nw; 
+      int nw = res.size();
+      TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
 
-    if (PrintLevel & 0x1) {
-      PrintBuffer(res.data(),nw,&Stream);
+      if (PrintLevel & 0x1) {
+        PrintBuffer(res.data(),nw,&Stream);
+      }
     }
-
     return rc;
   }
   
@@ -683,12 +710,6 @@ namespace  trkdaq {
   int  DtcInterface::ControlRoc_Rates(int Link, int PrintLevel, ControlRoc_Rates_t* Par,
                                       std::ostream& Stream) {
     int rc(0);
-//-----------------------------------------------------------------------------
-// convert into enum
-// DTC has already been initialized, don't reco
-//-----------------------------------------------------------------------------
-    DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
-    DTCLib::DTC*  dtc   = dtc_i->Dtc();
 
     ControlRoc_Rates_t par;
     if (Par != nullptr) {
@@ -705,8 +726,6 @@ namespace  trkdaq {
                      << "0x" << par.chan_mask[4] << ","
                      << "0x" << par.chan_mask[5] << "}";
       
-    //    int roc_mask        = 1 << (4*Link);
-
     auto roc  = DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
@@ -722,21 +741,21 @@ namespace  trkdaq {
       vec.push_back(par.chan_mask[i]);
     }
   
-    dtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
+    fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
   // 0x86 = 0x82 + 4
     uint16_t u; 
-    while ((u = dtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
     printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = dtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
-    dtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
+    fDtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------

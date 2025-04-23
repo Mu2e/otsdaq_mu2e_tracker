@@ -225,7 +225,7 @@ int dtc_control_roc_read(int      LinkMask     = -1,
   par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
   par.enable_pulser   = EnablePulser;   // -p 1
-  par.marker_clock    = 3;              // -m 3
+  par.marker_clock    = 0;              // -m 3
   par.mode            = 0;              // 
   par.clock           = 99;             //
 
