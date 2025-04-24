@@ -129,30 +129,51 @@ namespace  trkdaq {
     std::vector<uint16_t> vec;
     
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
-    
-    vec.push_back(Par->adc_mode);
-    vec.push_back(Par->tdc_mode);
-    vec.push_back(Par->num_lookback);
-    
-    if (Par->num_samples > 63) {
-      TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
-      Par->num_samples = 63;
-    }
 
-    vec.push_back(Par->num_samples);
+    if (Par == nullptr) {
+                                        // reasonable defaults, to run w/o passing anything
+      uint16_t adc_mode(0), tdc_mode(0), num_lookback(0), num_samples(1);
+      uint16_t num_triggers[2] = {10,0};
+      uint16_t ch_mask     [6] = {0xffff,0xffff,0xffff,0xffff,0xffff,0xffff};
+      uint16_t enable_pulser(0), marker_clock(3), mode(0), clock(99);
+        
+      vec.push_back(adc_mode);
+      vec.push_back(tdc_mode);
+      vec.push_back(num_lookback);
+      vec.push_back(num_samples);
+      vec.push_back(num_triggers[0]);
+      vec.push_back(num_triggers[1]);
+      for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]);
+      vec.push_back(enable_pulser);
+      vec.push_back(marker_clock);
+      vec.push_back(mode);
+      vec.push_back(clock);
+    }
+    else {
+      vec.push_back(Par->adc_mode);
+      vec.push_back(Par->tdc_mode);
+      vec.push_back(Par->num_lookback);
+    
+      if (Par->num_samples > 63) {
+        TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
+        Par->num_samples = 63;
+      }
+
+      vec.push_back(Par->num_samples);
       
-    uint16_t w1 = Par->num_triggers[0];
-    uint16_t w2 = Par->num_triggers[1];
+      uint16_t w1 = Par->num_triggers[0];
+      uint16_t w2 = Par->num_triggers[1];
       
-    vec.push_back(w1);
-    vec.push_back(w2);
+      vec.push_back(w1);
+      vec.push_back(w2);
       
-    for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
+      for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
       
-    vec.push_back(Par->enable_pulser);
-    vec.push_back(Par->marker_clock );
-    vec.push_back(Par->mode  );
-    vec.push_back(Par->clock );
+      vec.push_back(Par->enable_pulser);
+      vec.push_back(Par->marker_clock );
+      vec.push_back(Par->mode  );
+      vec.push_back(Par->clock );
+    }
       
     bool increment_address(false);
 //-----------------------------------------------------------------------------
@@ -274,8 +295,11 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
                                         int PrintLevel, std::ostream& Stream) {
     int rc (0), reg(268);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:" << FirstChannelMask
-                     << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex() << FirstChannelMask
+                     << std::dec() << DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
+
+    Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex() << FirstChannelMask
+           << std::dec() << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 //-----------------------------------------------------------------------------
 // write parameters into reg 267 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -774,21 +798,33 @@ namespace  trkdaq {
         return -1;
       }
 
-      Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)\n";
-      Stream << "------------------------------------------------\n";
-      int loc(0);
-      for (int ich=0; ich<96; ich++) {
-        loc           = 6*ich;
-        int rate_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
-        int rate_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
-        int rate_coic = int(v2[loc+4])+(int(v2[loc+5]) << 16);
-        Stream << std::format(" {:5d} {:10d} {:10d} {:10d}\n",ich,rate_hv, rate_cal, rate_coic);
-      }
       // finally, the last two words - total counts
-      loc = 576;
-      int iw1   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
-      int iw2   = int(v2[loc+2])+(int(v2[loc+3]) << 16);
-      Stream << std::format(" total_hv: {:10d} total_cal: {:10d}\n",iw1,iw2);
+      float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+      float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+
+      int loc = 576;
+      
+      total[1]  = float(v2[loc  ])+(int(v2[loc+1]) << 16); // hv - check the order with Vadim
+      total[0]  = float(v2[loc+2])+(int(v2[loc+3]) << 16); // cal
+
+      Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
+      Stream << "-----------------------------------------------------------------------------------------\n";
+
+      for (int ich=0; ich<96; ich++) {
+        loc               = 6*ich;
+        int   counts_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
+        int   counts_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
+        int   counts_coin = int(v2[loc+4])+(int(v2[loc+5]) << 16);
+        int   fpga        = fgFpga[ich];
+        float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
+        float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
+        float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
+        Stream << std::format(" {:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
+                              ich,counts_hv,counts_cal,counts_coin,
+                              rate_hv,rate_cal,rate_coin);
+      }
+
+      Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
     }
     return rc;
   }

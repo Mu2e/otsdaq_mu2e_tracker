@@ -23,7 +23,33 @@
 using namespace DTCLib;
 using namespace std;
 
+
+
+namespace {
+  bool initialized = 0;
+};
+
 namespace trkdaq {
+                                        // channel readout sequence
+                                        // the first 48 are readout by the digi FPGA on the CAL side
+                                        // the rest 48 - by the FPGA on the HV side
+  int adc_index[96] = {
+    91, 85, 79, 73, 67, 61, 55, 49,          // lane 0
+    43, 37, 31, 25, 19, 13,  7,  1,
+    90, 84, 78, 72, 66, 60, 54, 48,
+      
+    42, 36, 30, 24, 18, 12,  6,  0,          // lane 1
+    93, 87, 81, 75, 69, 63, 57, 51,
+    45, 39, 33, 27, 21, 15,  9,  3,
+      
+    44, 38, 32, 26, 20, 14,  8,  2,          // lane 2
+    92, 86, 80, 74, 68, 62, 56, 50,
+    47, 41, 35, 29, 23, 17, 11,  5,
+      
+    95, 89, 83, 77, 71, 65, 59, 53,          // lane 3
+    46, 40, 34, 28, 22, 16, 10,  4,
+    94, 88, 82, 76, 70, 64, 58, 52
+  };
 
   const char* kSpiVarName[TrkSpiDataNWords] = {
     "I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
@@ -39,7 +65,7 @@ namespace trkdaq {
   };
 
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
-
+  int           DtcInterface::fgFpga[96];
 //-----------------------------------------------------------------------------
 // default ROC readout mode:0
 //-----------------------------------------------------------------------------
@@ -47,6 +73,14 @@ namespace trkdaq {
     : mu2edaq::DtcInterface(PcieAddr, LinkMask, SkipInit) {
     fRocLaneMask     = 0xf;              // all lanes enabled
     fRocNHitsPerLane = 2;                // Monica's default for fRocReadoutMode=2
+    if (not initialized) {
+      for (int i=0; i<96; i++) {
+        int ich     = adc_index[i];
+        int fpga    = i/48;
+        fgFpga[ich] = fpga;
+      }
+      initialized = true;
+    }
   };
 
 //-----------------------------------------------------------------------------

@@ -16,7 +16,7 @@
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 // TODO : first, add ewtag, then remove the structure below and uncomment the incl
-// #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
@@ -48,7 +48,8 @@ namespace trkdaq {
     void                       RocConfigurePatternMode();
     void                       RocSetDataVersion      (int Version, int LinkMask=0);
 
-    static const char*   fgSpiVarName[TrkSpiDataNWords]; //
+    static const char*         fgSpiVarName[TrkSpiDataNWords]; //
+    static       int           fgFpga[96];                     // 0:CAL or 1:HV
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -84,7 +85,7 @@ namespace trkdaq {
                                       ControlRoc_Rates_t* Par        = nullptr,
                                       std::ostream&       Stream     = std::cout);
 
-    int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par          ,
+    int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par        = nullptr,
                                     int                       LinkMask   = -1   ,
                                     int                       PrintLevel = 0    ,
                                     std::ostream&             Stream     = std::cout);
@@ -216,48 +217,48 @@ namespace trkdaq {
                                                      std::ostream&       Stream     = std::cout);
   };
 
-  struct RocDataHeaderPacket_t {        // 8 16-byte words in total
-                                        // 16-bit word 0
-    uint16_t            byteCount    : 16;
-                                        // 16-bit word 1
-    uint16_t            unused       : 4;
-    uint16_t            packetType   : 4;
-    uint16_t            linkID       : 3;
-    uint16_t            DtcErrors    : 4;
-    uint16_t            valid        : 1;
-                                        // 16-bit word 2
-    uint16_t            packetCount  : 11;
-    uint16_t            unused2      : 2;
-    uint16_t            subsystemID  : 3;
-                                        // 16-bit words 3-5
-    uint16_t            eventTag[3];
-                                        // 16-bit word 6
-    uint8_t             status       : 8;
-    uint8_t             version      : 8;
-                                        // 16-bit word 7
-    uint8_t             dtcID        : 8;
-    uint8_t             onSpill      : 1;
-    uint8_t             subrun       : 2;
-    uint8_t             eventMode    : 5;
+  // struct RocDataHeaderPacket_t {        // 8 16-byte words in total
+  //                                       // 16-bit word 0
+  //   uint16_t            byteCount    : 16;
+  //                                       // 16-bit word 1
+  //   uint16_t            unused       : 4;
+  //   uint16_t            packetType   : 4;
+  //   uint16_t            linkID       : 3;
+  //   uint16_t            DtcErrors    : 4;
+  //   uint16_t            valid        : 1;
+  //                                       // 16-bit word 2
+  //   uint16_t            packetCount  : 11;
+  //   uint16_t            unused2      : 2;
+  //   uint16_t            subsystemID  : 3;
+  //                                       // 16-bit words 3-5
+  //   uint16_t            eventTag[3];
+  //                                       // 16-bit word 6
+  //   uint8_t             status       : 8;
+  //   uint8_t             version      : 8;
+  //                                       // 16-bit word 7
+  //   uint8_t             dtcID        : 8;
+  //   uint8_t             onSpill      : 1;
+  //   uint8_t             subrun       : 2;
+  //   uint8_t             eventMode    : 5;
 
-    ulong ewtag() {
-      ulong x1 = eventTag[0];
-      ulong x2 = eventTag[1];
-      ulong x3 = eventTag[2];
-      ulong ewt = x1 | (x2 << 16) | (x3 << 32);
-      return ewt;
-    }
+  //   ulong ewtag() {
+  //     ulong x1 = eventTag[0];
+  //     ulong x2 = eventTag[1];
+  //     ulong x3 = eventTag[2];
+  //     ulong ewt = x1 | (x2 << 16) | (x3 << 32);
+  //     return ewt;
+  //   }
     
-                                        // decoding status
+  //                                       // decoding status
       
-    int                 empty     () { return (status & 0x01) == 0; }
-    int                 invalid_dr() { return (status & 0x02); }
-    int                 corrupt   () { return (status & 0x04); }
-    int                 timeout   () { return (status & 0x08); }
-    int                 overflow  () { return (status & 0x10); }
+  //   int                 empty     () { return (status & 0x01) == 0; }
+  //   int                 invalid_dr() { return (status & 0x02); }
+  //   int                 corrupt   () { return (status & 0x04); }
+  //   int                 timeout   () { return (status & 0x08); }
+  //   int                 overflow  () { return (status & 0x10); }
       
-    int                 error_code() { return (status & 0x1e); }
-  };
+  //   int                 error_code() { return (status & 0x1e); }
+  // };
   
   struct RocData_t {                    // 8 16-byte words in total
     RocDataHeaderPacket_t header;
