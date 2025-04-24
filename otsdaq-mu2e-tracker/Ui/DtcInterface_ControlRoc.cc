@@ -295,11 +295,11 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
                                         int PrintLevel, std::ostream& Stream) {
     int rc (0), reg(268);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex() << FirstChannelMask
-                     << std::dec() << DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+                     << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 
-    Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex() << FirstChannelMask
-           << std::dec() << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
+    Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+           << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 //-----------------------------------------------------------------------------
 // write parameters into reg 267 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
