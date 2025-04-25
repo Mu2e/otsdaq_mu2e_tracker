@@ -195,14 +195,15 @@ int dtc_control_roc_digi_rw(int      Address          ,
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
 int dtc_control_roc_read(int      LinkMask     = -1,
-                         int      AdcMode      = 4,
+                         int      AdcMode      = 0,
                          int      TdcMode      = 0,
-                         int      NumLookback  = 8,
+                         int      NumLookback  = 0,
                          int      EnablePulser = 1, 
+                         int      MarkerClock  = 3, 
+                         int      NumSamples   = 1,
                          uint32_t MaskC        = 0xFFFFFFFF,
                          uint32_t MaskD        = 0xFFFFFFFF,
                          uint32_t MaskE        = 0xFFFFFFFF,
-                         int      NumSamples   = 1,
                          int      PcieAddr     = -1) {
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
@@ -225,7 +226,7 @@ int dtc_control_roc_read(int      LinkMask     = -1,
   par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
 
   par.enable_pulser   = EnablePulser;   // -p 1
-  par.marker_clock    = 0;              // -m 3
+  par.marker_clock    = MarkerClock;    // -m 3
   par.mode            = 0;              // 
   par.clock           = 99;             //
 
