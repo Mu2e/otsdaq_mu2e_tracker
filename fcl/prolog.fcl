@@ -13,6 +13,7 @@ otsdaq_mu2e_tracker : {
             fillWfHistograms    : 1           ## 
             plotWaveforms       : [ -1, -1]   ## nothing
             validateADCPatterns : 0           ## no validation by default
+            timeRefChannels     : [ "0:0" ]
 
             trkfCollTag         : "daq:TRK"
 #------------------------------------------------------------------------------

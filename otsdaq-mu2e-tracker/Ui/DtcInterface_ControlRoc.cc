@@ -123,8 +123,6 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
-//    int version(1); // v2: 20w response, v1: 18w response
-
     const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
     
@@ -143,7 +141,7 @@ namespace  trkdaq {
       vec.push_back(num_samples);
       vec.push_back(num_triggers[0]);
       vec.push_back(num_triggers[1]);
-      for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]);
+      for (int i=0; i<6; i++) vec.push_back(ch_mask[i]);
       vec.push_back(enable_pulser);
       vec.push_back(marker_clock);
       vec.push_back(mode);

@@ -63,6 +63,7 @@ class TrackerDQM : public art::EDAnalyzer {
       fhicl::Atom<float>           interactiveMode        {Name("interactiveMode"    )    , Comment("1:interactive mode"         ) };
       fhicl::Sequence<int>         plotWaveforms          {Name("plotWaveforms"      )    , Comment("[link, channel]"            ) };
       fhicl::Sequence<std::string> debugBits              {Name("debugBits"          )    , Comment("debug bits"                 ) };
+      fhicl::Sequence<std::string> timeRefChannels        {Name("timeRefChannels"    )    , Comment("rf cgannels: [\"dtc:link\"]") };
 
       fhicl::Atom<int>             port                   {Name("port"               )    , Comment("port"                       ) };
     };
@@ -346,6 +347,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int       npackets;
     int       valid;
     int       dtc_id;
+    int       dtc_index;
       
     int       n_empty;
     int       n_invalid_dr;
@@ -368,7 +370,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int       nbytes[2];
     int       nhits[2];
     int       error[2];
-    RocData_t roc[2][6];
+    RocData_t roc  [2][6];
       
     int       n_empty;
     int       n_invalid_dr;
@@ -403,7 +405,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int           error_code;
     int           nerr_tot;
 
-    float         tcorr[6][2];  // one per ROC,  for each end, a hack per plane
+    float         tcorr[2][6][2];     // [dtc][link][i], one per ROC, for each end
 
     StationData_t station[kNStations];
 
@@ -424,7 +426,7 @@ class TrackerDQM : public art::EDAnalyzer {
   //  int              _dataHeaderOffset;
   std::vector<int>  _activeLinks_0;
   std::vector<int>  _activeLinks_1;
-  std::vector<int>*_activeLinks[2];         // active links - connected ROCs
+  std::vector<int>*_activeLinks[2];     // active links - connected ROCs
   std::vector<int> _refChCal;           // reference channel on CAL side FPGA
   std::vector<int> _refChHV;            // reference channel on HV  side FPGA
   int              _dumpDTCRegisters;
@@ -446,14 +448,22 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _rocDataFormat;            // digis, patterns, etc
 
   std::vector<std::string> _debugBits;
+  std::vector<std::string> _timeRefChannels;
+
+  int              _dtcr [2];
+  int              _linkr[2];
   
   int              _debugBit[100];
 
   int              _port;                     // http://localhost:port serves histograms
   std::vector<int> _plotWaveforms;
+
+  std::vector<std::string> _refChDt;          // i.e. [ "0:4", "1:3" ] 
 //-----------------------------------------------------------------------------
 // the rest
 //-----------------------------------------------------------------------------
+  int              _nSamples;
+  int              _np_per_hit;
   int              _nActiveLinks[2];
   int              _referenceChannel[kMaxNLinks][2];
     

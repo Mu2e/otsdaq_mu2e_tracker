@@ -15,7 +15,6 @@
 #include "iostream"
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
-// TODO : first, add ewtag, then remove the structure below and uncomment the incl
 #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
@@ -264,25 +263,6 @@ namespace trkdaq {
     RocDataHeaderPacket_t header;
     uint16_t              data[1];
   };
-  
-  // struct RocData_t {
-  // ushort  nb;
-  // ushort  header;
-  // ushort  n_data_packets;  // n data packets, 16 bytes each
-  // ushort  ewt[3];
-  // ushort  status;
-  // ushort  xxx2;
-  // ushort  data; // array, use it juxsst for memory mapping
-  
-  // int                 empty     () { return (status & 0x01) == 0; }
-  // int                 invalid_dr() { return (status & 0x02); }
-  // int                 corrupt   () { return (status & 0x04); }
-  // int                 timeout   () { return (status & 0x08); }
-  // int                 overflow  () { return (status & 0x10); }
-      
-  // int                 error_code() { return (status & 0x1e); }
-  //};
-
 };
 
 #endif

@@ -30,56 +30,51 @@ int TrackerDQM::dtcIndex(int DtcID) {
 }
 
 //-----------------------------------------------------------------------------
-// fixed by Richie
-//-----------------------------------------------------------------------------
-unsigned int reverseBits(unsigned int num) {
-  // unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
+// unsigned int reverseBits(unsigned int num) {
+//   unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
 
-  // unsigned int reversedNum = 0;
-  // for (unsigned int i = 0; i < numOfBits; ++i) {
-  //   if ((num & (1 << i)) != 0)
-  //     reversedNum |= 1 << ((numOfBits - 1) - i);
-  // }
+//   unsigned int reversedNum = 0;
+//   for (unsigned int i = 0; i < numOfBits; ++i) {
+//     if ((num & (1 << i)) != 0)
+//       reversedNum |= 1 << ((numOfBits - 1) - i);
+//   }
 
-  unsigned int reversedNum = num;
-
-  return reversedNum;
-}
+//   return reversedNum;
+// }
 
 //-----------------------------------------------------------------------------
-// is this still in play ? - no, fixed by Richie
+// is this still in play ?
 //-----------------------------------------------------------------------------
-unsigned int correctedTDC(unsigned int TDC) {
-  //  uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
-  uint32_t corrected_tdc = TDC;
-  return corrected_tdc;
-}
+// unsigned int correctedTDC(unsigned int TDC) {
+//   uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
+//   return corrected_tdc;
+// }
 
 //-----------------------------------------------------------------------------
 void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
 
     int n_adc_packets = Hit->NumADCPackets;
 
-    Wf[ 0] = reverseBits(Hit->ADC00);
-    Wf[ 1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
-    Wf[ 2] = reverseBits(Hit->ADC02);
+    Wf[ 0] = Hit->ADC00;
+    Wf[ 1] = Hit->ADC01A + (Hit->ADC01B << 6);
+    Wf[ 2] = Hit->ADC02;
 
     for (int i=0; i<n_adc_packets; i++) {
       mu2e::TrackerDataDecoder::TrackerADCPacket* ahit = (mu2e::TrackerDataDecoder::TrackerADCPacket*) (((uint16_t*) Hit)+8+8*i);
       int loc = 12*i+2;
 
-      Wf[loc+ 1] = reverseBits(ahit->ADC0);
-      Wf[loc+ 2] = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-      Wf[loc+ 3] = reverseBits(ahit->ADC2);
-      Wf[loc+ 4] = reverseBits(ahit->ADC3);
-      Wf[loc+ 5] = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-      Wf[loc+ 6] = reverseBits(ahit->ADC5);
-      Wf[loc+ 7] = reverseBits(ahit->ADC6);
-      Wf[loc+ 8] = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-      Wf[loc+ 9] = reverseBits(ahit->ADC8);
-      Wf[loc+10] = reverseBits(ahit->ADC9);
-      Wf[loc+11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-      Wf[loc+12] = reverseBits(ahit->ADC11);
+      Wf[loc+ 1] = ahit->ADC0;
+      Wf[loc+ 2] = ahit->ADC1A + (ahit->ADC1B << 6);
+      Wf[loc+ 3] = ahit->ADC2;
+      Wf[loc+ 4] = ahit->ADC3;
+      Wf[loc+ 5] = ahit->ADC4A + (ahit->ADC4B << 6);
+      Wf[loc+ 6] = ahit->ADC5;
+      Wf[loc+ 7] = ahit->ADC6;
+      Wf[loc+ 8] = ahit->ADC7A + (ahit->ADC7B << 6);
+      Wf[loc+ 9] = ahit->ADC8;
+      Wf[loc+10] = ahit->ADC9;
+      Wf[loc+11] = ahit->ADC10A + (ahit->ADC10B << 6);
+      Wf[loc+12] = ahit->ADC11;
     }
 //-----------------------------------------------------------------------------
 // waveform processing
@@ -148,7 +143,6 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _diagLevel          (conf().diagLevel          ()), 
   _minNBytes          (conf().minNBytes          ()), 
   _maxNBytes          (conf().maxNBytes          ()), 
-  // _dataHeaderOffset   (conf().dataHeaderOffset   ()), 
   _activeLinks_0      (conf().activeLinks_0      ()),
   _activeLinks_1      (conf().activeLinks_1      ()),
   _refChCal           (conf().refChCal           ()),
@@ -157,7 +151,7 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _analyzeFragments   (conf().analyzeFragments   ()),
   _maxFragmentSize    (conf().maxFragmentSize    ()),
   _pulserFrequency    (conf().pulserFrequency    ()),
-  _nADCPackets        (conf().nADCPackets        ()),
+  _nADCPackets        (-1),
   _nSamplesBL         (conf().nSamplesBL         ()),
   _minPulseHeight     (conf().minPulseHeight     ()),
   _minNErrors         (conf().minNErrors         ()),
@@ -167,6 +161,7 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _fillWfHistograms   (conf().fillWfHistograms   ()),
   _interactiveMode    (conf().interactiveMode    ()),
   _debugBits          (conf().debugBits          ()),
+  _timeRefChannels    (conf().timeRefChannels    ()),
 
   _port               (conf().port               ())
 {
@@ -183,6 +178,16 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
     _debugBit[index]  = value;
 
     TLOG(TLVL_DEBUG+1) << Form("... TrackerDQM: bit=%4i is set to %i\n",index,_debugBit[index]);
+  }
+//-----------------------------------------------------------------------------
+// parse reference channels
+//-----------------------------------------------------------------------------
+  int nch = _timeRefChannels.size();
+  for (int i=0; i<nch; i++) {
+    key               = _timeRefChannels[i].data();
+    sscanf(key,"%i:%i",&_dtcr[i],&_linkr[i]);
+
+    TLOG(TLVL_DEBUG+1) << Form("... TrackerDQM: dtcr[%i]=%i linkr[%i]=%i\n",i,_dtcr[i],i,_linkr[i]);
   }
 //-----------------------------------------------------------------------------
 // for now, assume only one station, but implement data structures handling 
@@ -653,8 +658,8 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
     for (int ih=0; ih<nh; ih++) {
       mu2e::TrackerDataDecoder::TrackerDataPacket* hit = chd->hit[ih];
         
-      uint32_t corr_tdc0 = correctedTDC(hit->TDC0());
-      uint32_t corr_tdc1 = correctedTDC(hit->TDC1());
+      uint32_t corr_tdc0 = hit->TDC0();
+      uint32_t corr_tdc1 = hit->TDC1();
       
       float t0_us = corr_tdc0*_tdc_bin;
       float t1_us = corr_tdc1*_tdc_bin;
@@ -739,10 +744,10 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
 // time distance between the two sequential hits - need at least two
 //-----------------------------------------------------------------------------
     for (int ih=1; ih<nh; ih++) {
-      int corr_tdc0_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC0());
-      int corr_tdc1_ih  = (int) correctedTDC(chd->hit[ih  ]->TDC1());
-      int corr_tdc0_ih1 = (int) correctedTDC(chd->hit[ih-1]->TDC0());
-      int corr_tdc1_ih1 = (int) correctedTDC(chd->hit[ih-1]->TDC1());
+      int corr_tdc0_ih  = (int) chd->hit[ih  ]->TDC0();
+      int corr_tdc1_ih  = (int) chd->hit[ih  ]->TDC1();
+      int corr_tdc0_ih1 = (int) chd->hit[ih-1]->TDC0();
+      int corr_tdc1_ih1 = (int) chd->hit[ih-1]->TDC1();
       
       double dt0        = (corr_tdc0_ih-corr_tdc0_ih1)*_tdc_bin;
       double dt1        = (corr_tdc1_ih-corr_tdc1_ih1)*_tdc_bin;
@@ -798,9 +803,11 @@ void TrackerDQM::fill_event_histograms(EventHist_t* Hist, EventData_t* Ed) {
   Hist->nerr_vs_evt->Fill  (Ed->_event->event(),Ed->nerr_tot);
   int eflg = (Ed->nerr_tot > 0);
   Hist->eflg_vs_evt->Fill  (Ed->_event->event(),eflg        );
-
-  Hist->t4mt2[0]->Fill  (Ed->tcorr[4][0]-Ed->tcorr[2][0]);
-  Hist->t4mt2[1]->Fill  (Ed->tcorr[4][1]-Ed->tcorr[2][1]);
+//-----------------------------------------------------------------------------
+// calculate residuals between the two reference pulses
+//-----------------------------------------------------------------------------
+  Hist->t4mt2[0]->Fill  (Ed->tcorr[_dtcr[0]][_linkr[0]][0]-Ed->tcorr[_dtcr[1]][_linkr[1]][0]);
+  Hist->t4mt2[1]->Fill  (Ed->tcorr[_dtcr[0]][_linkr[0]][1]-Ed->tcorr[_dtcr[1]][_linkr[1]][1]);
 
   TLOG(TLVL_DEBUG+1) << "tcorr[4],tcorr[2]:" << Ed->tcorr[4][0] << " " << Ed->tcorr[4][1] << " " << Ed->tcorr[2][0] << " " << Ed->tcorr[2][1] ;
 }
@@ -947,7 +954,7 @@ void TrackerDQM::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragm
 // sh->dtcID uniquely identifies the DTC, so it could be any number
 //-----------------------------------------------------------------------------
   SubEventHeader_t* sh = (SubEventHeader_t*) fdata;
-  int dtc_index        = dtcIndex(sh->dtcID);
+  int dtc_index        = dtcIndex(sh->dtcID); // 0 or 1
     
   short* first_address = fdata+sizeof(SubEventHeader_t)/2; // _dataHeaderOffset; // offset is specified in 2-byte words
   short* last_address  = fdata+fdt->nbytes/2;     // 
@@ -960,6 +967,7 @@ void TrackerDQM::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragm
     int link      = dh->linkID;
     RocData_t* rd = &_edata.station[_station].roc[dtc_index][link];
     rd->dtc_id    = sh->dtcID;
+    rd->dtc_index = dtc_index;
 //-----------------------------------------------------------------------------
 // check link number
 //-----------------------------------------------------------------------------
@@ -1230,6 +1238,8 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 // for a given FPGA, a reference channel is the first channel in the readout order
 //-----------------------------------------------------------------------------
   ChannelData_t* ref_ch[2];
+  
+  int const packet_size(16); // in bytes
 
   int link      = Dh->linkID;
   ref_ch[0]     = &Rd->channel[_referenceChannel[link][0]];
@@ -1241,13 +1251,32 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 // for now, assume that all hits in the run have the same number of packets per hit
 // take that from the first hit
 //-----------------------------------------------------------------------------
-  Rd->nhits     = Dh->packetCount/(_nADCPackets+1);         //  printf("nhits : %3i\n",nhits);
+  Rd->nhits     = 0;
   Rd->valid     = Dh->valid;
   Rd->dt0r01    = -1.e12;
   Rd->dt1r01    = -1.e12;
+
+  if (Rd->npackets == 0)                       return;
+//-----------------------------------------------------------------------------
+// more than one packet - some data...
+// take the number of ADC packets per hit from the hit data,
+// trust that but watch if it changes
+// so far, any corruptions we saw were contained withing the ROC payload, and nhits
+// was a reliable number
+//-----------------------------------------------------------------------------
+  if (_nADCPackets < 0) {
+    mu2e::TrackerDataDecoder::TrackerDataPacket* h0;
+    h0           = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (Dh+1);
+    _nADCPackets = h0->NumADCPackets;
+    _nSamples    = 3+12*_nADCPackets;
+    _np_per_hit  = _nADCPackets+1;
+  }
   
+  Rd->nhits     = Dh->packetCount/_np_per_hit;
+
   _edata.nhtot += Rd->nhits;
   _edata.valid += Dh->valid*10;
+
 
   short* first_address = (short*) Dh;
   
@@ -1256,7 +1285,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 // first packet, 16 bytes, or 8 ushort's is the data header packet
 //-----------------------------------------------------------------------------
     mu2e::TrackerDataDecoder::TrackerDataPacket* hit ;
-    int offset          = ihit*(8+8*_nADCPackets);   // in 2-byte words
+    int offset          = ihit*8*_np_per_hit;   // in 2-byte words
     int offset_in_bytes = offset*2;
     hit     = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
 
@@ -1310,8 +1339,6 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 
     int ich = hit->StrawIndex & 0x7f;
 
-    if (ich > 128) ich = ich-128;
-
     if (ich > 95) {
       //-----------------------------------------------------------------------------
       // non existing channel ID : flag an error, don't save the hit, but continue
@@ -1337,11 +1364,11 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
     if (_validateADCPatterns > 0) {
       uint16_t pattern[4] = {0x56aa, 0x2aa5, 0xa955, 0x155a};
-      uint16_t* w = (uint16_t*) hit;
-      int nw = 2+_nADCPackets*8;
+      uint16_t* w  = (uint16_t*) hit;
+      int       nw = 2+_nADCPackets*8;
       // finding first word - they can move
-      int offs = -1;
-      int loc    = 6;
+      int offs     = -1;
+      int loc      = 6;
       for (int i=0; i<4; i++) {
         if (w[loc] == pattern[i]) {
           offs = i;
@@ -1402,13 +1429,13 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
     int iref = _referenceChannel[link][fpga];
     int nhr  = Rd->channel[iref].nhits();
-    if (nh > 0) { 
-      int t0  = correctedTDC(chd->hit[0]->TDC0());
-      int t1  = correctedTDC(chd->hit[0]->TDC1());
+    if (nh > 0) {
+      int t0  = chd->hit[0]->TDC0();
+      int t1  = chd->hit[0]->TDC1();
 
       if (i == 1) {
-        _edata.tcorr[Rd->link][0] = t0 ;
-        _edata.tcorr[Rd->link][1] = t1 ;
+        _edata.tcorr[Rd->dtc_index][Rd->link][0] = t0 ;
+        _edata.tcorr[Rd->dtc_index][Rd->link][1] = t1 ;
       }
           
       
@@ -1416,8 +1443,8 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
 // at least one hit in both reference and test channels
 //-----------------------------------------------------------------------------
-        int t0r = correctedTDC(rch->hit[0]->TDC0());
-        int t1r = correctedTDC(rch->hit[0]->TDC1());
+        int t0r = rch->hit[0]->TDC0();
+        int t1r = rch->hit[0]->TDC1();
 
         float dt_over_2(_dt/2);
           
@@ -1439,11 +1466,11 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 // time offset between the two pulsers for the same ROC
 //-----------------------------------------------------------------------------
   if ((Rd->ref_ch[0]->nhits() > 0) and (Rd->ref_ch[1]->nhits() > 0)) {
-    int t0r0   = correctedTDC(Rd->ref_ch[0]->hit[0]->TDC0());
-    int t1r0   = correctedTDC(Rd->ref_ch[0]->hit[0]->TDC1());
+    int t0r0   = Rd->ref_ch[0]->hit[0]->TDC0();
+    int t1r0   = Rd->ref_ch[0]->hit[0]->TDC1();
         
-    int t0r1   = correctedTDC(Rd->ref_ch[1]->hit[0]->TDC0());
-    int t1r1   = correctedTDC(Rd->ref_ch[1]->hit[0]->TDC1());
+    int t0r1   = Rd->ref_ch[1]->hit[0]->TDC0();
+    int t1r1   = Rd->ref_ch[1]->hit[0]->TDC1();
         
     Rd->dt0r01 = (t0r0-t0r1)*_tdc_bin_ns;        // convert to ns  
     Rd->dt1r01 = (t1r0-t1r1)*_tdc_bin_ns;        // convert to ns  
