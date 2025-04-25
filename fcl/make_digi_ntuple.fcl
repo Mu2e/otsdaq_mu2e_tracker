@@ -75,7 +75,8 @@ outputs:  {
 #------------------------------------------------------------------------------
 # assume we're on mu2edaq22
 #------------------------------------------------------------------------------
-services.TFileService.fileName                   : "/scratch/mu2e/mu2etrk_pasha_304/digi_ntuples/make_digi_ntuple_%06r.root"
+# services.TFileService.fileName                   : "/scratch/mu2e/mu2etrk_pasha_304/digi_ntuples/make_digi_ntuple_%06r.root"
+services.TFileService.fileName                   : "/data/tracker/vst/mu2etrk_pasha_029/digi_ntuples/make_digi_ntuple_%06r.root"
 services.scheduler.wantSummary                   : true
 
 source.fileNames : [ "/exp/mu2e/data/projects/tracker/vst/datasets/raw.mu2e.trkvst.annex.art/raw.mu2e.trkvst.annex.105099_00000001.art" ]
