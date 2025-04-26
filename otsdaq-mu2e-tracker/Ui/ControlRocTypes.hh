@@ -13,9 +13,18 @@
 namespace trkdaq {
 
   enum {
-    PULSER_OFF        = 269,
+    REG_READSPI       = 258,
+    REG_DIGIRW        = 263,
+    REG_READ          = 265,
+    REG_SETGAIN       = 266,
+    REG_SET_THR       = 267,
+    REG_PULSERON      = 268,
+    REG_PULSEROFF     = 269,
+    REG_MEAS_THR      = 270,
     REG_READRATES     = 271,
     REG_READGITCOMMIT = 272,
+    REG_READILP       = 273,
+    REG_GETKEY        = 274,
   };
 
   struct ControlRoc_Read_Input_t0 {

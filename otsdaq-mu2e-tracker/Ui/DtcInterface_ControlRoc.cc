@@ -28,7 +28,7 @@ namespace  trkdaq {
                                       int                         PrintLevel,
                                       std::ostream&               Stream    ) {
 //-----------------------------------------------------------------------------
-    const int  reg (263);  // for digi_rw
+//    const int  reg (263);  // for digi_rw
     
     std::vector<uint16_t> vec;
   
@@ -59,7 +59,7 @@ namespace  trkdaq {
       int used = (link_mask >> 4*i) & 0x1;
       if (not used)                                           continue;
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
+      fDtc->WriteROCBlock   (roc,REG_DIGIRW,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
       uint16_t u; 
@@ -73,7 +73,7 @@ namespace  trkdaq {
 
       nw = nw-4;
       std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
+      fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
       if (PrintLevel > 0) {
         Stream << " ---------------- link:" << i << std::endl;
@@ -123,7 +123,7 @@ namespace  trkdaq {
             marker_clock = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
-    const int  reg (265);  // for control_ROC.py(read)
+//    const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
     
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
@@ -187,7 +187,7 @@ namespace  trkdaq {
       int used = (link_mask >> 4*i) & 0x1;
       if (not used)                                         continue;
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
+      fDtc->WriteROCBlock   (roc,REG_READ,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
                                         // 0x86 = 0x82 + 4
@@ -202,7 +202,7 @@ namespace  trkdaq {
       
       nw = nw-4;
       std::vector<uint16_t> vout;
-      fDtc->ReadROCBlock(vout,roc,reg,nw,false,100);
+      fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
 
       if (PrintLevel > 0) {
         Stream << "--------------- link :" << i << std::endl;
@@ -254,7 +254,7 @@ namespace  trkdaq {
     vec.push_back(uint16_t(PreampType));
 
     bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,266,vec,false,increment_address,100);
+    fDtc->WriteROCBlock   (roc,REG_SETGAIN,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
@@ -269,7 +269,7 @@ namespace  trkdaq {
 
     nw = nw-4;
     std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,266,nw,false,100);
+    fDtc->ReadROCBlock(v2,roc,REG_SETGAIN,nw,false,100);
 
     PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
@@ -299,7 +299,7 @@ namespace  trkdaq {
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
            << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 //-----------------------------------------------------------------------------
-// write parameters into reg 267 (block write) , sleep for some time, 
+// write parameters into reg 268 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
@@ -323,7 +323,7 @@ namespace  trkdaq {
 // convert into enum
 //-----------------------------------------------------------------------------
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,reg,vec,false,increment_address,100);
+      fDtc->WriteROCBlock   (roc,REG_PULSERON,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
@@ -339,7 +339,7 @@ namespace  trkdaq {
       nw = nw-4;
       if (nw == 4) {
         std::vector<uint16_t> v2;
-        fDtc->ReadROCBlock(v2,roc,reg,nw,false,100);
+        fDtc->ReadROCBlock(v2,roc,REG_PULSERON,nw,false,100);
 
         if (PrintLevel & 0x1) {
           PrintBuffer(v2.data(),nw,&Stream);
@@ -371,7 +371,7 @@ namespace  trkdaq {
 // PULSER_OFF: reg 269
 //-----------------------------------------------------------------------------
       std::vector<uint16_t> res;
-      RocBlockRead(i,PULSER_OFF,res);
+      RocBlockRead(i,REG_PULSEROFF,res);
 
       int nw = res.size();
       TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
@@ -400,7 +400,7 @@ namespace  trkdaq {
     vec.push_back(uint16_t(PreampType));
 
     bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,267,vec,false,increment_address,100);
+    fDtc->WriteROCBlock   (roc,REG_SET_THR,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
@@ -415,7 +415,7 @@ namespace  trkdaq {
 
     nw = nw-4;
     std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,267,nw,false,100);
+    fDtc->ReadROCBlock(v2,roc,REG_SET_THR,nw,false,100);
 
     PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
@@ -453,7 +453,7 @@ namespace  trkdaq {
     vec.push_back((MaskE >> 16) & 0xffff);
 
     bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,270,vec,false,increment_address,100);
+    fDtc->WriteROCBlock   (roc,REG_MEAS_THR,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // 0x86 = 0x82 + 4
@@ -461,8 +461,6 @@ namespace  trkdaq {
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
     if (PrintLevel & 0x1) {
       Stream << std::format("reg:{:03d} val:0x{:04x}",128,u) << std::endl;
-      // Stream << std::format("reg:{:03d}",128);
-      // Stream << std::format(" val:0x{:04x}",u) << std::endl;
     }
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -472,7 +470,7 @@ namespace  trkdaq {
 
     nw = nw-4;
     std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,270,nw,false,100);
+    fDtc->ReadROCBlock(v2,roc,REG_MEAS_THR,nw,false,100);
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
@@ -572,12 +570,13 @@ namespace  trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// read SPI, return vector of short's, optionally print
+//-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream) {
-    int rc(0);
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
-    RocBlockRead(Link,258,SpiRawData);
+    int rc = RocBlockRead(Link,REG_READSPI,SpiRawData);
 
     int nw = SpiRawData.size();
 
@@ -594,15 +593,16 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // PrintLevel bit 1: parse SPI data and print them
 //-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x2) != 0) {
+    if ((rc == 0) and (PrintLevel & 0x2) != 0) {
       struct TrkSpiData_t spi;
       ConvertSpiData(SpiRawData,&spi,PrintLevel,Stream);  // &spi[0]
     }
 
-    // ResetLink(Link);
     return rc;
   }
   
+//-----------------------------------------------------------------------------
+// read SPI, convert into floats
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadSpi_1(TrkSpiData_t* Spi, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
@@ -610,22 +610,21 @@ namespace  trkdaq {
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> data;
-    RocBlockRead(Link,258,data);
-
-    int nw = data.size();
-
-    if (nw != TrkSpiDataNWords) {
-      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
-      rc = -1;
-    }
+    rc = RocBlockRead(Link,REG_READSPI,data,TrkSpiDataNWords);
 //-----------------------------------------------------------------------------
 // PrintLevel bit 0: print SPI data in hex
 //-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x1) != 0) PrintBuffer(data.data(),nw,&Stream);
+    if ((PrintLevel & 0x1) != 0) {
+      int nw = data.size();
+      PrintBuffer(data.data(),nw,&Stream);
+    }
 //-----------------------------------------------------------------------------
+// do not perform conversion, if wrong number of words
 // PrintLevel bit 1: parse SPI data and print them
 //-----------------------------------------------------------------------------
-    ConvertSpiData(data,Spi,PrintLevel,Stream);  // &spi[0]
+    if (rc == 0) {
+      ConvertSpiData(data,Spi,PrintLevel,Stream);  // &spi[0]
+    }
 
     return rc;
   }
@@ -674,7 +673,6 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadIlp(std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    int reg{273};
 //-----------------------------------------------------------------------------
 
     int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
@@ -683,14 +681,14 @@ namespace  trkdaq {
       for (int i=0; 0<6; i++) {
         int link_enabled = (link_mask >> 4*i) & 0x1;
         if (link_enabled) {
-          RocBlockRead(i,reg,Data);
+          RocBlockRead(i,REG_READILP,Data);
           int nw = Data.size();
           if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
         }
       }
     }
     else {
-      RocBlockRead(Link,reg,Data);
+      RocBlockRead(Link,REG_READILP,Data);
       int nw = Data.size();
       if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
     }
@@ -703,7 +701,6 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_GetKey (std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    int reg{274};
     
     int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
 
@@ -711,14 +708,14 @@ namespace  trkdaq {
       for (int i=0; 0<6; i++) {
         int link_enabled = (link_mask >> 4*i) & 0x1;
         if (link_enabled) {
-          RocBlockRead(i,reg,Data);
+          RocBlockRead(i,REG_GETKEY,Data);
           int nw = Data.size();
           if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
         }
       }
     }
     else {
-      RocBlockRead(Link,reg,Data);
+      RocBlockRead(Link,REG_GETKEY,Data);
       int nw = Data.size();
       if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
     }
@@ -747,83 +744,95 @@ namespace  trkdaq {
                      << "0x" << par.chan_mask[3] << ","
                      << "0x" << par.chan_mask[4] << ","
                      << "0x" << par.chan_mask[5] << "}";
-      
-    auto roc  = DTC_Link_ID(Link);
+
+    int i1(Link), i2(Link+1);
+    if (Link == -1) {
+      i1 = 0;
+      i2 = 6;
+    }
+
+    for (int i=i1; i<i2; i++) {
+      auto roc  = DTC_Link_ID(i);
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 // ch_mask always includes the first channel
 //-----------------------------------------------------------------------------
-    std::vector<uint16_t> vec;
+      std::vector<uint16_t> vec;
+      
+      vec.push_back(par.num_lookback);
+      vec.push_back(par.num_samples );
 
-    vec.push_back(par.num_lookback);
-    vec.push_back(par.num_samples );
-
-    for (int i=0; i<6; i++) {
-      vec.push_back(par.chan_mask[i]);
-    }
+      for (int i=0; i<6; i++) {
+        vec.push_back(par.chan_mask[i]);
+      }
   
-    fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+      fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
-  // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
-    printf("reg:%03i val:0x%04x\n",128,u);
+      // 0x86 = 0x82 + 4
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+      printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+      int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
 
-    nw = nw-4;
-    std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
+      nw = nw-4;
+      std::vector<uint16_t> v2;
+      fDtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
-    if (PrintLevel & 0x1) {
-      PrintBuffer(v2.data(),nw,&Stream);
-    }
+      if (PrintLevel & 0x1) {
+        PrintBuffer(v2.data(),nw,&Stream);
+      }
 
-    if (PrintLevel & 0x2) {
+      if (PrintLevel & 0x2) {
 //-----------------------------------------------------------------------------
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
 // 3 words per channel (straw)
 //-----------------------------------------------------------------------------
-      if (nw != 580) {
-        printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
-        return -1;
-      }
+        if (nw != 580) {
+          printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
+          return -1;
+        }
+//-----------------------------------------------------------------------------
+// finally, the last two words - total counts
+//-----------------------------------------------------------------------------
+        float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+        float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
 
-      // finally, the last two words - total counts
-      float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
-      float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-
-      int loc = 576;
+        int loc = 576;
       
-      total[1]  = float(v2[loc  ])+(int(v2[loc+1]) << 16); // hv - check the order with Vadim
-      total[0]  = float(v2[loc+2])+(int(v2[loc+3]) << 16); // cal
+        total[1]  = float(v2[loc  ])+(int(v2[loc+1]) << 16); // hv - check the order with Vadim
+        total[0]  = float(v2[loc+2])+(int(v2[loc+3]) << 16); // cal
 
-      Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
-      Stream << "-----------------------------------------------------------------------------------------\n";
+        Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
+        Stream << "-----------------------------------------------------------------------------------------\n";
 
-      for (int ich=0; ich<96; ich++) {
-        loc               = 6*ich;
-        int   counts_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
-        int   counts_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
-        int   counts_coin = int(v2[loc+4])+(int(v2[loc+5]) << 16);
-        int   fpga        = fgFpga[ich];
-        float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
-        float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
-        float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
-        Stream << std::format(" {:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
-                              ich,counts_hv,counts_cal,counts_coin,
-                              rate_hv,rate_cal,rate_coin);
+        for (int ich=0; ich<96; ich++) {
+          loc               = 6*ich;
+          int   counts_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
+          int   counts_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
+          int   counts_coin = int(v2[loc+4])+(int(v2[loc+5]) << 16);
+          int   fpga        = fgFpga[ich];
+          float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
+          float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
+          float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
+          Stream << std::format(" {:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
+                                ich,counts_hv,counts_cal,counts_coin,
+                                rate_hv,rate_cal,rate_coin);
+        }
+
+        Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
       }
-
-      Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
     }
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
     return rc;
   }
 

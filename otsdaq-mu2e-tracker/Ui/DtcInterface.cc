@@ -934,31 +934,38 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // are just TODO reminders and don't do anything useful
 //-----------------------------------------------------------------------------
   int DtcInterface::RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected) {
-    int rc(0);
+    int rc(0), nw(0);
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
+    TLOG(TLVL_DEBUG+1) << std::format("Link:{} Reg:{:03d} NExpected:{}",Link,Reg,NExpected);
     auto link_id  = DTC_Link_ID(Link);
 
-    fDtc->GetDevice()->begin_dcs_transaction();
+    try {
+      fDtc->GetDevice()->begin_dcs_transaction();
     
-    fDtc->WriteROCRegister   (link_id,Reg,0x0000,false,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      fDtc->WriteROCRegister   (link_id,Reg,0x0000,false,100);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
     
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(link_id,129,100);
-    TLOG(TLVL_DEBUG) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
+      nw = fDtc->ReadROCRegister(link_id,129,100);
+      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
 
-    nw -= 4;
-    fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
-    fDtc->GetDevice()->end_dcs_transaction();
+      nw -= 4;
+      fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
+      fDtc->GetDevice()->end_dcs_transaction();
+    }
+    catch(...) {
+      TLOG(TLVL_ERROR) << "failed DCS transaction";
+      rc = -2;
+    }
     
-    if ((NExpected > 0) and (nw != NExpected)) {
+    if ((rc == 0) and (NExpected > 0) and (nw != NExpected)) {
       TLOG(TLVL_ERROR) << "WRONG NUMBER OF WORDS: NExpected:" << NExpected << " nw:" << nw;
       rc = -1;
     }
