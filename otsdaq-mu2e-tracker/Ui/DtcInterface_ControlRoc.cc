@@ -292,7 +292,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
                                         int PrintLevel, std::ostream& Stream) {
-    int rc (0), reg(268);
+    int rc (0); //, reg(268);
     TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
                      << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 
@@ -751,8 +751,17 @@ namespace  trkdaq {
       i2 = 6;
     }
 
+    std::vector<uint16_t> v2[6];
+    
     for (int i=i1; i<i2; i++) {
+      if (LinkEnabled(i) == 0)                              continue;
       auto roc  = DTC_Link_ID(i);
+//-----------------------------------------------------------------------------
+// make sure the ROC is in the right state
+//-----------------------------------------------------------------------------
+      ControlRoc_Read_Input_t0 x;
+      x.marker_clock=0;
+      ControlRoc_Read(&x,i);
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -780,24 +789,33 @@ namespace  trkdaq {
       int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
-      std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,REG_READRATES,nw,false,100);
+      fDtc->ReadROCBlock(v2[i],roc,REG_READRATES,nw,false,100);
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw,&Stream);
+        PrintBuffer(v2[i].data(),nw,&Stream);
       }
 
-      if (PrintLevel & 0x2) {
+    }
+
+//-----------------------------------------------------------------------------
+// do the printing
+// bit 1: formattted printout, sequentially
+//-----------------------------------------------------------------------------
+    if (PrintLevel & 0x2) {
+      for (int i=i1; i<i2; i++) {
+        if (LinkEnabled(i) == 0)                              continue;
+        std::vector<uint16_t>* dat = &v2[i];
 //-----------------------------------------------------------------------------
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
 // 3 words per channel (straw)
 //-----------------------------------------------------------------------------
+        int nw = dat->size();
         if (nw != 580) {
-          printf("ERROR: nw = %5i != 580. BAIL OUT\n",nw);
-          return -1;
+          printf("ERROR: link: %i nw = %5i != 580. BAIL OUT\n",i,nw);
+          continue;
         }
 //-----------------------------------------------------------------------------
 // finally, the last two words - total counts
@@ -807,27 +825,72 @@ namespace  trkdaq {
 
         int loc = 576;
       
-        total[1]  = float(v2[loc  ])+(int(v2[loc+1]) << 16); // hv - check the order with Vadim
-        total[0]  = float(v2[loc+2])+(int(v2[loc+3]) << 16); // cal
+        total[1]  = float((*dat)[loc  ])+(int((*dat)[loc+1]) << 16); // hv - check the order with Vadim
+        total[0]  = float((*dat)[loc+2])+(int((*dat)[loc+3]) << 16); // cal
 
         Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
         Stream << "-----------------------------------------------------------------------------------------\n";
 
         for (int ich=0; ich<96; ich++) {
           loc               = 6*ich;
-          int   counts_hv   = int(v2[loc  ])+(int(v2[loc+1]) << 16);
-          int   counts_cal  = int(v2[loc+2])+(int(v2[loc+3]) << 16);
-          int   counts_coin = int(v2[loc+4])+(int(v2[loc+5]) << 16);
+          int   counts_hv   = int((*dat)[loc  ])+(int((*dat)[loc+1]) << 16);
+          int   counts_cal  = int((*dat)[loc+2])+(int((*dat)[loc+3]) << 16);
+          int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
           int   fpga        = fgFpga[ich];
           float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
           float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
           float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
-          Stream << std::format(" {:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
+          Stream << std::format("{:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
                                 ich,counts_hv,counts_cal,counts_coin,
                                 rate_hv,rate_cal,rate_coin);
         }
 
         Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
+      }
+    }
+//-----------------------------------------------------------------------------
+// do the printing
+// bit 2: formattted printout, parallel
+//-----------------------------------------------------------------------------
+    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+    
+    if (PrintLevel & 0x4) {
+      Stream << "ch|   link0       |   link1       |   link2       |   link3       |   link4       |   link5       |\n";
+      Stream << "  | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   |\n";
+      Stream << "---------------------------------------------------------------------------------------------------\n";
+
+      float total[6][2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+
+      int loc = 576;
+      for (int i=i1; i<i2; i++) {
+        std::vector<uint16_t>* dat = &v2[i];
+        int nw = dat->size();
+        if ((LinkEnabled(i) == 0) or (nw != 580)) continue;
+
+        total[i][1]  = float((*dat)[loc  ])+(int((*dat)[loc+1]) << 16); // hv - check the order with Vadim
+        total[i][0]  = float((*dat)[loc+2])+(int((*dat)[loc+3]) << 16); // cal
+      }
+
+      for (int ich=0; ich<96; ich++) {
+        int loc               = 6*ich;
+        Stream << std::format("{:2d}|",ich);
+        
+        for (int i=i1; i<i2; i++) {
+          std::vector<uint16_t>* dat = &v2[i];
+          int nw = dat->size();
+          if ((LinkEnabled(i) == 0) or (nw != 580)) {
+            Stream << "             |";
+          }
+          else {
+            int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
+            float rate_coin   = counts_coin/(total[i][0]+total[i][1])*2/clock_tick/1000.;
+
+            //            Stream << std::format("{:6d} {:7.3f} |",counts_coin, rate_coin);
+            Stream << std::format("       {:7.3f} |",rate_coin);
+          }
+        }
+        
+        Stream << std::endl;
       }
     }
 //-----------------------------------------------------------------------------
