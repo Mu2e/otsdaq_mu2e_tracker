@@ -728,22 +728,20 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int  DtcInterface::ControlRoc_Rates(int Link, int PrintLevel, ControlRoc_Rates_t* Par,
                                       std::ostream& Stream) {
-    int rc(0);
-
-    ControlRoc_Rates_t par;
-    if (Par != nullptr) {
-      par = *Par;
-    }
+    int                 rc(0);
+    ControlRoc_Rates_t  par;   // default construction : (num_lookback=100,num_samples=10,ch_mask=6x0xffff)
+    
+    if (Par != nullptr) par = *Par;
 
     TLOG(TLVL_DEBUG) << "par:{" << par.num_lookback << ","
                      << par.num_samples << ","
                      << std::hex
-                     << "0x" << par.chan_mask[0] << ","
-                     << "0x" << par.chan_mask[1] << ","
-                     << "0x" << par.chan_mask[2] << ","
-                     << "0x" << par.chan_mask[3] << ","
-                     << "0x" << par.chan_mask[4] << ","
-                     << "0x" << par.chan_mask[5] << "}";
+                     << "0x" << par.ch_mask[0] << ","
+                     << "0x" << par.ch_mask[1] << ","
+                     << "0x" << par.ch_mask[2] << ","
+                     << "0x" << par.ch_mask[3] << ","
+                     << "0x" << par.ch_mask[4] << ","
+                     << "0x" << par.ch_mask[5] << "}";
 
     int i1(Link), i2(Link+1);
     if (Link == -1) {
@@ -759,9 +757,9 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // make sure the ROC is in the right state
 //-----------------------------------------------------------------------------
-      ControlRoc_Read_Input_t0 x;
-      x.marker_clock=0;
-      ControlRoc_Read(&x,i);
+      // ControlRoc_Read_Input_t0 x;
+      // x.marker_clock=0;
+      // ControlRoc_Read(&x,i);
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -773,7 +771,7 @@ namespace  trkdaq {
       vec.push_back(par.num_samples );
 
       for (int i=0; i<6; i++) {
-        vec.push_back(par.chan_mask[i]);
+        vec.push_back(par.ch_mask[i]);
       }
   
       fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);

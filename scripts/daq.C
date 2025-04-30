@@ -240,22 +240,10 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 //-----------------------------------------------------------------------------
 // just print the ROC information
 //-----------------------------------------------------------------------------
-int dtc_control_roc_rates(int Link, int PcieAddr = -1) {
-  trkdaq::ControlRoc_Rates_t par;
-  par.num_lookback=100;
-  par.num_samples =10;
-  par.chan_mask[0]=0xffff;
-  par.chan_mask[1]=0xffff;
-  par.chan_mask[2]=0xffff;
-  par.chan_mask[3]=0xffff;
-  par.chan_mask[4]=0xffff;
-  par.chan_mask[5]=0xffff;
-  
+int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  dtc_i->ControlRoc_Rates(Link,2,&par,std::cout);
-
-  // also need to normalize: 1366./4436388./5e-9
+  dtc_i->ControlRoc_Rates(Link,2,Par,std::cout);
 
   return 0;
 }
