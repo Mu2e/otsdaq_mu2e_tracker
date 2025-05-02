@@ -66,9 +66,4 @@ otsdaq_mu2e_tracker : {
         }
                 
     }
-    filters : { 
-        StrawDigiFilter : { module_type : StrawDigiFilter
-            minNStrawDigis      : 1
-        }
-    }
 }

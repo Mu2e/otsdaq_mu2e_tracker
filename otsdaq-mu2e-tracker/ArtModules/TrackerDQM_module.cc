@@ -168,10 +168,12 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
 //-----------------------------------------------------------------------------
 // parse debug bits
 //-----------------------------------------------------------------------------
+  for (int i=0; i<100; ++i) _debugBit[i] = 0;
+
   const char* key;
                                         // a flag is an integer!
   int nbits = _debugBits.size();
-  for (int i=0; i<nbits; i++) {
+  for (int i=0; i<nbits; ++i) {
     int index(0), value(0);
     key               = _debugBits[i].data();
     sscanf(key,"bit%i:%i",&index,&value);
