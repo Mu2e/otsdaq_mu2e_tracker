@@ -280,6 +280,7 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
 // align ROC fpga/adc signals, and optionally print summary table
+// REG_FINDALIGNMENT=264
 //-----------------------------------------------------------------------------
   Alignment DtcInterface::FindAlignment(DTC_Link_ID Link) {
     // write parameters into roc to initiate routine
@@ -299,7 +300,7 @@ namespace trkdaq {
 
     // register 264: find alignment routine
     bool increment_address = false; // read via fifo
-    fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
+    fDtc->WriteROCBlock(Link, REG_FINDALIGNMENT, writeable, false, increment_address, 100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // then, wait till reg 128 returns non-zero
@@ -308,7 +309,7 @@ namespace trkdaq {
       // idle
     }
 
-    vector<roc_data_t> returned = this->ReadROCBlockEnsured(Link, 264);
+    vector<roc_data_t> returned = this->ReadROCBlockEnsured(Link,REG_FINDALIGNMENT);
 
     // return
     auto rv = Alignment(returned);
@@ -316,47 +317,62 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// align ROC fpga/adc signals, and optionally print summary table
+// align ROC FPGA/ADC signals, and optionally print the summary
+// 
+// if 'Link' = -1, use the DTC link mask
+// there is no practical need to pass a random link mask,
+// so 'Link' is either all enabled DTC links, or a specific one
+// 
+// returns the number of channels with non-zero number of bit slip steps
 //-----------------------------------------------------------------------------
-  void DtcInterface::FindAlignments(bool print, int LinkMask, std::ostream& Stream) {
-
+  int DtcInterface::FindAlignments(int PrintLevel, int Link, std::ostream& Stream) {
+    int n_slipped(0);
+    
     int link_mask = fLinkMask;
-    if (LinkMask != -1) link_mask = LinkMask;
+    if (Link != -1) link_mask = 0x1 << 4*Link;
 
+    
     for (int i = 0 ; i < 6 ; i++){
-      int used = (link_mask >> 4*i) & 0x1;
-      if (used != 0) {
-        auto link      = DTC_Link_ID(i);
-        auto alignment = FindAlignment(link);
+      int enabled = (link_mask >> 4*i) & 0x1;
+      if (enabled == 0)                                     continue;
+//-----------------------------------------------------------------------------
+// perform one iteration
+//-----------------------------------------------------------------------------
+      auto link      = DTC_Link_ID(i);
+      auto alignment = FindAlignment(link);
 
-        int n_non_null   =  0;
-        int nsteps_tot   =  0;
-        int max_steps_ch = -1;
-        int worst_ch     = -1;
-        for (const auto& iteration: alignment.Iterations()) {
-          const auto& channels = iteration.Channels();
-          for (size_t i = 0 ; i < channels.size() ; i++){
-            auto channel = channels[i];
-            int nsteps     = (int) channel.BitSlipStep();
-            if (nsteps > 0) n_non_null++;
-            nsteps_tot  += nsteps;
-            if (nsteps > max_steps_ch) {
-              max_steps_ch = nsteps;
-              worst_ch     = i;
-            }
+      int n_non_null   =  0;
+      int nsteps_tot   =  0;
+      int max_steps_ch = -1;
+      int worst_ch     = -1;
+      for (const auto& iteration: alignment.Iterations()) {
+        const auto& channels = iteration.Channels();
+        for (size_t i = 0 ; i < channels.size() ; i++){
+          auto channel = channels[i];
+          int nsteps     = (int) channel.BitSlipStep();
+          if (nsteps > 0) n_non_null++;
+          nsteps_tot  += nsteps;
+          if (nsteps > max_steps_ch) {
+            max_steps_ch = nsteps;
+            worst_ch     = i;
           }
         }
+      }
 
-        if (print) {
-          print_legacy_table(alignment,Stream);
-        }
+      if (PrintLevel & 0x2) {
+        print_legacy_table(alignment,Stream);
+      }
 
+      if (PrintLevel & 0x1) {
         Stream << "-- FindAlignments link:" << i << " n_non_null:" << n_non_null
                << " nsteps_tot:" << nsteps_tot
                << " worst_ch:" << worst_ch
                << " max_steps_ch:" << max_steps_ch << std::endl;
       }
+      n_slipped += n_non_null;
     }
+    
+    return n_slipped;
   }
 
 //-----------------------------------------------------------------------------
@@ -958,13 +974,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
       nw -= 4;
       fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
-      fDtc->GetDevice()->end_dcs_transaction();
     }
     catch(...) {
       TLOG(TLVL_ERROR) << "failed DCS transaction";
       rc = -2;
     }
     
+    fDtc->GetDevice()->end_dcs_transaction();
+
     if ((rc == 0) and (NExpected > 0) and (nw != NExpected)) {
       TLOG(TLVL_ERROR) << "WRONG NUMBER OF WORDS: NExpected:" << NExpected << " nw:" << nw;
       rc = -1;
@@ -972,6 +989,48 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // does the ROC need to be reset ? Monica says NO.
 //-----------------------------------------------------------------------------
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// read a given block number from ROC DDR memory
+// block size: 1 kB
+//-----------------------------------------------------------------------------
+  int DtcInterface::ReadRocDDR(int Link, int Block, int PcieAddr) {
+    int rc(0);
+  // ROC reg 15 - last memory block read
+    DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+    DTC_Link_ID link_id = DTC_Link_ID(Link);
+  
+  // write block number to reg 33
+    dtc_i->fDtc->WriteROCRegister(link_id,33,Block,false,1000);
+  // cycle reg 32
+    dtc_i->fDtc->WriteROCRegister(link_id,32, 0x01,false,1000);
+    dtc_i->fDtc->WriteROCRegister(link_id,32, 0x00,false,1000);
+  // success: reg 20:0x8080  reg21:nwords to read (512)
+    int reg_20 = dtc_i->fDtc->ReadROCRegister (link_id,20,1000);         // ox8080
+    int nw     = dtc_i->fDtc->ReadROCRegister (link_id,21,1000);         // number of 16-bit words in a 1 kByte block (512)
+//-----------------------------------------------------------------------------
+// at this point, if everything was OK (nw=512), can read the data
+//-----------------------------------------------------------------------------
+    std::cout << std::format("reg_21(nwords):{:d}  reg_20:0x{:4x}\n",nw,reg_20);
+
+    if (nw == 512) {
+      std::vector<uint16_t> v;
+      dtc_i->fDtc->ReadROCBlock(v,link_id,0x200,nw,false,1000);
+      if (nw != 512) {
+        std::cout << std::format("ERROR:002 read {} instead of 512 words, try again\n",nw);
+        rc = -1;
+      }
+      else {
+        dtc_i->PrintBuffer(v.data(),nw);
+      }
+    }
+    else {
+      std::cout << "ERROR:001 smth went wrong, try again\n";
+      rc = -1;
+    }
     return rc;
   }
 

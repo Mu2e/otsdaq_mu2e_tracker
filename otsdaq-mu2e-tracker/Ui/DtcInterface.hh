@@ -17,9 +17,10 @@
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
 
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
-#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 #include "otsdaq-mu2e-tracker/Ui/DtcInterfaceBase.hh"
 
 namespace trkdaq {
@@ -174,13 +175,15 @@ namespace trkdaq {
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
 
+    int          ReadRocDDR  (int Link, int Block, int PcieAddr = -1);
     int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
 
     Alignment    FindAlignment (DTCLib::DTC_Link_ID Link);
-    void         FindAlignments(bool print=false, int LinkMask=-1, std::ostream& Stream = std::cout);
+
+    int          FindAlignments(int PrintLevel=1, int Link=-1, std::ostream& Stream = std::cout);
 
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }

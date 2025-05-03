@@ -105,6 +105,20 @@ readDeviceID
 
 ('DRAC ROC ID #', '5a71c')
 #+end_src
+** readDDR
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),33,0x09,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x01,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x00,false,1000);
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),20,1000)
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x01,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x00,false,1000);
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),20,1000)
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+v2.clear()
+dtc_i->fDtc->ReadROCBlock(v2,DTC_Link_ID(0),512,512,false,1000)
+dtc_i->PrintBuffer(v2.data(),512)
 ** readSPI : no parameters                                                   
  conversion constants : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
 ** set_digi_rw                                                               

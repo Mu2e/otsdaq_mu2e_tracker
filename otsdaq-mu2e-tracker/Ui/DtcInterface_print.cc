@@ -93,6 +93,9 @@ namespace trkdaq {
     reg =  8; desc = "ROC pattern mode ??"; 
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
+    reg = 60; desc = "ROC readout timeout delay "; 
+    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    
     reg = 15; desc = "N simulated hits per lane";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     

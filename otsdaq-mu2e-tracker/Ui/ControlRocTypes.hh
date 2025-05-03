@@ -15,6 +15,7 @@ namespace trkdaq {
   enum {
     REG_READSPI       = 258,
     REG_DIGIRW        = 263,
+    REG_FINDALIGNMENT = 264,
     REG_READ          = 265,
     REG_SETGAIN       = 266,
     REG_SET_THR       = 267,
