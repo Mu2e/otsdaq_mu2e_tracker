@@ -175,7 +175,7 @@ namespace trkdaq {
                                   int         Validate = 0      , 
                                   const char* OutputFn = nullptr);
 
-    int          ReadRocDDR  (int Link, int Block, int PcieAddr = -1);
+    int          ReadRocDDR  (int Link, int Block, std::ostream& Stream = std::cout);
     int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
