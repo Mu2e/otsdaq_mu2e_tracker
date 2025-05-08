@@ -364,7 +364,7 @@ namespace trkdaq {
       }
 
       if (PrintLevel & 0x1) {
-        Stream << "-- FindAlignments link:" << i << " n_non_null:" << n_non_null
+        Stream << " link:" << i << " n_non_null:" << n_non_null
                << " nsteps_tot:" << nsteps_tot
                << " worst_ch:" << worst_ch
                << " max_steps_ch:" << max_steps_ch << std::endl;
@@ -965,12 +965,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
+      //      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       nw = fDtc->ReadROCRegister(link_id,129,100);
-      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
+      // TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
 
       nw -= 4;
       fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);

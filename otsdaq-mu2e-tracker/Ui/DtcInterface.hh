@@ -79,14 +79,16 @@ namespace trkdaq {
                                       std::ostream& Stream = std::cout);
     
     int          ControlRoc_PulserOff(int Link, int PrintLevel = 0, std::ostream& Stream= std::cout);
-    
-    int          ControlRoc_Rates    (int                 Link            ,
-                                      int                 PrintLevel = 0x2,
-                                      ControlRoc_Rates_t* Par        = nullptr,
-                                      std::ostream&       Stream     = std::cout);
+
+                                        // always a single link
+    int          ControlRoc_Rates    (int                     Link            ,
+                                      std::vector<uint16_t>*  Output          ,
+                                      int                     PrintLevel = 0x2,
+                                      ControlRoc_Rates_t*     Par        = nullptr,
+                                      std::ostream&           Stream     = std::cout);
 
     int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par        = nullptr,
-                                    int                       LinkMask   = -1   ,
+                                    int                       Link       = 0    ,
                                     int                       PrintLevel = 0    ,
                                     std::ostream&             Stream     = std::cout);
 
@@ -139,8 +141,15 @@ namespace trkdaq {
 // do one channel at a time
 // shall we think of a block operation ? or not ? - channels could be masked OFFx
 //-----------------------------------------------------------------------------
-    int          ControlRoc_SetGain     (int Link, int ChannelID, int PreampType, int Gain     );
-    int          ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold);
+    int          ControlRoc_SetGain      (int Link, int ChannelID, int PreampType, int Gain     , int PrintLevel = 0);
+    int          ControlRoc_SetThreshold (int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel = 0);
+//-----------------------------------------------------------------------------
+// block operation: set thresholds and gains for all channels on a given DRAC
+// 4 x 96 16 bit words. Gain cal, Gain HV, threshold CAL, threshold HV
+// It is a block write of 384 values to address 275 (0x113). It does not return anything
+// but you should still request that reg=128 read 0x8000 while reg=129 should stay at the default empty value of 0x1000
+//-----------------------------------------------------------------------------
+    int          ControlRoc_SetThresholds(int Link, uint16_t* TG, int PrintLevel = 0, std::ostream& Stream = std::cout);
 
     int          ConvertSpiData(const std::vector<uint16_t>& RawData,
                                 TrkSpiData_t*                Data   ,
@@ -159,6 +168,9 @@ namespace trkdaq {
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw, std::ostream* Stream = nullptr);
+
+    void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream);
+    void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream);
     
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value

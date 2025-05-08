@@ -100,7 +100,7 @@ namespace  trkdaq {
 
   
 //-----------------------------------------------------------------------------
-// if Link = -1, use fLinkMask, otherwise operate assuming a single link
+// operate assuming a single link
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t0* Par       ,
                                     int                       Link      ,
@@ -127,6 +127,11 @@ namespace  trkdaq {
     std::vector<uint16_t> vec;
     
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
+
+    if (Link < 0) {
+      TLOG(TLVL_ERROR) << "negative Link: 0x" << std::hex << Link ;
+      return -1;
+    }
 
     if (Par == nullptr) {
                                         // reasonable defaults, to run w/o passing anything
@@ -184,8 +189,8 @@ namespace  trkdaq {
     }
     
     for (int i=0; i<6; i++) {
-      int used = (link_mask >> 4*i) & 0x1;
-      if (not used)                                         continue;
+      int enabled = (link_mask >> 4*i) & 0x1;
+      if (not enabled)                                       continue;
       auto roc  = DTC_Link_ID(i);
       fDtc->WriteROCBlock   (roc,REG_READ,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -239,7 +244,7 @@ namespace  trkdaq {
   }
   
 //-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain) {
+  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -260,18 +265,18 @@ namespace  trkdaq {
                                         // 0x86 = 0x82 + 4
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
     int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
     fDtc->ReadROCBlock(v2,roc,REG_SETGAIN,nw,false,100);
 
-    PrintBuffer(v2.data(),nw);
+    if (PrintLevel != 0) PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
@@ -385,7 +390,7 @@ namespace  trkdaq {
   
 
 //-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold) {
+  int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -406,22 +411,57 @@ namespace  trkdaq {
                                         // 0x86 = 0x82 + 4
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
     int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
     fDtc->ReadROCBlock(v2,roc,REG_SET_THR,nw,false,100);
 
-    PrintBuffer(v2.data(),nw);
+    if (PrintLevel != 0) PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    // ResetLink(Link);
+    return 0;
+  }
+
+
+//-----------------------------------------------------------------------------
+// order:  4 x 96 16 bit words. Gain cal, Gain HV, threshold CAL, threshold HV
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_SetThresholds(int Link, uint16_t* GT_Cal_HV,
+                                             int PrintLevel, std::ostream& Stream) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+    if (Link < 0) {
+      TLOG(TLVL_ERROR) << "negative link:" << Link;
+      return -1;
+    };
+//-----------------------------------------------------------------------------
+// write parameters into reg 267 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> vec(GT_Cal_HV,GT_Cal_HV+4*96);
+
+    bool increment_address(false);
+    auto roc  = DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,REG_SETGAINTHR,vec,false,increment_address,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, if empty: 0x1000
+//-----------------------------------------------------------------------------
+    int nw = fDtc->ReadROCRegister(roc,129,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+
     return 0;
   }
 
@@ -435,8 +475,6 @@ namespace  trkdaq {
 // convert into enum
 //-----------------------------------------------------------------------------
     auto roc  = DTC_Link_ID(Link);
-
-    // int roc_mask = 1 << (4*Link);
 //-----------------------------------------------------------------------------
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -474,7 +512,6 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-    // fDtc->WriteROCRegister(roc,14,0x01,false,1000); 
 
     if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
     // expect nw=288 = 96*3, if not - in trouble
@@ -725,15 +762,19 @@ namespace  trkdaq {
 
 //-----------------------------------------------------------------------------
 // at this point, assume just one Link. If needed, make it more general (a mask) later
+// only unformatted printout internally, 
 //-----------------------------------------------------------------------------
-  int  DtcInterface::ControlRoc_Rates(int Link, int PrintLevel, ControlRoc_Rates_t* Par,
-                                      std::ostream& Stream) {
+  int  DtcInterface::ControlRoc_Rates(int                    Link,
+                                      std::vector<uint16_t>* V2,
+                                      int                    PrintLevel,
+                                      ControlRoc_Rates_t*    Par,
+                                      std::ostream&          Stream) {
     int                 rc(0);
     ControlRoc_Rates_t  par;   // default construction : (num_lookback=100,num_samples=10,ch_mask=6x0xffff)
     
     if (Par != nullptr) par = *Par;
 
-    TLOG(TLVL_DEBUG) << "par:{" << par.num_lookback << ","
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " par:{" << par.num_lookback << ","
                      << par.num_samples << ","
                      << std::hex
                      << "0x" << par.ch_mask[0] << ","
@@ -743,157 +784,57 @@ namespace  trkdaq {
                      << "0x" << par.ch_mask[4] << ","
                      << "0x" << par.ch_mask[5] << "}";
 
-    int i1(Link), i2(Link+1);
     if (Link == -1) {
-      i1 = 0;
-      i2 = 6;
+      TLOG(TLVL_ERROR) << "negative link:" << Link << "  ... BAIL OUT";
+      return -1;
     }
-
-    std::vector<uint16_t> v2[6];
-    
-    for (int i=i1; i<i2; i++) {
-      if (LinkEnabled(i) == 0)                              continue;
-      auto roc  = DTC_Link_ID(i);
-//-----------------------------------------------------------------------------
-// make sure the ROC is in the right state
-//-----------------------------------------------------------------------------
-      // ControlRoc_Read_Input_t0 x;
-      // x.marker_clock=0;
-      // ControlRoc_Read(&x,i);
+    else if (LinkEnabled(Link) == 0) {
+      TLOG(TLVL_ERROR) << "link:" << Link << "  is not enabled, BAIL OUT";
+      return -2;
+    }
 //-----------------------------------------------------------------------------
 // write parameters into reg ***  (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 // ch_mask always includes the first channel
 //-----------------------------------------------------------------------------
-      std::vector<uint16_t> vec;
+    std::vector<uint16_t> vec;
       
-      vec.push_back(par.num_lookback);
-      vec.push_back(par.num_samples );
+    vec.push_back(par.num_lookback);
+    vec.push_back(par.num_samples );
 
-      for (int i=0; i<6; i++) {
-        vec.push_back(par.ch_mask[i]);
-      }
+    for (int i=0; i<6; i++) {
+      vec.push_back(par.ch_mask[i]);
+    }
+
+    TLOG(TLVL_DEBUG) << " -- 002";
   
-      fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
-      std::this_thread::sleep_for(std::chrono::microseconds(1000));
+    auto roc  = DTC_Link_ID(Link);
+    fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
-      // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
-      printf("reg:%03i val:0x%04x\n",128,u);
+    // 0x86 = 0x82 + 4
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+    if (PrintLevel) printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
-// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+// register 129: number of words to read, currently (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      int nw = fDtc->ReadROCRegister(roc,129,100); printf("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,129,100);
+    if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
 
-      nw = nw-4;
-      fDtc->ReadROCBlock(v2[i],roc,REG_READRATES,nw,false,100);
+    TLOG(TLVL_DEBUG) << " -- 003";
+    nw = nw-4;
+    fDtc->ReadROCBlock(*V2,roc,REG_READRATES,nw,false,100);
+
+    TLOG(TLVL_DEBUG) << " -- 004";
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
-      if (PrintLevel & 0x1) {
-        PrintBuffer(v2[i].data(),nw,&Stream);
-      }
-
+    if (PrintLevel & 0x1) {
+      PrintBuffer(V2->data(),nw,&Stream);
     }
 
-//-----------------------------------------------------------------------------
-// do the printing
-// bit 1: formattted printout, sequentially
-//-----------------------------------------------------------------------------
-    if (PrintLevel & 0x2) {
-      for (int i=i1; i<i2; i++) {
-        if (LinkEnabled(i) == 0)                              continue;
-        std::vector<uint16_t>* dat = &v2[i];
-//-----------------------------------------------------------------------------
-// formatted printout
-// should be 96*3*2+2*2 = 580 16-bit words
-// 3 words per channel (straw)
-//-----------------------------------------------------------------------------
-        int nw = dat->size();
-        if (nw != 580) {
-          printf("ERROR: link: %i nw = %5i != 580. BAIL OUT\n",i,nw);
-          continue;
-        }
-//-----------------------------------------------------------------------------
-// finally, the last two words - total counts
-//-----------------------------------------------------------------------------
-        float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
-        float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-
-        int loc = 576;
-      
-        total[1]  = float((*dat)[loc  ])+(int((*dat)[loc+1]) << 16); // hv - check the order with Vadim
-        total[0]  = float((*dat)[loc+2])+(int((*dat)[loc+3]) << 16); // cal
-
-        Stream << " channel  Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
-        Stream << "-----------------------------------------------------------------------------------------\n";
-
-        for (int ich=0; ich<96; ich++) {
-          loc               = 6*ich;
-          int   counts_hv   = int((*dat)[loc  ])+(int((*dat)[loc+1]) << 16);
-          int   counts_cal  = int((*dat)[loc+2])+(int((*dat)[loc+3]) << 16);
-          int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
-          int   fpga        = fgFpga[ich];
-          float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
-          float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
-          float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
-          Stream << std::format("{:5d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f} \n",
-                                ich,counts_hv,counts_cal,counts_coin,
-                                rate_hv,rate_cal,rate_coin);
-        }
-
-        Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
-      }
-    }
-//-----------------------------------------------------------------------------
-// do the printing
-// bit 2: formattted printout, parallel
-//-----------------------------------------------------------------------------
-    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-    
-    if (PrintLevel & 0x4) {
-      Stream << "ch|   link0       |   link1       |   link2       |   link3       |   link4       |   link5       |\n";
-      Stream << "  | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   |\n";
-      Stream << "---------------------------------------------------------------------------------------------------\n";
-
-      float total[6][2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
-
-      int loc = 576;
-      for (int i=i1; i<i2; i++) {
-        std::vector<uint16_t>* dat = &v2[i];
-        int nw = dat->size();
-        if ((LinkEnabled(i) == 0) or (nw != 580)) continue;
-
-        total[i][1]  = float((*dat)[loc  ])+(int((*dat)[loc+1]) << 16); // hv - check the order with Vadim
-        total[i][0]  = float((*dat)[loc+2])+(int((*dat)[loc+3]) << 16); // cal
-      }
-
-      for (int ich=0; ich<96; ich++) {
-        int loc               = 6*ich;
-        Stream << std::format("{:2d}|",ich);
-        
-        for (int i=i1; i<i2; i++) {
-          std::vector<uint16_t>* dat = &v2[i];
-          int nw = dat->size();
-          if ((LinkEnabled(i) == 0) or (nw != 580)) {
-            Stream << "             |";
-          }
-          else {
-            int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
-            float rate_coin   = counts_coin/(total[i][0]+total[i][1])*2/clock_tick/1000.;
-
-            //            Stream << std::format("{:6d} {:7.3f} |",counts_coin, rate_coin);
-            Stream << std::format("       {:7.3f} |",rate_coin);
-          }
-        }
-        
-        Stream << std::endl;
-      }
-    }
-//-----------------------------------------------------------------------------
-// 
-//-----------------------------------------------------------------------------
+    TLOG(TLVL_DEBUG) << " -- END";
     return rc;
   }
 

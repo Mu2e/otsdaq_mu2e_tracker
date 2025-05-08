@@ -237,6 +237,118 @@ namespace trkdaq {
     }
   }
 
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
+    
+//-----------------------------------------------------------------------------
+// formatted printout
+// should be 96*3*2+2*2 = 580 16-bit words
+// 3 words per channel (straw)
+//-----------------------------------------------------------------------------
+    int nw = Rates->size();
+    if (nw != 580) {
+      TLOG(TLVL_ERROR) << "nw:" << nw << " != 580. BAIL OUT";
+      return;
+    }
+//-----------------------------------------------------------------------------
+// finally, the last two words - total counts
+//-----------------------------------------------------------------------------
+    float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+      
+    int loc = 576;   // = 96*6
+    
+    total[1]  = float((*Rates)[loc  ])+(int((*Rates)[loc+1]) << 16); // hv - check the order with Vadim
+    total[0]  = float((*Rates)[loc+2])+(int((*Rates)[loc+3]) << 16); // cal
+
+    Stream << " channel  mask Total(HV) Total(CAL) Total(HV.and.CAL)  Rate(HV)   Rate(CAL)   Rate(HV.and.CAL)\n";
+    Stream << "-----------------------------------------------------------------------------------------\n";
+
+    for (int ich=0; ich<96; ich++) {
+      loc               = 6*ich;
+      int   counts_hv   = int((*Rates)[loc  ])+(int((*Rates)[loc+1]) << 16);
+      int   counts_cal  = int((*Rates)[loc+2])+(int((*Rates)[loc+3]) << 16);
+      int   counts_coin = int((*Rates)[loc+4])+(int((*Rates)[loc+5]) << 16);
+      int   fpga        = fgFpga[ich];
+      float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
+      float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
+      float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
+      
+      int ch_mask = 1;
+      if ((ChMask->size() == 96) and (ChMask->at(ich) == 0)) {
+        ch_mask = 0;
+      }
+    
+      Stream << std::format("{:5d} {:3d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f}\n",
+                            ich,ch_mask,counts_hv,counts_cal,counts_coin,
+                            rate_hv,rate_cal,rate_coin);
+    }
+      
+    Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
+  }
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintRatesAllRocs(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
+//-----------------------------------------------------------------------------
+// do the printing
+// bit 2: formattted printout, parallel
+//-----------------------------------------------------------------------------
+    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+    
+    Stream << "ch|   link 0      |   link 1      |   link 2      |   link 3      |   link 4      |   link 5      |\n";
+    Stream << "  | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   |\n";
+    Stream << "---------------------------------------------------------------------------------------------------\n";
+
+    float total[6][2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+
+    int loc = 576;
+    for (int lnk=0; lnk<6; lnk++) {
+      std::vector<uint16_t>* dat = &Rates[lnk];
+      int nw = dat->size();
+      Stream << std::dec << "lnk:" << lnk << " nw:" << nw <<  "ChMask[lnk].size():"<< ChMask[lnk].size() << std::endl;
+      if ((LinkEnabled(lnk) == 0) or (nw != 580)) {
+        total[lnk][0] = -1;
+        total[lnk][1] = -1;
+      }
+      else {
+        total[lnk][1]  = float((*dat)[loc  ])+(int((*dat)[loc+1]) << 16); // hv - check the order with Vadim
+        total[lnk][0]  = float((*dat)[loc+2])+(int((*dat)[loc+3]) << 16); // cal
+      }
+    }
+
+    
+    for (int ich=0; ich<96; ich++) {
+      int loc               = 6*ich;
+      Stream << std::format("{:2d}|",ich);
+      
+      for (int lnk=0; lnk<6; lnk++) {
+        std::vector<uint16_t>* dat = &Rates[lnk];
+        int nw = dat->size();
+
+        // Stream << "ich:" << ich << " i:" << i << " nw:" << nw << std::endl ;
+
+        char c = '|';
+        int ch_mask = 1;
+        if ((ChMask[lnk].size() == 96) and (ChMask[lnk].at(ich) == 0)) {
+          ch_mask = 0;
+           c = '*';
+        }
+        if ((LinkEnabled(lnk) == 0) or (nw != 580)) {
+          Stream << "             " << c;
+        }
+        else {
+          int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
+          float rate_coin   = counts_coin/(total[lnk][0]+total[lnk][1])*2/clock_tick/1000.;
+          
+          //            Stream << std::format("{:6d} {:7.3f} |",counts_coin, rate_coin);
+          Stream << std::format("      {:7.3f} {:c}",rate_coin,c);
+        }
+      }
+      
+      Stream << std::endl;
+    }
+  }
+  
 };
 
 
