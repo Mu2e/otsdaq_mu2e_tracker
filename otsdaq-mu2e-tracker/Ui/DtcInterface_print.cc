@@ -295,9 +295,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
     
-    Stream << "ch|   link 0      |   link 1      |   link 2      |   link 3      |   link 4      |   link 5      |\n";
-    Stream << "  | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   | counts rate   |\n";
-    Stream << "---------------------------------------------------------------------------------------------------\n";
+    Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
+    Stream << "  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  |\n";
+    Stream << "--------------------------------------------------------------------------------------------\n";
 
     float total[6][2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
 
@@ -316,7 +316,6 @@ namespace trkdaq {
       }
     }
 
-    
     for (int ich=0; ich<96; ich++) {
       int loc               = 6*ich;
       Stream << std::format("{:2d}|",ich);
@@ -341,7 +340,7 @@ namespace trkdaq {
           float rate_coin   = counts_coin/(total[lnk][0]+total[lnk][1])*2/clock_tick/1000.;
           
           //            Stream << std::format("{:6d} {:7.3f} |",counts_coin, rate_coin);
-          Stream << std::format("      {:7.3f} {:c}",rate_coin,c);
+          Stream << std::format("     {:8.3f} {:c}",rate_coin,c);
         }
       }
       
