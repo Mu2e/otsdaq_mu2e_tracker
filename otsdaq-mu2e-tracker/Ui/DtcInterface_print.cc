@@ -12,6 +12,8 @@
 using namespace DTCLib;
 using namespace std;
 
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+
 namespace trkdaq {
 
 //-----------------------------------------------------------------------------
@@ -348,6 +350,30 @@ namespace trkdaq {
     }
   }
   
+//-----------------------------------------------------------------------------
+// assume always data from 6 ROCs, some may be disabled
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::ostream& Stream) {
+
+    Stream << " SPI Parameter ";
+    for (int lnk=0; lnk<6; lnk++) {
+      if (not LinkEnabled(lnk)) continue;
+      Stream << std::format("    link {:}",lnk);
+    }
+    Stream << std::endl
+           << "--------------------------------------------------------------------------"
+           << std::endl;
+    
+    for (int i=0; i<TrkSpiDataNWords; ++i) {
+      Stream << std::format("{:15s}",fgSpiVarName[i]);
+      for (int lnk=0; lnk<6; lnk++) {
+        if (not LinkEnabled(lnk)) continue;
+        Stream << std::format("{:10.3f}",Spi[lnk].Data(i));
+      }
+      Stream << std::endl;
+    }
+  }
+  
 };
 
 
@@ -467,5 +493,6 @@ namespace mu2edaq {
     PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
                           
   }
+
 };
 

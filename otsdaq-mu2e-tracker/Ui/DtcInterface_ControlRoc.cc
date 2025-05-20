@@ -599,7 +599,8 @@ namespace  trkdaq {
       }
       
       if (PrintLevel > 0) {
-        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
+        //        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
+        Stream << Form("%-20s : %10.3f\n",fgSpiVarName[i],val[i]);
       }
     }
 
@@ -613,26 +614,41 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
-    int rc = RocBlockRead(Link,REG_READSPI,SpiRawData);
+    int rc(0);
+    
+    int l1 = Link;
+    int l2 = l1+1;
 
-    int nw = SpiRawData.size();
-
-    if (nw != TrkSpiDataNWords) {
-      TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
-      rc = -1;
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
     }
+
+    for (int i=l1; i<l2; ++i) {
+      if (not LinkEnabled(i)) continue;
+      
+      rc = RocBlockRead(i,REG_READSPI,SpiRawData);
+
+      int nw = SpiRawData.size();
+
+      if (nw != TrkSpiDataNWords) {
+        TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
+        rc = -1;
+      }
 //-----------------------------------------------------------------------------
 // PrintLevel bit 0: print SPI data in hex 
 //-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x1) != 0) {
-      PrintBuffer(SpiRawData.data(),nw,&Stream);
-    }
+      if ((PrintLevel & 0x1) != 0) {
+        PrintBuffer(SpiRawData.data(),nw,&Stream);
+      }
 //-----------------------------------------------------------------------------
 // PrintLevel bit 1: parse SPI data and print them
 //-----------------------------------------------------------------------------
-    if ((rc == 0) and (PrintLevel & 0x2) != 0) {
-      struct TrkSpiData_t spi;
-      ConvertSpiData(SpiRawData,&spi,PrintLevel,Stream);  // &spi[0]
+      if ((rc == 0) and (PrintLevel & 0x2) != 0) {
+        struct TrkSpiData_t spi;
+        Stream << "link " << i << std::endl;
+        ConvertSpiData(SpiRawData,&spi,PrintLevel,Stream);  // &spi[0]
+      }
     }
 
     return rc;
@@ -646,21 +662,31 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
-    std::vector<uint16_t> data;
-    rc = RocBlockRead(Link,REG_READSPI,data,TrkSpiDataNWords);
+    int l1 = Link;
+    int l2 = l1+1;
+
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+
+    for (int i=l1; i<l2; i++) {
+      std::vector<uint16_t> data;
+      rc = RocBlockRead(i,REG_READSPI,data,TrkSpiDataNWords);
 //-----------------------------------------------------------------------------
 // PrintLevel bit 0: print SPI data in hex
 //-----------------------------------------------------------------------------
-    if ((PrintLevel & 0x1) != 0) {
-      int nw = data.size();
-      PrintBuffer(data.data(),nw,&Stream);
-    }
+      if ((PrintLevel & 0x1) != 0) {
+        int nw = data.size();
+        PrintBuffer(data.data(),nw,&Stream);
+      }
 //-----------------------------------------------------------------------------
 // do not perform conversion, if wrong number of words
 // PrintLevel bit 1: parse SPI data and print them
 //-----------------------------------------------------------------------------
-    if (rc == 0) {
-      ConvertSpiData(data,Spi,PrintLevel,Stream);  // &spi[0]
+      if (rc == 0) {
+        ConvertSpiData(data,Spi,PrintLevel,Stream);  // &spi[0]
+      }
     }
 
     return rc;
