@@ -7,6 +7,8 @@
 #include "TSystem.h"
 #include "TROOT.h"
 
+#include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_EventHeader.h"
+
 #include "otsdaq-mu2e-tracker/ArtModules/TrackerDQM_module.hh"
 //-----------------------------------------------------------------------------
 // convert DTC ID into an index within the station (0 or 1)
@@ -925,7 +927,7 @@ int TrackerDQM::init_event(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 void TrackerDQM::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragment* Fragment) {
 
-  short* fdata = (short*) Fragment->dataBegin();
+  short* fdata = (short*) Fragment->dataBegin() + sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
 
   _edata.fragments.push_back(FragmentData_t());
 //-----------------------------------------------------------------------------
@@ -1241,7 +1243,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 //-----------------------------------------------------------------------------
   ChannelData_t* ref_ch[2];
   
-  int const packet_size(16); // in bytes
+  //  int const packet_size(16); // in bytes
 
   int link      = Dh->linkID;
   ref_ch[0]     = &Rd->channel[_referenceChannel[link][0]];
