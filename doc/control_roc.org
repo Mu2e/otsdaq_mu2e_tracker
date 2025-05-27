@@ -18,6 +18,8 @@
 *** set pulser frequency:                                                    
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+*** to take out new delay
+          set  0xF5 register on both digis to 0. 
 *** details on over-the-fiber implementation (from Monica)                   
 - DCS block register  263, or 0x107.
 #+begin_src 

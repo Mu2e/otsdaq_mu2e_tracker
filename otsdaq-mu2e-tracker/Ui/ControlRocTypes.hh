@@ -45,17 +45,17 @@ namespace trkdaq {
     uint16_t    clock;                  // [15] need to set clock=99                   // *v2*
 
     ControlRoc_Read_Input_t0() {
-      adc_mode = 0;
-      tdc_mode = 0;
-      num_lookback = 0;
-      num_samples = 1;
+      adc_mode        = 0;
+      tdc_mode        = 0;
+      num_lookback    = 0;
+      num_samples     = 1;
       num_triggers[0] = 0;
       num_triggers[1] = 0;
       for (int i=0; i<6; i++) ch_mask[i] = 0xffff;
-      enable_pulser = 0;
-      marker_clock = 3;
-      mode = 0;
-      clock = 99;
+      enable_pulser   = 0;
+      marker_clock    = 3;
+      mode            = 0;
+      clock           = 99;
     }
   };
 

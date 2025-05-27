@@ -976,7 +976,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
     }
     catch(...) {
-      TLOG(TLVL_ERROR) << "failed DCS transaction";
+      TLOG(TLVL_ERROR) << "failed DCS transaction link:" << Link;
       rc = -2;
     }
     

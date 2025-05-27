@@ -50,36 +50,39 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // if Link != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
 //-----------------------------------------------------------------------------
-    int link_mask = fLinkMask;
-    if (Link != -1) link_mask = (1 << 4*Link);
+    int link1(0), link2(6);
+    if (Link) {
+      link1 = Link;
+      link2 = Link+1;
+    }
 //-----------------------------------------------------------------------------
 // loop over the links and execute
 //-----------------------------------------------------------------------------
-    for (int i=0; i<6; i++) {
-      int used = (link_mask >> 4*i) & 0x1;
-      if (not used)                                           continue;
+    for (int i=link1; i<link2; i++) {
+      if (not LinkEnabled(i))                                 continue;
       auto roc  = DTC_Link_ID(i);
       fDtc->WriteROCBlock   (roc,REG_DIGIRW,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-      Stream << Form("reg:%03i val:0x%04x\n",128,u);
+      if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
-      Stream << Form("reg:%03i val:0x%04x\n",129,nw);
+      if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
       std::vector<uint16_t> v2;
       fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
       if (PrintLevel > 0) {
-        Stream << " ---------------- link:" << i << std::endl;
+        Stream << " ---------------- link:" << i << ":";
         if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
         if (PrintLevel & 0x2) {
-          
+          Stream << std::endl;
+
           trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
           
           Stream << Form("rw           : %i\n"        ,o->rw);
@@ -110,89 +113,68 @@ namespace  trkdaq {
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
 /*
-            adc_mode = dtcbuffer[0];                                  // -a
-            tdc_mode = dtcbuffer[1];                                  // -t
-            num_lookback = dtcbuffer[2];                              // -l
-            num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
+            adc_mode        = dtcbuffer[0];                                  // -a
+            tdc_mode        = dtcbuffer[1];                                  // -t
+            num_lookback    = dtcbuffer[2];                              // -l
+            num_triggers    = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
             channel_mask[0] = (dtcbuffer[6] << 16) + dtcbuffer[5];    // -C
             channel_mask[1] = (dtcbuffer[8] << 16) + dtcbuffer[7];    // -D
             channel_mask[2] = (dtcbuffer[10] << 16) + dtcbuffer[9];    // -E
-            num_samples = dtcbuffer[11];                     // -s
-            enable_pulser = (uint8_t) dtcbuffer[12];         // -p
+            num_samples     = dtcbuffer[11];                     // -s
+            enable_pulser   = (uint8_t) dtcbuffer[12];         // -p
             max_total_delay = dtcbuffer[13];                 // -d (def 1)
-            marker_clock = (uint8_t) dtcbuffer[14];          // -m
+            marker_clock    = (uint8_t) dtcbuffer[14];          // -m
 */    
 //-----------------------------------------------------------------------------
-//    const int  reg (265);  // for control_ROC.py(read)
     std::vector<uint16_t> vec;
     
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
 
-    if (Link < 0) {
-      TLOG(TLVL_ERROR) << "negative Link: 0x" << std::hex << Link ;
+    int link1(Link), link2(Link+1);
+    if (Link == -1) {
+      link1 = 0;
+      link2 = 6;
+    }
+    else if ((Link > 5) or (Link < -1)){
+      TLOG(TLVL_ERROR) << "wrong Link: 0x" << std::hex << Link ;
       return -1;
     }
-
-    if (Par == nullptr) {
-                                        // reasonable defaults, to run w/o passing anything
-      uint16_t adc_mode(0), tdc_mode(0), num_lookback(0), num_samples(1);
-      uint16_t num_triggers[2] = {10,0};
-      uint16_t ch_mask     [6] = {0xffff,0xffff,0xffff,0xffff,0xffff,0xffff};
-      uint16_t enable_pulser(0), marker_clock(3), mode(0), clock(99);
-        
-      vec.push_back(adc_mode);
-      vec.push_back(tdc_mode);
-      vec.push_back(num_lookback);
-      vec.push_back(num_samples);
-      vec.push_back(num_triggers[0]);
-      vec.push_back(num_triggers[1]);
-      for (int i=0; i<6; i++) vec.push_back(ch_mask[i]);
-      vec.push_back(enable_pulser);
-      vec.push_back(marker_clock);
-      vec.push_back(mode);
-      vec.push_back(clock);
-    }
-    else {
-      vec.push_back(Par->adc_mode);
-      vec.push_back(Par->tdc_mode);
-      vec.push_back(Par->num_lookback);
+                                        // rely on supplied constructor
+    ControlRoc_Read_Input_t0 default_par, *par;
     
-      if (Par->num_samples > 63) {
-        TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
-        Par->num_samples = 63;
-      }
-
-      vec.push_back(Par->num_samples);
-      
-      uint16_t w1 = Par->num_triggers[0];
-      uint16_t w2 = Par->num_triggers[1];
-      
-      vec.push_back(w1);
-      vec.push_back(w2);
-      
-      for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]); 
-      
-      vec.push_back(Par->enable_pulser);
-      vec.push_back(Par->marker_clock );
-      vec.push_back(Par->mode  );
-      vec.push_back(Par->clock );
+    if (Par != nullptr) par = Par;
+    else                par = &default_par;
+    
+    vec.push_back(par->adc_mode);
+    vec.push_back(par->tdc_mode);
+    vec.push_back(par->num_lookback);
+        
+    if (par->num_samples > 63) {
+      TLOG(TLVL_WARNING) << "num_samples:" << par->num_samples << " gt 63, truncate to 63" ;
+      par->num_samples = 63;
     }
+
+    vec.push_back(par->num_samples);
+      
+    uint16_t w1 = par->num_triggers[0];
+    uint16_t w2 = par->num_triggers[1];
+      
+    vec.push_back(w1);
+    vec.push_back(w2);
+      
+    for (int i=0; i<6; i++) vec.push_back(par->ch_mask[i]); 
+        
+    vec.push_back(par->enable_pulser);
+    vec.push_back(par->marker_clock );
+    vec.push_back(par->mode  );
+    vec.push_back(par->clock );
       
     bool increment_address(false);
-//-----------------------------------------------------------------------------
-// if LinkMask != -1, use it
-// in addition, if UpdateMask=true, update the DTC link mask (fLinkMask)
-//-----------------------------------------------------------------------------
-    int link_mask = fLinkMask;
-    if (Link != -1) {
-      link_mask = (1 << 4*Link);
-    }
     
-    for (int i=0; i<6; i++) {
-      int enabled = (link_mask >> 4*i) & 0x1;
-      if (not enabled)                                       continue;
+    for (int i=link1; i<link2; ++i) {
+      if (not LinkEnabled(i))                            continue;
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,REG_READ,vec,false,increment_address,100);
+      fDtc->WriteROCBlock(roc,REG_READ,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
                                         // 0x86 = 0x82 + 4
@@ -209,11 +191,11 @@ namespace  trkdaq {
       std::vector<uint16_t> vout;
       fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
 
-      if (PrintLevel > 0) {
+      if (PrintLevel != 0) {
+        
         Stream << "--------------- link :" << i << std::endl;
-        if (PrintLevel & 0x1) {
-          PrintBuffer(vout.data(),nw,&Stream);
-        }
+
+        if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,&Stream);
       
         if (PrintLevel & 0x2) {
           trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
@@ -324,12 +306,20 @@ namespace  trkdaq {
     }
     
     for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i))   continue;
+      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,REG_PULSERON,vec,false,increment_address,100);
-      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      try {
+        fDtc->WriteROCBlock   (roc,REG_PULSERON,vec,false,increment_address,100);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed WriteROCBlock, continue" << std::endl;
+        continue;
+      }
 
                                         // 0x86 = 0x82 + 4
       uint16_t u; 
@@ -372,17 +362,23 @@ namespace  trkdaq {
     }
     
     for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i)) continue;
 //-----------------------------------------------------------------------------
 // PULSER_OFF: reg 269
 //-----------------------------------------------------------------------------
       std::vector<uint16_t> res;
-      RocBlockRead(i,REG_PULSEROFF,res);
+      int rc = RocBlockRead(i,REG_PULSEROFF,res);
 
-      int nw = res.size();
-      TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
+      if (rc == 0) {
+        int nw = res.size();
+        TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
 
-      if (PrintLevel & 0x1) {
-        PrintBuffer(res.data(),nw,&Stream);
+        if (PrintLevel & 0x1) {
+          PrintBuffer(res.data(),nw,&Stream);
+        }
+      }
+      else {
+        Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << REG_PULSEROFF << std::endl; 
       }
     }
     return rc;

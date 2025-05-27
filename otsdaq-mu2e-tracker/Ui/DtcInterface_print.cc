@@ -307,7 +307,7 @@ namespace trkdaq {
     for (int lnk=0; lnk<6; lnk++) {
       std::vector<uint16_t>* dat = &Rates[lnk];
       int nw = dat->size();
-      Stream << std::dec << "lnk:" << lnk << " nw:" << nw <<  "ChMask[lnk].size():"<< ChMask[lnk].size() << std::endl;
+      // Stream << std::dec << "lnk:" << lnk << " nw:" << nw <<  " ChMask[lnk].size():"<< ChMask[lnk].size() << std::endl;
       if ((LinkEnabled(lnk) == 0) or (nw != 580)) {
         total[lnk][0] = -1;
         total[lnk][1] = -1;
@@ -326,8 +326,6 @@ namespace trkdaq {
         std::vector<uint16_t>* dat = &Rates[lnk];
         int nw = dat->size();
 
-        // Stream << "ich:" << ich << " i:" << i << " nw:" << nw << std::endl ;
-
         char c = '|';
         int ch_mask = 1;
         if ((ChMask[lnk].size() == 96) and (ChMask[lnk].at(ich) == 0)) {
@@ -340,8 +338,6 @@ namespace trkdaq {
         else {
           int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);
           float rate_coin   = counts_coin/(total[lnk][0]+total[lnk][1])*2/clock_tick/1000.;
-          
-          //            Stream << std::format("{:6d} {:7.3f} |",counts_coin, rate_coin);
           Stream << std::format("     {:8.3f} {:c}",rate_coin,c);
         }
       }
