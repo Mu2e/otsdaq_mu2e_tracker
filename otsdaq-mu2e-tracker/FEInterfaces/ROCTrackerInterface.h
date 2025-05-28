@@ -34,6 +34,68 @@ public:
 	virtual void							readEmulatorBlock	(std::vector<uint16_t>& data, uint16_t address, uint16_t wordCount, bool incrementAddress) override;
 
 
+	// For injection pulse readout
+	//----------------
+	//
+	enum {
+		REG_CONFIG      			= 8,
+		REG_ROC_RESET      			= 14,
+		REG_DIGI_SETUP_CHECK		= 18,
+		REG_DATA_VERSION   			= 29,
+		REG_UP_DONE       			= 128,
+		REG_BLOCK_WRITE_CHECK      	= 129,
+		REG_READSPI       			= 258,
+		REG_DIGIRW        			= 263,
+		REG_FINDALIGNMENT 			= 264,
+		REG_READ          			= 265,
+		REG_SETGAIN       			= 266,
+		REG_SET_THR       			= 267,
+		REG_PULSERON      			= 268,
+		REG_PULSEROFF     			= 269,
+		REG_MEAS_THR      			= 270,
+		REG_READRATES     			= 271,
+		REG_READGITCOMMIT 			= 272,
+		REG_READILP       			= 273,
+		REG_GETKEY        			= 274,
+	};
+
+	struct ControlRoc_Read_Input_t0 {
+		uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2*
+		uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2*
+		uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2*
+		uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63  // *v2*
+
+		uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]                 // *v2*
+		uint16_t    ch_mask[6];             // FFFF FFFF FFFF FFFF FFFF FFFF [6:11]        // *v2*
+
+		uint16_t    enable_pulser;          // -p 1     (default: 0) [12]                  // *v2*
+
+		uint16_t    marker_clock;           // -m 3 ??? )default: 0) [13]                  // *v2*
+		uint16_t    mode;                   // [14] need to set mode=0                     // *v2*
+		uint16_t    clock;                  // [15] need to set clock=99                   // *v2*
+	};
+
+	void 			dtc_control_roc_read(	int      LinkMask     = -1,
+											int      AdcMode      = 0,
+											int      TdcMode      = 0,
+											int      NumLookback  = 0,
+											int      EnablePulser = 0,
+											int      MarkerClock  = 3,
+											int      NumSamples   = 1,
+											uint32_t MaskC        = 0xFFFFFFFF,
+											uint32_t MaskD        = 0xFFFFFFFF,
+											uint32_t MaskE        = 0xFFFFFFFF,
+											int      PcieAddr     = -1);
+
+
+    void         	ControlRoc_Read   (		ControlRoc_Read_Input_t0* Par        = nullptr,
+											int                       LinkMask   = -1   ,
+											int                       PrintLevel = 0    ,
+											std::ostream&             Stream     = std::cout);
+
+	// end For injection pulse readout
+	//----------------
+
 
 	bool emulatorWorkLoop(void) override;
 
@@ -107,6 +169,8 @@ public:
 
 	void 			ReadROCErrorCounter		(__ARGS__);
 	virtual void 	GetStatus				(__ARGS__) override;
+	void 			SetupForDigiDataTaking	(__ARGS__);
+	void 			FindAlignment	(__ARGS__);
 
 	// clang-format on
 };

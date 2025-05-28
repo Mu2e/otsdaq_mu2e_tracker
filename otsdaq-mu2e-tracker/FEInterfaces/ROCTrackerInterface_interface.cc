@@ -56,6 +56,20 @@ ROCTrackerInterface::ROCTrackerInterface(
 	//     1);                                                   //
 	//     requiredUserPermissions
 
+	registerFEMacroFunction("Setup for Digi Data Taking",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::SetupForDigiDataTaking),
+	                        std::vector<std::string>{},          // inputs parameters
+	                        std::vector<std::string>{"Result"},  // output parameters
+	                        1);  // requiredUserPermissions
+
+	registerFEMacroFunction("Find Alignment",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::FindAlignment),
+	                        std::vector<std::string>{},          // inputs parameters
+	                        std::vector<std::string>{"Result"},  // output parameters
+	                        1);  // requiredUserPermissions
+
 	try
 	{
 		inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
@@ -508,5 +522,322 @@ void ROCTrackerInterface::GetStatus(__ARGS__)
 	__SET_ARG_OUT__("Status", os.str());
 
 }  // end GetStatus()
+
+
+//==================================================================================================
+void ROCTrackerInterface::dtc_control_roc_read(	int      LinkMask    ,
+												int      AdcMode     ,
+												int      TdcMode     ,
+												int      NumLookback ,
+												int      EnablePulser,
+												int      MarkerClock ,
+												int      NumSamples  ,
+												uint32_t MaskC       ,
+												uint32_t MaskD       ,
+												uint32_t MaskE       ,
+												int      PcieAddr    )
+{
+	// DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+	ControlRoc_Read_Input_t0 par;
+
+	par.adc_mode        = AdcMode;        // -a
+	par.tdc_mode        = TdcMode;        // -t
+	par.num_lookback    = NumLookback;    //
+
+	par.num_samples     = NumSamples;     // -s
+	par.num_triggers[0] = 10;             // -T 10
+	par.num_triggers[1] = 0;              // -T (high bytes)
+
+	par.ch_mask[0]      = (MaskC >>  0) & 0xffff;
+	par.ch_mask[1]      = (MaskC >> 16) & 0xffff;
+	par.ch_mask[2]      = (MaskD >>  0) & 0xffff;
+	par.ch_mask[3]      = (MaskD >> 16) & 0xffff;
+	par.ch_mask[4]      = (MaskE >>  0) & 0xffff;
+	par.ch_mask[5]      = (MaskE >> 16) & 0xffff;
+
+	par.enable_pulser   = EnablePulser;   // -p 1
+	par.marker_clock    = MarkerClock;    // -m 3
+	par.mode            = 0;              //
+	par.clock           = 99;             //
+
+	// printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
+	int  print_level(3);
+
+	// dtc_i->ControlRoc_Read(&par,LinkMask,print_level);
+	ControlRoc_Read(&par,LinkMask,print_level);
+} //end dtc_control_roc_read()
+
+void ROCTrackerInterface::ControlRoc_Read(ControlRoc_Read_Input_t0* Par       ,
+											int                       Link      ,
+											int                       PrintLevel,
+											std::ostream&             Stream    )
+{
+	//-----------------------------------------------------------------------------
+	// write parameters into reg 266 (via block write), sleep for some time,
+	// then wait till reg 128 returns 0x8000
+	/*
+				adc_mode = dtcbuffer[0];                                  // -a
+				tdc_mode = dtcbuffer[1];                                  // -t
+				num_lookback = dtcbuffer[2];                              // -l
+				num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
+				channel_mask[0] = (dtcbuffer[6] << 16) + dtcbuffer[5];    // -C
+				channel_mask[1] = (dtcbuffer[8] << 16) + dtcbuffer[7];    // -D
+				channel_mask[2] = (dtcbuffer[10] << 16) + dtcbuffer[9];    // -E
+				num_samples = dtcbuffer[11];                     // -s
+				enable_pulser = (uint8_t) dtcbuffer[12];         // -p
+				max_total_delay = dtcbuffer[13];                 // -d (def 1)
+				marker_clock = (uint8_t) dtcbuffer[14];          // -m
+	*/
+	//-----------------------------------------------------------------------------
+	//    const int  reg (265);  // for control_ROC.py(read)
+    std::vector<uint16_t> vec;
+
+    TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
+
+    if (Par == nullptr)
+	{
+                                        // reasonable defaults, to run w/o passing anything
+		uint16_t adc_mode(0), tdc_mode(0), num_lookback(0), num_samples(1);
+		uint16_t num_triggers[2] = {10,0};
+		uint16_t ch_mask     [6] = {0xffff,0xffff,0xffff,0xffff,0xffff,0xffff};
+		uint16_t enable_pulser(0), marker_clock(3), mode(0), clock(99);
+
+		vec.push_back(adc_mode);
+		vec.push_back(tdc_mode);
+		vec.push_back(num_lookback);
+		vec.push_back(num_samples);
+		vec.push_back(num_triggers[0]);
+		vec.push_back(num_triggers[1]);
+		for (int i=0; i<6; i++) vec.push_back(ch_mask[i]);
+		vec.push_back(enable_pulser);
+		vec.push_back(marker_clock);
+		vec.push_back(mode);
+		vec.push_back(clock);
+    }
+    else
+	{
+		vec.push_back(Par->adc_mode);
+		vec.push_back(Par->tdc_mode);
+		vec.push_back(Par->num_lookback);
+
+		if (Par->num_samples > 63)
+		{
+			TLOG(TLVL_WARNING) << "num_samples:" << Par->num_samples << " gt 63, truncate to 63" ;
+			Par->num_samples = 63;
+		}
+
+		vec.push_back(Par->num_samples);
+
+		uint16_t w1 = Par->num_triggers[0];
+		uint16_t w2 = Par->num_triggers[1];
+
+		vec.push_back(w1);
+		vec.push_back(w2);
+
+		for (int i=0; i<6; i++) vec.push_back(Par->ch_mask[i]);
+
+		vec.push_back(Par->enable_pulser);
+		vec.push_back(Par->marker_clock );
+		vec.push_back(Par->mode  );
+		vec.push_back(Par->clock );
+    }
+
+    bool increment_address(false);
+
+
+	// // //-----------------------------------------------------------------------------
+	// // // if LinkMask != -1, use it
+	// // // in addition, if UpdateMask=true, update the DTC link mask (fLinkMask)
+	// // //-----------------------------------------------------------------------------
+    // // int link_mask = fLinkMask;
+    // // if (Link != -1) {
+    // //   	link_mask = (1 << 4*Link);
+    // // }
+
+    // // for (int i=0; i<6; i++)
+	// {
+	// 	int used = (link_mask >> 4*i) & 0x1;
+	// 	if (not used)
+	// 	  continue;
+
+	{
+		// auto roc  = DTC_Link_ID(i);
+		// fDtc->WriteROCBlock   (roc,REG_READ,vec,false,increment_address,100);
+		writeBlock(vec,REG_READ,increment_address);
+		// std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+											// 0x86 = 0x82 + 4
+		uint16_t u;
+		// while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
+		while ((u = readRegister(REG_UP_DONE)) != 0x8000) {usleep(10);};
+
+		// TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+		__FE_COUT__ << std::hex << "Reg: 0x" << REG_UP_DONE << " Value: 0x" << u << __E__;
+
+		//-----------------------------------------------------------------------------
+		// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+		//-----------------------------------------------------------------------------
+		// int nw = fDtc->ReadROCRegister(roc,129,100);
+		int nw = readRegister(REG_BLOCK_WRITE_CHECK); //readback Number of Words passed to the config block
+		// TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+		__FE_COUT__ << std::hex << "Reg: 0x" << REG_BLOCK_WRITE_CHECK << " Value: 0x" << nw << __E__;
+
+		nw = nw-4;
+		std::vector<uint16_t> vout;
+		// fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
+		readBlock(vout,REG_READ,nw,increment_address);
+
+		// if (PrintLevel > 0)
+		// {
+		// 	Stream << "--------------- link :" << i << std::endl;
+		// 	if (PrintLevel & 0x1) {
+		// 		PrintBuffer(vout.data(),nw,&Stream);
+		// 	}
+
+		// 	// if (PrintLevel & 0x2) {
+		// 	// 	trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
+		// 	// 	Stream << Form("adc_mode      : %i\n",o->adc_mode);
+		// 	// 	Stream << Form("tdc_mode      : %i\n",o->tdc_mode);
+		// 	// 	Stream << Form("num_lookback  : %i\n",o->num_lookback);
+		// 	// 	Stream << Form("num_triggers  : %5i %5i\n",o->num_triggers[0],o->num_triggers[1]);
+		// 	// 	Stream << Form("ch_mask       : 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
+		// 	// 					o->ch_mask[0],o->ch_mask[1],o->ch_mask[2],
+		// 	// 					o->ch_mask[3],o->ch_mask[4],o->ch_mask[5]);
+		// 	// 	Stream << Form("num_samples   : %i\n"     ,o->num_samples);
+		// 	// 	Stream << Form("enable_pulser : %i\n"    ,o->enable_pulser);
+		// 	// 	Stream << Form("marker_clock  : %i\n"    ,o->marker_clock);
+		// 	// 	Stream << Form("mode          : %i\n"    ,o->mode);
+		// 	// 	Stream << Form("clock         : %i\n"    ,o->clock);
+		// 	// 	Stream << Form("digi_read_0xb : 0x%04x\n",o->digi_read_0xb);
+		// 	// 	Stream << Form("digi_read_0xe : 0x%04x\n",o->digi_read_0xe);
+		// 	// 	Stream << Form("digi_read_0xd : 0x%04x\n",o->digi_read_0xd);
+		// 	// 	Stream << Form("digi_read_0xc : 0x%04x\n",o->digi_read_0xc);
+		// 	// }
+		// }
+	}
+	//-----------------------------------------------------------------------------
+	//  is it really needed to reser the ROC in the end ? - no
+	//-----------------------------------------------------------------------------
+		// ResetLinks();
+    // return 0;
+
+	__FE_COUT__ << "Done" << __E__;
+} //end ControlRoc_Read()
+
+
+//==================================================================================================
+// Copied from Calorimter on
+void ROCTrackerInterface::SetupForDigiDataTaking(__ARGS__)
+{
+	__FE_COUT_INFO__ << "SetupForDigiDataTaking()" << __E__;
+
+	//Steps
+	// 	- Setup reg 0x8
+	//	- Block write of config
+	//	- Read register 18 and check for 0x00F
+	//	- ROC Reset by writing to register 14
+
+	//	- ROC Reset by writing to register 14
+	writeRegister(REG_ROC_RESET, 1); //to clear any previous errors/counters and allow the config to proceed
+
+	// 	- Setup reg 0x8	for digi data taking
+	writeRegister(REG_CONFIG, 0x230F);
+	writeRegister(REG_DATA_VERSION, 1);
+
+	//	- Block write of config
+	dtc_control_roc_read();	//,//int      LinkMask    ,
+							//,//int      AdcMode     ,
+							//,//int      TdcMode     ,
+							//,//int      NumLookback ,
+							//,//int      EnablePulser,
+							//,//int      MarkerClock ,
+							//,//int      NumSamples  ,
+							//,//uint32_t MaskC       ,
+							//,//uint32_t MaskD       ,
+							//,//uint32_t MaskE       ,
+							////int      PcieAddr )
+
+	//	- Read register 18 and check for 0xF00
+	uint16_t checkData = readRegister(REG_DIGI_SETUP_CHECK);
+	__FE_COUTV__(checkData);
+	if(checkData != 0xF00)
+	{
+		__FE_SS__ << "Illegal status check after setup for Digi data taking!" << __E__;
+		__FE_SS_THROW__;
+	}
+
+	__SET_ARG_OUT__("Result", "Done");
+	__FE_COUT__ << "Done" << __E__;
+}  // end SetupForDigiDataTaking()
+
+//==================================================================================================
+// Copied from Calorimter on
+void ROCTrackerInterface::FindAlignment(__ARGS__)
+{
+	__FE_COUT_INFO__ << "FindAlignment()" << __E__;
+
+	// First initialize the alignment
+
+	// write parameters into roc to initiate routine
+	std::vector<DTCLib::roc_data_t> writeable = {
+	  4,                          // eye-monitor width
+	  0,                          // initial adc phase
+	  1,                          // flag to check adc patterns
+	  static_cast<uint16_t>(-1),  // for channel remapping; unused
+	  static_cast<uint16_t>(-1),  // for channel remapping; unused
+	  0xFFFF,                     // bitmask for channels  0 - 15
+	  0xFFFF,                     // bitmask for channels 16 - 31
+	  0xFFFF,                     // bitmask for channels 32 - 47
+	  0xFFFF,                     // bitmask for channels 48 - 63
+	  0xFFFF,                     // bitmask for channels 64 - 79
+	  0xFFFF,                     // bitmask for channels 80 - 95
+	};
+
+	// register 264: find alignment routine
+	const bool increment_address = false;  // read via fifo
+	writeBlock(writeable,REG_READ,increment_address);
+	// fDtc->WriteROCBlock(Link, 264, writeable, false, increment_address, 100);
+
+	// std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+	uint16_t u;
+	while ((u = readRegister(REG_UP_DONE)) != 0x8000) {usleep(10);};
+
+	// // then, wait till reg 128 returns non-zero
+	// uint16_t u;
+	// while((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000)
+	//   {
+	//     // idle
+	//   }
+
+	int nw = readRegister(REG_BLOCK_WRITE_CHECK); //readback Number of Words passed to the config block
+	__FE_COUT__ << std::hex << "Reg: 0x" << REG_BLOCK_WRITE_CHECK << " Value: 0x" << nw << __E__;
+	nw -= 4;
+
+	std::vector<uint16_t> vout;
+	readBlock(vout,REG_READ,nw,increment_address);
+	// vector<DTCLib::roc_data_t> returned = this->ReadROCBlockEnsured(Link, 264);
+	// auto rv = Alignment(returned);
+	// return rv;
+
+	// Next enable the pulser and perform the alignment
+
+	// dtc_control_roc_digi_rw(0xFF,1,0,1,-1);
+	// dtc_control_roc_read(i,0,0,0,1,0,1);     // enable pulser
+	// dtc_control_roc_digi_rw(0x85,1,0,0,i);   // 240 kHz on
+	// sleep(1);
+	// dtc_control_roc_read(i,0,0,0,0,3,1);     // disable pulser
+	// dtc_control_roc_digi_rw(0xFF,1,0,0,-1);	// // return
+
+	writeRegister(0x0F, 1);
+	dtc_control_roc_read(-1, 0, 0, 0, 1, 0, 1);
+	writeRegister(0x85, 0);
+	sleep(1);
+	dtc_control_roc_read(-1, 0, 0, 0, 0, 3, 1);
+	writeRegister(0x0F, 0);
+	__SET_ARG_OUT__("Result", "Done");
+	__FE_COUT__ << "Done" << __E__;
+}  // end FindAlignment()
+
 
 DEFINE_OTS_INTERFACE(ROCTrackerInterface)
