@@ -1003,7 +1003,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     DTC_Link_ID link_id = DTC_Link_ID(Link);
   
   // write block number to reg 33
-    fDtc->WriteROCRegister(link_id,33,Block,false,1000);
+    fDtc->WriteROCRegister(link_id,33,((Block      ) & 0xffff) ,false,1000);
+    fDtc->WriteROCRegister(link_id,34,((Block >> 16) & 0xffff) ,false,1000);
   // cycle reg 32
     fDtc->WriteROCRegister(link_id,32, 0x01,false,1000);
     fDtc->WriteROCRegister(link_id,32, 0x00,false,1000);
@@ -1013,7 +1014,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // at this point, if everything was OK (nw=512), can read the data
 //-----------------------------------------------------------------------------
-    Stream << std::format("reg_21(nwords):{:d}  reg_20:0x{:4x}\n",nw,reg_20);
+    Stream << std::format("--- read link:{} DDR block:{:10d} reg_21(nwords):{:d} reg_20:0x{:4x}",Link,Block,nw,reg_20);
 
     if (nw == 512) {
       std::vector<uint16_t> v;
@@ -1023,11 +1024,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         rc = -1;
       }
       else {
+        ULong64_t ewt = ULong64_t(v[0]) | (ULong64_t(v[1]) << 16) | (ULong64_t(v[2]) << 32);
+        Stream << "  ewt:" << ewt << " len:" << v[3] << std::endl;
         PrintBuffer(v.data(),nw,&Stream);
       }
     }
     else {
-      Stream << "ERROR:001 smth went wrong, try again\n";
+      Stream << std::endl << "ERROR:001 wrong number of words nw:" << nw << " read (not 512)\n";
       rc = -1;
     }
     return rc;

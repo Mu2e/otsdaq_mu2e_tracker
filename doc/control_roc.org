@@ -107,7 +107,8 @@ readDeviceID
 
 ('DRAC ROC ID #', '5a71c')
 #+end_src
-** readDDR
+** readDDR                                                                   
+#+begin_src
 dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
 dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),33,0x09,false,1000);
 dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x01,false,1000);
@@ -121,6 +122,23 @@ dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
 v2.clear()
 dtc_i->fDtc->ReadROCBlock(v2,DTC_Link_ID(0),512,512,false,1000)
 dtc_i->PrintBuffer(v2.data(),512)
+#+end_src
+- DDR block length - 1 kByte
+- block format:
+-    first 3 words - EWT
+-    data length in units of 64-bit words
+-    EWT again (?)
+-    (data length << 8) + block number (data of one event could span across more than one 1Kbyte block
+-    data payload..
+
+cmd:dtc_control_roc_read_ddr args:{"pcie":0,"roc":4}
+reg_21(nwords):512  reg_20:0x8080
+0x00000000: 0x6592 0x0000 0x0000 0x0038 0x6592 0x0000 0x0000 0x3801
+0x00000010: 0x88c9 0x5ada 0x3113 0x5628 0x2013 0x00c1 0x5592 0x1956
+0x00000020: 0x5193 0x1936 0x4594 0x1916 0x3d92 0x1906 0x4d90 0x1916
+0x00000030: 0x88c9 0x0290 0x3715 0xfe6c 0x2014 0x00c1 0x4992 0x1926
+0x00000040: 0x5193 0x1956 0x5190 0x1966 0x5195 0x1936 0x5994 0x1956
+0
 ** readSPI : no parameters                                                   
  conversion constants : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
 ** set_digi_rw                                                               

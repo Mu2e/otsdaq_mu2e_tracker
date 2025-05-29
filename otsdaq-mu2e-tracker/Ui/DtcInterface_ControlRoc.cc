@@ -78,7 +78,7 @@ namespace  trkdaq {
       fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
       if (PrintLevel > 0) {
-        Stream << " ---------------- link:" << i << ":";
+        if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
         if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
         if (PrintLevel & 0x2) {
           Stream << std::endl;
@@ -193,7 +193,7 @@ namespace  trkdaq {
 
       if (PrintLevel != 0) {
         
-        Stream << "--------------- link :" << i << std::endl;
+        if (PrintLevel & 0x8) Stream << "--------------- link :" << i << std::endl;
 
         if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,&Stream);
       
@@ -475,7 +475,7 @@ namespace  trkdaq {
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
-    if (PrintLevel) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
+    if (PrintLevel & 0x8) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
 
     std::vector<uint16_t> vec;
 
@@ -844,11 +844,11 @@ namespace  trkdaq {
     int nw = fDtc->ReadROCRegister(roc,129,100);
     if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
 
-    TLOG(TLVL_DEBUG) << " -- 003";
+    TLOG(TLVL_DEBUG) << " -- 003 nw:" << nw;
     nw = nw-4;
     fDtc->ReadROCBlock(*V2,roc,REG_READRATES,nw,false,100);
 
-    TLOG(TLVL_DEBUG) << " -- 004";
+    TLOG(TLVL_DEBUG) << " -- 004 nw:" << nw;
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
