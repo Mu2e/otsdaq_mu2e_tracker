@@ -61,7 +61,7 @@ class TrackerDQM : public art::EDAnalyzer {
       fhicl::Atom<float>           fillHistograms         {Name("fillHistograms"     )    , Comment("1:fill histograms"          ) };
       fhicl::Atom<float>           fillWfHistograms       {Name("fillWfHistograms"   )    , Comment("1:fill WF histograms"       ) };
       fhicl::Atom<float>           interactiveMode        {Name("interactiveMode"    )    , Comment("1:interactive mode"         ) };
-      fhicl::Sequence<int>         plotWaveforms          {Name("plotWaveforms"      )    , Comment("[link, channel]"            ) };
+      fhicl::Sequence<int>         plotWaveforms          {Name("plotWaveforms"      )    , Comment("[link, channel], uo to 4"   ) };
       fhicl::Sequence<std::string> debugBits              {Name("debugBits"          )    , Comment("debug bits"                 ) };
       fhicl::Sequence<std::string> timeRefChannels        {Name("timeRefChannels"    )    , Comment("rf cgannels: [\"dtc:link\"]") };
 
@@ -75,7 +75,7 @@ class TrackerDQM : public art::EDAnalyzer {
     kNPanelsPerPlane   =  6,
     kNChannels         = 96,
     kMaxNLinks         =  6,
-    kMaxNHWfPerChannel = 10,
+    kMaxNHWfPerChannel =  1,
     kMaxNSamples       = 30
   };
 
@@ -113,7 +113,7 @@ class TrackerDQM : public art::EDAnalyzer {
   };
 
   struct PlotWaveform_t {
-    int station;
+    int dtc;
     int link;
     int channel;
   };
@@ -481,7 +481,7 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _plane;
 
   Hist_t           _hist;
-  PlotWaveform_t   _plot_wf;
+  PlotWaveform_t   _plot_wf[4];
   
   art::ServiceHandle<art::TFileService> tfs;
 

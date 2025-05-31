@@ -286,14 +286,18 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
   _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
 
-  _plot_wf.link    = -1;
-  _plot_wf.channel = -1;
   int nch_plot = _plotWaveforms.size();
-  if (nch_plot == 2) {
-    _plot_wf.link    = _plotWaveforms[0];
-    _plot_wf.channel = _plotWaveforms[1];
+  for (int i=0; i<4; ++i) {
+    _plot_wf[i].dtc     = -1;
+    _plot_wf[i].link    = -1;
+    _plot_wf[i].channel = -1;
+    if (i*3 < nch_plot) {
+      _plot_wf[i].dtc     = _plotWaveforms[3*i  ];
+      _plot_wf[i].link    = _plotWaveforms[3*i+1];
+      _plot_wf[i].channel = _plotWaveforms[2*i+2];
+    }
   }
-
+  
   _initialized         = 0;
 }
 
@@ -569,16 +573,14 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
 // up to four waveforms in a given channel
 //-----------------------------------------------------------------------------
       if (_fillWfHistograms) {
-        _plot_wf.link    = 0;
-        _plot_wf.channel = 4;
-      
-        if (_plot_wf.channel >= 0) {
-          // int station = 0;
-          // int plane   = 0;
-        
-          for (int i=0; i<4; i++) {
+        for (int i=0; i<4; i++) {
+          int ich = _plot_wf[i].channel;
+          if (ich >= 0) {
+            int idtc = _plot_wf[i].dtc;
+            int link = _plot_wf[i].link;
+
             _canvas[2]->cd(i+1);
-            _hist.station[0]->dtc[0].roc[_plot_wf.link].channel[_plot_wf.channel].wf[i]->Draw();
+            _hist.station[0]->dtc[idtc].roc[link].channel[ich].wf[0]->Draw();
           }
         }
       }

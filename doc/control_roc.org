@@ -4,6 +4,7 @@
 - a full list of commands - on the top of the file
 * local repo : file:~mu2etrk/products/trackerScripts
 * ------------------------------------------------------------------------------
+* ROC registers: https://docs.google.com/spreadsheets/d/1NlWtPUn64cViw0eazsdYzVVy0x8Lu7de/edit?gid=1958375111#gid=1958375111
 * control_ROC commands                                                       
 ** digi_rw   [-w 1]                                                          
 - it looks that '-w 1' means *write*
@@ -376,21 +377,22 @@ set_digi_rw -s 0
 |--------------------+------+-------------------------+-----------------------------------------------------------|
 | command            | addr | status                  | comments                                                  |
 |--------------------+------+-------------------------+-----------------------------------------------------------|
-| digi_rw            |      |                         | implemented                                               |
+| digi_rw            |      | OK                      | implemented                                               |
 |--------------------+------+-------------------------+-----------------------------------------------------------|
 | read_spi           |  258 | OK                      | implemented                                               |
 | find_alignment     |      | OK                      | implemented by Ed, minor wrinkle - parameter order, stars |
-| get_key            |  274 | implemented, not tested |                                                           |
-| measure_thresholds |      | implemented, not tested | ok                                                        |
+| get_key            |  274 | implemented             |                                                           |
+| measure_thresholds |      | OK                      | ok                                                        |
 | program_digi       |      |                         |                                                           |
-| pulser_on          |      | implemented, not tested |                                                           |
-| readDeviceID       |      | implemented             | check the byte order                                      |
-| rates              |  271 |                         |                                                           |
+| pulser_on          |      | OK                      |                                                           |
+| pulser_off         |      | OK                      |                                                           |
+| readDeviceID       |      | OK                      | check the byte order                                      |
+| rates              |  271 | OK                      |                                                           |
 | read               |      | OK                      | tested to the extent needed                               |
 | read_git_rev       |  272 | implemented, not tested |                                                           |
 | read_ilp           |  273 | implemented, not tested |                                                           |
-| set_digi_rw        |      | implemented, not tested | shouldn't be needed, all goes over the fiber              |
-| set_preamp_thresh  |      | implemented, not tested |                                                           |
+| set_digi_rw        |      | not needed              |                                                           |
+| set_preamp_thresh  |      | OK                      |                                                           |
 |--------------------+------+-------------------------+-----------------------------------------------------------|
 
 

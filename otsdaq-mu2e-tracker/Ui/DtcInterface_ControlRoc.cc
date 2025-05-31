@@ -190,10 +190,12 @@ namespace  trkdaq {
       nw = nw-4;
       std::vector<uint16_t> vout;
       fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
-
-      if (PrintLevel != 0) {
+//-----------------------------------------------------------------------------
+// bits 0 and 1 - this function
+//-----------------------------------------------------------------------------
+      if (PrintLevel & 0x3) {
         
-        if (PrintLevel & 0x8) Stream << "--------------- link :" << i << std::endl;
+        Stream << "--------------- link :" << i << std::endl;
 
         if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,&Stream);
       
