@@ -244,7 +244,7 @@ int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, i
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   std::vector<uint16_t> rates;
-  dtc_i->ControlRoc_Rates(Link,&rates,2,Par,std::cout);
+  dtc_i->ControlRoc_Rates(Link,&rates,2,Par,&std::cout);
 
   return 0;
 }

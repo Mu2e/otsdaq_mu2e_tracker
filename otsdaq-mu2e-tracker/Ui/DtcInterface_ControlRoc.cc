@@ -467,12 +467,84 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // Link: link number
 //-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_MeasureThresholds(int Link, int PrintLevel, std::ostream& Stream,
-                                                 uint32_t MaskC, uint32_t MaskD, uint32_t MaskE) {
+  int DtcInterface::ControlRoc_MeasureThresholds(int           Link ,
+                                                 uint32_t      MaskC,
+                                                 uint32_t      MaskD,
+                                                 uint32_t      MaskE,
+                                                 int           PrintLevel,
+                                                 std::ostream& Stream) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+//    auto roc  = DTC_Link_ID(Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg 264 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    if (PrintLevel & 0x8) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
+
+    std::vector<float> thr; // 3*96
+    
+    ControlRoc_ReadThresholds (Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
+    ControlRoc_PrintThresholds(Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
+    return 0;
+  }
+  
+//-----------------------------------------------------------------------------
+// Link: link number
+// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_PrintThresholds(int                 Link,
+                                               std::vector<float>& Thr ,
+                                               uint32_t            MaskC,
+                                               uint32_t            MaskD,
+                                               uint32_t            MaskE,
+                                               int                 PrintLevel,
+                                               std::ostream&       Stream) {
+//-----------------------------------------------------------------------------
+//  print, if requested
+//-----------------------------------------------------------------------------
+    if (PrintLevel & 0x2) {
+      int mask[3];
+      mask[0] = MaskC;
+      mask[1] = MaskD;
+      mask[2] = MaskE;
+//-----------------------------------------------------------------------------
+// to keep the output compact, print thresholds only for the channels defined by the mask
+//-----------------------------------------------------------------------------
+      printf(" chID     thr(CAL)    thr(HV)    sum  \n");
+      printf("--------------------------------------\n");
+      for (int i=0; i<96; i++) {
+        int iw = i/32;
+        int ib = i -iw*32;
+
+        if (((mask[iw] >> ib) & 0x1) == 1) {
+          float hw  = Thr[3*i  ];
+          float cal = Thr[3*i+1];
+          float tot = Thr[3*i+2];
+          Stream << std::format(" {:4d} {:10.3f} {:10.3f} {:10.3f}",i,hw,cal,tot) << std::endl;
+        }
+      }
+    }
+    return 0;
+  }
+  
+//-----------------------------------------------------------------------------
+// Link: link number, operate on one ROC
+// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadThresholds(int                 Link      ,
+                                              std::vector<float>& Thr       ,
+                                              uint32_t            MaskC     ,
+                                              uint32_t            MaskD     ,
+                                              uint32_t            MaskE     ,
+                                              int                 PrintLevel,
+                                              std::ostream&       Stream    ) {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
     auto roc  = DTC_Link_ID(Link);
+    Thr.clear();
 //-----------------------------------------------------------------------------
 // write parameters into reg 264 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -481,6 +553,11 @@ namespace  trkdaq {
 
     std::vector<uint16_t> vec;
 
+    uint32_t mask[3];
+    mask[0] = MaskC;
+    mask[1] = MaskD;
+    mask[2] = MaskE;
+    
     vec.push_back((MaskC      ) & 0xffff);
     vec.push_back((MaskC >> 16) & 0xffff);
     vec.push_back((MaskD      ) & 0xffff);
@@ -493,50 +570,66 @@ namespace  trkdaq {
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    if (PrintLevel & 0x1) {
-      Stream << std::format("reg:{:03d} val:0x{:04x}",128,u) << std::endl;
+    uint16_t u;
+    try {
+      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
+      if (PrintLevel & 0x1) {
+        Stream << std::format("reg:{:03d} val:0x{:04x}",128,u) << std::endl;
+      }
+    }
+    catch(...) {
+      TLOG(TLVL_ERROR) << "failure to read R128";
+      Stream << "failed to read ROC R128" << std::endl;
+      return -1;
     }
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
+    int nw(-1);
+    try {
+      nw = fDtc->ReadROCRegister(roc,129,100);
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << "failure to read R129";
+      Stream << "failed to read ROC R129, nw:" << nw << std::endl;
+      return -2;
+    }
+//-----------------------------------------------------------------------------
+// get here only if all reads didn't lead to exceptions
+//-----------------------------------------------------------------------------
     if (PrintLevel & 0x1) Stream << std::format("reg:{:03d} val:0x{:04x}",129,nw) << std::endl;
-
+//-----------------------------------------------------------------------------
+// read raw numbers
+// expect nw=288 = 96*3, if not - in trouble
+//-----------------------------------------------------------------------------
     nw = nw-4;
     std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,REG_MEAS_THR,nw,false,100);
-//-----------------------------------------------------------------------------
-// 
-//-----------------------------------------------------------------------------
+    try {
+      fDtc->ReadROCBlock(v2,roc,REG_MEAS_THR,nw,false,100);
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << "failure to read R" << REG_MEAS_THR;
+      Stream << "failed to read ROC R" << REG_MEAS_THR << ", nw:" << nw << std::endl;
+      return -3;
+    }
 
     if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
-    // expect nw=288 = 96*3, if not - in trouble
-
-    if (PrintLevel & 0x2) {
-      int mask[3];
-      mask[0] = MaskC;
-      mask[1] = MaskD;
-      mask[2] = MaskE;
 //-----------------------------------------------------------------------------
-// print thresholds only for the channels defined by the mask
+// convert to floats
 //-----------------------------------------------------------------------------
-      printf(" chID     thr(CAL)    thr(HV)    sum\n");
-      printf("--------------------------------------\n");
-      for (int i=0; i<96; i++) {
-        int iw = i/32;
-        int ib = i -iw*32;
+    for (int i=0; i<96; i++) {
+      int iw = i/32;
+      int ib = i-iw*32;
 
-        if (((mask[iw] >> ib) & 0x1) == 1) {
-        
-          float hw  = (-1000. + v2[    i]*2000./1024.)/10.;
-          float cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
-          float tot = (-1000. + v2[192+i]*2000./1024.)/10.;
-
-          Stream << std::format(" {:4d} {:10.3f} {:10.3f} {:10.3f}",i,hw,cal,tot) << std::endl;
-        }
+      float hv(0), cal(0), tot(0);
+      if (((mask[iw] >> ib) & 0x1) == 1) {
+        hv  = (-1000. + v2[    i]*2000./1024.)/10.;
+        cal = (-1000. + v2[96 +i]*2000./1024.)/10.;
+        tot = (-1000. + v2[192+i]*2000./1024.)/10.;
       }
+      Thr.push_back(hv );
+      Thr.push_back(cal);
+      Thr.push_back(tot);
     }
     return 0;
   }
@@ -544,14 +637,14 @@ namespace  trkdaq {
 
 //-----------------------------------------------------------------------------
   int DtcInterface::ConvertSpiData(const std::vector<uint16_t>& Data, TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream) {
-    const char* keys[] = {
-      "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
-      "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
-      "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
-      "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
-      "CAL_RAIL_1V(mV)","CAL_RAIL_1.8V(mV)","CAL_RAIL_2.5V(mV)","CAL_TEMP(CELSIUS)",
-      "HV_RAIL_1V(mV)","HV_RAIL_1.8V(mV)","HV_RAIL_2.5V(mV)","HV_TEMP(CELSIUS)"
-    };
+    // const char* keys[] = {
+    //   "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
+    //   "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
+    //   "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
+    //   "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
+    //   "CAL_RAIL_1V(mV)","CAL_RAIL_1.8V(mV)","CAL_RAIL_2.5V(mV)","CAL_TEMP(CELSIUS)",
+    //   "HV_RAIL_1V(mV)","HV_RAIL_1.8V(mV)","HV_RAIL_2.5V(mV)","HV_TEMP(CELSIUS)"
+    // };
 //-----------------------------------------------------------------------------
 // primary source : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
 //-----------------------------------------------------------------------------
@@ -792,21 +885,23 @@ namespace  trkdaq {
                                       std::vector<uint16_t>* V2,
                                       int                    PrintLevel,
                                       ControlRoc_Rates_t*    Par,
-                                      std::ostream&          Stream) {
+                                      std::ostream*          Stream) {
     int                 rc(0);
     ControlRoc_Rates_t  par;   // default construction : (num_lookback=100,num_samples=10,ch_mask=6x0xffff)
     
+    TLOG(TLVL_DEBUG+1) << " -- START PrintLevel:" << PrintLevel;
+
     if (Par != nullptr) par = *Par;
 
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " par:{" << par.num_lookback << ","
-                     << par.num_samples << ","
-                     << std::hex
-                     << "0x" << par.ch_mask[0] << ","
-                     << "0x" << par.ch_mask[1] << ","
-                     << "0x" << par.ch_mask[2] << ","
-                     << "0x" << par.ch_mask[3] << ","
-                     << "0x" << par.ch_mask[4] << ","
-                     << "0x" << par.ch_mask[5] << "}";
+    TLOG(TLVL_DEBUG+1) << "Link:" << Link << " par:{" << par.num_lookback << ","
+                       << par.num_samples << ","
+                       << std::hex
+                       << "0x" << par.ch_mask[0] << ","
+                       << "0x" << par.ch_mask[1] << ","
+                       << "0x" << par.ch_mask[2] << ","
+                       << "0x" << par.ch_mask[3] << ","
+                       << "0x" << par.ch_mask[4] << ","
+                       << "0x" << par.ch_mask[5] << "}";
 
     if (Link == -1) {
       TLOG(TLVL_ERROR) << "negative link:" << Link << "  ... BAIL OUT";
@@ -830,7 +925,7 @@ namespace  trkdaq {
       vec.push_back(par.ch_mask[i]);
     }
 
-    TLOG(TLVL_DEBUG) << " -- 002";
+    TLOG(TLVL_DEBUG+1) << " -- 002";
   
     auto roc  = DTC_Link_ID(Link);
     fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
@@ -846,19 +941,19 @@ namespace  trkdaq {
     int nw = fDtc->ReadROCRegister(roc,129,100);
     if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
 
-    TLOG(TLVL_DEBUG) << " -- 003 nw:" << nw;
+    TLOG(TLVL_DEBUG+1) << " -- 003 from nw(reg_129):" << nw;
     nw = nw-4;
     fDtc->ReadROCBlock(*V2,roc,REG_READRATES,nw,false,100);
 
-    TLOG(TLVL_DEBUG) << " -- 004 nw:" << nw;
+    TLOG(TLVL_DEBUG+1) << " -- 004 read nw:" << nw;
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x1) {
-      PrintBuffer(V2->data(),nw,&Stream);
+      PrintBuffer(V2->data(),nw,Stream);
     }
 
-    TLOG(TLVL_DEBUG) << " -- END";
+    TLOG(TLVL_DEBUG+1) << " -- END";
     return rc;
   }
 

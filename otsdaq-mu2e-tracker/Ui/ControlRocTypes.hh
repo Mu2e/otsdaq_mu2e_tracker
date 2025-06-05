@@ -53,7 +53,7 @@ namespace trkdaq {
       num_triggers[1] = 0;
       for (int i=0; i<6; i++) ch_mask[i] = 0xffff;
       enable_pulser   = 0;
-      marker_clock    = 3;
+      marker_clock    = 3;              // external clock
       mode            = 0;
       clock           = 99;
     }

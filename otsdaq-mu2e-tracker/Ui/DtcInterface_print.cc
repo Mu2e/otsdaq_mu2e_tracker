@@ -228,14 +228,20 @@ namespace trkdaq {
       n   += 1;
       if (n == 8) {
         if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
-        else                   (*Stream)        << line << std::endl;
+        else {
+          (*Stream)          << line << std::endl;
+          TLOG(TLVL_DEBUG+1) << line << std::endl;
+        }
         n = 0;
       }
     }
     
     if (n != 0) {
       if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
-      else                   (*Stream)        << line << std::endl;
+      else {
+        (*Stream)          << line << std::endl;
+        TLOG(TLVL_DEBUG+1) << line << std::endl;
+      }
     }
   }
 
