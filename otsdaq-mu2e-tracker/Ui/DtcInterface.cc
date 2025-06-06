@@ -364,10 +364,10 @@ namespace trkdaq {
       }
 
       if (PrintLevel & 0x1) {
-        Stream << " link:" << i << " n_non_null:" << n_non_null
-               << " nsteps_tot:" << nsteps_tot
-               << " worst_ch:" << worst_ch
-               << " max_steps_ch:" << max_steps_ch << std::endl;
+        Stream << " link:" << i << " n_non_null:" << std::setw(3) << n_non_null
+               << " nsteps_tot:" << std::setw(3) << nsteps_tot
+               << " worst_ch:" << std::setw(3) << worst_ch
+               << " max_steps_ch:" << std::setw(3) << max_steps_ch << std::endl;
       }
       n_slipped += n_non_null;
     }

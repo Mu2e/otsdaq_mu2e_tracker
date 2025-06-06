@@ -153,7 +153,7 @@ int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
 int dtc_control_roc_measure_thresholds(int Link, int PrintLevel = 2, int PcieAddr = -1) {
   uint32_t mask[3] = {0xffffffff,0xffffffff,0xffffffff};
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ControlRoc_MeasureThresholds(Link,PrintLevel,std::cout,mask[0],mask[1],mask[2]);
+  dtc_i->ControlRoc_MeasureThresholds(Link,mask[0],mask[1],mask[2],PrintLevel,std::cout);
   return 0;
 }
 
