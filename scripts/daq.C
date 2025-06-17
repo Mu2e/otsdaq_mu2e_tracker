@@ -238,13 +238,17 @@ int dtc_control_roc_read(int      Link         = -1,
 }
 
 //-----------------------------------------------------------------------------
-// just print the ROC information
+// just print the ROC information 
 //-----------------------------------------------------------------------------
 int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   std::vector<uint16_t> rates;
-  dtc_i->ControlRoc_Rates(Link,&rates,2,Par,&std::cout);
+  dtc_i->ControlRoc_Rates(Link,&rates,4,Par,&std::cout);
+
+  std::vector<int>      chmask;
+  for (int i=0; i<96; ++i) chmask.emplace_back(1);
+  dtc_i->PrintRatesSingleRoc(&rates,&chmask,std::cout);
 
   return 0;
 }

@@ -286,7 +286,7 @@ namespace  trkdaq {
                      << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
-           << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
+           << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay << std::endl;
 //-----------------------------------------------------------------------------
 // write parameters into reg 268 (block write) , sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -352,7 +352,8 @@ namespace  trkdaq {
     return rc;
   }
 
-
+//-----------------------------------------------------------------------------
+// Link=-1: all enabled links
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
