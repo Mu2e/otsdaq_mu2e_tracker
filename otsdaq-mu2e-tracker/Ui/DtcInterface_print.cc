@@ -450,7 +450,7 @@ namespace mu2edaq {
     Stream << Form(" PCIE address: %i link mask: 0x%04x SampleEdgeMode: %i RocReadoutMode: %i\n",
                    fPcieAddr,fLinkMask,fSampleEdgeMode,fRocReadoutMode);
     PrintRegister(0x9000,"DTC firmware link speed and design version ",Stream);
-    PrintRegister(0x9004,"DTC version                                ",Stream);
+    PrintRegister(0x9004,"DTC FW version                             ",Stream);
     PrintRegister(0x9008,"Design status                              ",Stream);
     PrintRegister(0x900c,"Vivado version                             ",Stream);
     PrintRegister(0x9100,"DTC control register                       ",Stream);
