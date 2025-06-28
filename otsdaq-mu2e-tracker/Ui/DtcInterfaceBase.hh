@@ -63,10 +63,11 @@ namespace mu2edaq {
     int PcieAddr() { return fPcieAddr; }
 
     DTCLib::DTC* Dtc() { return fDtc; }
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
+// if 'ClockSource' and 'Reset' are set to -1, use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
 //-----------------------------------------------------------------------------    
-    int          ConfigureJA(int ClockSource, int Reset = 1);
+    int          ConfigureJA(int ClockSource = -1, int Reset = -1);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }

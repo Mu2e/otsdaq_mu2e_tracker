@@ -162,8 +162,8 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // This needs to be implemented specific for the subsystems
 //-----------------------------------------------------------------------------
-void DtcInterface::InitRocReadoutMode() {
-}
+  void DtcInterface::InitRocReadoutMode() {
+  }
 
 //-----------------------------------------------------------------------------
 // Source=0: sync to internal clock ; =1: RTF
@@ -171,8 +171,12 @@ void DtcInterface::InitRocReadoutMode() {
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
     int nmax_iter(10);
+    int clock_source(ClockSource), reset(Reset);
+
+    if (reset        == -1) reset        = (fJAMode     ) & 0xf;
+    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
     
-    fDtc->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
+    fDtc->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
     usleep(100000);
     int ok(0);
     for (int i=0; i<nmax_iter; i++) {
@@ -181,12 +185,10 @@ void DtcInterface::InitRocReadoutMode() {
       if (ok == 1) break;
     }
     
-    // fDtc->FormatJitterAttenuatorCSR();
-
     int rc = 0;
     if (ok == 0) {
-      TLOG(TLVL_ERROR) << Form("failed to setup JA for ClockSource=%i and Reset=%i in %i attempts\n",
-                               ClockSource,Reset,nmax_iter);
+      TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
+                                      clock_source,reset,nmax_iter);
       rc = -1;
     }
 
@@ -275,7 +277,10 @@ void DtcInterface::InitRocReadoutMode() {
     int reset        = fJAMode & 0x1;
     
     rc = ConfigureJA(clock_source,reset);
-    if (rc < 0) return rc;
+    if (rc < 0) {
+      TLOG(TLVL_ERROR) << "failed to configure the JA for PCIE:" << fPcieAddr;
+      return rc;
+    }
                                         // which ROC links should be enabled ? - all active ?
     int EnableClockMarkers = 0;         // for now
                                         // this function handles DTC_Link_ALL correctly
