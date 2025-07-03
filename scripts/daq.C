@@ -254,6 +254,17 @@ int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, i
 }
 
 //-----------------------------------------------------------------------------
+// just print the ROC information 
+//-----------------------------------------------------------------------------
+int dtc_control_roc_dump_settings(int Link, int Channel, int PrintLevel = 0xf, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  int rc = dtc_i->ControlRoc_DumpSettings(Link,Channel,PrintLevel);
+
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
 // read a given 1 kByte-long block of the ROC DDR memory
 // last block - in reg 15
 //-----------------------------------------------------------------------------

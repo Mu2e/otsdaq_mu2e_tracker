@@ -27,6 +27,8 @@ namespace trkdaq {
     REG_READILP       = 273,
     REG_GETKEY        = 274,
     REG_SETGAINTHR    = 275,
+    REG_SETCALDAC     = 276,
+    REG_DUMPSETTINGS  = 277,
   };
 
   struct ControlRoc_Read_Input_t0 {

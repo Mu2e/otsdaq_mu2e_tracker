@@ -103,7 +103,60 @@ namespace  trkdaq {
 
   
 //-----------------------------------------------------------------------------
-// operate assuming a single link
+// from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+// chan_mask = int(get_key_value(keys,"C"),16) 
+// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
+// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023  // obsolete
+// dvalue    = int(get_key_value(keys,"d"))
+// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
+//                   0x10 : first pulsed channel is channel 4, max value : 0x80
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream) {
+    int rc (0);
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " Channel:" << Channel << std::endl;
+    Stream           << "Link:" << Link << " Channel:" << Channel << std::endl;
+//-----------------------------------------------------------------------------
+// Link = -1 means all links
+//-----------------------------------------------------------------------------
+    int l1(Link), l2(Link+1);
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+    
+    for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i))   continue;
+      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
+
+      std::vector<uint16_t> settings;
+      rc = ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
+      if (rc != 0) continue;
+//-----------------------------------------------------------------------------
+// print
+//-----------------------------------------------------------------------------
+      int first_channel(Channel);
+      if ((Channel >= 0) and (Channel < 96)) first_channel = 0;
+
+      Stream << " ich gain_cal gain_hv thr_cal thr_hv" << std::endl;
+      Stream << "------------------------------------" << std::endl;
+      
+      int nch = settings.size()/4;
+      for (int ich=0; ich < nch; ++ich) {
+        int channel  = first_channel+ich;
+        
+        int gain_cal = settings[ich];
+        int gain_hv  = settings[ich+  nch];
+        int thr_cal  = settings[ich+2*nch];
+        int thr_hv   = settings[ich+3*nch];
+        Stream << std::format("{:3d}  {:5d}   {:5d}   {:5d}   {:5d}",channel,gain_cal,gain_hv,thr_cal,thr_hv) << std::endl;
+      }
+    }
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// Link=-1: execute the comamnd for all enabled links
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_Read(ControlRoc_Read_Input_t0* Par       ,
                                     int                       Link      ,
@@ -227,48 +280,6 @@ namespace  trkdaq {
     return 0;
   }
   
-//-----------------------------------------------------------------------------  
-  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel) {
-//-----------------------------------------------------------------------------
-// convert into enum
-//-----------------------------------------------------------------------------
-    auto roc  = DTC_Link_ID(Link);
-//-----------------------------------------------------------------------------
-// write parameters into reg 266 (block write) , sleep for some time, 
-// then wait till reg 128 returns 0x8000
-//-----------------------------------------------------------------------------
-    std::vector<uint16_t> vec;
-    vec.push_back(uint16_t(ChannelID ));
-    vec.push_back(uint16_t(Gain      ));
-    vec.push_back(uint16_t(PreampType));
-
-    bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,REG_SETGAIN,vec,false,increment_address,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-                                        // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
-//-----------------------------------------------------------------------------
-// register 129: number of words to read, currently-  (+ 4) (ask Monica)
-//-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
-
-    nw = nw-4;
-    std::vector<uint16_t> v2;
-    fDtc->ReadROCBlock(v2,roc,REG_SETGAIN,nw,false,100);
-
-    if (PrintLevel != 0) PrintBuffer(v2.data(),nw);
-//-----------------------------------------------------------------------------
-// 
-//-----------------------------------------------------------------------------
-    // ResetLink(Link);
-    return 0;
-  }
-
-
 //-----------------------------------------------------------------------------
 // from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
 // chan_mask = int(get_key_value(keys,"C"),16) 
@@ -276,7 +287,7 @@ namespace  trkdaq {
 // channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
 // delay     = int(get_key_value(keys,"d",1000))
 // dutycycle = int(get_key_value(keys,"y",10))
-// FirstChanelMask : a bit mask, defines the first pulsd channel, the rest pulsed: first+8*i
+// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
 //                   0x10 : first pulsed channel is channel 4, max value : 0x80
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
@@ -387,6 +398,204 @@ namespace  trkdaq {
     return rc;
   }
   
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadSettings(int Link, int Channel, std::vector<uint16_t>& Settings,
+                                            int PrintLevel, std::ostream& Stream) {
+    int rc (0);
+    TLOG(TLVL_DEBUG) << "-- START: Link:" << Link << " Channel:" << Channel;
+
+    Stream << "Link:" << Link << " Channel:" << Channel << std::endl;
+//-----------------------------------------------------------------------------
+// write parameters into reg 268 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> vec;
+    vec.push_back(uint16_t(Channel));
+    
+    bool increment_address(false);
+//-----------------------------------------------------------------------------
+// Link = -1 : doesn't make sense - creates too many degrees of freedom
+//-----------------------------------------------------------------------------
+    if ((Link < 0) || (Link > 5)) {
+      TLOG(TLVL_ERROR) << "wrong link:" << Link;
+      return -1;
+    }
+    
+    if (LinkEnabled(Link)) {
+      TLOG(TLVL_DEBUG) << "      -- Link:" << Link << std::endl;
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+      auto link_id  = DTC_Link_ID(Link);
+      try {
+        fDtc->WriteROCBlock   (link_id,REG_DUMPSETTINGS,vec,false,increment_address,100);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed WriteROCBlock" << std::endl;
+        rc = -1;
+        return rc;
+      }
+
+      uint16_t u;
+      try {
+        while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
+        TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,128,100)" << std::endl;
+        rc = -2;
+        return rc;
+      }
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+      int nw(-1);
+      try {
+        nw = fDtc->ReadROCRegister(link_id,129,100);
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,129,100), nw:" << nw << std::endl;
+        rc = -2;
+        return rc;
+      }
+
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      nw = nw-4;
+      Settings.clear();
+      try {
+        fDtc->ReadROCBlock(Settings,link_id,REG_SETCALDAC,nw,false,100);
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed ReadROCBlock(Settings,link_id,REG_SETCALDAC,nw,100), nw:" << nw << std::endl;
+        rc = -3;
+        return rc;
+      }
+//-----------------------------------------------------------------------------
+// everything was OK
+//-----------------------------------------------------------------------------        
+      if (PrintLevel & 0x1) {
+        PrintBuffer(Settings.data(),nw,&Stream);
+      }
+    }
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+// chan_mask = int(get_key_value(keys,"C"),16) 
+// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
+// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023  // obsolete
+// dvalue    = int(get_key_value(keys,"d"))
+// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
+//                   0x10 : first pulsed channel is channel 4, max value : 0x80
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_SetCalDac(int Link, int FirstChannelMask, int PulseHeight,
+                                         int PrintLevel, std::ostream& Stream) {
+    int rc (0); //, reg(268);
+    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+                     << std::dec << " PulseHeight:" << PulseHeight;
+
+    Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+           << std::dec << " PulseHeight:" << PulseHeight << std::endl;
+//-----------------------------------------------------------------------------
+// write parameters into reg 268 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> vec;
+    vec.push_back(uint16_t(FirstChannelMask));
+    vec.push_back(uint16_t(PulseHeight));
+    
+    bool increment_address(false);
+//-----------------------------------------------------------------------------
+// Link = -1 means all links
+//-----------------------------------------------------------------------------
+    int l1(Link), l2(Link+1);
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+    
+    for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i))   continue;
+      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+      auto roc  = DTC_Link_ID(i);
+      try {
+        fDtc->WriteROCBlock   (roc,REG_SETCALDAC,vec,false,increment_address,100);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "failed WriteROCBlock, continue" << std::endl;
+        continue;
+      }
+
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+      int nw = fDtc->ReadROCRegister(roc,129,100);
+      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+
+      nw = nw-4;
+      std::vector<uint16_t> v2;
+      fDtc->ReadROCBlock(v2,roc,REG_SETCALDAC,nw,false,100);
+
+      if (PrintLevel & 0x1) {
+        PrintBuffer(v2.data(),nw,&Stream);
+      }
+    }
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------  
+  int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel) {
+//-----------------------------------------------------------------------------
+// convert into enum
+//-----------------------------------------------------------------------------
+    auto roc  = DTC_Link_ID(Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg 266 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> vec;
+    vec.push_back(uint16_t(ChannelID ));
+    vec.push_back(uint16_t(Gain      ));
+    vec.push_back(uint16_t(PreampType));
+
+    bool increment_address(false);
+    fDtc->WriteROCBlock   (roc,REG_SETGAIN,vec,false,increment_address,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+                                        // 0x86 = 0x82 + 4
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = fDtc->ReadROCRegister(roc,129,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+
+    nw = nw-4;
+    std::vector<uint16_t> v2;
+    fDtc->ReadROCBlock(v2,roc,REG_SETGAIN,nw,false,100);
+
+    if (PrintLevel != 0) PrintBuffer(v2.data(),nw);
+//-----------------------------------------------------------------------------
+// 
+//-----------------------------------------------------------------------------
+    // ResetLink(Link);
+    return 0;
+  }
+
 
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel) {

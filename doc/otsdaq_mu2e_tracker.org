@@ -568,7 +568,8 @@ powerOff
 - to turn power OFF on channel 1    :  powerOff 1
 - to turn power OFF on all channels :  powerOff
 
-* hit-level error bits (Richie):
+* TWI commands over the fiber: file:twi.org                                  
+* hit-level error bits (Richie):                                             
 - missed_last_hit: This straw's input went above threshold but the           
   associated hit was not digitized either because the event was
   already full or because the state machine was still busy digitizing

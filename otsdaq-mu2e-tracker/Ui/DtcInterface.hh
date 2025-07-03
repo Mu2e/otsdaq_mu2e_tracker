@@ -70,7 +70,23 @@ namespace trkdaq {
                                     int                         LinkMask   = -1,
                                     int                         PrintLevel =  0,
                                     std::ostream&               Stream     = std::cout);
-    
+//-----------------------------------------------------------------------------
+// Channel = 0-95: read settings of a given preamp channel: gain_cal, gain_hv, thr_cal, thr_hv,
+//                 4 words in total
+//         = -1  : read settings of all channels : gain_cal[96], gain_hv[96], thr_cal[hv], thr_hv[cal],
+//                 386 words in total
+//-----------------------------------------------------------------------------
+    int          ControlRoc_DumpSettings(int                   Link           ,
+                                         int                   Channel    = -1,
+                                         int                   PrintLevel =  0,
+                                         std::ostream&         Stream     = std::cout);
+
+    int          ControlRoc_ReadSettings(int                    Link           ,
+                                         int                    Channel        ,
+                                         std::vector<uint16_t>& Data           ,
+                                         int                    PrintLevel =  0,
+                                         std::ostream&          Stream     = std::cout);
+
     int          ControlRoc_PulserOn (int Link              ,
                                       int FirstChannelMask = 0x10,      // first channel:- #4
                                       int DutyCycle        = 10  ,
@@ -152,6 +168,11 @@ namespace trkdaq {
                                               uint32_t      MaskE      = 0xFFFFFFFF,
                                               int           PrintLevel = 0x2       ,
                                               std::ostream& Stream     = std::cout );
+//-----------------------------------------------------------------------------
+// supposedly, PulseHeight = V/3.3*1024 or 1024 = 3.3V
+//-----------------------------------------------------------------------------
+    int          ControlRoc_SetCalDac        (int Link, int FirstChannelMask, int PulseHeight,
+                                              int PrintLevel = 0, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // PreampType: 0:HV 1:CAL, or vice versa
 // do one channel at a time

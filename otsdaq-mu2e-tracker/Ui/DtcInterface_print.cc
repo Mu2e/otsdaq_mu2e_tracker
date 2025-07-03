@@ -333,9 +333,9 @@ namespace trkdaq {
         int nw = dat->size();
 
         char c = '|';
-        int ch_mask = 1;
+        // int ch_mask = 1;
         if ((ChMask[lnk].size() == 96) and (ChMask[lnk].at(ich) == 0)) {
-          ch_mask = 0;
+          // ch_mask = 0;
            c = '*';
         }
         if ((LinkEnabled(lnk) == 0) or (nw != 580)) {

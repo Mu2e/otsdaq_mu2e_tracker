@@ -3,6 +3,7 @@
 * source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py 
 - a full list of commands - on the top of the file
 * local repo : file:~mu2etrk/products/trackerScripts
+* ROC repo (over-the-fiber commands): https://github.com/vlrusu/ROC
 * ------------------------------------------------------------------------------
 * ROC registers: https://docs.google.com/spreadsheets/d/1NlWtPUn64cViw0eazsdYzVVy0x8Lu7de/edit?gid=1958375111#gid=1958375111
 * control_ROC commands                                                       
