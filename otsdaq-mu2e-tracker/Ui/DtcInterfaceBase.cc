@@ -12,8 +12,6 @@
 #include "iostream"
 #include "vector"
 
-#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
-
 #include "DtcInterfaceBase.hh"
 #include "TString.h"    // includes ROOT's Form
 
@@ -51,6 +49,7 @@ namespace mu2edaq {
     fEventMode      = 1;
 
     fIsCrv          = 0;
+    fSubsystem      = -1;
     fCounter        = 0;
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
 //-----------------------------------------------------------------------------

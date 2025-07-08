@@ -21,6 +21,13 @@
 
 namespace mu2edaq {
 
+  enum {
+    kTracker     = 1,
+    kCalorimeter = 2,
+    kCRV         = 3,
+    kSTM         = 4,
+  };
+
   class DtcInterface { 
   public:
     static DtcInterface* fgInstance[2];
@@ -46,6 +53,8 @@ namespace mu2edaq {
     int                  fMacAddrByte;
 
     int                  fIsCrv;          // is CRV DTC
+
+    int                  fSubsystem;      // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
     int                  fSleepTimeROCWrite;             // the two are different 
     int                  fSleepTimeROCReset;             // 

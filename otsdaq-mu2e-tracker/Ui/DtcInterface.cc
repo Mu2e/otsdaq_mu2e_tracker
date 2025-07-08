@@ -12,7 +12,7 @@
 #include "iostream"
 #include "vector"
 
-#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
+#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
 
 #include "DtcInterface.hh"
 #include "TString.h"    // includes ROOT's Form
@@ -1154,33 +1154,39 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
 
 //-----------------------------------------------------------------------------
-// 
   std::string DtcInterface::GetRocID(int Link) {
-    if (not LinkEnabled(Link)) {
+    std::string roc_id("READ_ERROR");
+    if (LinkEnabled(Link)) {
+      ControlRoc_DeviceID_t devid;
+      int rc = ControlRoc_ReadDeviceID(Link,devid);
+      if (rc == 0) {
+        roc_id = devid.DeviceSerial;
+      }
+    }
+    else {
       TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
-      return std::string("READ_ERROR");
     }
-    
-    ControlRoc_DeviceID_t devid;
-    int rc = ControlRoc_ReadDeviceID(Link,devid);
-    if (rc == 0) {
-      return devid.DeviceSerial;
-    }
+    return roc_id;
   }
 
+//-----------------------------------------------------------------------------
   std::string DtcInterface::GetRocDesignInfo(int Link) {
-    if (not LinkEnabled(Link)) {
-      TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
-      return std::string("READ_ERROR");
-    }
+    std::string design_info("READ_ERROR");
     
-    ControlRoc_DeviceID_t devid;
-    int rc = ControlRoc_ReadDeviceID(Link,devid);
-    if (rc == 0) {
-      return devid.DesignInfo;
+    if (LinkEnabled(Link)) {
+      ControlRoc_DeviceID_t devid;
+      int rc = ControlRoc_ReadDeviceID(Link,devid);
+      if (rc == 0) {
+        design_info = devid.DesignInfo;
+      }
     }
+    else {
+      TLOG(TLVL_ERROR) << "DTC:" << fPcieAddr << " Link:" << Link << " is not enabled";
+    }
+    return design_info;
   }
 
+//-----------------------------------------------------------------------------
   std::string DtcInterface::GetRocFwGitCommit(int Link) {
     std::string s("READ_ERROR");
 
