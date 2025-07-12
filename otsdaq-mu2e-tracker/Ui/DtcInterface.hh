@@ -206,8 +206,8 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------    
     void         PrintBuffer     (const void* ptr, int nw, std::ostream* Stream = nullptr);
 
-    void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream);
-    void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream);
+    void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
+    void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
     
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value

@@ -283,7 +283,7 @@ namespace trkdaq {
       float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
       
       int ch_mask = 1;
-      if ((ChMask->size() == 96) and (ChMask->at(ich) == 0)) {
+      if ((ChMask != nullptr) and (ChMask->size() == 96) and (ChMask->at(ich) == 0)) {
         ch_mask = 0;
       }
     
