@@ -12,7 +12,8 @@
 #include "iostream"
 #include "vector"
 
-#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
+// #include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
+#include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 
 #include "DtcInterface.hh"
 #include "TString.h"    // includes ROOT's Form
@@ -223,10 +224,17 @@ namespace trkdaq {
 // ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
 // by default, don't redefine the link mask
 //-----------------------------------------------------------------------------
-  void DtcInterface::ResetLink(int Link) {
-    int tmo_ms(100);
-    fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
+  int DtcInterface::ResetLink(int Link) {
+    int tmo_ms(100), rc(0);
+    try {
+      fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << "failed to reset link:" << Link;
+      rc = -1;
+    }
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+    return rc;
   }
 
 //-----------------------------------------------------------------------------

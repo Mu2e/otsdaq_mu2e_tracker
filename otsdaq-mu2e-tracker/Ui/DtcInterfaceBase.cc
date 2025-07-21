@@ -349,25 +349,29 @@ namespace mu2edaq {
     return data;
   }
 
-
 //-----------------------------------------------------------------------------
 // generic function, should be used after HardReset()
 //-----------------------------------------------------------------------------
-  void DtcInterface::ResetLinks(int LinkMask, int SetNewMask) {
+  int DtcInterface::ResetLinks(int LinkMask, int SetNewMask) {
+    int rc(0);
     if ((LinkMask != 0) and (SetNewMask != 0)) fLinkMask = LinkMask;
 
     SetLinkMask();
     
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) ResetLink(i);  // this one is virtual
+      if (LinkEnabled(i)) {
+        int ret = ResetLink(i);   // this function is virtual
+        rc += ret;
+      }
     }
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
-// default implementation is empty
+// default implementation is empty, returns 0 or -1
 //-----------------------------------------------------------------------------
-  void DtcInterface::ResetLink(int Link) {
+  int DtcInterface::ResetLink(int Link) {
+    return 0;
   }
 
 //-----------------------------------------------------------------------------

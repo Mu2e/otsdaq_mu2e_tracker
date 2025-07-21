@@ -260,7 +260,7 @@ namespace trkdaq {
 // overloaded functions of the base class
 //-----------------------------------------------------------------------------
     virtual void  InitRocReadoutMode() override;
-    virtual void  ResetLink         (int Link) override;
+    virtual int   ResetLink         (int Link) override;
 
     
     roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
