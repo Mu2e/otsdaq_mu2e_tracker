@@ -226,14 +226,22 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ResetLink(int Link) {
     int tmo_ms(100), rc(0);
-    try {
-      fDtc->WriteROCRegister(DTC_Link_ID(Link),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
+
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
     }
-    catch (...) {
-      TLOG(TLVL_ERROR) << "failed to reset link:" << Link;
-      rc = -1;
+    for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      try {
+        fDtc->WriteROCRegister(DTC_Link_ID(lnk),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "Failed to reset link:" << lnk;
+        rc = -1;
+      }
     }
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
     return rc;
   }
 

@@ -63,22 +63,28 @@ namespace trkdaq {
   }
   
 //-----------------------------------------------------------------------------
-// most of the time LinkMask = -1
+// most of the time Link = -1
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(int Format, int LinkMask, std::ostream& Stream) {
-    TLOG(TLVL_DBG+1) << Form("Format=%i LinkMask 0x%08x \n",Format,LinkMask);
+  void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+    TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
 
-    int link_mask = LinkMask;
-    if (LinkMask == -1) link_mask = fLinkMask;
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
 
     uint reg;
 
+    int link_mask(0);
+
     std::string text("        Register     ");
-    for (int i=0; i<6; i++) {
-      int used = (link_mask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
+    for (int i=lnk1; i<lnk2; i++) {
+      int enabled = LinkEnabled(i);
+      if (enabled == 0)                                     continue;
+      link_mask |= (1 << 4*i);
       text += Form("    ROC%i   ",i);
     }
                      

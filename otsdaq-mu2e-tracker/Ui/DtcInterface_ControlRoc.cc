@@ -61,37 +61,43 @@ namespace  trkdaq {
     for (int i=link1; i<link2; i++) {
       if (not LinkEnabled(i))                                 continue;
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock   (roc,REG_DIGIRW,vec,false,increment_address,100);
-      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      try {
+        fDtc->WriteROCBlock   (roc,REG_DIGIRW,vec,false,increment_address,100);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-      if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",128,u);
+        uint16_t u; 
+        while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      int nw = fDtc->ReadROCRegister(roc,129,100);
-      if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",129,nw);
+        int nw = fDtc->ReadROCRegister(roc,129,100);
+        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",129,nw);
 
-      nw = nw-4;
-      std::vector<uint16_t> v2;
-      fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
+        nw = nw-4;
+        std::vector<uint16_t> v2;
+        fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
-      if (PrintLevel > 0) {
-        if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
-        if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
-        if (PrintLevel & 0x2) {
-          Stream << std::endl;
+        if (PrintLevel > 0) {
+          if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
+          if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+          if (PrintLevel & 0x2) {
+            Stream << std::endl;
 
-          trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
+            trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
           
-          Stream << Form("rw           : %i\n"        ,o->rw);
-          Stream << Form("hvcal        : 0x%04x\n"    ,o->hvcal);
-          Stream << Form("address      : 0x%04x\n"    ,o->address);
-          Stream << Form("data[32 bit] : 0x%04x%04x\n",o->data[1],o->data[0]);
-          Stream << Form("adc_num      : 0x%04x\n"    ,o->adc_num);
-          Stream << Form("adc_mask     : 0x%04x\n"    ,o->adc_mask);
+            Stream << Form("rw           : %i\n"        ,o->rw);
+            Stream << Form("hvcal        : 0x%04x\n"    ,o->hvcal);
+            Stream << Form("address      : 0x%04x\n"    ,o->address);
+            Stream << Form("data[32 bit] : 0x%04x%04x\n",o->data[1],o->data[0]);
+            Stream << Form("adc_num      : 0x%04x\n"    ,o->adc_num);
+            Stream << Form("adc_mask     : 0x%04x\n"    ,o->adc_mask);
+          }
         }
+      }
+      catch (...) {
+        TLOG(TLVL_ERROR) << "ERROR reading link:" << i;
+        Stream << std::format("ERROR reading link:{}",i) << std::endl;
       }
     }
 //-----------------------------------------------------------------------------

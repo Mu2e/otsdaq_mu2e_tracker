@@ -216,7 +216,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintRocStatus   (int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocStatus   (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintSpiAll      (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
