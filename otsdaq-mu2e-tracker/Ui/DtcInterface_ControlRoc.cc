@@ -299,7 +299,7 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
                                         int PrintLevel, std::ostream& Stream) {
     int rc (0); //, reg(268);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+    TLOG(TLVL_DEBUG) << " -- START: Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
                      << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
@@ -365,7 +365,7 @@ namespace  trkdaq {
         break;
       }
     }
-
+    TLOG(TLVL_DEBUG) << " -- END rc:" << rc;
     return rc;
   }
 
@@ -374,7 +374,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    
+    TLOG(TLVL_DEBUG) << "-- START:" << __func__;
     int l1(Link), l2(Link+1);
     if (Link == -1) {
       l1 = 0;
@@ -401,6 +401,7 @@ namespace  trkdaq {
         Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << REG_PULSEROFF << std::endl; 
       }
     }
+    TLOG(TLVL_DEBUG) << " -- END " << __func__ << " rc:" << rc;
     return rc;
   }
   
@@ -471,7 +472,7 @@ namespace  trkdaq {
       nw = nw-4;
       Settings.clear();
       try {
-        fDtc->ReadROCBlock(Settings,link_id,REG_SETCALDAC,nw,false,100);
+        fDtc->ReadROCBlock(Settings,link_id,REG_DUMPSETTINGS,nw,false,100);
       }
       catch(...) {
         TLOG(TLVL_ERROR) << "failed ReadROCBlock(Settings,link_id,REG_SETCALDAC,nw,100), nw:" << nw << std::endl;

@@ -110,7 +110,7 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
-// Init Readout 
+// InitReadout : in most cases, no parameters
 //-----------------------------------------------------------------------------
   int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
     int rc(0);
