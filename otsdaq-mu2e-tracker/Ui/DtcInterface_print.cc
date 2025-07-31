@@ -293,7 +293,7 @@ namespace trkdaq {
         ch_mask = 0;
       }
     
-      Stream << std::format("{:5d} {:3d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f}\n",
+      Stream << std::format("- {:5d} {:3d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f}\n",
                             ich,ch_mask,counts_hv,counts_cal,counts_coin,
                             rate_hv,rate_cal,rate_coin);
     }

@@ -43,17 +43,17 @@ namespace  trkdaq {
       Stream << Form("Input->hwcal        : 0x%04x\n",Input->hvcal);
       Stream << Form("Input->address      : 0x%04x\n",Input->address);
       Stream << Form("Input->data[0]      : 0x%04x\n",Input->data[0]);
-      Stream << Form("Input->data[1]      : 0x%94x\n",Input->data[1]);
+      Stream << Form("Input->data[1]      : 0x%04x\n",Input->data[1]);
     }
     
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // if Link != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
 //-----------------------------------------------------------------------------
-    int link1(0), link2(6);
-    if (Link) {
-      link1 = Link;
-      link2 = Link+1;
+    int link1(Link), link2(Link+1);
+    if (Link == -1) {
+      link1 = 0;
+      link2 = 6;
     }
 //-----------------------------------------------------------------------------
 // loop over the links and execute
