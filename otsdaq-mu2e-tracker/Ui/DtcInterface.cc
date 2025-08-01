@@ -182,7 +182,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // this is fully tracker-specific
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitRocReadoutMode() {
+  int DtcInterface::InitRocReadoutMode() {
+    int rc(0);
+    
     TLOG(TLVL_DEBUG) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
 //-----------------------------------------------------------------------------
 // this should be the only place where we reset the ROC
@@ -191,26 +193,31 @@ namespace trkdaq {
 // 2025-01-19 PM    ResetLinks();       // forget it ! ... /*this seems to be necesary*/
     
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
-      MonicaVarPatternConfig();                  // readout ROC patterns
+      rc = MonicaVarPatternConfig();                  // readout ROC patterns
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
-      MonicaVarLinkConfig();                      // readout ROC digis
+      rc = MonicaVarLinkConfig();                      // readout ROC digis
+      if (rc < 0) {
+        TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
+        return rc;
+      }
+        
 
       // ostringstream sout;
       // PrintRocStatus(1,-1,sout);
       // TLOG(TLVL_DEBUG) << "after MonicaVarLinkConfig:\n" << sout.str();
       
-      MonicaDigiClear();                          //
-
-      // sout.str("");
-      // PrintRocStatus(1,-1,sout);
-      // TLOG(TLVL_DEBUG) << "after MonicaDigiClear:\n" << sout.str();
-      
+      rc = MonicaDigiClear();                          //
+      if (rc < 0) {
+        return rc;
+      }
     }
     else {
       TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
     }
     TLOG(TLVL_DEBUG) << Form("-- END: fRocReadoutMode=%i\n",fRocReadoutMode);
+
+    return rc;
   }
 
 //-----------------------------------------------------------------------------

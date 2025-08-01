@@ -259,7 +259,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // overloaded functions of the base class
 //-----------------------------------------------------------------------------
-    virtual void  InitRocReadoutMode() override;
+    virtual int   InitRocReadoutMode() override;
     virtual int   ResetLink         (int Link) override;
 
     

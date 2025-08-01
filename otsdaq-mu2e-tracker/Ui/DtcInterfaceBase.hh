@@ -87,7 +87,7 @@ namespace mu2edaq {
     int          IsCrv     () { return fIsCrv; }
 
     int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1);
-    virtual void InitRocReadoutMode(); 
+    virtual int  InitRocReadoutMode(); 
     
     int          InitEmulatedCFOReadoutMode();
 

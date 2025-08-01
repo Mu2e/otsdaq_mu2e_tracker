@@ -118,7 +118,7 @@ namespace mu2edaq {
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
     
-    TLOG(TLVL_DEBUG) << "START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
+    TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
                      << " ROC ReadoutMode:" << fRocReadoutMode; 
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
@@ -151,17 +151,18 @@ namespace mu2edaq {
 // Init*CFOReadoutMode functions disable all links, at this point the links
 // should still be disabled
 //-----------------------------------------------------------------------------
-    InitRocReadoutMode();
+    rc = InitRocReadoutMode();
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
-    TLOG(TLVL_DEBUG) << "PCIE addr:" << fPcieAddr << " END" << std::endl;
+    TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
     return rc;
   }
 
 //-----------------------------------------------------------------------------
 // This needs to be implemented specific for the subsystems
 //-----------------------------------------------------------------------------
-  void DtcInterface::InitRocReadoutMode() {
+  int DtcInterface::InitRocReadoutMode() {
+    return 0;
   }
 
 //-----------------------------------------------------------------------------
