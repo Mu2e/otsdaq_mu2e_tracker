@@ -39,8 +39,6 @@ namespace mu2edaq {
                                           // for now assume that all ROCs are doing the same
                                           // fRocReadoutMode: (fixed_length << 4) | readout_mode
     int                  fRocReadoutMode; // 0: 'counter patterns' 1:digis 2:checkerboard patterns
-    int                  fRocLaneMask;    // 0xf : all of them
-    int                  fRocNHitsPerLane;// NHits per lane for Mode=2
     int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;         // clock_source << 4 | reset

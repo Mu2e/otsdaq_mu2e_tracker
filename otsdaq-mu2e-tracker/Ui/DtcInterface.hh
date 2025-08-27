@@ -39,14 +39,17 @@ namespace trkdaq {
   };
 
   class DtcInterface : public mu2edaq::DtcInterface { 
-    private:
-      DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
-    public:
+  private:
+    DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
+  public:
 //-----------------------------------------------------------------------------
 // ROC functions : if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
     void                       RocConfigurePatternMode();
     void                       RocSetDataVersion      (int Version, int LinkMask=0);
+
+    int                        fRocLaneMask;        // 0xf : all of them
+    int                        fRocNHitsPerLane;    // NHits per lane for Mode=2
 
     static const char*         fgSpiVarName[TrkSpiDataNWords]; //
     static       int           fgFpga[96];                     // 0:CAL or 1:HV
@@ -251,7 +254,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
-    int          MonicaVarLinkConfig   (int LaneMask = 0xf);
+    int          MonicaVarLinkConfig   ();
 //-----------------------------------------------------------------------------
 // VarPatternConfig = RocConfigurePatternMode
 //-----------------------------------------------------------------------------

@@ -674,13 +674,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // to be added 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarLinkConfig(int LaneMask) {
+  int DtcInterface::MonicaVarLinkConfig() {
     int rc(0);
     
     fRocReadoutMode = 1;                            // 1: read digis
                                         // bit 13 - disable reset of the counters by the HB next to the null HB
     // int lane_mask = 0x0300 | LaneMask;
-    int lane_mask = 0x2300 | LaneMask;
+    int lane_mask = 0x2300 | fRocLaneMask; // assumed to be the same for all ROCs
     
     for (int i=0; i<6; i++) {
       int enabled = (fLinkMask >> 4*i) & 0x1;
@@ -706,7 +706,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
         uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
-        if ((u >> 0x8) != LaneMask) {
+        if ((u >> 0x8) != 0xF) {
           // try to recover - write 1, then - 0 to reg 13
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -714,7 +714,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
           // and check again
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
-          if ((u >> 0x8) != LaneMask) {
+          if ((u >> 0x8) != 0xF) {
             // still in trouble
             TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs  link mask is 0x%04x, call Monica and Richie\n",
                                      i,u);
