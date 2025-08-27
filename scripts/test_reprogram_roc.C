@@ -1,4 +1,7 @@
-//
+//-----------------------------------------------------------------------------
+// 1. write_directory
+// 2. spi_clear .. Make sure the right address is used 
+//-----------------------------------------------------------------------------
 #include "iostream"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 #include "dtcInterfaceLib/DTC.h"
@@ -19,16 +22,22 @@ int SPI_LOAD_IMAGE        = 8;
 int SPI_DIRECTORY_WRITE   = 9;
 
 namespace {
+  
   struct data_t {
     int         index;
     int         offset;
     const char* fn;
+    int         fsize;
   };
 
-  data_t spi_data[3] = {
-    { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          },
-    { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             },
-    { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin"}
+  int const kNImages = 5;
+  
+  data_t spi_data[kNImages] = {
+    { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          , 9524032},
+    { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9480352},
+    { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272},
+    { 3, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832},
+    { 4, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384}
   };
 
 };
@@ -98,14 +107,15 @@ void spi_write_directory(int Link) {
   std::vector<uint16_t> input;
                                                   // 5 words
   input.push_back(SPI_DIRECTORY_WRITE);                // SPI flash read
-  input.push_back(nimages & 0xFFFF);  // nimages LSB
-  input.push_back(0               );  // nimages MSB
-  input.push_back(0               );  // 2nd command : 2 16-bit words - uunused
-  input.push_back(0               );  // unused
+  input.push_back(kNImages & 0xFFFF);  // nimages LSB
+  input.push_back(0                );  // nimages MSB
+  input.push_back(0                );  // 2nd command : 2 16-bit words - uunused
+  input.push_back(0                );  // unused
 
-  for (int i=0; i<nimages; ++i) {
-    input.push_back(flash_map[i]         & 0xFFFF);                             // 5 words total
-    input.push_back((flash_map[i] >> 16) & 0xFFFF);                             // 5 words total
+  for (int i=0; i<kNImages; ++i) {
+    int offset = spi_data[i].offset;
+    input.push_back( offset        & 0xFFFF);                             // 5 words total
+    input.push_back((offset >> 16) & 0xFFFF);                             // 5 words total
   }
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
@@ -135,18 +145,22 @@ void spi_write_directory(int Link) {
 //-----------------------------------------------------------------------------
 // clears SPI memory in 64k blocks
 //-----------------------------------------------------------------------------
-void spi_clear(int Link, int Address, int NBytes) {
+// void spi_clear(int Link, int Address, int NBytes) {
+void spi_clear(int Link, int Index) {
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
                                               // 5 words
   std::vector<uint16_t> input;
 
+  int nbytes = spi_data[Index].fsize;
+  int offset = spi_data[Index].offset;
+
   input.push_back(SPI_CLEAR);                 // SPI clear
-  input.push_back( Address        & 0xFFFF);  // 
-  input.push_back((Address >> 16) & 0xFFFF);  // 
-  input.push_back( NBytes         & 0xFFFF);  // 
-  input.push_back((NBytes  >> 16) & 0xFFFF);  // 
+  input.push_back( offset         & 0xFFFF);  // 
+  input.push_back((offset  >> 16) & 0xFFFF);  // 
+  input.push_back( nbytes         & 0xFFFF);  // 
+  input.push_back((nbytes  >> 16) & 0xFFFF);  // 
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
   dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
@@ -161,9 +175,10 @@ void spi_clear(int Link, int Address, int NBytes) {
 
 //-----------------------------------------------------------------------------
 // load an SPI image, SPI address is an address in the SPI memory ,
-// which has to include an initial offset 
+// which has to include an initial offset
+// returns 0 if OK and an error code otherwise
 //-----------------------------------------------------------------------------
-void spi_load_image(int Link, int FirstAddr, int NWords, uint16_t* Data) {
+int spi_load_image(int Link, int FirstAddr, int NWords, uint16_t* Data) {
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -187,7 +202,9 @@ void spi_load_image(int Link, int FirstAddr, int NWords, uint16_t* Data) {
   
   uint16_t u; 
   while ((u = dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-  // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+
+  int rc = dtc_i->fDtc->ReadROCRegister(roc,132,1000);
+  return rc;
 }
 
 //-----------------------------------------------------------------------------
@@ -271,9 +288,12 @@ int test_spi_load_image(int Link, int Index, int TestMode = 1, int NWrites = -1,
 //-----------------------------------------------------------------------------
 // clear the spi memory
 //-----------------------------------------------------------------------------
-  std::cout << "-- before spi_clear : index:" << Index << " fsize:" << fsize << std::endl;
+  std::cout << "-- before spi_clear : index:" << Index
+            << " fn:" << spi_data[Index].fn
+            << " fsize:" << std::dec << fsize << std::endl;
  
-  spi_clear(Link, spi_data[Index].offset, fsize);
+  //  spi_clear(Link, spi_data[Index].offset, fsize);
+  spi_clear(Link, Index);
 
   std::cout << "-- after clear" << std::endl;
 //-----------------------------------------------------------------------------
@@ -287,6 +307,7 @@ int test_spi_load_image(int Link, int Index, int TestMode = 1, int NWrites = -1,
   int done       = 0;
   int loc        = 0;
   int nwrites    = 0;
+  int nerrors    = 0;
 //-----------------------------------------------------------------------------
 // can write only 1024 bytes (512 shorts) at a time
 //-----------------------------------------------------------------------------
@@ -308,7 +329,13 @@ int test_spi_load_image(int Link, int Index, int TestMode = 1, int NWrites = -1,
               << " loc:" << std::dec << loc
               << std::endl;
 
-      if (TestMode == 0) spi_load_image(Link, first_addr, nw, x);
+      if (TestMode == 0) {
+        int rc = spi_load_image(Link, first_addr, nw, x);
+        if (rc != 0) {
+          std::cout << "-- ERROR: nwrites:" << nwrites << " rc:0x" << std::hex << rc << std::endl;
+          nerrors++;
+        }
+      }
     
       loc        += 2*nw;
       first_addr += 2*nw;
@@ -318,7 +345,7 @@ int test_spi_load_image(int Link, int Index, int TestMode = 1, int NWrites = -1,
     }
   }
 
-  std::cout << "END nwrites:" << nwrites << " fsize:" << fsize << std::endl;
+  std::cout << "END nwrites:" << nwrites << " fsize:" << fsize << " nerrors:" << nerrors << std::endl;
 //-----------------------------------------------------------------------------
 // validate writing
 //-----------------------------------------------------------------------------
