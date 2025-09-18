@@ -197,18 +197,19 @@ namespace trkdaq {
                                    const int ChannelID,
                                    const int PreampType,
                                    const DTCLib::roc_data_t dac);
-    bool FindThreshold(const int Link,
-                       const int ChannelID,
-                       const int PreampType,
-                       const float threshold,
-                       const float tolerance,
-                       DTCLib::roc_data_t& out);
+    
+    bool FindThreshold(const int           Link        ,
+                       const int           ChannelID   ,
+                       const int           PreampType  ,
+                       const float         threshold_mv,
+                       const float         tolerance_mv,
+                       DTCLib::roc_data_t& out         );
 
-    bool FindThreshold(const int Link,
-                       const int ChannelID,
-                       const int PreampType,
-                       const float threshold,
-                       const float tolerance);
+    bool FindThreshold(const int   Link,
+                       const int   ChannelID,
+                       const int   PreampType,
+                       const float threshold_mv,
+                       const float tolerance_mv);
 
     int          ConvertSpiData(const std::vector<uint16_t>& RawData,
                                 TrkSpiData_t*                Data   ,
@@ -241,6 +242,18 @@ namespace trkdaq {
     void         PrintRocStatus   (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintSpiAll      (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
+    int          ProgramRoc        (int Link, const char* Version, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiWriteDirectory (int Link, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
+                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiClearMemory    (int Link, int Index, std::ostream& Stream = std::cout);
+    int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
+                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiLoadImage      (int Link, int Address, int NWords, const uint16_t* Data,
+                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiIapIndex       (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiIapAddress     (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
+    
     void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                   ulong       FirstTS,
                                   int         PrintData,

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // 1. spi_write_directory
-// 2. spi_clear - done by test_spi_load_image .. Make sure the right address is used
+// 2. spi_clear - done by spi_load_image .. Make sure the right address is used
 // 3. spi_program_aip_w_index for the .spi file
 // 4. wait for the upload to complete
 // this is how the offsets should be:
@@ -29,12 +29,12 @@ int RREG                  = 384;
 int REG_STATUS            = 132;
                                         // commands
 int SPI_CLEAR             = 3;
-int PROGRAM_AIP_W_INDEX   = 4;
-int PROGRAM_AIP_W_ADDRESS = 5;
-int AIP_AUTO_UPDATE       = 6;
+int PROGRAM_IAP_W_INDEX   = 4;
+int PROGRAM_IAP_W_ADDRESS = 5;
+int IAP_AUTO_UPDATE       = 6;
 int SPI_FLASH_READ        = 7;
-int SPI_LOAD_IMAGE        = 8;
-int SPI_DIRECTORY_WRITE   = 9;
+int SPI_WRITE_RECORD      = 8;
+int SPI_WRITE_DIRECTORY   = 9;
 
 namespace {
   
@@ -56,10 +56,15 @@ namespace {
 
   struct drac_fw_version_t {
     std::string name;
+    int         index;       // in spi_offsets and bin_offsets
     data_t      spi_file;
     data_t      bin_file;
   };
-
+//-----------------------------------------------------------------------------
+// offsets of different images - no freedom here
+//-----------------------------------------------------------------------------
+  int spi_offset[5] = { 0x10000, 0x1010000, 0x2010000, 0x3010000, 0x4010000 };
+  int bin_offset[5] = {      -1, 0x5000000, 0x5040000, 0x5080000, 0x50c0000 };
 //-----------------------------------------------------------------------------
 // GoldenV10 should always be there in the beginning
 // the rest versions could be overriding each other
@@ -67,15 +72,15 @@ namespace {
 // assume that the image index is incremented monotonically
 //-----------------------------------------------------------------------------
   drac_fw_version_t drac_fw[] = {
-    { "GoldenV10",
+    { "GoldenV10",  0,
       { 0,    0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          , 9524032 },
       {-1,         -1, ""                                                          ,      -1 }
     },
-    { "ROCV12",
+    { "ROCV12",     1,
       { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9524032 },
       { 2,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
     },
-    { "ROCV14",
+    { "ROCV14",     2,
       { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
       { 4,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
     },
@@ -155,12 +160,12 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
   std::cout << __func__ << ": nimages:" << nimages << std::endl;
 
   std::vector<uint16_t> input;
-                                                  // 5 words
-  input.push_back(SPI_DIRECTORY_WRITE);           // SPI flash read
-  input.push_back(nimages & 0xFFFF);    // nimages LSB
-  input.push_back(0               );                   // nimages MSB
-  input.push_back(0               );    // 2nd command : 2 16-bit words - uunused
-  input.push_back(0               );    // unused
+                                           // 5 words
+  input.push_back(SPI_WRITE_DIRECTORY);    // SPI flash read
+  input.push_back(nimages & 0xFFFF);       // nimages LSB
+  input.push_back(0               );       // nimages MSB
+  input.push_back(0               );       // 2nd command : 2 16-bit words - uunused
+  input.push_back(0               );       // unused
   
                                         // assume that the image index is incremented monotonically 
   for (int i=0; drac_fw[i].name != ""; ++i) {
@@ -206,7 +211,7 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 // clears SPI memory in 64k blocks
 //-----------------------------------------------------------------------------
 // void spi_clear(int Link, int Address, int NBytes) {
-void spi_clear(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
+void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -239,14 +244,14 @@ void spi_clear(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
 // which has to include an initial offset
 // returns 0 if OK and an error code otherwise
 //-----------------------------------------------------------------------------
-int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, uint16_t* Data) {
+int spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, uint16_t* Data) {
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
                                               // 5 words
   std::vector<uint16_t> input;
 
-  input.push_back(SPI_LOAD_IMAGE);                 // SPI clear
+  input.push_back(SPI_WRITE_RECORD);            // SPI clear
   input.push_back( FirstAddr        & 0xFFFF);  // 
   input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
   input.push_back( NWords           & 0xFFFF);  // 
@@ -280,7 +285,7 @@ void spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
                                               // 5 words
   std::vector<uint16_t> input;
 
-  input.push_back(PROGRAM_AIP_W_INDEX);                 // SPI clear
+  input.push_back(PROGRAM_IAP_W_INDEX);                 // SPI clear
   input.push_back( Index        & 0xFFFF);  // 
   input.push_back((Index >> 16) & 0xFFFF);  // 
   input.push_back(0);  // 
@@ -310,7 +315,7 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
                                               // 5 words
   std::vector<uint16_t> input;
 
-  input.push_back(PROGRAM_AIP_W_ADDRESS);                 // SPI clear
+  input.push_back(PROGRAM_IAP_W_ADDRESS);                 // SPI clear
   input.push_back( ImageStartAddr        & 0xFFFF);  // 
   input.push_back((ImageStartAddr >> 16) & 0xFFFF);  // 
   input.push_back(0);  // 
@@ -342,7 +347,7 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
 // TestMode = 1: don't write to memory, just clear the memory and count
 // NWrites     : number of records to write, -1: write all
 //-----------------------------------------------------------------------------
-int test_spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int TestMode = 1, int NWrites = -1, int Validate = 0) {
+int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int TestMode = 1, int NWrites = -1, int Validate = 0) {
 //-----------------------------------------------------------------------------
 // open input file and determine its size
 //-----------------------------------------------------------------------------
@@ -354,14 +359,14 @@ int test_spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index,
   int fsize = file.tellg();
   file.seekg(0, std::ios::beg);
 //-----------------------------------------------------------------------------
-// clear the spi memory
+// clear the spi memory for image at index *** ###
 //-----------------------------------------------------------------------------
   std::cout << "-- before spi_clear : index:" << Index
             << " fn:" << spi_data[Index].fn
             << " fsize:" << std::dec << fsize << std::endl;
  
   //  spi_clear(Link, spi_data[Index].offset, fsize);
-  spi_clear(DtcInterface, Link, Index);
+  spi_clear_memory(DtcInterface, Link, Index);
 
   std::cout << "-- after clear" << std::endl;
 //-----------------------------------------------------------------------------
@@ -398,7 +403,7 @@ int test_spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index,
 
       if (TestMode == 0) {
         uint16_t* x = (uint16_t*) &fileData[loc];
-        int rc      = spi_load_image(DtcInterface,Link,first_addr,nw,x);
+        int rc      = spi_write_record(DtcInterface,Link,first_addr,nw,x);
         if (rc != 0) {
           std::cout << "-- ERROR: nwrites:" << nwrites << " rc:0x" << std::hex << rc << std::endl;
           nerrors++;
@@ -510,11 +515,11 @@ int reprogram_roc(int PcieAddr, int Link, const char* Version) {
   
                                         // upload the .spi image
 
-  test_spi_load_image(dtc_i,Link,fw->spi_file.index,test_mode);
+  spi_load_image(dtc_i,Link,fw->spi_file.index,test_mode);
 
                                         // upload the .bin image, if defined
   if (fw->bin_file.index >= 0) {
-    test_spi_load_image(dtc_i,Link,fw->bin_file.index,test_mode);
+    spi_load_image(dtc_i,Link,fw->bin_file.index,test_mode);
   }
                                         // activate the image
   spi_program_iap_w_index(dtc_i,Link,fw->spi_file.index);
