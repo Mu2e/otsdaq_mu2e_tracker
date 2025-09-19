@@ -22,6 +22,7 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/DtcInterfaceBase.hh"
+#include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
 
 #include "otsdaq-mu2e-tracker/Ui/BisectionSearch.hh"
 
@@ -37,7 +38,7 @@ namespace trkdaq {
       37,   38,   38,   40,   41,   42,     43,   44,   45,   46,
       48,   49,   51,   52,   54,   55,     57,   58,
       72,   73,   74,   75,
-    0x90, 0x91, 0x92, 0x93, 0x94, 0x95
+      0x90, 0x91, 0x92, 0x93, 0x94, 0x95
   };
 
   class DtcInterface : public mu2edaq::DtcInterface { 
@@ -227,41 +228,40 @@ namespace trkdaq {
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
-    void         PrintBuffer     (const void* ptr, int nw, std::ostream* Stream = nullptr);
-
+    void         PrintBuffer        (const void* ptr, int nw, std::ostream* Stream = nullptr);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
-    
 //-----------------------------------------------------------------------------
 // Format = 0 : for each register, print a register and its value
 // Format = 1 : add short description of each register
 // if Link = -1, print a line per register for each ROC
 //-----------------------------------------------------------------------------
-    void         PrintRocRegister (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintRocRegister2(uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintRocStatus   (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintSpiAll      (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
+    void         PrintRocRegister  (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocRegister2 (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocStatus    (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
-    int          ProgramRoc        (int Link, const char* Version, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiWriteDirectory (int Link, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
-                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          ProgramRoc        (int Link, const char* Version, const RocFwData_t* FwData, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiClearMemory    (int Link, int Index, std::ostream& Stream = std::cout);
-    int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
-                                    int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiLoadImage      (int Link, int Address, int NWords, const uint16_t* Data,
-                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiLoadImage      (int Link, int Index, const roc_fw_data_t* SpiDirectory, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiIapIndex       (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiIapAddress     (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
-    
-    void         ReadSubevents   (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
-                                  ulong       FirstTS,
-                                  int         PrintData,
-                                  int         Validate = 0      , 
-                                  const char* OutputFn = nullptr);
 
-    int          ReadRocDDR  (int Link, int Block, std::ostream& Stream = std::cout);
-    int          RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
+    int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
+                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    
+    int          SpiWriteDirectory (int Link, const roc_fw_data_t* SpiDirectory, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
+                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+
+    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+                                    ulong       FirstTS,
+                                    int         PrintData,
+                                    int         Validate = 0      , 
+                                    const char* OutputFn = nullptr);
+
+    int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
+    int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
