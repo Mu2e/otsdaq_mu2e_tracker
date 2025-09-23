@@ -242,15 +242,15 @@ namespace trkdaq {
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
     int          ProgramRoc        (int Link, const char* Version, const RocFwData_t* FwData, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiClearMemory    (int Link, int Index, std::ostream& Stream = std::cout);
-    int          SpiLoadImage      (int Link, int Index, const roc_fw_data_t* SpiDirectory, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiIapIndex       (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiIapAddress     (int Link, int Index, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiIapAddress     (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
 
     int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
     
-    int          SpiWriteDirectory (int Link, const roc_fw_data_t* SpiDirectory, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
 

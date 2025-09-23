@@ -1,4 +1,5 @@
 //
+#include <filesystem>
 #include <vector>
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
@@ -10,6 +11,18 @@
 using namespace DTCLib;
 
 namespace  trkdaq {
+                                        // registers
+  int RREG                  = 384;
+  int REG_STATUS            = 132;
+                                        // commands
+  int SPI_CLEAR             = 3;
+  int PROGRAM_IAP_W_INDEX   = 4;
+  int PROGRAM_IAP_W_ADDRESS = 5;
+  int IAP_AUTO_UPDATE       = 6;
+  int SPI_FLASH_READ        = 7;
+  int SPI_WRITE_RECORD      = 8;
+  int SPI_WRITE_DIRECTORY   = 9;
+
   RocFwData_t RocFw = {
                                         // spi_directory
     {
@@ -40,45 +53,339 @@ namespace  trkdaq {
   };
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::SpiClearMemory(int Link, int Index, std::ostream& Stream) {
+  int DtcInterface::SpiClearMemory(int Link, const roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    return rc;
-  }
+    std::vector<uint16_t> input;
+                                                  // determine file size
+    int nbytes(0);
+    try {
+      nbytes = std::filesystem::file_size(Dir->fn);
+    }
+    catch (...) {
+      Stream << __func__ << "ERROR: wrong file name:" << Dir->fn << "  ?" << std::endl;
+      return -1;
+    }
+    
+    int offset = Dir->offset;
 
-//-----------------------------------------------------------------------------
-  int DtcInterface::SpiIapIndex(int Link, int Index, int PrintLevel, std::ostream& Stream) {
-    int rc(0);
-    return rc;
-  }
+    input.push_back(SPI_CLEAR);                 // SPI clear
+    input.push_back( offset         & 0xFFFF);  // 
+    input.push_back((offset  >> 16) & 0xFFFF);  // 
+    input.push_back( nbytes         & 0xFFFF);  // 
+    input.push_back((nbytes  >> 16) & 0xFFFF);  // 5 words in total
 
-//-----------------------------------------------------------------------------
-  int DtcInterface::SpiIapAddress(int Link, int Index, int PrintLevel, std::ostream& Stream) {
-    int rc(0);
-    return rc;
-  }
+    bool increment_address(false);
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+
+    if (PrintLevel != 0) {
+      Stream << __func__ << ": SPI_CLEAR input written " << std::endl;
+    }
   
-//-----------------------------------------------------------------------------
-  int DtcInterface::SpiWriteDirectory(int Link, const roc_fw_data_t* SpiDirectory, int PrintLevel, std::ostream& Stream) {
-    int rc(0);
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    if (PrintLevel != 0) {
+      Stream << __func__ << ":END" << std::endl;
+    }
     return rc;
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::SpiLoadImage(int Link, int Index, const roc_fw_data_t* SpiDirectory, int PrintLevel, std::ostream& Stream) {
-    int rc(0);
-    return rc;
+  int DtcInterface::SpiIapIndex(int Link, const roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) {
+    std::vector<uint16_t> input;
+
+    input.push_back(PROGRAM_IAP_W_INDEX);               // SPI clear
+    input.push_back( DirEntry->index        & 0xFFFF);  // 
+    input.push_back((DirEntry->index >> 16) & 0xFFFF);  // 
+    input.push_back(0);                                 // 
+    input.push_back(0);                                 // 5 words total
+
+    bool increment_address(false);
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+
+    sleep(40);
+                                                        // wait till the command is executed
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t status = fDtc->ReadROCRegister(roc,REG_STATUS,1000);
+    if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
+    return (int) status;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::SpiIapAddress(int Link, const roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) {
+    std::vector<uint16_t> input;
+
+    input.push_back(PROGRAM_IAP_W_ADDRESS);              // SPI clear
+    input.push_back( DirEntry->offset        & 0xFFFF);  // 
+    input.push_back((DirEntry->offset >> 16) & 0xFFFF);  // 
+    input.push_back(0);                                  // 
+    input.push_back(0);                                  // 5 words in total
+
+    bool increment_address(false);
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+
+                                                          // wait till the command is executed
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t status = fDtc->ReadROCRegister(roc,REG_STATUS,1000);
+    if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
+    return (int) status;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::SpiLoadImage(int Link, const roc_fw_data_t* DirEntry, int TestMode, int NWrites, int PrintLevel, std::ostream& Stream) {
+    //   int rc(0);
+//-----------------------------------------------------------------------------
+// open input file and determine its size
+//-----------------------------------------------------------------------------
+    std::ifstream file(DirEntry->fn, std::ios::binary);
+    file.seekg(0, std::ios::end);
+    int fsize = file.tellg();
+    file.seekg(0, std::ios::beg);
+//-----------------------------------------------------------------------------
+// clear the spi memory for image at index *** ###
+//-----------------------------------------------------------------------------
+    Stream << __func__ << ": -- before spi_clear : index:" << DirEntry->index
+           << " fn:" << DirEntry->fn
+           << " fsize:" << std::dec << fsize << std::endl;
+ 
+    //  spi_clear(Link, spi_data[Index].offset, fsize);
+    SpiClearMemory(Link, DirEntry);
+
+    Stream << "-- after clear" << std::endl;
+//-----------------------------------------------------------------------------
+// read the input file and upload its content to the SPI memory
+//-----------------------------------------------------------------------------
+    std::vector<char> fileData(fsize);
+    file.read((char*) &fileData[0], fsize);
+
+    int first_addr = DirEntry->offset;
+    int nw         = 512;
+    int done       = 0;
+    int loc        = 0;
+    int nwrites    = 0;
+    int nerrors    = 0;
+//-----------------------------------------------------------------------------
+// can write only 1024 bytes (512 shorts) at a time
+//-----------------------------------------------------------------------------
+    while (not done) {
+                                        // last record could be shorter
+      if (loc + 2*nw > fsize) {
+                                        // assume the file is written in 2-byte words
+        nw   = (fsize-loc)/2;
+        done = 1;
+      }
+    
+      if (nw > 0) {
+//-----------------------------------------------------------------------------
+// write next record
+//-----------------------------------------------------------------------------
+        Stream << __func__ << ": nwrites" << std::setw(6) << nwrites << " nw:" << std::setw(4) << nw
+               << " first_addr:0x" << std::hex << first_addr
+               << " loc:" << std::dec << loc
+               << std::endl;
+
+        if (TestMode == 0) {
+          uint16_t* data = (uint16_t*) &fileData[loc];
+          int rc         = SpiWriteRecord(Link,first_addr,nw,data);
+          if (rc != 0) {
+            Stream << "-- ERROR: nwrites:" << nwrites << " rc:0x" << std::hex << rc << std::endl;
+            nerrors++;
+          }
+        }
+        
+        loc        += 2*nw;
+        first_addr += 2*nw;
+        
+        nwrites ++;
+        if ((NWrites > 0) and (nwrites > NWrites)) break;
+      }
+    }
+
+    Stream << "END nwrites:" << nwrites << " fsize:" << fsize << " nerrors:" << nerrors << std::endl;
+//-----------------------------------------------------------------------------
+// validate writing (not debugged yet)
+//-----------------------------------------------------------------------------
+    int ierror  = 0;
+//   if (Validate) {
+//     first_addr  = spi_data[Index].offset;   // offset in SPI memory
+//     nw          = 127;
+//     done        = 0;
+//     loc         = 0;                    // offset in the 'file'
+//     int nreads  = 0;
+// //-----------------------------------------------------------------------------
+// // can read only 254 bytes (127 shorts) at a time
+// //-----------------------------------------------------------------------------
+//     while (not done) {
+//       if (loc + 2*nw > fsize) {
+//         nw   = (fsize-loc)/2;
+//       }
+      
+//       if (nw <= 0) {
+//         done = 1;
+//       }
+//       else {
+// //-----------------------------------------------------------------------------
+// // read next record
+// //-----------------------------------------------------------------------------
+//         std::cout << "-- nw:" << std::setw(4) << nw
+//                   << " first_addr:0x" << std::hex << first_addr
+//                   << " loc:" << std::dec << loc
+//                   << std::endl;
+        
+//         std::vector<uint16_t> res;
+//         spi_flash_read(DtcInterface, Link, first_addr, nw, &res);
+// //-----------------------------------------------------------------------------
+// // compare to the original
+// //-----------------------------------------------------------------------------
+//         for (int iw=0; iw<nw; iw++) {
+//           if (res[iw] != fileData[loc+iw]) {
+//             std::cout << "ERROR at loc:" << loc << " iw:" << iw << std::endl;
+//             ierror = 1;
+//           }
+//         }
+
+//         if (ierror != 0) break;
+//         loc        += 2*nw;
+//         first_addr += nw;
+      
+//         nreads ++;
+//       }
+//     }
+//  }
+  
+    Stream << __func__ << ":END ierror:" << ierror << std::endl;
+    return ierror;
   }
 
 //-----------------------------------------------------------------------------
   int DtcInterface::SpiReadFlash(int Link, int Address, int NWords, std::vector<uint16_t>* Res,
                                  int PrintLevel, std::ostream& Stream) {
+
+    std::vector<uint16_t> input;
+
+    input.push_back(SPI_FLASH_READ);            // SPI flash read
+    input.push_back((Address      ) & 0xFFFF);  // starting address LSB
+    input.push_back((Address >> 16) & 0xFFFF);  // starting address MSB
+    input.push_back(NWords*2);                  // number of bytes to read (max 254 bytes = 127 words)
+    input.push_back(0);                         // 5 words total
+
+    bool increment_address(false);
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+
+    if (PrintLevel & 0x1) {
+      std::cout << " input written " << std::endl;
+    }
+  
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    int nw (-1);
+    nw = fDtc->ReadROCRegister(roc,129,1000);  // should return NWords+4
+//-----------------------------------------------------------------------------
+// validation: reading back and comparing
+//-----------------------------------------------------------------------------
+    RocBlockRead(Link,RREG,*Res);
+    int nw_read = Res->size();
+    
+    if (PrintLevel != 0) {
+      std::cout << "nw read:" << nw_read << std::endl;
+      if (PrintLevel & 0x2) {
+        PrintBuffer(Res->data(),nw_read);
+      }
+    }
+    
+    return nw_read;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::SpiWriteDirectory(int Link, const roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) {
     int rc(0);
+    
+    int nimages = 0;
+    for (int i=0; Dir[i].offset >= 0; ++i) nimages++;
+
+    std::cout << __func__ << ": nimages:" << nimages << std::endl;
+
+    std::vector<uint16_t> input;
+                                          // 5 words
+    input.push_back(SPI_WRITE_DIRECTORY); // SPI flash read
+    input.push_back(nimages & 0xFFFF);    // nimages LSB
+    input.push_back(0               );    // nimages MSB
+    input.push_back(0               );    // 2nd command : 2 16-bit words - uunused
+    input.push_back(0               );    // unused
+  
+    for (int i=0; i<nimages; ++i) {
+      int offset = Dir[i].offset;
+      input.push_back( offset        & 0xFFFF);                             //
+      input.push_back((offset >> 16) & 0xFFFF);                             //
+    }
+    
+    bool increment_address(false);
+
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+    
+    std::cout << __func__ << ": SPI_WRITE_DIRECTORY input written " << std::endl;
+    
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+  
+
+    // int nw (-1);
+    // nw = dtc_i->fDtc->ReadROCRegister(roc,129,1000);
+  
+    // std::vector<uint16_t> res;
+
+    // dtc_i->RocBlockRead(Link,RREG,res);
+    // int nw = res.size();
+    
+    // std::cout << "nw read:" << nw << std::endl;
+    // dtc_i->PrintBuffer(res.data(),nw);
+    
+    //  return nw;
+    std::cout << __func__ << ":END" << std::endl;
     return rc;
   }
 
 //-----------------------------------------------------------------------------
   int DtcInterface::SpiWriteRecord(int Link, int FirstAddr, int NWords, const uint16_t* Data, int PrintLevel, std::ostream& Stream) {
     int rc(0);
+
+    std::vector<uint16_t> input;
+
+    input.push_back(SPI_WRITE_RECORD);            // SPI clear
+    input.push_back( FirstAddr        & 0xFFFF);  // 
+    input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
+    input.push_back( NWords           & 0xFFFF);  // 
+    input.push_back((NWords    >> 16) & 0xFFFF);  // 5 words in total
+
+    for (int i=0; i<NWords; ++i) {
+      input.push_back(Data[i]);
+    }
+
+    bool increment_address(false);
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+    fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+
+    // if (PrintLevel != 0) Stream << " data written, nb:" << NWords*2 << std::endl;
+  
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    rc = fDtc->ReadROCRegister(roc,132,1000);
+
+    if (PrintLevel != 0) {
+      Stream << __func__ << ":END rc:" << rc << std::endl;
+    }
     return rc;
   }
 
@@ -118,14 +425,14 @@ namespace  trkdaq {
   
                                         // upload the .spi image
     
-    SpiLoadImage(Link,fw->index_spi,test_mode);
+    SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],test_mode);
 
                                         // upload the .bin image, if defined
     if (fw->index_bin >= 0) {       
-      SpiLoadImage(Link,fw->index_bin,test_mode);
+      SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],test_mode);
     }
                                         // activate the image
-    SpiIapIndex(Link,fw->index_spi);
+    SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
     
     return rc;
   }

@@ -34,6 +34,7 @@ namespace trkdaq {
     roc_fw_data_t       spi_directory[10];
     roc_fw_version_t    version      [10];
   };
-  
+
 }
+
 #endif

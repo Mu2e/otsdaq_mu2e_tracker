@@ -1146,7 +1146,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
   //-----------------------------------------------------------------------------
 // This is just an example, needs to be implemented for each subsystem
-  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history = false) {
+  std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history) {
     std::vector<float> roc_reg;
     // Basic ROC registers
     if(history) {
