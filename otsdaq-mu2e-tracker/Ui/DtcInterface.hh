@@ -241,7 +241,7 @@ namespace trkdaq {
     void         PrintRocStatus    (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
-    int          ProgramRoc        (int Link, const char* Version, const RocFwData_t* FwData, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          ProgramRoc        (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);

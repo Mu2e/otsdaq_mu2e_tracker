@@ -37,6 +37,37 @@ int SPI_WRITE_RECORD      = 8;
 int SPI_WRITE_DIRECTORY   = 9;
 
 namespace {
+
+  trkdaq::RocFwData_t RocFw = {
+                                        // spi_directory
+    {
+      { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          }, // 9524032 },
+      { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             }, // 9480352 },
+      { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin"}, //   82272 },
+      { 3, 0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             }, // 9482832 },
+      { 4, 0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  }, //   86384 },
+      {-1,        -1, ""                                                          },  //      -1 }
+      {-1,        -1, ""                                                          },  //      -1 }
+      {-1,        -1, ""                                                          },  //      -1 }
+      {-1,        -1, ""                                                          },  //      -1 }
+      {-1,        -1, ""                                                          }   //      -1 }
+    },
+                                        // firmware versions = pairs of images
+    {
+      { "GoldenV10",  0, -1 },
+      { "ROCV12",     1,  2 },
+      { "ROCV14",     3,  4 },
+      { "",          -1, -1 },
+      { "",          -1, -1 },
+      { "",          -1, -1 },
+      { "",          -1, -1 },
+      { "",          -1, -1 },
+      { "",          -1, -1 },
+      { "",          -1, -1 }
+    }
+  };
+
+ 
   
   struct data_t {
     int         index;
@@ -481,49 +512,70 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
 // Index2: index of the .bin file, -1: no bin file
 // if Link = -1, reprogram all links 
 //-----------------------------------------------------------------------------
-// int reprogram_roc(int PcieAddr, int Link, int Index1, int Index2 = -1) {
-int reprogram_roc(int PcieAddr, int Link, const char* Version) {
-                                        // find firmware version
-  drac_fw_version_t* fw(nullptr);
+int reprogram_roc(trkdaq::DtcInterface* dtc_i, int Link, const char* Version, int Doit, int PrintLevel = 0) {
+
+  // use directory defined on top of the script
+  dtc_i->ProgramRoc(Link,&RocFw,Version,Doit,PrintLevel);
   
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].name == Version) {
-      fw = &drac_fw[i];
-      break;
-    }
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// read PCI memory
+// assume all links are enabled
+//-----------------------------------------------------------------------------
+int dtc_read_spi_flash(trkdaq::DtcInterface* dtc_i, int Link, int Address, int NWords, int PrintLevel = 1) {
+  int rc(0);
+
+  int lnk1(Link), lnk2(Link+1);
+  if (Link == -1) {
+    lnk1 = 0;
+    lnk2 = 6;
   }
 
-  if (fw == nullptr) {
-    std::cout << "ERROR: fw version:" << Version << " is not defined, BAIL OUT." << std::endl;
-    return -1;
+  for (int lnk=lnk1; lnk<lnk2; lnk++) {
+    int  link_mask = (1 << 4*lnk);
+
+    std::vector<uint16_t> data;
+    int nw = dtc_i->SpiReadFlash(lnk, Address, NWords, &data, PrintLevel);
   }
-//-----------------------------------------------------------------------------
-// firmware to be uploaded found, proceed with the upload.
-// 1. initialize the DTC
-//-----------------------------------------------------------------------------
-  int  link_mask = (1 << 4*Link);
-  bool skip_init(false);
+  return 0;
+}
 
-  trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(PcieAddr,link_mask,skip_init);
-
-  gSystem->Setenv("DTCLIB_DTC",Form("%i",PcieAddr));
 //-----------------------------------------------------------------------------
-// 2. spi directory has always to be mapped in full 
+// print SPI directory
 //-----------------------------------------------------------------------------
-  spi_write_directory(dtc_i,Link);
-
-  int test_mode = 0;                    // load for real
+int test2() {
   
-                                        // upload the .spi image
-
-  spi_load_image(dtc_i,Link,fw->spi_file.index,test_mode);
-
-                                        // upload the .bin image, if defined
-  if (fw->bin_file.index >= 0) {
-    spi_load_image(dtc_i,Link,fw->bin_file.index,test_mode);
+  for (int i=0; RocFw.spi_directory[i].offset >=0; ++i) {
+    const trkdaq::roc_fw_data_t*  dir = &RocFw.spi_directory[i];
+    std::cout << std::format("index:{} offset:0x{:10x} fname:{}",
+                             dir->index,dir->offset,dir->fn)
+              << std::endl;
   }
-                                        // activate the image
-  spi_program_iap_w_index(dtc_i,Link,fw->spi_file.index);
-  
+
+  for (int i=0; RocFw.version[i].name != ""; ++i) {
+    const trkdaq::roc_fw_version_t* fww = &RocFw.version[i];
+    std::cout << std::format("version name:{:15} index_spi:{:2} index_bin:{:2}",
+                             fww->name,fww->index_spi,fww->index_bin)
+              << std::endl;
+  }
+
+  return 0;
+}
+//-----------------------------------------------------------------------------
+// write SPI directory : works OK
+//-----------------------------------------------------------------------------
+int test3(trkdaq::DtcInterface* dtc_i, int Link, int PrintLevel = 0) {
+  dtc_i->SpiWriteDirectory(Link,RocFw.spi_directory,PrintLevel);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// program ROC
+//-----------------------------------------------------------------------------
+int test4(trkdaq::DtcInterface* dtc_i, int Link, const char* Version, int Doit, int PrintLevel = 0) {
+  dtc_i->ProgramRoc(Link,&RocFw,Version,Doit,PrintLevel);
   return 0;
 }

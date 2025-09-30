@@ -104,7 +104,7 @@ namespace  trkdaq {
     bool increment_address(false);
     auto roc  = DTCLib::DTC_Link_ID(Link);
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-
+    // while teh image is being uploaded, there is nothing to check
     sleep(40);
                                                         // wait till the command is executed
     uint16_t u;
@@ -139,7 +139,7 @@ namespace  trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::SpiLoadImage(int Link, const roc_fw_data_t* DirEntry, int TestMode, int NWrites, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::SpiLoadImage(int Link, const roc_fw_data_t* DirEntry, int Doit, int NWrites, int PrintLevel, std::ostream& Stream) {
     //   int rc(0);
 //-----------------------------------------------------------------------------
 // open input file and determine its size
@@ -191,7 +191,7 @@ namespace  trkdaq {
                << " loc:" << std::dec << loc
                << std::endl;
 
-        if (TestMode == 0) {
+        if (Doit) {
           uint16_t* data = (uint16_t*) &fileData[loc];
           int rc         = SpiWriteRecord(Link,first_addr,nw,data);
           if (rc != 0) {
@@ -212,7 +212,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // validate writing (not debugged yet)
 //-----------------------------------------------------------------------------
-    int ierror  = 0;
+    int ierror(0);
 //   if (Validate) {
 //     first_addr  = spi_data[Index].offset;   // offset in SPI memory
 //     nw          = 127;
@@ -261,7 +261,7 @@ namespace  trkdaq {
 //  }
   
     Stream << __func__ << ":END ierror:" << ierror << std::endl;
-    return ierror;
+    return nerrors;
   }
 
 //-----------------------------------------------------------------------------
@@ -296,7 +296,7 @@ namespace  trkdaq {
     int nw_read = Res->size();
     
     if (PrintLevel != 0) {
-      std::cout << "nw read:" << nw_read << std::endl;
+      std::cout << "nw:" << nw << " nw read:" << nw_read << std::endl;
       if (PrintLevel & 0x2) {
         PrintBuffer(Res->data(),nw_read);
       }
@@ -392,7 +392,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-  int DtcInterface::ProgramRoc(int Link, const char* Version, const RocFwData_t* Fw, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::ProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
     int rc(0);
                                         // offset=-1 flags the end
     int nimages(0);
@@ -421,18 +421,23 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
 
-    int test_mode = 0;                  // 0: do it for for real, not testing
-  
                                         // upload the .spi image
     
-    SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],test_mode);
+    rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
+    if (rc != 0) return rc;
 
                                         // upload the .bin image, if defined
     if (fw->index_bin >= 0) {       
-      SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],test_mode);
+      rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
+      if (rc != 0) return rc;
     }
-                                        // activate the image
-    SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
+//-----------------------------------------------------------------------------
+// activate the image. Activation itself is a trivial step - internal logic,
+// however it requires the images to be actually written
+//-----------------------------------------------------------------------------
+    if (Doit) {
+      rc = SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
+    }
     
     return rc;
   }
