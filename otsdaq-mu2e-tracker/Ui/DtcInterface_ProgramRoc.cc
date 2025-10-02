@@ -23,7 +23,7 @@ namespace  trkdaq {
   int SPI_WRITE_RECORD      = 8;
   int SPI_WRITE_DIRECTORY   = 9;
 
-  RocFwData_t RocFw = {
+  RocFwData_t DtcInterface::fgRocFwData = {
                                         // spi_directory
     {
       { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          }, // 9524032 },
@@ -104,12 +104,14 @@ namespace  trkdaq {
     bool increment_address(false);
     auto roc  = DTCLib::DTC_Link_ID(Link);
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-    // while teh image is being uploaded, there is nothing to check
+    // while the image is being uploaded, there is nothing to check. may need less than 40 sec
     sleep(40);
                                                         // wait till the command is executed
     uint16_t u;
     while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
 
+                                        // images loaded, do soft reset before checking the ROC
+    fDtc->SoftReset();
     uint16_t status = fDtc->ReadROCRegister(roc,REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
@@ -128,11 +130,15 @@ namespace  trkdaq {
     bool increment_address(false);
     auto roc  = DTCLib::DTC_Link_ID(Link);
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-
+    // while the image is being uploaded, there is no one to talk to, just sleep
+    // may need less than 40 sec
+    sleep(40);
                                                           // wait till the command is executed
     uint16_t u;
     while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
 
+                                        // images loaded, do soft reset before checking the ROC
+    fDtc->SoftReset();
     uint16_t status = fDtc->ReadROCRegister(roc,REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
@@ -419,15 +425,18 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 3. every time, fully rewrite the SPI directory
 //-----------------------------------------------------------------------------
+    Stream << "--- writing SPI directory" << std::endl;
     SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
 
                                         // upload the .spi image
     
+    Stream << "--- loading " << Fw->spi_directory[fw->index_spi].fn << std::endl;
     rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
     if (rc != 0) return rc;
 
                                         // upload the .bin image, if defined
     if (fw->index_bin >= 0) {       
+      Stream << "--- loading image:" << Fw->spi_directory[fw->index_bin].fn << std::endl;
       rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
       if (rc != 0) return rc;
     }
@@ -436,6 +445,7 @@ namespace  trkdaq {
 // however it requires the images to be actually written
 //-----------------------------------------------------------------------------
     if (Doit) {
+      Stream << "--- activating SPI image" << std::endl;
       rc = SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
     }
     

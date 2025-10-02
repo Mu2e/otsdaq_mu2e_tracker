@@ -56,11 +56,13 @@ namespace trkdaq {
 
     static const char*         fgSpiVarName[TrkSpiDataNWords]; //
     static       int           fgFpga[96];                     // 0:CAL or 1:HV
+    static RocFwData_t         fgRocFwData;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
   public:
     static       DtcInterface* Instance             (int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
+    static const RocFwData_t*  RocFwData            ()      { return (const RocFwData_t*) &fgRocFwData; }
 
     static const char*         SpiVarName           (int I) { return fgSpiVarName[I]; }
     static const char*         SpiVarNamePrintBuffer(int I) { return fgSpiVarName[I]; }
