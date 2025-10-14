@@ -195,6 +195,11 @@ namespace trkdaq {
 // but you should still request that reg=128 read 0x8000 while reg=129 should stay at the default empty value of 0x1000
 //-----------------------------------------------------------------------------
     int          ControlRoc_SetThresholds(int Link, uint16_t* TG, int PrintLevel = 0, std::ostream& Stream = std::cout);
+    
+    int          ConvertSpiData(const std::vector<uint16_t>& RawData,
+                                TrkSpiData_t*                Data   ,
+                                int                          PrintLevel = 0,
+                                std::ostream&                Stream     = std::cout);
 // ejc
     float ProgramAndQueryThreshold(const int Link,
                                    const int ChannelID,
@@ -214,11 +219,6 @@ namespace trkdaq {
                        const float threshold_mv,
                        const float tolerance_mv);
 
-    int          ConvertSpiData(const std::vector<uint16_t>& RawData,
-                                TrkSpiData_t*                Data   ,
-                                int                          PrintLevel = 0,
-                                std::ostream&                Stream     = std::cout);
-
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
     virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
@@ -226,6 +226,10 @@ namespace trkdaq {
     virtual std::string              GetRocID         (int Link) override;
     virtual std::string              GetRocDesignInfo (int Link) override;
     virtual std::string              GetRocFwGitCommit(int Link) override;
+//-----------------------------------------------------------------------------
+// reboot microcontroller unit, Link=-1: all active links
+//-----------------------------------------------------------------------------
+    int          RebootMcu          (int Link);
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG

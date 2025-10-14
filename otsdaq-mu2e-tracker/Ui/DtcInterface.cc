@@ -221,10 +221,27 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// preserve historic naming convention- Monica named her script 'var_pattern_config'
+// reboot microcontroller unit: write 1 to Reg 15
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocConfigurePatternMode() {
-    MonicaVarPatternConfig();
+  int DtcInterface::RebootMcu(int Link) {
+    int tmo_ms(100), rc(0);
+
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
+    for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      try {
+        fDtc->WriteROCRegister(DTC_Link_ID(lnk),15,1,false,tmo_ms);       // 1 --> r14: reset ROC
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+      }
+      catch(...) {
+        TLOG(TLVL_ERROR) << "Failed to reboot the MCU:" << lnk;
+        rc = -1;
+      }
+    }
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -250,6 +267,13 @@ namespace trkdaq {
       }
     }
     return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// preserve historic naming convention- Monica named her script 'var_pattern_config'
+//-----------------------------------------------------------------------------
+  void DtcInterface::RocConfigurePatternMode() {
+    MonicaVarPatternConfig();
   }
 
 //-----------------------------------------------------------------------------
@@ -1110,7 +1134,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
 
   // This is just an example, needs to be implemented for each subsystem
-  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history = false) {
+  std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history) {
     std::vector<uint32_t> roc_reg;
     // Basic ROC registers
     if(history) {
