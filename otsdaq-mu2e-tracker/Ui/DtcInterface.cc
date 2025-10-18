@@ -65,7 +65,18 @@ namespace trkdaq {
     "HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
   };
 
+  const char* kKeyVarName[] = {
+    "KEY_TEMP", "KEY_V2P5", "KEY_V5P1", "KEY_DCDCTEMP"
+  };
+
+  const char* kIlpVarName[] = {
+    "ILP_ID", "ILP_TEMP", "ILP_PRESSURE"
+  };
+
   const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
+  const char*   DtcInterface::fgKeyVarName[TrkKeyDataNWords];
+  const char*   DtcInterface::fgIlpVarName[TrkIlpDataNWords];
+
   int           DtcInterface::fgFpga[96];
 //-----------------------------------------------------------------------------
 // default ROC readout mode:0
@@ -107,6 +118,12 @@ namespace trkdaq {
     if ((fgInstance[0] == nullptr) and (fgInstance[1] == nullptr)) {
       for (int i=0; i<TrkSpiDataNWords; i++) {
         fgSpiVarName[i] = kSpiVarName[i];
+      }
+      for (int i=0; i<TrkKeyDataNWords; i++) {
+        fgKeyVarName[i] = kKeyVarName[i];
+      }
+      for (int i=0; i<TrkSpiDataNWords; i++) {
+        fgIlpVarName[i] = kIlpVarName[i];
       }
     }
                                     

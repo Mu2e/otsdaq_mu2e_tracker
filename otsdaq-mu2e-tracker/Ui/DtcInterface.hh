@@ -55,6 +55,8 @@ namespace trkdaq {
     int                        fRocNHitsPerLane;    // NHits per lane for Mode=2
 
     static const char*         fgSpiVarName[TrkSpiDataNWords]; //
+    static const char*         fgKeyVarName[TrkKeyDataNWords]; //
+    static const char*         fgIlpVarName[TrkIlpDataNWords]; //
     static       int           fgFpga[96];                     // 0:CAL or 1:HV
     static RocFwData_t         fgRocFwData;
 //-----------------------------------------------------------------------------
@@ -66,6 +68,8 @@ namespace trkdaq {
 
     static const char*         SpiVarName           (int I) { return fgSpiVarName[I]; }
     static const char*         SpiVarNamePrintBuffer(int I) { return fgSpiVarName[I]; }
+    static const char*         KeyVarName           (int I) { return fgKeyVarName[I]; }
+    static const char*         IlpVarName           (int I) { return fgIlpVarName[I]; }
 //-----------------------------------------------------------------------------
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution

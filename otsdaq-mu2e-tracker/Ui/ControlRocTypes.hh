@@ -154,6 +154,8 @@ namespace trkdaq {
   };
 
   int const TrkSpiDataNWords = sizeof(TrkSpiRawData_t)/sizeof(uint16_t); 
+  int const TrkKeyDataNWords = 4;
+  int const TrkIlpDataNWords = 3;
 //-----------------------------------------------------------------------------
 // converted data
 //-----------------------------------------------------------------------------
