@@ -45,14 +45,14 @@ namespace {
     int         fsize;
   };
 
-  data_t spi_data[] = {
-    { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          , 9524032 },
-    { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9480352 },
-    { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 },
-    { 3, 0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
-    { 4, 0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 },
-    {-1,        -1, ""                                                          ,      -1 }
-  };
+  // data_t spi_data[] = {
+  //   { 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          , 9524032 },
+  //   { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9480352 },
+  //   { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 },
+  //   { 3, 0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
+  //   { 4, 0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 },
+  //   {-1,        -1, ""                                                          ,      -1 }
+  // };
 
   struct drac_fw_version_t {
     std::string name;
@@ -63,8 +63,8 @@ namespace {
 //-----------------------------------------------------------------------------
 // offsets of different images - no freedom here
 //-----------------------------------------------------------------------------
-  int spi_offset[5] = { 0x10000, 0x1010000, 0x2010000, 0x3010000, 0x4010000 };
-  int bin_offset[5] = {      -1, 0x5000000, 0x5040000, 0x5080000, 0x50c0000 };
+  // int spi_offset[5] = { 0x10000, 0x1010000, 0x2010000, 0x3010000, 0x4010000 };
+  // int bin_offset[5] = {      -1, 0x5000000, 0x5040000, 0x5080000, 0x50c0000 };
 //-----------------------------------------------------------------------------
 // GoldenV10 should always be there in the beginning
 // the rest versions could be overriding each other
@@ -81,8 +81,10 @@ namespace {
       { 2,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
     },
     { "ROCV14",     2,
-      { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
-      { 4,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
+      // { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
+      // { 4,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
+      { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9524032 },
+      { 4,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
     },
                                         // end of data marker 
     { "",          -1,
@@ -212,21 +214,21 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 // clears SPI memory in 64k blocks
 //-----------------------------------------------------------------------------
 // void spi_clear(int Link, int Address, int NBytes) {
-void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
+void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes) { // const data_t* SpiData) {
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
                                               // 5 words
   std::vector<uint16_t> input;
 
-  int nbytes = spi_data[Index].fsize;
-  int offset = spi_data[Index].offset;
+  // int nbytes = SpiData->fsize;
+  // int offset = SpiData->offset;
 
   input.push_back(SPI_CLEAR);                 // SPI clear
-  input.push_back( offset         & 0xFFFF);  // 
-  input.push_back((offset  >> 16) & 0xFFFF);  // 
-  input.push_back( nbytes         & 0xFFFF);  // 
-  input.push_back((nbytes  >> 16) & 0xFFFF);  // 
+  input.push_back( Offset         & 0xFFFF);  // 
+  input.push_back((Offset  >> 16) & 0xFFFF);  // 
+  input.push_back( NBytes         & 0xFFFF);  // 
+  input.push_back((NBytes  >> 16) & 0xFFFF);  // 
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
@@ -348,13 +350,13 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
 // TestMode = 1: don't write to memory, just clear the memory and count
 // NWrites     : number of records to write, -1: write all
 //-----------------------------------------------------------------------------
-int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int TestMode = 1, int NWrites = -1, int Validate = 0) {
+int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const data_t* SpiData, int TestMode = 1, int NWrites = -1, int Validate = 0) {
 //-----------------------------------------------------------------------------
 // open input file and determine its size
 //-----------------------------------------------------------------------------
-  std::cout << __func__ << ": fn:" << spi_data[Index].fn << std::endl;
+  std::cout << __func__ << ": fn:" << SpiData->fn << std::endl;
                          
-  std::ifstream file(spi_data[Index].fn, std::ios::binary);
+  std::ifstream file(SpiData->fn, std::ios::binary);
 
   file.seekg(0, std::ios::end);
   int fsize = file.tellg();
@@ -362,12 +364,12 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
 //-----------------------------------------------------------------------------
 // clear the spi memory for image at index *** ###
 //-----------------------------------------------------------------------------
-  std::cout << "-- before spi_clear : index:" << Index
-            << " fn:" << spi_data[Index].fn
+  std::cout << "-- before spi_clear :"
+            << " fn:" << SpiData->fn
             << " fsize:" << std::dec << fsize << std::endl;
  
   //  spi_clear(Link, spi_data[Index].offset, fsize);
-  spi_clear_memory(DtcInterface, Link, Index);
+  spi_clear_memory(Dtc_i, Link, SpiData->offset,SpiData->fsize);
 
   std::cout << "-- after clear" << std::endl;
 //-----------------------------------------------------------------------------
@@ -376,7 +378,7 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
   std::vector<char> fileData(fsize);
   file.read((char*) &fileData[0], fsize);
 
-  int first_addr = spi_data[Index].offset;
+  int first_addr = SpiData->offset;
   int nw         = 512;
   int done       = 0;
   int loc        = 0;
@@ -404,7 +406,7 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
 
       if (TestMode == 0) {
         uint16_t* x = (uint16_t*) &fileData[loc];
-        int rc      = spi_write_record(DtcInterface,Link,first_addr,nw,x);
+        int rc      = spi_write_record(Dtc_i,Link,first_addr,nw,x);
         if (rc != 0) {
           std::cout << "-- ERROR: nwrites:" << nwrites << " rc:0x" << std::hex << rc << std::endl;
           nerrors++;
@@ -425,7 +427,7 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
 //-----------------------------------------------------------------------------
   int ierror  = 0;
   if (Validate) {
-    first_addr  = spi_data[Index].offset;   // offset in SPI memory
+    first_addr  = SpiData->offset;   // offset in SPI memory
     nw          = 127;
     done        = 0;
     loc         = 0;                    // offset in the 'file'
@@ -451,7 +453,7 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
                   << std::endl;
         
         std::vector<uint16_t> res;
-        spi_flash_read(DtcInterface, Link, first_addr, nw, &res);
+        spi_flash_read(Dtc_i, Link, first_addr, nw, &res);
 //-----------------------------------------------------------------------------
 // compare to the original
 //-----------------------------------------------------------------------------
@@ -481,7 +483,6 @@ int spi_load_image(trkdaq::DtcInterface* DtcInterface, int Link, int Index, int 
 // Index2: index of the .bin file, -1: no bin file
 // if Link = -1, reprogram all links 
 //-----------------------------------------------------------------------------
-// int reprogram_roc(int PcieAddr, int Link, int Index1, int Index2 = -1) {
 int reprogram_roc(int PcieAddr, int Link, const char* Version) {
                                         // find firmware version
   drac_fw_version_t* fw(nullptr);
@@ -516,14 +517,40 @@ int reprogram_roc(int PcieAddr, int Link, const char* Version) {
   
                                         // upload the .spi image
 
-  spi_load_image(dtc_i,Link,fw->spi_file.index,test_mode);
+  spi_load_image(dtc_i,Link,&fw->spi_file,test_mode);
 
                                         // upload the .bin image, if defined
   if (fw->bin_file.index >= 0) {
-    spi_load_image(dtc_i,Link,fw->bin_file.index,test_mode);
+    spi_load_image(dtc_i,Link,&fw->bin_file,test_mode);
   }
                                         // activate the image
-  spi_program_iap_w_index(dtc_i,Link,fw->spi_file.index);
+  // spi_program_iap_w_index(dtc_i,Link,fw->spi_file.index);
+  
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0) {
+
+  std::vector<uint16_t> dat;
+  for (int i=0; i<NWords; i++) dat.push_back(i+3);
+  
+  // spi_clear_memory(Dtc_i, Link, FirstAddr,NWords);
+
+  if (DelayUs == 0) {
+    std::this_thread::sleep_for(std::chrono::microseconds(DelayUs));
+  }
+
+  spi_write_record(Dtc_i, Link, FirstAddr, NWords, dat.data());
+
+  dat.clear();
+
+  if (DelayUs == 0) {
+    std::this_thread::sleep_for(std::chrono::microseconds(DelayUs));
+  }
+
+  spi_flash_read(Dtc_i,Link,FirstAddr,NWords,&dat,0x2);
   
   return 0;
 }
