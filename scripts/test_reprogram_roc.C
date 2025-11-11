@@ -50,7 +50,7 @@ namespace {
   //   { 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9480352 },
   //   { 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 },
   //   { 3, 0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
-  //   { 4, 0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 },
+  //   { 4, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 },
   //   {-1,        -1, ""                                                          ,      -1 }
   // };
 
@@ -68,8 +68,9 @@ namespace {
 //-----------------------------------------------------------------------------
 // GoldenV10 should always be there in the beginning
 // the rest versions could be overriding each other
-// name = nullptr: end of data, to avoid hardcoded constants
+// name = "": end of data
 // assume that the image index is incremented monotonically
+// 'drac_fw_version_t.index' is the image index in the directory catalog
 //-----------------------------------------------------------------------------
   drac_fw_version_t drac_fw[] = {
     { "GoldenV10",  0,
@@ -81,10 +82,11 @@ namespace {
       { 2,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
     },
     { "ROCV14",     2,
-      // { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
-      // { 4,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
-      { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9524032 },
-      { 4,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
+      { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             , 9482832 },
+      //      { 4,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
+      { 4,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  ,   86384 }
+      // { 3,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             , 9524032 },
+      // { 4,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin",   82272 }
     },
                                         // end of data marker 
     { "",          -1,
@@ -100,9 +102,14 @@ namespace {
 //            bit1: validate
 //-----------------------------------------------------------------------------
 int spi_flash_read(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t ReadAddress, int NWords, vector<uint16_t>* Res, int DebugMode = 0) {
+  int rc(0);
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
+
+  if (DebugMode & 0x1) {
+    std::cout << " spi_flash_read: reading nwords:" << NWords << " from address:0x" << std::hex << ReadAddress << std::dec << std::endl;
+  }
 
   std::vector<uint16_t> input;
                                                   // 5 words
@@ -120,10 +127,16 @@ int spi_flash_read(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t ReadAddress, 
   }
   
   uint16_t u; 
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
+  if (u != 0x8000) {
+    std::cout << "ERROR in " << __func__ << " : timeout detected, "
+              << Form("reg:%03i val:0x%04x\n",128,u) << std::endl;
+    rc = -1;
+    return rc;
+  }
 
   int nw (-1);
-  nw = Dtc_i->fDtc->ReadROCRegister(roc,129,1000);  // should return NWords+4
+  nw = Dtc_i->fDtc->ReadROCRegister(roc,129,100);  // should return NWords+4
 //-----------------------------------------------------------------------------
 // validation: reading back and comparing
 //-----------------------------------------------------------------------------
@@ -157,7 +170,7 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
   int nimages = 0;
   for (int i=0; drac_fw[i].name != ""; ++i) {
     if (drac_fw[i].spi_file.index >= 0) ++nimages;
-    if (drac_fw[i].bin_file.index >= 0) ++nimages;
+    //    if (drac_fw[i].bin_file.index >= 0) ++nimages;
   }
 
   std::cout << __func__ << ": nimages:" << nimages << std::endl;
@@ -169,8 +182,9 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
   input.push_back(0               );       // nimages MSB
   input.push_back(0               );       // 2nd command : 2 16-bit words - uunused
   input.push_back(0               );       // unused
-  
-                                        // assume that the image index is incremented monotonically 
+//-----------------------------------------------------------------------------
+// to form the record to be written, assume that the image index is incremented monotonically
+//-----------------------------------------------------------------------------
   for (int i=0; drac_fw[i].name != ""; ++i) {
     drac_fw_version_t* fw = &drac_fw[i];
     if (fw->spi_file.index >= 0) {
@@ -178,11 +192,11 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
       input.push_back( offset        & 0xFFFF);                             //
       input.push_back((offset >> 16) & 0xFFFF);                             //
     }
-    if (fw->bin_file.index >= 0) {
-      int offset = fw->bin_file.offset;
-      input.push_back( offset        & 0xFFFF);                             //
-      input.push_back((offset >> 16) & 0xFFFF);                             //
-    }
+    // if (fw->bin_file.index >= 0) {
+    //   int offset = fw->bin_file.offset;
+    //   input.push_back( offset        & 0xFFFF);                             //
+    //   input.push_back((offset >> 16) & 0xFFFF);                             //
+    // }
   }
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
@@ -214,7 +228,9 @@ void spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 // clears SPI memory in 64k blocks
 //-----------------------------------------------------------------------------
 // void spi_clear(int Link, int Address, int NBytes) {
-void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes) { // const data_t* SpiData) {
+int spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0) { // const data_t* SpiData) {
+  int rc(0);
+  
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -223,6 +239,10 @@ void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBy
 
   // int nbytes = SpiData->fsize;
   // int offset = SpiData->offset;
+
+  if (DebugMode & 0x1) {
+    std::cout << __func__ << ": clearing nbytes:" << NBytes << " starting from address 0x:" << std::hex << Offset << std::dec << std::endl;
+  }
 
   input.push_back(SPI_CLEAR);                 // SPI clear
   input.push_back( Offset         & 0xFFFF);  // 
@@ -236,9 +256,19 @@ void spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBy
   std::cout << __func__ << ": SPI_CLEAR input written " << std::endl;
   
   uint16_t u; 
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
+
+  if (u != 0x8000) {
+    std::cout << "ERROR in " << __func__ << " : timeout detected, "
+              << Form("reg:%03i val:0x%04x\n",128,u) << std::endl;
+    rc = -1;
+  }
+
+  std::this_thread::sleep_for(std::chrono::microseconds(200000));
+  
   // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
   std::cout << __func__ << ":END" << std::endl;
+  return rc;
 }
 
 
@@ -483,7 +513,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const data_t* SpiData,
 // Index2: index of the .bin file, -1: no bin file
 // if Link = -1, reprogram all links 
 //-----------------------------------------------------------------------------
-int reprogram_roc(int PcieAddr, int Link, const char* Version) {
+int dtc_reprogram_roc(int PcieAddr, int Link, const char* Version) {
                                         // find firmware version
   drac_fw_version_t* fw(nullptr);
   
@@ -511,7 +541,7 @@ int reprogram_roc(int PcieAddr, int Link, const char* Version) {
 //-----------------------------------------------------------------------------
 // 2. spi directory has always to be mapped in full 
 //-----------------------------------------------------------------------------
-  spi_write_directory(dtc_i,Link);
+//  spi_write_directory(dtc_i,Link);
 
   int test_mode = 0;                    // load for real
   
@@ -529,16 +559,29 @@ int reprogram_roc(int PcieAddr, int Link, const char* Version) {
   return 0;
 }
 
-
 //-----------------------------------------------------------------------------
-int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0) {
+int test_write_record(int Link, int FirstAddr, int NWords, int DelayUs = 0, trkdaq::DtcInterface* Dtc_i = nullptr) {
+
+  trkdaq::DtcInterface* dtc_i = Dtc_i;
+  if (dtc_i == nullptr) {
+    dtc_i = trkdaq::DtcInterface::Instance(-1);
+    if (dtc_i == nullptr) {
+      std::cout << "%i ERROR: dtc_i not defined, EXIT" << __LINE__ << std::endl;
+      return -1;
+    }
+  }
 
   std::vector<uint16_t> dat;
   for (int i=0; i<NWords; i++) dat.push_back(i+3);
-  
-  // spi_clear_memory(Dtc_i, Link, FirstAddr,NWords);
 
-  if (DelayUs == 0) {
+  // memory is organized in 4K (0x1000) sectors,
+  // according to ChatGPT, a sector corresponding to the record being written needs to be erased
+  // assume that the 'FirstAddr' starts on a 4K boundary and for testing purposes clear just one sector
+  
+  // spi_clear_memory(Dtc_i, Link, FirstAddr,0x1000);
+  spi_clear_memory(Dtc_i, Link, FirstAddr,0x10000);
+
+  if (DelayUs != 0) {
     std::this_thread::sleep_for(std::chrono::microseconds(DelayUs));
   }
 
@@ -546,11 +589,30 @@ int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int 
 
   dat.clear();
 
-  if (DelayUs == 0) {
+  if (DelayUs != 0) {
     std::this_thread::sleep_for(std::chrono::microseconds(DelayUs));
   }
 
-  spi_flash_read(Dtc_i,Link,FirstAddr,NWords,&dat,0x2);
+  spi_flash_read(Dtc_i,Link,FirstAddr,NWords,&dat,0x3);
+  
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+int test_spi_read(int Link, int FirstAddr, int NWords, trkdaq::DtcInterface* Dtc_i = nullptr) {
+
+  trkdaq::DtcInterface* dtc_i = Dtc_i;
+  if (dtc_i == nullptr) {
+    dtc_i = trkdaq::DtcInterface::Instance(-1);
+    if (dtc_i == nullptr) {
+      std::cout << "ERROR: dtc_i not defined, EXIT" << std::endl;
+    }
+  }
+
+  std::vector<uint16_t> dat;
+
+  spi_flash_read(dtc_i,Link,FirstAddr,NWords,&dat,0x3);
   
   return 0;
 }
