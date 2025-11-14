@@ -216,7 +216,7 @@ namespace trkdaq {
 // 'nw' : number of 16-bit words to print.
 // if Stream == nullptr , use TLOG, otherwise - *Stream
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, std::ostream* Stream) {
+  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream) {
 
     ushort*      p16 = (ushort*) ptr;
 
@@ -227,7 +227,7 @@ namespace trkdaq {
     // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
    
     for (int i=0; i<nw; i++) {
-      if (n == 0) line = Form("0x%08x:",i*2);
+      if (n == 0) line = Form("0x%08x:",i*2+Offset);
       ushort  word = p16[i];
       line += Form(" 0x%04x",word);
       

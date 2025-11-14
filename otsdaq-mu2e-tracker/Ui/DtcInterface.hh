@@ -238,7 +238,7 @@ namespace trkdaq {
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
-    void         PrintBuffer        (const void* ptr, int nw, std::ostream* Stream = nullptr);
+    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream* Stream = nullptr);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------

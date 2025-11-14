@@ -7,6 +7,7 @@ cet_make_library(
         DtcInterface.cc DtcInterfaceBase.cc DtcInterface_print.cc DtcInterface_ControlRoc.cc CfoInterface.cc
         DtcInterface_ProgramRoc.cc
         #	PreampChannel.cc PreampThreshold.cc
+        test_program_roc.cc
         LIBRARIES PUBLIC
 	otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata

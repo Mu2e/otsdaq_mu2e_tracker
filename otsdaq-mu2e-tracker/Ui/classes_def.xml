@@ -2,5 +2,6 @@
 
   <class name="trkdaq::CfoInterface" />
   <class name="trkdaq::DtcInterface" />
+  <class name="test_program_roc" />
 
 </lcgdict>
