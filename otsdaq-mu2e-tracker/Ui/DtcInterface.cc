@@ -1022,19 +1022,19 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     auto link_id  = DTC_Link_ID(Link);
 
     try {
-      fDtc->GetDevice()->begin_dcs_transaction();
+      // fDtc->GetDevice()->begin_dcs_transaction();
     
       fDtc->WriteROCRegister   (link_id,Reg,0x0000,false,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
     
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-      //      TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
+      TLOG(TLVL_DEBUG+2) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       nw = fDtc->ReadROCRegister(link_id,129,100);
-      // TLOG(TLVL_DEBUG+1) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
+      TLOG(TLVL_DEBUG+2) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
 
       nw -= 4;
       fDtc->ReadROCBlock(Res,link_id,Reg,nw,false,100);
@@ -1044,7 +1044,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       rc = -2;
     }
     
-    fDtc->GetDevice()->end_dcs_transaction();
+    // fDtc->GetDevice()->end_dcs_transaction();
 
     if ((rc == 0) and (NExpected > 0) and (nw != NExpected)) {
       TLOG(TLVL_ERROR) << "WRONG NUMBER OF WORDS: NExpected:" << NExpected << " nw:" << nw;

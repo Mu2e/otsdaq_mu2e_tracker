@@ -62,31 +62,31 @@ public:
   // int spi_offset[5] = { 0x10000, 0x1010000, 0x2010000, 0x3010000, 0x4010000 };
   // int bin_offset[5] = {      -1, 0x5000000, 0x5040000, 0x5080000, 0x50c0000 };
 
-  const test_program_roc::ImageData_t* spi_get_image_data(const std::string& Version, const std::string Spi="spi");
-  int spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0);
-  void spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link, int Index);
+  const test_program_roc::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
+  
+  int  spi_clear_memory         (trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0);
+  void spi_program_iap_w_index  (trkdaq::DtcInterface* Dtc_i, int Link, int Index);
   void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageStartAddr);
-  int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset,
-                      int NWords, uint16_t* Res, int DebugMode = 0);
-  int spi_read_segment(trkdaq::DtcInterface* Dtc_i, int Link, int SpiOffset, int NBytes,
-                       std::vector<char>& Res, int DebugMode = 0);
+  int  spi_read_record          (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t*          Res, int DebugMode = 0);
+  int  spi_read_segment         (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NBytes, std::vector<char>& Res, int DebugMode = 0);
 
-  int spi_validate_image  (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int DebugMode = 0);
+  int  spi_validate_segment     (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int Segment, int DebugMode = 0);
+  int  spi_validate_image       (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode = 0);
 
                                         // if Type = "", validate both images, otherwise use the file extention: "spi" or "bin"
   
-  int dtc_validate_version(trkdaq::DtcInterface* Dtc_i, int Link, const char* Version, const std::string& Type = "", int DebugMode = 0);
+  int  dtc_validate_version     (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type = "", int DebugMode = 0);
 
-  int spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link);
-  int spi_write_record   (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, uint16_t* Data, int DebugMode = 0);
-  int spi_write_segment  (trkdaq::DtcInterface* Dtc_i, int Link, const char* Data, int NBytes, int SpiOffset, int DebugMode = 0);
-  int spi_load_image     (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int DebugMode = 0);
-  int dtc_program_roc    (trkdaq::DtcInterface* Dtc_i, int Link, const char* Version, int DebugMode = 0);
+  int  spi_write_directory      (trkdaq::DtcInterface* Dtc_i, int Link);
+  int  spi_write_record         (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr   , int NWords, uint16_t* Data, int DebugMode = 0);
+  int  spi_write_segment        (trkdaq::DtcInterface* Dtc_i, int Link, const char* Data, int NBytes, int SpiOffset , int DebugMode = 0);
+  int  spi_load_image           (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int DebugMode = 0);
+  int  dtc_program_roc          (trkdaq::DtcInterface* Dtc_i, int Link, const char* Version, int DebugMode = 0);
 
                                         // tests
   
-  int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0);
-  int test_read_record(int Link, int FirstAddr, int NWords, trkdaq::DtcInterface* Dtc_i = nullptr);
+  int  test_write_record        (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0);
+  int  test_read_record         (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords);
 
   
 };

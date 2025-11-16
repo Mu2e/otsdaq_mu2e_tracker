@@ -73,7 +73,7 @@ namespace mu2edaq {
     }
     
     fSleepTimeROCWrite =  2000;
-    fSleepTimeROCReset =  4000; 
+    fSleepTimeROCReset =  10000; // 4000 
     //    fDtc->ClearCFOEmulationMode();
     //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
   }
