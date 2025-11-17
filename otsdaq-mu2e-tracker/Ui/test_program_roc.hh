@@ -26,7 +26,6 @@
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 #include "TString.h"
 #include "TSystem.h"
-// #include "TRACE/tracemf.h"
 
 class test_program_roc {
 public:
@@ -56,15 +55,12 @@ public:
     ImageData_t spi_file;
     ImageData_t bin_file;
   };
-//-----------------------------------------------------------------------------
-// offsets of different images - no freedom here
-//-----------------------------------------------------------------------------
-  // int spi_offset[5] = { 0x10000, 0x1010000, 0x2010000, 0x3010000, 0x4010000 };
-  // int bin_offset[5] = {      -1, 0x5000000, 0x5040000, 0x5080000, 0x50c0000 };
 
   const test_program_roc::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
+  const test_program_roc::FwVersion_t* get_version   (const std::string& Version);
   
   int  spi_clear_memory         (trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0);
+  void program_roc              (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version);
   void spi_program_iap_w_index  (trkdaq::DtcInterface* Dtc_i, int Link, int Index);
   void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageStartAddr);
   int  spi_read_record          (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t*          Res, int DebugMode = 0);
@@ -81,6 +77,7 @@ public:
   int  spi_write_record         (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr   , int NWords, uint16_t* Data, int DebugMode = 0);
   int  spi_write_segment        (trkdaq::DtcInterface* Dtc_i, int Link, const char* Data, int NBytes, int SpiOffset , int DebugMode = 0);
   int  spi_load_image           (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int DebugMode = 0);
+                                        // this one only uploads image to SPI memory, but doesn't program the FPGA
   int  dtc_program_roc          (trkdaq::DtcInterface* Dtc_i, int Link, const char* Version, int DebugMode = 0);
 
                                         // tests

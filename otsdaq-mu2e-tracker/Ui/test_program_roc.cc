@@ -62,6 +62,24 @@ const test_program_roc::ImageData_t* test_program_roc::get_image_data(const std:
 }
 
 //-----------------------------------------------------------------------------
+// if Spi=1, return SPI image, otherwise - bin
+//----------------------------------------------------------------------------
+const test_program_roc::FwVersion_t* test_program_roc::get_version(const std::string& Version) {
+  FwVersion_t* fw(nullptr);
+  
+  for (int i=0; drac_fw[i].name != ""; ++i) {
+    if (drac_fw[i].name == Version) {
+      fw = &drac_fw[i];
+      break;
+    }
+  }
+
+  if (fw == nullptr) TLOG(TLVL_ERROR) << "fw version:" << Version << " is not defined, return NULL pointer.";
+
+  return fw;
+}
+
+//-----------------------------------------------------------------------------
 // clears SPI memory in 64k blocks
 //-----------------------------------------------------------------------------
 // void spi_clear(int Link, int Address, int NBytes) {
@@ -114,6 +132,52 @@ int test_program_roc::spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, in
 
 //-----------------------------------------------------------------------------
 // program IAP
+//-----------------------------------------------------------------------------
+void test_program_roc::program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version) {
+  if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
+
+  const FwVersion_t* ver = get_version(Version);
+  if (ver == nullptr) {
+    TLOG(TLVL_ERROR) << std::format("image {}not found. BAIL OUT",Version);
+    return -1;
+  }
+
+  TLOG(TLVL_INFO) << std::format("-- START programming PCIE:{} Link:{} Version:{} index:{}\n",Dtc_i->PcieAddr(),Link,Version,ver->index);
+  
+  
+  bool increment_address(false);
+                                              // 5 words
+  std::vector<uint16_t> input;
+
+  input.push_back(PROGRAM_IAP_W_INDEX);                 // SPI clear
+  input.push_back( ver->index        & 0xFFFF);  // 
+  input.push_back((ver->index >> 16) & 0xFFFF);  // 
+  input.push_back(0);  // 
+  input.push_back(0);
+
+  auto roc  = DTCLib::DTC_Link_ID(Link);
+  Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+//-----------------------------------------------------------------------------
+// 25 sec was not enough on the tower, 30 sec was OK.
+// may need to increase the sleep time in the future
+//-----------------------------------------------------------------------------
+  sleep(30);
+  TLOG(TLVL_INFO) << std::format("after sleep\n");
+  
+                                        // the fw has been reloaded to FPGA, reset the DTC
+  Dtc_i->fDtc->SoftReset();
+  Dtc_i->InitReadout(-1,1);
+                                        // no point in testing - just wait long enough
+  // uint16_t u;
+  // while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+  // uint16_t status;
+  // status = Dtc_i->fDtc->ReadROCRegister(roc,REG_STATUS,1000);
+  // TLOG(TLVL_INFO) << "-- END status:" << status << std::endl;
+}
+
+
+
 //-----------------------------------------------------------------------------
 void test_program_roc::spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
@@ -398,6 +462,8 @@ int test_program_roc::spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, 
 //-----------------------------------------------------------------------------
 // open input file and determine its size
 //-----------------------------------------------------------------------------
+  TLOG(TLVL_INFO) << std::format("-- START validating PCIE:{} Link:{} Version:{} Type:{}\n",Dtc_i->PcieAddr(),Link,Version,Link);
+  
   const ImageData_t* image = get_image_data(Version, Type);
   if (image == nullptr) {
     TLOG(TLVL_ERROR) << std::format("image {}:{} not found. BAIL OUT",Version,Type);
@@ -432,8 +498,8 @@ int test_program_roc::spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, 
   int nb_read_tot(0);
   int first_addr    = image->offset;
     
-  for (int ib=0; ib<n64k_segments; ++ib) {
-    int segment_offset = segment_size*ib;
+  for (int iseg=0; iseg<n64k_segments; ++iseg) {
+    int segment_offset = segment_size*iseg;
     int nb_to_read     = segment_size;
                                         // handle last, potentially shorter, block
     if (segment_offset+segment_size > fsize) {
@@ -456,7 +522,7 @@ int test_program_roc::spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, 
 // if an inconsistency has been detected, print diagnostics and try to rewrite up to 3 times
 //-----------------------------------------------------------------------------
           TLOG(TLVL_ERROR) << std::format("PCIE:{} Link:{} segment SPI offset:0x{:08x}\n",Dtc_i->PcieAddr(),Link,spi_offset)
-                           << std::format(" segment number {:5d} byte at file offset:0x{:08x}",ib,segment_offset+i)
+                           << std::format(" segment number {:5d} byte at file offset:0x{:08x}",iseg,segment_offset+i)
                            << std::format(" is:0x{:2x}",(uint8_t)fileData[segment_offset+i])
                            << std::format(" readback byte offset:0x{:08x} value:0x{:x}",i, (uint8_t) readback[i]);
           rc = -2;
@@ -464,19 +530,19 @@ int test_program_roc::spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, 
         }
       }
       if (rc == 0) {
-        TLOG(TLVL_INFO) << std::format("PCIE:{} Link:{} segment:{} out of {}: validation succeeded",Dtc_i->PcieAddr(),Link,ib,n64k_segments);
+        TLOG(TLVL_INFO) << std::format("PCIE:{} Link:{} segment:{} out of {}: validation succeeded",Dtc_i->PcieAddr(),Link,iseg,n64k_segments);
       }
     }
 //-----------------------------------------------------------------------------
 // if rc = 0, the readback and the validation succeeded, nothing more to do
 //-----------------------------------------------------------------------------
     if (rc != 0) {
-      TLOG(TLVL_ERROR) << std::format("validation failed, rc:{} . BAIL OUT",rc);
+      TLOG(TLVL_ERROR) << std::format("validation failed, rc:{} segment:{}. BAIL OUT",rc,iseg);
       return rc;
     }
   }
   
-  TLOG(TLVL_DEBUG) << std::format("END rc:{} nb_read_tot:{}",rc,nb_read_tot);
+  TLOG(TLVL_INFO) << std::format("-- END rc:{} nb_read_tot:{}",rc,nb_read_tot);
   return rc;
 }
 
@@ -588,10 +654,7 @@ int test_program_roc::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, c
   const int record_size (0x400);   // write 1Kbytes blocks
   int rc(0);
 
-  if (DebugMode & 0x1) {
-    std::cout << __func__ << " START: writing NBytes:0x" << std::hex << NBytes
-              << " starting from SPI offset:0x" << SpiOffset << std::dec << std::endl;
-  }
+  TLOG(TLVL_DEBUG+1) << std::format("START: writing NBytes:{} starting from offset 0x:{:08x} in SPI memory\n",NBytes,SpiOffset);
 //-----------------------------------------------------------------------------
 // can write only 1024 bytes (512 shorts) at a time
 //-----------------------------------------------------------------------------
@@ -608,13 +671,9 @@ int test_program_roc::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, c
 //-----------------------------------------------------------------------------
 // write next record
 //-----------------------------------------------------------------------------
-      if (DebugMode & 0x1) {
-        std::cout << __func__ << std::format(": nb:{:4d} first_addr:0x{:08x}",nb,first_addr)
-                  << std::format(" nb_written:{:8d}\n",nb_written);
-      }
-//-----------------------------------------------------------------------------
-// test mode: don't write
-//-----------------------------------------------------------------------------
+      TLOG(TLVL_DEBUG+1) << std::format(": nb:{:4d} first_addr:0x{:08x}",nb,first_addr)
+                         << std::format(" nb_written:{:8d}\n",nb_written);
+
       // std::this_thread::sleep_for(std::chrono::microseconds(1000));
       int spi_offset = first_addr+nb_written;             // offset in bytes
       uint16_t* data = (uint16_t*) (Data+nb_written);
@@ -623,8 +682,7 @@ int test_program_roc::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, c
 
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
       if (rc != 0) {
-        std::cout << __func__ << " ERROR to write to SPI offset:0x" << std::hex <<  spi_offset
-                  << std::dec << " . BAIL OUT" << std::endl;
+        TLOG(TLVL_ERROR) << std::format("ERROR to write to SPI offset:0x{:08x} . BAIL OUT\n",spi_offset);
         return rc;
       }
 //-----------------------------------------------------------------------------
@@ -636,10 +694,7 @@ int test_program_roc::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, c
       done = true;
     }
   }
-  //  if (DebugMode & 0x1) {
-  std::cout << std::format("[{}:{}] END rc:{} written_bytes:0x{:05x} starting_offset:0x{:08x}\n",
-                           __func__,__LINE__,rc,nb_written,SpiOffset);
-    //}
+  TLOG(TLVL_DEBUG) << std::format("END rc:{} written_bytes:0x{:05x} starting_offset:0x{:08x}\n",rc,nb_written,SpiOffset);
   return rc;
 }
 
@@ -869,7 +924,7 @@ int test_program_roc::dtc_validate_version(trkdaq::DtcInterface* Dtc_i, int Link
   }
 
   if (fw == nullptr) {
-    std::cout << "ERROR: fw version:" << Version << " is not defined, BAIL OUT." << std::endl;
+    TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
     return -1;
   }
 //-----------------------------------------------------------------------------
