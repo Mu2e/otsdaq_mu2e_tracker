@@ -248,7 +248,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         PrintRocRegister  (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocRegister2 (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintRocStatus    (uint32_t Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
     int          ProgramRoc        (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);

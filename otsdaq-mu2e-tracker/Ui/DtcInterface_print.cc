@@ -63,7 +63,8 @@ namespace trkdaq {
   }
   
 //-----------------------------------------------------------------------------
-// most of the time Link = -1
+// most of the time Link = -1 meaning 'all enabled links'
+// otherwise it is the link to print
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
@@ -233,7 +234,7 @@ namespace trkdaq {
       
       n   += 1;
       if (n == 8) {
-        if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
+        if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
         else {
           (*Stream)          << line << std::endl;
           TLOG(TLVL_DEBUG+1) << line << std::endl;
@@ -243,7 +244,7 @@ namespace trkdaq {
     }
     
     if (n != 0) {
-      if (Stream == nullptr) TLOG(TLVL_DEBUG) << line << std::endl;
+      if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
       else {
         (*Stream)          << line << std::endl;
         TLOG(TLVL_DEBUG+1) << line << std::endl;
