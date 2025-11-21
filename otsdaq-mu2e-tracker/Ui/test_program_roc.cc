@@ -583,6 +583,21 @@ int test_program_roc::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link)
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
+  try {
+    uint16_t r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
+    if (r01 != 0x1234) TLOG(TLVL_ERROR) << std::format("r01:0x{:04x}",r01);
+    return -2;
+  }
+  catch (...) {
+//-----------------------------------------------------------------------------
+// assume timeout
+//------------------------------------------------------------------------------
+    TLOG(TLVL_ERROR) << std::format("couldn't read register 0. BAIL OUT");
+    return -3;
+  }
+//-----------------------------------------------------------------------------
+// hopefully, OK. lets see how it goes
+//------------------------------------------------------------------------------
   uint16_t u; 
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
