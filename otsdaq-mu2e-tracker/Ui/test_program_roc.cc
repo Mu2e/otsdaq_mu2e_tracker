@@ -582,19 +582,6 @@ int test_program_roc::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link)
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-
-  try {
-    uint16_t r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
-    if (r01 != 0x1234) TLOG(TLVL_ERROR) << std::format("r01:0x{:04x}",r01);
-    return -2;
-  }
-  catch (...) {
-//-----------------------------------------------------------------------------
-// assume timeout
-//------------------------------------------------------------------------------
-    TLOG(TLVL_ERROR) << std::format("couldn't read register 0. BAIL OUT");
-    return -3;
-  }
 //-----------------------------------------------------------------------------
 // hopefully, OK. lets see how it goes
 //------------------------------------------------------------------------------
@@ -616,23 +603,72 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
+  bool done             (false);
+  int  ntries           (0);
+  
+  auto roc  = DTCLib::DTC_Link_ID(Link);
+
+  while (ntries < 3) {
                                               // 5 words
-  std::vector<uint16_t> input;
+    std::vector<uint16_t> input;
 
-  input.push_back(SPI_WRITE_RECORD);            // SPI clear
-  input.push_back( FirstAddr        & 0xFFFF);  // 
-  input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
-  input.push_back( NWords           & 0xFFFF);  // 
-  input.push_back((NWords    >> 16) & 0xFFFF);  // 
+    input.push_back(SPI_WRITE_RECORD);            // SPI clear
+    input.push_back( FirstAddr        & 0xFFFF);  // 
+    input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
+    input.push_back( NWords           & 0xFFFF);  // 
+    input.push_back((NWords    >> 16) & 0xFFFF);  // 
 
-  for (int i=0; i<NWords; ++i) {
-    input.push_back(Data[i  ]);
+    for (int i=0; i<NWords; ++i) {
+      input.push_back(Data[i  ]);
+    }
+
+    Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+//-----------------------------------------------------------------------------
+// the suspicion is that sometimes the ROC doesn't recieve all data
+// potential workaround: read ROC register 0 multiple times, till the read succeeds
+// that provides "fake data" the ROC needs to complete reading of the missing part of
+// the data
+//-----------------------------------------------------------------------------
+    bool     r01_ok(false);
+    int      n_r01_reads(0);
+    uint16_t r01(0);
+
+    while ((not r01_ok) and (n_r01_reads < 200)) {
+      try {
+        r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
+        n_r01_reads += 1;
+        if (r01 == 0x1234) {
+                                        // success
+          r01_ok = true;
+          break;
+        }
+      }
+      catch (...) {
+//-----------------------------------------------------------------------------
+// assume timeout and continue trying
+//------------------------------------------------------------------------------
+        TLOG(TLVL_ERROR) << std::format("n_r01_reads:{}, couldn't read register 0",n_r01_reads);
+      }
+    }
+
+    if (not r01_ok) {
+//-----------------------------------------------------------------------------
+// read not successful , don't know what to do, bail out
+//-----------------------------------------------------------------------------
+      TLOG(TLVL_ERROR) << std::format("after nreads:{} r01:0x{:04x}. BAIL OUT",n_r01_reads,r01);
+      return -2;
+    }
+//-----------------------------------------------------------------------------
+// read of register 0 succeeded, try to write again
+//-----------------------------------------------------------------------------
+    ntries += 1;
   }
 
-  auto roc  = DTCLib::DTC_Link_ID(Link);
-  Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-
-  // std::cout << " data written, nb:" << NWords*2 << std::endl;
+  if (not done) {
+                                        // tried to write record 5 times, didn't succeed, bail out
+    TLOG(TLVL_ERROR) << std::format("couldn't read register 0. BAIL OUT");
+    
+  }
   
   uint16_t u; 
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
