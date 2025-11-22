@@ -623,6 +623,7 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
     }
 
     Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
+    ntries += 1;
 //-----------------------------------------------------------------------------
 // the suspicion is that sometimes the ROC doesn't recieve all data
 // potential workaround: read ROC register 0 multiple times, till the read succeeds
@@ -635,8 +636,8 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
 
     while ((not r01_ok) and (n_r01_reads < 200)) {
       try {
-        r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
         n_r01_reads += 1;
+        r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
         if (r01 == 0x1234) {
                                         // success
           r01_ok = true;
@@ -647,11 +648,26 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
 //-----------------------------------------------------------------------------
 // assume timeout and continue trying
 //------------------------------------------------------------------------------
-        TLOG(TLVL_ERROR) << std::format("n_r01_reads:{}, couldn't read register 0",n_r01_reads);
+        TLOG(TLVL_ERROR) << std::format("n_r01_reads:{}, couldn't read register 0 afer writing NWords:{} to 0x:{:08x}",
+                                        n_r01_reads,NWords,FirstAddr);
       }
     }
 
-    if (not r01_ok) {
+    if (r01_ok) {
+      if (n_r01_reads == 1) {
+                                        // succeeded from the first time, everything looks OK
+        done = true;
+        break;
+      }
+      else {
+//-----------------------------------------------------------------------------
+// first read failed, need to retry writing
+//-----------------------------------------------------------------------------
+        TLOG(TLVL_WARNING) << std::format("success after n_r01_reads:{}, retrying write to offset:0x{:08x}",
+                                          n_r01_reads,FirstAddr);
+      }
+    }
+    else  {
 //-----------------------------------------------------------------------------
 // read not successful , don't know what to do, bail out
 //-----------------------------------------------------------------------------
@@ -661,7 +677,6 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
 //-----------------------------------------------------------------------------
 // read of register 0 succeeded, try to write again
 //-----------------------------------------------------------------------------
-    ntries += 1;
   }
 
   if (not done) {
