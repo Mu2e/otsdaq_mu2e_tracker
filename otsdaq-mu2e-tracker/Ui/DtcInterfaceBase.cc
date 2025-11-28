@@ -48,7 +48,7 @@ namespace mu2edaq {
     fOnSpill        = 0;                // together: 0x0100000001
     fEventMode      = 1;
 
-    fIsCrv          = 0;
+    //    fIsCrv          = 0;
     fSubsystem      = -1;
     fCounter        = 0;
     fDtc            = new DTC(DTC_SimMode_NoCFO,PcieAddr,LinkMask,expected_version,SkipInit,sim_file,uid);
@@ -486,7 +486,6 @@ namespace mu2edaq {
   std::string  DtcInterface::GetRocID         (int Link) { return std::string("undefined"); }
   std::string  DtcInterface::GetRocDesignInfo (int Link) { return std::string("undefined"); }
   std::string  DtcInterface::GetRocFwGitCommit(int Link) { return std::string("undefined"); }
-
 
 };
 #endif

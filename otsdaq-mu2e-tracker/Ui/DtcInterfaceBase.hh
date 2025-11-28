@@ -50,7 +50,7 @@ namespace mu2edaq {
     int                  fPartitionID;
     int                  fMacAddrByte;
 
-    int                  fIsCrv;          // is CRV DTC
+    //    int                  fIsCrv;          // is CRV DTC
 
     int                  fSubsystem;      // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
@@ -82,7 +82,7 @@ namespace mu2edaq {
     int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fEventMode); }
 
     int          DtcID     () { return fDtcID; }
-    int          IsCrv     () { return fIsCrv; }
+    //    int          IsCrv     () { return fIsCrv; }
 
     int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1);
     virtual int  InitRocReadoutMode(); 
@@ -111,9 +111,10 @@ namespace mu2edaq {
     void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
-    void         PrintStatus      (std::ostream& Stream = std::cout);
+    void         PrintStatus          (std::ostream& Stream = std::cout);
+    virtual void PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
 
-    uint32_t     ReadRegister    (uint16_t Register);
+    uint32_t     ReadRegister         (uint16_t Register);
 
 //-----------------------------------------------------------------------------
 // ROC functions
@@ -121,7 +122,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
     int          ResetLinks             (int LinkMask = 0, int SetNewMask = 0);
 
-    virtual int  ResetLink              (int Link);       // no defaults here !
+    virtual int  ResetLink              (int Link);                              // no defaults here !
     int          RocReadoutMode         ()  { return fRocReadoutMode; }
     void         SetRocReadoutMode      (int Mode ) { fRocReadoutMode  = Mode ; }
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
