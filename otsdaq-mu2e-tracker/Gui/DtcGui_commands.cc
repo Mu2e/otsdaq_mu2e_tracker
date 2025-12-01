@@ -738,8 +738,7 @@ void DtcGui::set_ew_length()
 	}
 	catch(...)
 	{
-		*fTextView << Form("ERROR : coudn't read EW Length ... BAIL OUT", roc)
-		           << std::endl;
+		*fTextView << Form("ERROR : coudn't read EW Length ... BAIL OUT") << std::endl;
 	}
 
 	TDatime x2;
@@ -772,7 +771,7 @@ void DtcGui::set_first_ts()
 	}
 	catch(...)
 	{
-		*fTextView << Form("ERROR : coudn't read FirstTS ... BAIL OUT", roc) << std::endl;
+		*fTextView << std::format("ERROR : coudn't read FirstTS ... BAIL OUT\n");
 	}
 
 	TDatime x2;
