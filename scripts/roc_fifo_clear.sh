@@ -14,4 +14,3 @@ rocUtil -a 13 -w 0 -l $LINK write_register > /dev/null
 
 echo "Check if ROCFIFOs are empty (register 18 should return 0xf00)"
 echo "register 18 reads:" `rocUtil -a 18 -l $LINK simple_read`
-

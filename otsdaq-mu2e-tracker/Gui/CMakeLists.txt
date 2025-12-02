@@ -1,9 +1,6 @@
 #
 include_directories($ENV{ROOTSYS}/include)
 link_directories($ENV{ROOTSYS}/lib)
-
-set (dict_name "otsdaq-mu2e-tracker_Gui_dict")
-
 #
 cet_make_library(
   SOURCE    DtcGui_gui.cc  
@@ -22,15 +19,17 @@ include(ArtDictionary)
 art_dictionary(
   DICTIONARY_LIBRARIES
   otsdaq-mu2e-tracker::Gui
-#  artdaq_core_mu2e::artdaq-core-mu2e_Overlays
-#  mu2e_pcie_utils::CFOInterface
-#  mu2e_pcie_utils::DTCInterface
+#  artdaq-core-mu2e::Overlays
+#  mu2e-pcie-utils::CFOInterface
+#  mu2e-pcie-utils::DTCInterface
 )
 
 install_headers()
 install_source()
-# artdaq_core_mu2e::artdaq-core-mu2e_Overlays
+# artdaq-core-mu2e::Overlays
 #
+
+set (dict_name "otsdaq-mu2e-tracker_Gui_dict")
 
 get_target_property(DictCompileOptions ${dict_name} COMPILE_OPTIONS)
 

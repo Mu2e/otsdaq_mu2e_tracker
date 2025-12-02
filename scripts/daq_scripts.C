@@ -508,5 +508,3 @@ void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link)
 	dtc->WriteROCRegister(DTC_Link_ID(roc_link), 8, 0x30F, false, 100);
 	dtc->WriteROCRegister(DTC_Link_ID(roc_link), 29, 1, false, 100);
 }
-
-void daq() {}

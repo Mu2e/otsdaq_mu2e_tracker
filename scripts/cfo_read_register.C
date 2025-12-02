@@ -9,20 +9,20 @@
 
 #include "cfo_init.C"
 //-----------------------------------------------------------------------------
-uint32_t cfo_read_register(uint16_t Register, int PcieAddress = -1) {
+uint32_t cfo_read_register(uint16_t Register, int PcieAddress = -1)
+{
+	CFO* cfo = cfo_init(PcieAddress);
+	if(cfo == nullptr)
+		return 0xffffffff;
 
-  CFO* cfo = cfo_init(PcieAddress);
-  if (cfo == nullptr) return 0xffffffff;
-  
-  mu2edev* dev = cfo->GetDevice();
+	mu2edev* dev = cfo->GetDevice();
 
-  uint32_t data;
+	uint32_t data;
 
-  int timeout(150);
-  dev->read_register(Register,timeout,&data);
+	int timeout(150);
+	dev->read_register(Register, timeout, &data);
 
-  return data;
+	return data;
 }
-
 
 #endif

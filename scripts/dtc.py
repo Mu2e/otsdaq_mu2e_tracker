@@ -15,9 +15,9 @@ class Dtc:
 
     def read_register(self,register):
         data = self.dtc.GetDevice().read_register(register,150)
-        if (data[0] == 0): 
+        if (data[0] == 0):
             return data[1]
-        else: 
+        else:
             print ("ERROR reading reg 0x%04x" % register)
             return None
         return

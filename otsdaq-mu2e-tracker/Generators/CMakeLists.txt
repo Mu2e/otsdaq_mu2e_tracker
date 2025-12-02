@@ -14,7 +14,7 @@ install_source()
 
 # cet_build_plugin(TrackerVST artdaq::commandableGenerator 
 #                  LIBRARIES REG 
-#                  artdaq-core-mu2e::artdaq-core-mu2e_Overlays 
+#                  artdaq-core-mu2e::Overlays 
 #                  canvas::canvas 
 #                  mu2e-pcie-utils::DTCInterface
 #                  ${XMLRPC_LIBRARIES}
@@ -30,10 +30,10 @@ add_compile_definitions(USE_MIDAS)
 
 # cet_build_plugin(TrackerBR artdaq::commandableGenerator 
 #                  LIBRARIES REG
-#                  otsdaq-mu2e-tracker::otsdaq-mu2e-tracker_Ui
-#                  artdaq-core-mu2e::artdaq-core-mu2e_Overlays 
+#                  otsdaq-mu2e-tracker::Ui
+#                  artdaq-core-mu2e::Overlays 
 #                  canvas::canvas 
-#                  mu2e_pcie_utils::DTCInterface
+#                  mu2e-pcie-utils::DTCInterface
 #                  ${XMLRPC_LIBRARIES}
 #                  ${MIDAS_LIBS}
 # #                  midas

@@ -4,16 +4,12 @@
 #
 cet_make_library(
         SOURCE          
-        DtcInterfaceBase.cc DtcInterfaceBase_print.cc
-        CfoInterface.cc
-        DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc 
-        #	PreampChannel.cc PreampThreshold.cc
-        test_program_roc.cc
+        DtcInterface.cc DtcInterface_print.cc DtcInterface_ControlRoc.cc CfoInterface.cc
         LIBRARIES PUBLIC
-	otsdaq-mu2e-tracker::ParseAlignment
+	    otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata
         artdaq-core::Data
-        # artdaq-core-demo::Overlays
+        # artdaq-core-demo::artdaq-core-demo_Overlays
         cetlib_except::cetlib_except
         mu2e-pcie-utils::CFOInterface
         mu2e-pcie-utils::DTCInterface

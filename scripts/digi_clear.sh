@@ -18,11 +18,11 @@ echo "Clearing DIGI FIFOs link $LINK"
 echo "Writing 0 & 1 to  address=16 for HV DIGIs"
 rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
 
-rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
-rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
+rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0
+rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT
 rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
 
-rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
+rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1
 rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
 rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
 
@@ -36,4 +36,3 @@ rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
 rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
 rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
 rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-
