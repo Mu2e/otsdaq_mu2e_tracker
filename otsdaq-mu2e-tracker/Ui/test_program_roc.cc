@@ -3,6 +3,7 @@
 // TLVL_DEBUG+1: spi_read_record end printouts (they come often)
 // TLVL_DEBUG+2: spi_read_record start printouts (normally don't need both)
 // bit 0x10000 : validate
+// bit 0x00008 : spi_write_record: print failed to write record 
 //-----------------------------------------------------------------------------
 #include "otsdaq-mu2e-tracker/Ui/test_program_roc.hh"
 
@@ -622,10 +623,11 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
       input.push_back(Data[i  ]);
     }
 
+    //    Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,true,increment_address,100);
     Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
     ntries += 1;
 //-----------------------------------------------------------------------------
-// the suspicion is that sometimes the ROC doesn't recieve all data
+// the suspicion is tChat sometimes the ROC doesn't recieve all data
 // potential workaround: read ROC register 0 multiple times, till the read succeeds
 // that provides "fake data" the ROC needs to complete reading of the missing part of
 // the data
@@ -634,7 +636,7 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
     int      n_r01_reads(0);
     uint16_t r01(0);
 
-    while ((not r01_ok) and (n_r01_reads < 200)) {
+    while ((not r01_ok) and (n_r01_reads < 1)) {
       try {
         n_r01_reads += 1;
         r01 = Dtc_i->fDtc->ReadROCRegister(roc,0,1000);
@@ -650,6 +652,9 @@ int test_program_roc::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, in
 //------------------------------------------------------------------------------
         TLOG(TLVL_ERROR) << std::format("n_r01_reads:{}, couldn't read register 0 afer writing NWords:{} to 0x:{:08x}",
                                         n_r01_reads,NWords,FirstAddr);
+        if (DebugMode & 0x8) {
+          Dtc_i->PrintBuffer(Data,NWords,FirstAddr);
+        }
       }
     }
 
@@ -735,7 +740,7 @@ int test_program_roc::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, c
       int spi_offset = first_addr+nb_written;             // offset in bytes
       uint16_t* data = (uint16_t*) (Data+nb_written);
       int nw         = (nb-1)/2 + 1;
-      rc      = spi_write_record(Dtc_i,Link,spi_offset,nw,data);
+      rc      = spi_write_record(Dtc_i,Link,spi_offset,nw,data,DebugMode);
 
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
       if (rc != 0) {
