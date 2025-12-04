@@ -9,6 +9,12 @@
 #include "otsdaq/DataManager/DataProducer.h"
 #include "otsdaq/FECore/FEProducerVInterface.h"
 
+#include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
+#include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
+#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
+
 namespace ots
 {
 class ROCTrackerInterface : public ROCPolarFireCoreInterface
@@ -32,6 +38,88 @@ public:
 	virtual void 							writeEmulatorRegister	(uint16_t address, uint16_t data_to_write) override;
 	virtual uint16_t						readEmulatorRegister	(uint16_t address) override;
 	virtual void							readEmulatorBlock	(std::vector<uint16_t>& data, uint16_t address, uint16_t wordCount, bool incrementAddress) override;
+
+
+	//------------ for tracker-specific Ui functions
+	int          fEnabled;   // if comes from ODB, could be 0
+	int          fPcieAddr;  //
+	int          fLinkMask;  // int is OK, bit 31 is never used for arithmetics
+	                         // for now assume that all ROCs are doing the same
+	                         // fRocReadoutMode: (fixed_length << 4) | readout_mode
+	int fRocReadoutMode;     // 0: 'counter patterns' 1:digis 2:checkerboard patterns
+	int fRocLaneMask;        // 0xf : all of them
+	int fRocNHitsPerLane;    // NHits per lane for Mode=2
+	int fSampleEdgeMode;     // 0:force raising 1:force falling 2:auto
+	int fEmulateCfo;         // 1: this DTC operated in the emulated CFO mode
+	int fJAMode;             // clock_source << 4 | reset
+
+	int fOnSpill;    // 1:on-spill, 0:off-spill
+	int fEventMode;  // whatever it is, hopefully, together they make 5 bytes
+
+	int fDtcID;  // unique DTC ID used by the DAQ (0x9154)
+	int fPartitionID;
+	int fMacAddrByte;
+
+	int fSleepTimeROCWrite;  // the two are different
+	int fSleepTimeROCReset;  //
+
+
+
+	struct RocDataHeaderPacket_t
+	{  // 8 16-byte words in total
+	// 16-bit word 0
+		uint16_t byteCount : 16;
+		// 16-bit word 1
+		uint16_t unused : 4;
+		uint16_t packetType : 4;
+		uint16_t linkID : 3;
+		uint16_t DtcErrors : 4;
+		uint16_t valid : 1;
+		// 16-bit word 2
+		uint16_t packetCount : 11;
+		uint16_t unused2 : 2;
+		uint16_t subsystemID : 3;
+		// 16-bit words 3-5
+		uint16_t eventTag[3];
+		// 16-bit word 6
+		uint8_t status : 8;
+		uint8_t version : 8;
+		// 16-bit word 7
+		uint8_t dtcID : 8;
+		uint8_t onSpill : 1;
+		uint8_t subrun : 2;
+		uint8_t eventMode : 5;
+
+		ulong ewtag()
+		{
+			ulong x1  = eventTag[0];
+			ulong x2  = eventTag[1];
+			ulong x3  = eventTag[2];
+			ulong ewt = x1 | (x2 << 16) | (x3 << 32);
+			return ewt;
+		}
+
+		// decoding status
+
+		int empty() { return (status & 0x01) == 0; }
+		int invalid_dr() { return (status & 0x02); }
+		int corrupt() { return (status & 0x04); }
+		int timeout() { return (status & 0x08); }
+		int overflow() { return (status & 0x10); }
+
+		int error_code() { return (status & 0x1e); }
+	};
+
+	struct RocData_t
+	{  // 8 16-byte words in total
+		RocDataHeaderPacket_t header;
+		uint16_t              data[1];
+	};
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui.h"
+
+	//------------ end for tracker-specific Ui functions
+
 
 
 	// For injection pulse readout

@@ -72,7 +72,7 @@ find_package(artdaq-core       3.09.16 REQUIRED EXPORT)
 find_package(artdaq-core-demo  1.11.00 REQUIRED EXPORT)
 find_package(otsdaq-mu2e       1.02.00 REQUIRED EXPORT)
 find_package(mu2e-pcie-utils   3.02.00 REQUIRED EXPORT)
-#find_package(ROOT              6.32.08 REQUIRED EXPORT)
+# find_package(ROOT              6.32.08 REQUIRED EXPORT)
 
 # message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )
 # 
@@ -117,7 +117,7 @@ include(BuildPlugins)
 add_subdirectory(otsdaq-mu2e-tracker)
 
 # Useful scripts
-#add_subdirectory(tools)
+add_subdirectory(tools)
 
 # Test Programs
 #add_subdirectory(test)
