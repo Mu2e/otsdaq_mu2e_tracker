@@ -1,0 +1,138 @@
+
+//------------------------------------------------------------------------
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+//------------------------------------------------------------------------
+
+
+
+    registerFEMacroFunction("Ui ConfigureJA",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ConfigureJA),
+                            std::vector<std::string>{"ClockSource", "Reset (Default = 1)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui InitEmulatedCFOReadoutMode",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_InitEmulatedCFOReadoutMode),
+                            std::vector<std::string>{},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui InitExternalCFOReadoutMode",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_InitExternalCFOReadoutMode),
+                            std::vector<std::string>{"SampleEdgeMode (Default = -1)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui InitReadout",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_InitReadout),
+                            std::vector<std::string>{"EmulateCfo (Default = -1)", "RocReadoutMode (Default = -1)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui InitRocReadoutMode",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_InitRocReadoutMode),
+                            std::vector<std::string>{},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui LaunchRunPlanEmulatedCfo",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_LaunchRunPlanEmulatedCfo),
+                            std::vector<std::string>{"EWLength", "NMarkers", "FirstEWTag"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui ReadRegister",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ReadRegister),
+                            std::vector<std::string>{"Register"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui ReadSpiData",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ReadSpiData),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "SpiRawData"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui RocConfigurePatternMode",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_RocConfigurePatternMode),
+                            std::vector<std::string>{},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui ResetRoc",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ResetRoc),
+                            std::vector<std::string>{"SetNewMask (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui RocSetDataVersion",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_RocSetDataVersion),
+                            std::vector<std::string>{"Version"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui FindAlignments",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_FindAlignments),
+                            std::vector<std::string>{"print (Default = false)"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui SetBit",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_SetBit),
+                            std::vector<std::string>{"Register", "Bit", "Value"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui SetLinkMask",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_SetLinkMask),
+                            std::vector<std::string>{"Mask (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui SetupCfoInterface",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_SetupCfoInterface),
+                            std::vector<std::string>{"CFOEmulationMode", "ForceCFOEdge", "EnableCFORxTx", "EnableAutogenDRP"},          // inputs parameters
+                            std::vector<std::string>{},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui MonicaDigiClear",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_MonicaDigiClear),
+                            std::vector<std::string>{},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui MonicaVarLinkConfig",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_MonicaVarLinkConfig),
+                            std::vector<std::string>{"LaneMask (Default = 0xf)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui MonicaVarPatternConfig",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_MonicaVarPatternConfig),
+                            std::vector<std::string>{"LaneMask (Default = -1)", "NHits (Default = -1)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions

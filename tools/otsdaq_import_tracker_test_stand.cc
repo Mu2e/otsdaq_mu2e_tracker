@@ -137,6 +137,7 @@ std::string getDeclaredFunctionHeader(const std::string& functionHeader, const s
 		__SS_THROW__;
 	}
 	std::string beforeParen = functionHeader.substr(0, parenPos);
+	__COUTTV__(beforeParen);
 
 	//find in file the function name
 	std::ifstream in(sourceFile);
@@ -148,12 +149,41 @@ std::string getDeclaredFunctionHeader(const std::string& functionHeader, const s
 	}
 	std::string fileContents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 	// fileContents now contains the full contents of sourceFile	
-	size_t funcNamePos = fileContents.find(beforeParen);
-	if(funcNamePos == std::string::npos)
+	size_t funcNamePos = 0;
+	while(1)  //search for function name loop in header
 	{
-		__SS__ << "ERROR: could not find function name in source file: " << beforeParen << " in file " << sourceFile << __E__;
-		__SS_THROW__;
-	}
+		funcNamePos = fileContents.find(beforeParen, funcNamePos + 1);		
+		if(funcNamePos == std::string::npos)
+		{
+			__SS__ << "ERROR: could not find function name '" << beforeParen << "' in source file: " << sourceFile << __E__;
+			__SS_THROW__;
+		}
+		__COUTTV__(fileContents.substr(funcNamePos, 50));
+		//make sure found instance is not a comment or header with similar name
+		size_t prevNewLine = fileContents.rfind("\n", funcNamePos);
+		size_t prevComment = fileContents.rfind("//", funcNamePos);
+		if(prevComment != std::string::npos && prevNewLine != std::string::npos && 
+				prevComment > prevNewLine)		
+		{
+			__COUTT__ << "Found function name in comment, continuing search..." << std::endl;
+			continue; //then found function name is in comment
+		}
+
+		//make sure there is an arg list after function name
+		size_t nextNewline = fileContents.find("\n", funcNamePos);
+		size_t nextParenthesis = fileContents.find("(", funcNamePos);
+		
+		if(nextParenthesis == std::string::npos || 
+				(nextNewline != std::string::npos && nextParenthesis > nextNewline))
+		{
+			__COUTT__ << "Found function name without arg list, continuing search..." << std::endl;
+			continue; //then found function name is not a function definition
+		}
+		
+		//else found function name is valid, so break out of search loop
+		break;
+	} //end search for function name loop
+	
 	//find semicolon after function name
 	size_t semicolonPos = funcNamePos;
 	while(1)
@@ -178,6 +208,186 @@ std::string getDeclaredFunctionHeader(const std::string& functionHeader, const s
 	__COUTTV__(declaredFunctionHeader);
 	return declaredFunctionHeader;
 } //end getDeclaredFunctionHeader()
+
+//==============================================================================
+/// @brief Returns true if the function arguments in the function header are simple enough (i.e. int, string) for converting to FE macros
+///		Also fills in the argTypes, argNames, argDefaults, outputTypes, outputNames vectors.
+/// @param functionHeader the full function header
+bool validateArgsForFEMacro(const std::string& functionHeader, const std::string& returnVal, 
+	std::vector<std::string>& argTypes, std::vector<std::string>& argNames, std::vector<std::string>& argDefaults, 
+	std::vector<std::string>& outputTypes, std::vector<std::string>& outputNames)
+{
+	size_t argTypePos = functionHeader.find('(');
+	if(argTypePos == std::string::npos)
+	{
+		__SS__ << "ERROR: could not find '(' in function header: " << functionHeader << __E__;
+		__SS_THROW__;
+	}
+	size_t argEndPos = functionHeader.find(')', argTypePos);
+	if(argEndPos == std::string::npos)
+	{
+		__SS__ << "ERROR: could not find ')' in function header: " << functionHeader << __E__;
+		__SS_THROW__;
+	}
+
+	//decide if there is an output return valu
+	//for now, only handle void return type with no outputs
+	if(returnVal != "void" && returnVal != "int" && returnVal != "unsigned int" && 
+			returnVal != "std::string" && returnVal != "bool" && returnVal != "double"
+			&& returnVal != "float" && returnVal != "std::vector<DTCLib::roc_data_t>" && 
+			returnVal != "size_t" && returnVal != "uint16_t" && returnVal != "uint32_t")
+	{
+		__COUT_ERR__ << "- Return type: " << returnVal << " is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
+		return false;
+	}
+	if(returnVal != "void")
+	{
+		outputTypes.push_back(returnVal);
+		outputNames.push_back("Result");
+	}
+	else //indicate no return value
+	{		
+		outputTypes.push_back("void");
+		outputNames.push_back("");
+	}
+
+	std::string argList = functionHeader.substr(argTypePos + 1, argEndPos - argTypePos - 1);
+	__COUTTV__(argList);
+	//split by commas
+	std::vector<std::string> args = StringMacros::getVectorFromString(argList, {','});
+	for(const auto& arg : args)
+	{
+		__COUTTV__(arg);
+
+		if(!arg.size())
+			break; //skip empty args (possible for no args)
+			
+		std::vector<std::string> argParts = StringMacros::getVectorFromString(arg, {' ','\t','\n'}, {} /* whitespace */);
+		if(argParts.size() < 2)
+		{
+			__COUT_ERR__ << "Could not parse argument: " << StringMacros::vectorToString(argParts)
+				 << " in function header: " << functionHeader << std::endl;
+			return false;
+		}
+
+		size_t i = 0;
+		bool foundEquals = false;
+		bool isConst = false;
+		bool isOutputByReference = false;
+		std::string argType;
+		for(const auto& part : argParts)
+		{
+			__COUTT__ << "pre-part " << part << " i=" << i << std::endl;
+
+			if(part.size() == 0)
+				continue; //skip empty parts
+
+			if(part.size() && (part == " " || 
+			   part == "\t" ||
+			   part == "\n"))
+				continue; //skip whitespace parts
+
+			__COUTT__ << "part " << part << " i=" << i << std::endl;
+
+			if(i == 0)
+			{
+				argType = part; //first part is type
+				__COUTTV__(argType);
+				if(argType == "const")
+				{					
+					isConst = true;
+					continue;
+				}
+				__COUTTV__(argType);
+
+				//check if argType is simple enough
+				if(argType != "int" && argType != "unsigned int" && 
+					argType != "std::string" && argType != "bool" && argType != "double"
+					&& argType != "float" && argType != "DTC_Lib::DTC_Link_ID" && 
+					(argType != "DTC_Lib::DTC_Link_ID&" || !isConst) &&
+					argType != "DTC_Lib::roc_address_t&" &&
+					(argType != "std::vector<DTCLib::roc_data_t>&" || isConst) &&
+					(argType != "std::vector<uint16_t>&" || isConst) &&
+					argType != "size_t" && argType != "uint16_t" && argType != "uint32_t")
+				{
+					__COUT_ERR__ << "- Argument type: " << (isConst?"const ":"") << 
+						argType << " is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
+					return false;
+				}
+				__COUTTV__(argType);
+
+				if(isConst)
+					argType = "const " + argType;
+
+				if(argType == "std::vector<uint16_t>&" || 
+					argType == "std::vector<roc_data_t>&")				
+				{
+					__COUTT__ << " -- Treating " << argType << " as output parameter." << std::endl;
+					isOutputByReference = true;
+				}	
+							
+				if(isOutputByReference)
+					argTypes.push_back("out"); //mark as output by reference
+				else
+					argTypes.push_back(argType);
+				__COUTTV__(argTypes.back());
+			}
+			else if(i == 1)
+			{
+				argNames.push_back(part); //second part is name
+				__COUTTV__(argNames.back());
+
+				if(isOutputByReference)
+				{
+					outputTypes.push_back(argType);
+					outputNames.push_back(argNames.back());
+				}
+			}
+			else if(i > 1 && !foundEquals) //possible =Default here
+			{
+				if(part.size() > 1 &&
+						part[0] == '=') //handle case of no spaces around =
+				{
+					argDefaults.push_back(part.substr(1)); //fourth part is default value		
+					__COUTTV__(argDefaults.back());				
+				}
+				else if(part == "=")
+				{
+					foundEquals = true; //next part is default value
+					__COUTTV__(foundEquals);
+				}
+				else
+				{
+					__COUT_ERR__ << "Could not parse argument missing = : " << StringMacros::vectorToString(argParts)
+						 << " in function header: " << functionHeader << std::endl;
+					return false;
+				}
+			}
+			else if(i > 2 && foundEquals) //fourth part is default value
+			{		
+				argDefaults.push_back(part); 
+				__COUTTV__(argDefaults.back());
+			}
+
+			++i;
+		} // end art parts loop
+		
+		if(argDefaults.size() != argNames.size())
+		{
+			argDefaults.push_back(""); //no default value
+			__COUTTV__(argDefaults.back());
+		}
+	} //end main arg loop
+
+	//if here, all args are simple enough
+	__COUTTV__(StringMacros::vectorToString(argTypes));
+	__COUTTV__(StringMacros::vectorToString(argNames));
+	__COUTTV__(StringMacros::vectorToString(argDefaults));
+	__COUTTV__(StringMacros::vectorToString(outputTypes));
+	__COUTTV__(StringMacros::vectorToString(outputNames));
+
+	return true;
+} //end validateArgsForFEMacro()
 
 //==============================================================================
 /// @brief Imports the tracker test stand UI files and modifies them for the FEInterface
@@ -263,15 +473,37 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			  __SS__ << "\n\nERROR! Could not open output file at " << outputFilePath << __E__;
 			  __SS_THROW__;
 			}
-			std::string outputHeaderPath = exportPath + "/ROCTrackerInterface_" + prepend[i] + ".h";
+			std::string outputHeaderPath = exportPath + "/ROCTrackerInterface_" + prepend[i] + ".hxx";
 			std::ofstream outputHeaderFile(outputHeaderPath);
 			if (!outputHeaderFile.is_open())
 			{
 			  __SS__ << "\n\nERROR! Could not open header output file at " << outputHeaderPath << __E__;
 			  __SS_THROW__;
 			}
+			std::string outputFeMacroDeclarePath = exportPath + "/ROCTrackerInterface_" + prepend[i] + "_declareFEMacros.hxx";
+			std::ofstream outputFeMacroDeclareFile(outputFeMacroDeclarePath);
+			if (!outputFeMacroDeclareFile.is_open())
+			{
+			  __SS__ << "\n\nERROR! Could not open FE Macro declaration output file at " << outputFeMacroDeclarePath << __E__;
+			  __SS_THROW__;
+			}
+			std::string outputFeMacroPath = exportPath + "/ROCTrackerInterface_" + prepend[i] + "_registerFEMacros.icc";
+			std::ofstream outputFeMacroRegisterFile(outputFeMacroPath);
+			if (!outputFeMacroRegisterFile.is_open())
+			{
+			  __SS__ << "\n\nERROR! Could not open FE Macro registration output file at " << outputFeMacroPath << __E__;
+			  __SS_THROW__;
+			}
+			std::string outputFeMacroDefinePath = exportPath + "/ROCTrackerInterface_" + prepend[i] + "_defineFEMacros.cc";
+			std::ofstream outputFeMacroDefineFile(outputFeMacroDefinePath);
+			if (!outputFeMacroDefineFile.is_open())
+			{
+			  __SS__ << "\n\nERROR! Could not open FE Macro registration output file at " << outputFeMacroDefinePath << __E__;
+			  __SS_THROW__;
+			}
 
-			std::stringstream headerInstructionsSs;
+
+			std::stringstream headerInstructionsSs, headerIncludes;
 			
 			//////////////// source file header
 			outputFile << "\n//-----------------------------------------------------------------------------\n";
@@ -285,21 +517,40 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			outputFile << headerInstructionsSs.str();
 			outputFile << "//-----------------------------------------------------------------------------\n";
 			
-			outputFile << "\n\n#include \"otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h\"\n\n";
-			outputFile << "\n#include <TString.h>  // includes ROOT's Form\n";
+			headerIncludes << "\n\n#include \"otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h\"\n\n";
+			headerIncludes << "\n#include <TString.h>  // includes ROOT's Form\n";
 
-			outputFile << "\n\nusing namespace ots;\n";
-			outputFile << "\n#undef __MF_SUBJECT__\n";
-			outputFile << "#define __MF_SUBJECT__ \"FE-ROCTrackerInterface\"\n";
+			headerIncludes << "\n\nusing namespace ots;\n";
+			headerIncludes << "\n#undef __MF_SUBJECT__\n";
+			headerIncludes << "#define __MF_SUBJECT__ \"FE-ROCTrackerInterface\"\n";
 
-			outputFile << "\n\n";
+			headerIncludes << "\n\n";
+			outputFile << headerIncludes.str();
 
 			//////////////// header file header
 			outputHeaderFile << "\n//------------------------------------------------------------------------\n";
 			outputHeaderFile << headerInstructionsSs.str();
 			outputHeaderFile << "//------------------------------------------------------------------------\n";
-
 			outputHeaderFile << "\n\n";
+			
+			//////////////// FE macro declare file header
+			outputFeMacroDeclareFile << "\n//------------------------------------------------------------------------\n";
+			outputFeMacroDeclareFile << headerInstructionsSs.str();
+			outputFeMacroDeclareFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroDeclareFile << "\n\n";
+
+			//////////////// FE macro register source file header
+			outputFeMacroRegisterFile << "\n//------------------------------------------------------------------------\n";
+			outputFeMacroRegisterFile << headerInstructionsSs.str();
+			outputFeMacroRegisterFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroRegisterFile << "\n\n";			
+
+			//////////////// FE macro deinition source file header
+			outputFeMacroDefineFile << "\n//------------------------------------------------------------------------\n";
+			outputFeMacroDefineFile << headerInstructionsSs.str();
+			outputFeMacroDefineFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroDefineFile << headerIncludes.str();
+			
 
 			const std::string functionNeedle = " DtcInterface::";
 			//-----------------------------------------------------------------------------
@@ -437,7 +688,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 
 					if(fileContents[startComment1 + 2] == ' ') //is a comment line
 					{
-						functionComment = "/" + fileContents.substr(startComment1, startFunc - startComment1) + "\n" + functionComment;						
+						functionComment = "/" + fileContents.substr(startComment1, startFunc - startComment1 + 1) + "\n" + functionComment;						
 					}
 					//else //is a comment line to ignore
 					
@@ -453,35 +704,202 @@ void ImportTrackerTestStand(int argc, char* argv[])
 
 				// output the extracted function to source file
 				outputFile << "//==============================================================================\n";
+				modifySource(functionHeader, true /* isHeader */);
+				outputFile << "///\t" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "()\n";
 				outputFile << functionComment;
 				outputFile << headerInstructionsSs.str();
-				outputFile << functionReturnVal << " ROCTrackerInterface" << "::" << prepend[i] << "_" << modifySource(functionHeader, true /* isHeader */) << "\n";
+				outputFile << functionReturnVal << " ROCTrackerInterface" << "::" << prepend[i] << "_" << functionHeader << "\n";
 				outputFile << modifySource(functionDef);
 				outputFile << " // end " << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "()\n\n";
+
+				// if args are simple (int, string), then output the FE Macro declaration, registration, and definition
+				std::vector<std::string> argTypes, argNames,  argDefaults, 
+					outputTypes, outputNames;
+				if(validateArgsForFEMacro(declaredFunctionHeader, functionReturnVal,
+					argTypes, argNames, argDefaults,
+					outputTypes, outputNames))
+				{
+					// --------------------------------------------
+					// FE Macro declaration ----------------
+					outputFeMacroDeclareFile << "void FEMacro_" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "(__ARGS__);\n";
+
+
+					// --------------------------------------------
+					// FE Macro registration ----------------
+					outputFeMacroRegisterFile << "\n";
+					outputFeMacroRegisterFile << "    registerFEMacroFunction(\"" << 
+						prepend[i] << " " << functionHeader.substr(0, functionHeader.find('(')) << "\",\n";
+					outputFeMacroRegisterFile << "                            static_cast<FEVInterface::frontEndMacroFunction_t>(\n";
+					outputFeMacroRegisterFile << "                                &ROCTrackerInterface::FEMacro_" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "),\n";
+					outputFeMacroRegisterFile << "                            std::vector<std::string>{";					
+					for(size_t o = 0, ocount = 0; o < argNames.size(); o++) //input args loop
+					{
+						if(argTypes[o] == "out")
+							continue; //skip output by reference args
+
+						if(argNames[o] == "Link" || argNames[o] == "LinkMask")
+							continue; //skip link args (take from ROC member variable)
+
+						if(ocount > 0)
+							outputFeMacroRegisterFile << ", ";
+						outputFeMacroRegisterFile << "\"" << argNames[o];
+						
+						if(argDefaults[o].size())
+							outputFeMacroRegisterFile << " (Default = " << argDefaults[o] << ")";
+						outputFeMacroRegisterFile << "\"";
+						++ocount;
+					} //end input args loop
+					outputFeMacroRegisterFile << "},          // inputs parameters\n";
+					outputFeMacroRegisterFile << "                            std::vector<std::string>{";
+					for(size_t o = 0, ocount = 0; o < outputNames.size(); o++) //output args loop
+					{
+						if(outputTypes[o] == "void")
+							continue; //no output to declare
+
+						if(ocount > 0)
+							outputFeMacroRegisterFile << ", ";
+						outputFeMacroRegisterFile << "\"" << outputNames[o] << "\"";
+						++ocount;
+					} //end output args loop
+					outputFeMacroRegisterFile << "},  // output parameters\n";
+					outputFeMacroRegisterFile << "                            1);  // requiredUserPermissions\n";
+
+
+					// --------------------------------------------
+					// FE Macro definition ----------------
+					outputFeMacroDefineFile << "\n";
+					outputFeMacroDefineFile << "//==============================================================================\n";
+					outputFeMacroDefineFile << "/// FE Macro to call " << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "()\n";
+					outputFeMacroDefineFile << "///\n";
+					outputFeMacroDefineFile << headerInstructionsSs.str();
+					outputFeMacroDefineFile << "void ROCTrackerInterface::FEMacro_" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "(__ARGS__)";
+					outputFeMacroDefineFile << 
+R"(
+{
+	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
+	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
+	for(auto& argIn : argsIn)
+		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
+
+)";
+
+					for(size_t o = 0; o < argNames.size(); o++) //declare input args
+					{
+						if(argTypes[o] == "out")
+							continue; //skip output by reference args
+							
+						outputFeMacroDefineFile << "\t" << argTypes[o] << " " << argNames[o] << " = ";
+						
+						
+						if(argNames[o] == "Link") // for link args, take from ROC member variable							
+						{
+							outputFeMacroDefineFile << "ROCCoreVInterface::getLinkID();\n";
+						}
+						else if(argNames[o] == "LinkMask") // for link mask args, take from ROC member variable							
+						{
+							//nibble based link mask
+							outputFeMacroDefineFile << "1 << (ROCCoreVInterface::getLinkID() * 4);\n";
+						}
+						else //normal input arg						
+						{
+							outputFeMacroDefineFile << "__GET_ARG_IN__"
+								<< "(\"" << argNames[o];
+												
+							if(argDefaults[o].size())
+								outputFeMacroDefineFile << " (Default = " << argDefaults[o] << ")";
+
+							outputFeMacroDefineFile << "\"" << ", " << 
+								argTypes[o];
+							
+							if(argDefaults[o].size())
+								outputFeMacroDefineFile << ", " << argDefaults[o];
+						
+							outputFeMacroDefineFile << ");\n";
+						}
+					} //end declare input args loop
+
+					outputFeMacroDefineFile << "\n";
+					for(size_t o = 0; o < outputNames.size(); o++) //declare output args
+					{
+						if(outputTypes[o] == "void")
+							continue; //no output to declare
+
+
+						if(outputTypes[o].find('&') != std::string::npos) //remove the & from output by reference args
+							outputFeMacroDefineFile << "\t" << outputTypes[o].substr(0, outputTypes[o].size()-1) << " " << outputNames[o] << ";\n";
+						else
+							outputFeMacroDefineFile << "\t" << outputTypes[o] << " " << outputNames[o] << ";\n";
+					} //end declare output args loop
+					
+					outputFeMacroDefineFile << "\n";
+					if(outputNames.size() && functionReturnVal != "void")
+						outputFeMacroDefineFile << "\t" << outputNames[0] << " =\n\t";
+					outputFeMacroDefineFile << "\t" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "(";
+				
+					for(size_t o = 0; o < argNames.size(); o++)
+					{
+						if(o > 0)
+							outputFeMacroDefineFile << ", ";
+						outputFeMacroDefineFile << argNames[o];
+					}					
+					outputFeMacroDefineFile << ");\n\n";
+
+					for(size_t o = 0; o < outputNames.size(); o++) //set output args
+					{
+						if(outputTypes[o] == "void")
+							continue; //no output to set
+
+						//handle special output types
+						if(outputTypes[o].find("std::vector") != std::string::npos)
+							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", StringMacros::vectorToString(" << outputNames[o] << "));\n";							
+						else //normal output type
+							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", " << outputNames[o] << ");\n";
+					} //end set output args loop
+					outputFeMacroDefineFile << "\n";
+
+					outputFeMacroDefineFile << "} // end FEMacro_" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "()\n";
+				} //end outputing FE Macro definition, registration, declaration
+
+
+				//flush output files so progress can be debugged if needed
+				outputFile.flush();
+				outputHeaderFile.flush();
+				outputFeMacroDeclareFile.flush();
+				outputFeMacroRegisterFile.flush();
+				outputFeMacroDefineFile.flush();
 
 				// break; //for debugging, only do one function per file
 			} //end main function search loop
 
 			outputFile.close();
 			outputHeaderFile.close();
+			outputFeMacroDeclareFile.close();
+			outputFeMacroRegisterFile.close();
+			outputFeMacroDefineFile.close();
 			__COUT_INFO__ << "Successfully wrote output file at " << outputFilePath << std::endl;
 			__COUT_INFO__ << "Successfully wrote header file at " << outputHeaderPath << std::endl;
+			__COUT_INFO__ << "Successfully wrote FE Macro declaration file at " << outputFeMacroDeclarePath << std::endl;
+			__COUT_INFO__ << "Successfully wrote FE Macro registration file at " << outputFeMacroPath << std::endl;
+			__COUT_INFO__ << "Successfully wrote FE Macro define file at " << outputFeMacroDefinePath << std::endl;
 
 		}
 		catch(const std::runtime_error& e)
 		{
 			importErrors.push_back(std::make_pair(
-			    importFile, prepend[i] + std::string(" std::runtime_error: ") + e.what()));
+			    importFile, prepend[i] + " " + importFile + 
+					std::string(" std::runtime_error: ") + e.what()));
 		}
 		catch(const std::exception& e)
 		{
 			importErrors.push_back(std::make_pair(
-			    importFile, prepend[i] + std::string(" std::exception: ") + e.what()));
+			    importFile, prepend[i] + " " + importFile + 
+					std::string(" std::exception: ") + e.what()));
 		}
 		catch(...)
 		{
 			importErrors.push_back(
-			    std::make_pair(importFile, prepend[i] + " Unknown exception occurred."));
+			    std::make_pair(importFile, prepend[i] + " " + importFile + 
+					" Unknown exception occurred."));
 		}
 	} //end main import loop
 

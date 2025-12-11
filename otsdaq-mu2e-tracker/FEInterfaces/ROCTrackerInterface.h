@@ -15,6 +15,7 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
 
+
 namespace ots
 {
 class ROCTrackerInterface : public ROCPolarFireCoreInterface
@@ -41,27 +42,27 @@ public:
 
 
 	//------------ for tracker-specific Ui functions
-	int          fEnabled;   // if comes from ODB, could be 0
-	int          fPcieAddr;  //
-	int          fLinkMask;  // int is OK, bit 31 is never used for arithmetics
+	int          fEnabled = 1;   // if comes from ODB, could be 0
+	int          fPcieAddr = 0;  //
+	int          fLinkMask = 0;  // int is OK, bit 31 is never used for arithmetics
 	                         // for now assume that all ROCs are doing the same
 	                         // fRocReadoutMode: (fixed_length << 4) | readout_mode
-	int fRocReadoutMode;     // 0: 'counter patterns' 1:digis 2:checkerboard patterns
-	int fRocLaneMask;        // 0xf : all of them
-	int fRocNHitsPerLane;    // NHits per lane for Mode=2
-	int fSampleEdgeMode;     // 0:force raising 1:force falling 2:auto
-	int fEmulateCfo;         // 1: this DTC operated in the emulated CFO mode
-	int fJAMode;             // clock_source << 4 | reset
+	int fRocReadoutMode = 0;     // 0: 'counter patterns' 1:digis 2:checkerboard patterns
+	int fRocLaneMask = 0xf;        // 0xf : all of them
+	int fRocNHitsPerLane = 2;    // NHits per lane for Mode=2
+	int fSampleEdgeMode = 1;     // 0:force raising 1:force falling 2:auto
+	int fEmulateCfo = 1;         // 1: this DTC operated in the emulated CFO mode
+	int fJAMode = 0x01;             // clock_source << 4 | reset
 
-	int fOnSpill;    // 1:on-spill, 0:off-spill
-	int fEventMode;  // whatever it is, hopefully, together they make 5 bytes
+	int fOnSpill = 0;    // 1:on-spill, 0:off-spill
+	int fEventMode = 1;  // whatever it is, hopefully, together they make 5 bytes
 
-	int fDtcID;  // unique DTC ID used by the DAQ (0x9154)
-	int fPartitionID;
-	int fMacAddrByte;
+	int fDtcID = 0;  // unique DTC ID used by the DAQ (0x9154)
+	int fPartitionID = 0;
+	int fMacAddrByte = 0;
 
-	int fSleepTimeROCWrite;  // the two are different
-	int fSleepTimeROCReset;  //
+	int fSleepTimeROCWrite = 0;  // the two are different
+	int fSleepTimeROCReset = 0;  //
 
 
 
@@ -116,7 +117,10 @@ public:
 		uint16_t              data[1];
 	};
 
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui.h"
+	// UI_DEFINE_ROCTRACKERINTERFACE_FUNCTIONS
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui.hxx"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_declareFEMacros.hxx"
 
 	//------------ end for tracker-specific Ui functions
 
@@ -258,7 +262,9 @@ public:
 	void 			ReadROCErrorCounter		(__ARGS__);
 	virtual void 	GetStatus				(__ARGS__) override;
 	void 			SetupForDigiDataTaking	(__ARGS__);
-	void 			FindAlignment	(__ARGS__);
+	void 			FindAlignment			(__ARGS__);
+	void 			GetUIParameters			(__ARGS__);
+	void 			SetUIParameters			(__ARGS__);
 
 	// clang-format on
 };

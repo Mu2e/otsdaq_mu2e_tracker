@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Wed Dec  3 23:47:06 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Thu Dec 11 15:43:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -23,8 +23,9 @@ using namespace ots;
 
 
 //==============================================================================
-/// a boilerplate for a generic control_ROC.py CLI command - do we need it at  all 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Wed Dec  3 23:47:06 2025 CST
+///	Ui_ControlRoc_ControlRoc()
+/// a boilerplate for a generic control_ROC.py CLI command - do we need it at  all ?
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Thu Dec 11 15:43:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -37,9 +38,10 @@ using namespace ots;
   } // end Ui_ControlRoc_ControlRoc()
 
 //==============================================================================
-/// digi_rw over the fiber: reg 26
-/// if Link = -1, use fLinkMask, otherwise operate assuming a single lin
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Wed Dec  3 23:47:06 2025 CST
+///	Ui_ControlRoc_ControlRoc_DigiRW()
+/// digi_rw over the fiber: reg 263
+/// if Link = -1, use fLinkMask, otherwise operate assuming a single link
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Thu Dec 11 15:43:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:

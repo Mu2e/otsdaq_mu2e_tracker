@@ -1,5 +1,5 @@
 
-//-----------------------------------------------------------------------------
+//------------------------------------------------------------------------
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 15:42:59 2025 CST
 /// Do not modify this file directly.
 ///
@@ -7,18 +7,6 @@
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-//-----------------------------------------------------------------------------
-
-
-#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
-
-
-#include <TString.h>  // includes ROOT's Form
-
-
-using namespace ots;
-
-#undef __MF_SUBJECT__
-#define __MF_SUBJECT__ "FE-ROCTrackerInterface"
+//------------------------------------------------------------------------
 
 
