@@ -4,7 +4,11 @@
 #
 cet_make_library(
         SOURCE          
-        DtcInterface.cc DtcInterface_print.cc DtcInterface_ControlRoc.cc CfoInterface.cc
+        DtcInterfaceBase.cc DtcInterfaceBase_print.cc
+        CfoInterface.cc
+        DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc 
+        #	PreampChannel.cc PreampThreshold.cc
+        program_drac.cc
         LIBRARIES PUBLIC
 	    otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata
@@ -38,11 +42,6 @@ if(DictCompileOptions)
 endif()
 
 cet_add_compiler_flags(-g -O0)
-
-# if($ENV{BUILD_ROOT_INTERFACE})
-#  message(-- otsdaq_mu2e_tracker/otsdaq-mu2e-tracker/ui::BUILD_ROOT_INTERFACE=$ENV{BUILD_ROOT_INTERFACE})
-#  add_subdirectory(root)
-# endif()
 
 install_headers()
 install_source()

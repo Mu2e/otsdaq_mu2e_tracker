@@ -17,8 +17,8 @@
 // 0x50c0000      : bin#2
 // 0x6000000      : bin#2
 //-----------------------------------------------------------------------------
-#ifndef __test_program_roc_hh__
-#define __test_program_roc_hh__
+#ifndef __program_drac_hh__
+#define __program_drac_hh__
 
 #include "iostream"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
@@ -27,26 +27,35 @@
 #include "TString.h"
 #include "TSystem.h"
 
-class test_program_roc {
+class program_drac {
 public:
                                         // registers
-  int RREG                  = 384;
-  int REG_STATUS            = 132;
+  enum {
+    REG_STATUS            = 132,
+    
+    RREG                  = 384,
+    REG_DIGI              = 385,
                                         // commands
-  int SPI_CLEAR             = 3;
-  int PROGRAM_IAP_W_INDEX   = 4;
-  int PROGRAM_IAP_W_ADDRESS = 5;
-  int IAP_AUTO_UPDATE       = 6;
-  int SPI_FLASH_READ        = 7;
-  int SPI_WRITE_RECORD      = 8;
-  int SPI_WRITE_DIRECTORY   = 9;
-
-                                        // description of the image
+    SPI_CLEAR             = 3,
+    PROGRAM_IAP_W_INDEX   = 4,
+    PROGRAM_IAP_W_ADDRESS = 5,
+    IAP_AUTO_UPDATE       = 6,
+    SPI_FLASH_READ        = 7,
+    SPI_WRITE_RECORD      = 8,
+    SPI_WRITE_DIRECTORY   = 9,
+  };
+                                        // digi programming commands
+  enum {
+    READ_DIGI_INFO        = 0,
+    READ_DIGI_ID          = 1,
+    ERASE_DIGI            = 2,          // unused
+    PROGRAM_DIGI          = 3,
+  };
+                                        // description of the ROC image
   struct ImageData_t {
     int         load_flag;
     int         offset;
     const char* fn;
-    //    int         fsize;
   };
 
   struct FwVersion_t {
@@ -58,25 +67,34 @@ public:
 
   int kSPI_CLEAR_SLEEP_US;
 
-  test_program_roc() {
+  program_drac() {
     kSPI_CLEAR_SLEEP_US = 200000;       // 0.2 sec
   }
 
-  const test_program_roc::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
-  const test_program_roc::FwVersion_t* get_version   (const std::string& Version);
+  const program_drac::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
+  const program_drac::FwVersion_t* get_version   (const std::string& Version);
   
   int  spi_clear_memory         (trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0);
 
+  int  spi_print_digi_id        (const std::vector<uint16_t>& Dat);
+  int  spi_print_digi_info      (const std::vector<uint16_t>& Dat);
+  
+                                        // Fn: "CalVX.dat" or "HVVX.dat", the name defines the FPGA
+
+  int  spi_program_digis        (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, int DebugMode = 0);
+  
                                         // the next three functions do the FPGA programming, use the first one
   
   int  spi_program_roc          (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version);
   void spi_program_iap_w_index  (trkdaq::DtcInterface* Dtc_i, int Link, int Index);
   void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageStartAddr);
 
+  int  spi_read_digi_id         (trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DebugMode = 0);
+  int  spi_read_digi_info       (trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs = 0, int DebugMode = 0);
   int  spi_read_record          (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t*          Res, int DebugMode = 0);
   int  spi_read_segment         (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NBytes, std::vector<char>& Res, int DebugMode = 0);
 
-  int  spi_validate_segment     (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int Segment, int DebugMode = 0);
+  int  spi_validate_segment     (trkdaq::DtcInterface* Dtc_i, int Link, const program_drac::ImageData_t* SpiData, int Segment, int DebugMode = 0);
   int  spi_validate_image       (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode = 0);
 
                                         // if Type = "", validate both images, otherwise use the file extention: "spi" or "bin"
@@ -87,7 +105,7 @@ public:
 
   int  spi_write_record         (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr   , int NWords, uint16_t* Data, int DebugMode = 0);
   int  spi_write_segment        (trkdaq::DtcInterface* Dtc_i, int Link, const char* Data, int NBytes, int SpiOffset , int DebugMode = 0);
-  int  spi_write_image          (trkdaq::DtcInterface* Dtc_i, int Link, const test_program_roc::ImageData_t* SpiData, int DebugMode = 0);
+  int  spi_write_image          (trkdaq::DtcInterface* Dtc_i, int Link, const program_drac::ImageData_t* SpiData, int DebugMode = 0);
 
                                         // this one only uploads image to SPI memory, but doesn't program the FPGA
   
@@ -95,6 +113,7 @@ public:
 
                                         // tests
   
+  void test_read_file           (const char* Fn);
   int  test_spi_write_record    (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0);
   int  test_spi_read_record     (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords);
 

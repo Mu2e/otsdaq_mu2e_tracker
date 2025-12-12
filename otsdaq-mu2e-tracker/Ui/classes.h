@@ -3,4 +3,4 @@
 
 #include "otsdaq-mu2e-tracker/Ui/CfoInterface.hh"
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
-#include "otsdaq-mu2e-tracker/Ui/test_program_roc.hh"
+#include "otsdaq-mu2e-tracker/Ui/program_drac.hh"

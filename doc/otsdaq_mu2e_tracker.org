@@ -133,11 +133,6 @@ debug packet type: 0x00000000
 root [2] .q
 #+end_src
 ** after that can proceed
-* what is this ?
-------------------------------------------------------------------------------
-- bit 11 of reg 8 : set to 1
-- reg 15 : n simulated hits per serdes .. 24 x4 = 94
-  payload :
 * station reset (on a pi):                                                   
 pinctrl set 25 op dl    # reset
 pinctrl set 25 op dh    # out of reset state
@@ -171,12 +166,26 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 * [[file:control_roc.org][control_ROC.py and its commands]]
 * [[file:./dtc_gui.org][DtcGui interface]]
 * LV/HV monitoring: [[file:lvhv_monitoring.org]]
-* programming DTCs (command line)
+* programming DTCs (command line)                                            
 #+begin_src
 /home/mu2ehwdev/program_both_DTCs_AL9.sh   /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  0 /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # PCIE address
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  N /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # JTAG index N
 #+end_src
+* programming DIGIs over the fiber with CLI/ROOT                             
+#+begin_src
+program_drac t;
+t.spi_program_digis(dtc_i,0,"HVV6.dat")
+// cycle the power
+dtc_i->fDtc->SoftReset()
+t.spi_program_digis(dtc_i,0,"HVV6.dat")
+// cycle the power
+dtc_i->fDtc->SoftReset()
+t.spi_read_digi_id(dtc_i,0,0,0xf)
+t.spi_read_digi_id(dtc_i,0,1,0xf)
+#+end_src
+- cycle the ROC LV after the programming is completed - need to do that after
+  programming each FPGA
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature
