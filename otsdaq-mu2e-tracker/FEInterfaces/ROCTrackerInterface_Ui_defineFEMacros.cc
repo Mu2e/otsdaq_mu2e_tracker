@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -26,7 +26,7 @@ using namespace ots;
 //==============================================================================
 /// FE Macro to call Ui_ConfigureJA()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -55,7 +55,7 @@ void ROCTrackerInterface::FEMacro_Ui_ConfigureJA(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_InitEmulatedCFOReadoutMode()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -82,7 +82,7 @@ void ROCTrackerInterface::FEMacro_Ui_InitEmulatedCFOReadoutMode(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_InitExternalCFOReadoutMode()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -110,7 +110,7 @@ void ROCTrackerInterface::FEMacro_Ui_InitExternalCFOReadoutMode(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_InitReadout()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -139,7 +139,7 @@ void ROCTrackerInterface::FEMacro_Ui_InitReadout(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_InitRocReadoutMode()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -163,7 +163,7 @@ void ROCTrackerInterface::FEMacro_Ui_InitRocReadoutMode(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_LaunchRunPlanEmulatedCfo()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -190,7 +190,7 @@ void ROCTrackerInterface::FEMacro_Ui_LaunchRunPlanEmulatedCfo(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_ReadRegister()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -218,7 +218,7 @@ void ROCTrackerInterface::FEMacro_Ui_ReadRegister(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_ReadSpiData()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -249,7 +249,7 @@ void ROCTrackerInterface::FEMacro_Ui_ReadSpiData(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_RocConfigurePatternMode()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -274,7 +274,7 @@ void ROCTrackerInterface::FEMacro_Ui_RocConfigurePatternMode(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_ResetRoc()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -300,7 +300,7 @@ void ROCTrackerInterface::FEMacro_Ui_ResetRoc(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_RocSetDataVersion()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -326,7 +326,7 @@ void ROCTrackerInterface::FEMacro_Ui_RocSetDataVersion(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_FindAlignments()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -352,7 +352,7 @@ void ROCTrackerInterface::FEMacro_Ui_FindAlignments(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_SetBit()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -379,7 +379,7 @@ void ROCTrackerInterface::FEMacro_Ui_SetBit(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_SetLinkMask()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -404,7 +404,7 @@ void ROCTrackerInterface::FEMacro_Ui_SetLinkMask(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_SetupCfoInterface()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -432,7 +432,7 @@ void ROCTrackerInterface::FEMacro_Ui_SetupCfoInterface(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_MonicaDigiClear()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -460,7 +460,7 @@ void ROCTrackerInterface::FEMacro_Ui_MonicaDigiClear(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_MonicaVarLinkConfig()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -489,7 +489,7 @@ void ROCTrackerInterface::FEMacro_Ui_MonicaVarLinkConfig(__ARGS__)
 //==============================================================================
 /// FE Macro to call Ui_MonicaVarPatternConfig()
 ///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 15:42:58 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Thu Dec 11 19:43:23 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
