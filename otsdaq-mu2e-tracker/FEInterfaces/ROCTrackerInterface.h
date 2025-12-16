@@ -24,6 +24,24 @@ namespace ots
 class ROCTrackerInterface : public ROCPolarFireCoreInterface
 {
 	// clang-format off
+
+	/// Note:  Tracker UI source code is imported by running the following e.g. from srcs/otsdaq-mu2e-tracker:
+	/// 		otsdaq_import_tracker_test_stand.sh otsdaq-mu2e-tracker/Ui/ otsdaq-mu2e-tracker/FEInterfaces/ > t.txt
+	/// Tracker UI Cold-start Steps:
+	///	1. FindAlignments  (ADC serial data alignment, ADCs are internal FPGA)
+	///	2. Program thresholds
+	///		loop through all ControlRoc_SetThreshold
+	///	3. Check threshold programming
+	///		ControlRoc_MeasureThresholds reads in voltage units
+	///  (do not need to set Gains, at the moment)
+	///	4. Ready to setup for a run
+	///		InitReadout()/InitRocReadoutMode()
+	///			Lane = fifo = 48 channels (ends of a straw) non-sequential
+	///				1 ROC = 4 x 48 channels = 1 panel = 96 straws (Cal side and HV side of a straw)
+	///
+	///
+	/// Cal pulsing -- internal mode is fixed-amplitude signal on all 96 ADCs, external mode is variable-amplitude analog signal into preamp of chosen channels
+
 public:
 	ROCTrackerInterface(const std::string &rocUID,
 						const ConfigurationTree &theXDAQContextConfigTree,

@@ -731,7 +731,7 @@ std::string getDeclaredFunctionHeader(const std::string& functionHeader,
 		if(prevComment == std::string::npos ||
 		   (prevNewLine != std::string::npos && prevComment < prevNewLine))
 			break;  // then ; is not in comment
-		            // else is in comment, so continue searching
+			        // else is in comment, so continue searching
 	}               // end search for semicolon loop
 
 	// extract declared function header
