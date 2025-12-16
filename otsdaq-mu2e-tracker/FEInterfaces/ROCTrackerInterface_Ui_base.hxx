@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc on Tue Dec 16 13:34:55 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc on Tue Dec 16 14:12:00 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //------------------------------------------------------------------------
+
+// clang-format off
 
 
 int Ui_base_InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1);
@@ -31,3 +33,5 @@ std::vector<float> Ui_base_GetConvertedRocRegisters (int ilink, bool history = f
 std::string Ui_base_GetRocID         (int Link);
 std::string Ui_base_GetRocDesignInfo (int Link);
 std::string Ui_base_GetRocFwGitCommit(int Link);
+
+// clang-format on

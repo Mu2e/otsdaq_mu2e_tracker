@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //------------------------------------------------------------------------
+
+// clang-format off
 
 
 std::string Ui_ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
@@ -57,3 +59,5 @@ bool Ui_FindThreshold(const int   Link,
                        const int   PreampType,
                        const float threshold_mv,
                        const float tolerance_mv);
+
+// clang-format on

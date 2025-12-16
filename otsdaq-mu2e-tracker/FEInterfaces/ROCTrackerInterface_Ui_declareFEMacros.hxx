@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //------------------------------------------------------------------------
+
+// clang-format off
 
 
 void FEMacro_Ui_ReadSerialNumber(__ARGS__);
@@ -31,3 +33,5 @@ void FEMacro_Ui_GetRocID(__ARGS__);
 void FEMacro_Ui_GetRocDesignInfo(__ARGS__);
 void FEMacro_Ui_GetRocFwGitCommit(__ARGS__);
 void FEMacro_Ui_FindThreshold(__ARGS__);
+
+// clang-format on

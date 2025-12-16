@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //-----------------------------------------------------------------------------
+
+// clang-format off
 
 
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
@@ -26,7 +28,7 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ReadSerialNumber()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -66,7 +68,7 @@ std::string ROCTrackerInterface::Ui_ReadSerialNumber(const DTCLib::DTC_Link_ID& 
 //==============================================================================
 ///	Ui_InitRocReadoutMode()
 /// this is fully tracker-specific
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -115,7 +117,7 @@ int ROCTrackerInterface::Ui_InitRocReadoutMode()
 //==============================================================================
 ///	Ui_RebootMcu()
 /// reboot microcontroller unit: write 1 to Reg 15
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -148,7 +150,7 @@ int ROCTrackerInterface::Ui_RebootMcu(int Link)
 ///	Ui_ResetLink()
 /// ROC reset : write 0x1 to R14 of each ROC specified as active by the mask
 /// by default, don't redefine the link mask
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -180,7 +182,7 @@ int ROCTrackerInterface::Ui_ResetLink(int Link)
 //==============================================================================
 ///	Ui_RocConfigurePatternMode()
 /// preserve historic naming convention- Monica named her script 'var_pattern_config'
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -197,7 +199,7 @@ void ROCTrackerInterface::Ui_RocConfigurePatternMode()
 /// Version --> R29k
 /// as thre is no point inhaving different ROCs with different data versions, assume
 /// that specifying the mask means that we want it to be redefined
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -222,7 +224,7 @@ void ROCTrackerInterface::Ui_RocSetDataVersion(int Version, int LinkMask)
 ///	Ui_ReadDeviceID()
 /// assume that only one link is specified (not DTC_Link_ALL)
 /// read serial number and device info
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -260,7 +262,7 @@ std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadDeviceID(DTCLib::DTC
 ///	Ui_FindAlignment()
 /// align ROC fpga/adc signals, and optionally print summary table
 /// REG_FINDALIGNMENT=264
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -311,7 +313,7 @@ Alignment ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link)
 /// so 'Link' is either all enabled DTC links, or a specific one
 /// 
 /// returns the number of channels with non-zero number of bit slip steps
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -380,7 +382,7 @@ int ROCTrackerInterface::Ui_FindAlignments(int PrintLevel, int Link, std::ostrea
 ///            > 10: full printout
 /// also returned NErrRoc[6]: number of errors per ROC
 /// returns nerrors, where does the error code goes ?
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -437,7 +439,7 @@ int ROCTrackerInterface::Ui_ValidateDigiPatterns (ushort* DtcData, ulong EwTag, 
 
 //==============================================================================
 ///	Ui_ValidateFixedPatterns()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -487,7 +489,7 @@ int ROCTrackerInterface::Ui_ValidateFixedPatterns(ushort* DtcData, ulong EwTag, 
 
 //==============================================================================
 ///	Ui_ValidateVarPatterns  ()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -607,7 +609,7 @@ int ROCTrackerInterface::Ui_ValidateVarPatterns  (ushort* DtcData, ulong EwTag, 
 
 //==============================================================================
 ///	Ui_MonicaDigiClear()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -676,7 +678,7 @@ int ROCTrackerInterface::Ui_MonicaDigiClear()
 ///  -rwxr-xr-x  1 mu2etrk mu2e      1553 Mar 12 10:11 var_link_config.sh
 /// configure_ROC 'read' command should be followed by ROC reset
 /// to be added 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -744,7 +746,7 @@ int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
 /// adding 0x2000 prevents ROC from reinitializing the pattern, so two subsequent
 /// buffer test runs would return different results
 /// lane mask default: 0xf
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -815,7 +817,7 @@ int ROCTrackerInterface::Ui_MonicaVarPatternConfig(int LaneMask, int NHitsPerLan
 //==============================================================================
 ///	Ui_ReadSubevents()
 /// ROC reset : write 0x1 to register 14
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -996,7 +998,7 @@ void ROCTrackerInterface::Ui_ReadSubevents(std::vector<std::unique_ptr<DTCLib::D
 ///	Ui_RocBlockRead()
 /// 2025-01-31: P.Murat: presently, calls to begin_dcs_transaction() and end_dcs_transaction()
 /// are just TODO reminders and don't do anything useful
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1052,7 +1054,7 @@ int ROCTrackerInterface::Ui_RocBlockRead(int Link, int Reg, std::vector<uint16_t
 /// read a given block number from ROC DDR memory
 /// block size: 1 kB
 /// ROC reg 15: last memory block read
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1102,7 +1104,7 @@ int ROCTrackerInterface::Ui_ReadRocDDR(int Link, int Block, std::ostream& Stream
 //==============================================================================
 ///	Ui_ReadROCBlockEnsured()
 /// wrapper for DTCLib::DTC::ReadROCBlock
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1140,7 +1142,7 @@ std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadROCBlockEnsured(cons
 //==============================================================================
 ///	Ui_GetRocRegistersNames()
 /// This is just an example, needs to be implemented for each subsystem
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1169,7 +1171,7 @@ std::vector<std::string> ROCTrackerInterface::Ui_GetRocRegistersNames(bool histo
 //==============================================================================
 ///	Ui_GetRocRegisters()
 /// This is just an example, needs to be implemented for each subsystem
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1215,7 +1217,7 @@ std::vector<uint32_t> ROCTrackerInterface::Ui_GetRocRegisters(int ilink, bool hi
 //==============================================================================
 ///	Ui_GetConvertedRocRegisters()
 /// This is just an example, needs to be implemented for each subsystem
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1255,7 +1257,7 @@ std::vector<float> ROCTrackerInterface::Ui_GetConvertedRocRegisters(int ilink, b
 
 //==============================================================================
 ///	Ui_GetRocID()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1280,7 +1282,7 @@ std::string ROCTrackerInterface::Ui_GetRocID(int Link)
 
 //==============================================================================
 ///	Ui_GetRocDesignInfo()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1306,7 +1308,7 @@ std::string ROCTrackerInterface::Ui_GetRocDesignInfo(int Link)
 
 //==============================================================================
 ///	Ui_GetRocFwGitCommit()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1329,7 +1331,7 @@ std::string ROCTrackerInterface::Ui_GetRocFwGitCommit(int Link)
 //==============================================================================
 ///	Ui_ProgramAndQueryThreshold()
 /// ejc
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1364,7 +1366,7 @@ float ROCTrackerInterface::Ui_ProgramAndQueryThreshold(const int Link,
 
 //==============================================================================
 ///	Ui_FindThreshold()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1401,7 +1403,7 @@ bool ROCTrackerInterface::Ui_FindThreshold(const int Link,
 
 //==============================================================================
 ///	Ui_FindThreshold()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 13:34:56 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc on Tue Dec 16 14:12:02 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
@@ -1420,3 +1422,5 @@ bool ROCTrackerInterface::Ui_FindThreshold(const int Link,
     return rv;
   } // end Ui_FindThreshold()
 
+
+// clang-format on

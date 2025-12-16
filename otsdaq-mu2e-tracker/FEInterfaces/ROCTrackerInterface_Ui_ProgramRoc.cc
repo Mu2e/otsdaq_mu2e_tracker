@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //-----------------------------------------------------------------------------
+
+// clang-format off
 
 
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
@@ -26,7 +28,7 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiClearMemory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -74,7 +76,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::ro
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapIndex()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -109,7 +111,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_f
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapAddress()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -145,7 +147,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiLoadImage()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -280,7 +282,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiReadFlash()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -330,7 +332,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int N
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteDirectory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -390,7 +392,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq:
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteRecord()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -433,7 +435,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
 //==============================================================================
 ///	Ui_ProgramRoc_ProgramRoc()
 /// 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 14:12:07 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -495,3 +497,5 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
     return rc;
   } // end Ui_ProgramRoc_ProgramRoc()
 
+
+// clang-format on

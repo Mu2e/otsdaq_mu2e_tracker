@@ -803,6 +803,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			headerInstructionsSs << "///\n";
 			outputFile << headerInstructionsSs.str();
 			outputFile << "//-----------------------------------------------------------------------------\n";
+			outputFile << "\n// clang-format off\n";
 			
 			headerIncludes << "\n\n#include \"otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h\"\n\n";
 			headerIncludes << "\n#include <TString.h>  // includes ROOT's Form\n";
@@ -812,7 +813,6 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			headerIncludes << "\n#undef __MF_SUBJECT__\n";
 			headerIncludes << "#define __MF_SUBJECT__ \"FE-ROCTrackerInterface\"\n";
 
-			headerIncludes << "\n// clang-format off\n";
 
 			headerIncludes << "\n\n";
 			outputFile << headerIncludes.str();
@@ -821,24 +821,28 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			outputHeaderFile << "\n//------------------------------------------------------------------------\n";
 			outputHeaderFile << headerInstructionsSs.str();
 			outputHeaderFile << "//------------------------------------------------------------------------\n";
+			outputHeaderFile << "\n// clang-format off\n";
 			outputHeaderFile << "\n\n";
 			
 			//////////////// FE macro declare file header
 			outputFeMacroDeclareFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroDeclareFile << headerInstructionsSs.str();
 			outputFeMacroDeclareFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroDeclareFile << "\n// clang-format off\n";
 			outputFeMacroDeclareFile << "\n\n";
 
 			//////////////// FE macro register source file header
 			outputFeMacroRegisterFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroRegisterFile << headerInstructionsSs.str();
 			outputFeMacroRegisterFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroRegisterFile << "\n// clang-format off\n";
 			outputFeMacroRegisterFile << "\n\n";			
 
 			//////////////// FE macro deinition source file header
 			outputFeMacroDefineFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroDefineFile << headerInstructionsSs.str();
 			outputFeMacroDefineFile << "//------------------------------------------------------------------------\n";
+			outputFeMacroDefineFile << "\n// clang-format off\n";
 			outputFeMacroDefineFile << headerIncludes.str();
 			
 
@@ -1205,7 +1209,7 @@ R"(
 			outputFeMacroDeclareFile.close();
 			outputFeMacroRegisterFile.close();
 			outputFeMacroDefineFile.close();
-			
+
 			__COUT_INFO__ << "Successfully wrote output file at " << outputFilePath << std::endl;
 			__COUT_INFO__ << "Successfully wrote header file at " << outputHeaderPath << std::endl;
 			__COUT_INFO__ << "Successfully wrote FE Macro declaration file at " << outputFeMacroDeclarePath << std::endl;

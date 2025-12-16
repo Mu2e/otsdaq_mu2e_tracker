@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 14:12:08 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -8,6 +8,8 @@
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 //------------------------------------------------------------------------
+
+// clang-format off
 
 
 void FEMacro_Ui_ControlRoc_ControlRoc_DumpSettings(__ARGS__);
@@ -21,3 +23,5 @@ void FEMacro_Ui_ControlRoc_ControlRoc_MeasureThresholds(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_ReadSpi(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_ReadIlp(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_GetKey (__ARGS__);
+
+// clang-format on
