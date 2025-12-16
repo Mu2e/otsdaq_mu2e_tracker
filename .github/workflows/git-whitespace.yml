@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.github/**'
+      - 'otsdaq-mu2e-tracker/Ui/**'
   pull_request:
     branches: [ develop ]
   schedule:

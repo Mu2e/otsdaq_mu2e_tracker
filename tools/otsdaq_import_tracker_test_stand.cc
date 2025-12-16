@@ -812,6 +812,8 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			headerIncludes << "\n#undef __MF_SUBJECT__\n";
 			headerIncludes << "#define __MF_SUBJECT__ \"FE-ROCTrackerInterface\"\n";
 
+			headerIncludes << "\n// clang-format off\n";
+
 			headerIncludes << "\n\n";
 			outputFile << headerIncludes.str();
 
@@ -1191,11 +1193,19 @@ R"(
 				// break; //for debugging, only do one function per file
 			} //end main function search loop
 
+
+			outputFile << "\n// clang-format on\n";
+			outputHeaderFile << "\n// clang-format on\n";
+			outputFeMacroDeclareFile << "\n// clang-format on\n";
+			outputFeMacroRegisterFile << "\n// clang-format on\n";
+			outputFeMacroDefineFile << "\n// clang-format on\n";
+
 			outputFile.close();
 			outputHeaderFile.close();
 			outputFeMacroDeclareFile.close();
 			outputFeMacroRegisterFile.close();
 			outputFeMacroDefineFile.close();
+			
 			__COUT_INFO__ << "Successfully wrote output file at " << outputFilePath << std::endl;
 			__COUT_INFO__ << "Successfully wrote header file at " << outputHeaderPath << std::endl;
 			__COUT_INFO__ << "Successfully wrote FE Macro declaration file at " << outputFeMacroDeclarePath << std::endl;
