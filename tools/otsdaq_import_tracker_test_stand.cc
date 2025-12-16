@@ -793,8 +793,9 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			std::stringstream headerInstructionsSs, headerIncludes;
 			
 			//////////////// source file header
+			outputFile << "\n// clang-format off\n";
 			outputFile << "\n//-----------------------------------------------------------------------------\n";
-			headerInstructionsSs << "/// This file was auto-generated from " << importFile << " on " << StringMacros::getTimestampString() << "\n";
+			headerInstructionsSs << "/// This file was auto-generated from " << importFile << "\n";
 			headerInstructionsSs << "/// Do not modify this file directly.\n";
 			headerInstructionsSs << "///\n";
 			headerInstructionsSs << "/// To modify, edit " << importFile << " and re-run the import tool:\n";
@@ -803,7 +804,6 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			headerInstructionsSs << "///\n";
 			outputFile << headerInstructionsSs.str();
 			outputFile << "//-----------------------------------------------------------------------------\n";
-			outputFile << "\n// clang-format off\n";
 			
 			headerIncludes << "\n\n#include \"otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h\"\n\n";
 			headerIncludes << "\n#include <TString.h>  // includes ROOT's Form\n";
@@ -818,31 +818,31 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			outputFile << headerIncludes.str();
 
 			//////////////// header file header
+			outputHeaderFile << "\n// clang-format off\n";
 			outputHeaderFile << "\n//------------------------------------------------------------------------\n";
 			outputHeaderFile << headerInstructionsSs.str();
 			outputHeaderFile << "//------------------------------------------------------------------------\n";
-			outputHeaderFile << "\n// clang-format off\n";
 			outputHeaderFile << "\n\n";
 			
 			//////////////// FE macro declare file header
+			outputFeMacroDeclareFile << "\n// clang-format off\n";
 			outputFeMacroDeclareFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroDeclareFile << headerInstructionsSs.str();
-			outputFeMacroDeclareFile << "//------------------------------------------------------------------------\n";
-			outputFeMacroDeclareFile << "\n// clang-format off\n";
+			outputFeMacroDeclareFile << "//------------------------------------------------------------------------\n";			
 			outputFeMacroDeclareFile << "\n\n";
 
 			//////////////// FE macro register source file header
+			outputFeMacroRegisterFile << "\n// clang-format off\n";
 			outputFeMacroRegisterFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroRegisterFile << headerInstructionsSs.str();
 			outputFeMacroRegisterFile << "//------------------------------------------------------------------------\n";
-			outputFeMacroRegisterFile << "\n// clang-format off\n";
 			outputFeMacroRegisterFile << "\n\n";			
 
 			//////////////// FE macro deinition source file header
+			outputFeMacroDefineFile << "\n// clang-format off\n";
 			outputFeMacroDefineFile << "\n//------------------------------------------------------------------------\n";
 			outputFeMacroDefineFile << headerInstructionsSs.str();
 			outputFeMacroDefineFile << "//------------------------------------------------------------------------\n";
-			outputFeMacroDefineFile << "\n// clang-format off\n";
 			outputFeMacroDefineFile << headerIncludes.str();
 			
 
