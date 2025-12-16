@@ -178,7 +178,7 @@ std::string modifySource(std::string& source, bool isHeader = false)
 /// @brief Returns true if the function arguments in the function header are simple enough
 /// (i.e. int, string) for converting to FE macros
 ///		Also fills in the argTypes, argNames, argDefaults, outputTypes, outputNames
-///vectors.
+/// vectors.
 /// @param functionHeader the full function header
 bool validateArgsForFEMacro(const std::string&        functionHeader,
                             const std::string&        returnVal,
@@ -731,8 +731,8 @@ std::string getDeclaredFunctionHeader(const std::string& functionHeader,
 		if(prevComment == std::string::npos ||
 		   (prevNewLine != std::string::npos && prevComment < prevNewLine))
 			break;  // then ; is not in comment
-		// else is in comment, so continue searching
-	}  // end search for semicolon loop
+		            // else is in comment, so continue searching
+	}               // end search for semicolon loop
 
 	// extract declared function header
 	std::string declaredFunctionHeader =
