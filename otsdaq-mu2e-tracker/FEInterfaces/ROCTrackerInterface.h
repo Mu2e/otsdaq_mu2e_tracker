@@ -10,15 +10,14 @@
 #include "otsdaq/FECore/FEProducerVInterface.h"
 
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
-#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
-#include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 
+#include "otsdaq-mu2e-tracker/Ui/BisectionSearch.hh"
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 #include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
-#include "otsdaq-mu2e-tracker/Ui/BisectionSearch.hh"
-
 
 namespace ots
 {
@@ -401,6 +400,5 @@ public:
 };
 
 }  // namespace ots
-
 
 #endif

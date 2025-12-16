@@ -67,76 +67,73 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Result"},  // output parameters
 	                        1);  // requiredUserPermissions
 
-	
-	registerFEMacroFunction("Get UI Parameters",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::GetUIParameters),
-	                        std::vector<std::string>{},          // inputs parameters
-	                        std::vector<std::string>{
-								"fEnabled",
-								"fPcieAddr",
-								"fLinkMask",
-								"fRocReadoutMode",
-								"fRocLaneMask",
-								"fRocNHitsPerLane",
-								"fSampleEdgeMode",
-								"fEmulateCfo",
-								"fJAMode",
-								"fOnSpill",
-								"fEventMode",
-								"fDtcID",
-								"fPartitionID",
-								"fMacAddrByte",
-								"fSleepTimeROCWrite",
-								"fSleepTimeROCReset"
-							},  // output parameters
-	                        1);  // requiredUserPermissions
-	
-	registerFEMacroFunction("Set UI Parameters",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::SetUIParameters),
-	                        std::vector<std::string>{
-								"fEnabled (Default := unchanged)",
-								"fPcieAddr (Default := unchanged)",
-								"fLinkMask (Default := unchanged)",
-								"fRocReadoutMode (Default := unchanged)",
-								"fRocLaneMask (Default := unchanged)",
-								"fRocNHitsPerLane (Default := unchanged)",
-								"fSampleEdgeMode (Default := unchanged)",
-								"fEmulateCfo (Default := unchanged)",
-								"fJAMode (Default := unchanged)",
-								"fOnSpill (Default := unchanged)",
-								"fEventMode (Default := unchanged)",
-								"fDtcID (Default := unchanged)",
-								"fPartitionID (Default := unchanged)",
-								"fMacAddrByte (Default := unchanged)",
-								"fSleepTimeROCWrite (Default := unchanged)",
-								"fSleepTimeROCReset (Default := unchanged)"},          // inputs parameters
-	                        std::vector<std::string>{	
-								"fEnabled",
-								"fPcieAddr",
-								"fLinkMask",
-								"fRocReadoutMode",
-								"fRocLaneMask",
-								"fRocNHitsPerLane",
-								"fSampleEdgeMode",
-								"fEmulateCfo",
-								"fJAMode",
-								"fOnSpill",
-								"fEventMode",
-								"fDtcID",
-								"fPartitionID",
-								"fMacAddrByte",
-								"fSleepTimeROCWrite",
-								"fSleepTimeROCReset"							
-							},  // output parameters
-	                        1);  // requiredUserPermissions
+	registerFEMacroFunction(
+	    "Get UI Parameters",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::GetUIParameters),
+	    std::vector<std::string>{},  // inputs parameters
+	    std::vector<std::string>{"fEnabled",
+	                             "fPcieAddr",
+	                             "fLinkMask",
+	                             "fRocReadoutMode",
+	                             "fRocLaneMask",
+	                             "fRocNHitsPerLane",
+	                             "fSampleEdgeMode",
+	                             "fEmulateCfo",
+	                             "fJAMode",
+	                             "fOnSpill",
+	                             "fEventMode",
+	                             "fDtcID",
+	                             "fPartitionID",
+	                             "fMacAddrByte",
+	                             "fSleepTimeROCWrite",
+	                             "fSleepTimeROCReset"},  // output parameters
+	    1);                                              // requiredUserPermissions
 
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_base_registerFEMacros.icc"
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_registerFEMacros.icc"
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print_registerFEMacros.icc"
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc_registerFEMacros.icc"
-	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc_registerFEMacros.icc"
+	registerFEMacroFunction(
+	    "Set UI Parameters",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::SetUIParameters),
+	    std::vector<std::string>{
+	        "fEnabled (Default := unchanged)",
+	        "fPcieAddr (Default := unchanged)",
+	        "fLinkMask (Default := unchanged)",
+	        "fRocReadoutMode (Default := unchanged)",
+	        "fRocLaneMask (Default := unchanged)",
+	        "fRocNHitsPerLane (Default := unchanged)",
+	        "fSampleEdgeMode (Default := unchanged)",
+	        "fEmulateCfo (Default := unchanged)",
+	        "fJAMode (Default := unchanged)",
+	        "fOnSpill (Default := unchanged)",
+	        "fEventMode (Default := unchanged)",
+	        "fDtcID (Default := unchanged)",
+	        "fPartitionID (Default := unchanged)",
+	        "fMacAddrByte (Default := unchanged)",
+	        "fSleepTimeROCWrite (Default := unchanged)",
+	        "fSleepTimeROCReset (Default := unchanged)"},  // inputs parameters
+	    std::vector<std::string>{"fEnabled",
+	                             "fPcieAddr",
+	                             "fLinkMask",
+	                             "fRocReadoutMode",
+	                             "fRocLaneMask",
+	                             "fRocNHitsPerLane",
+	                             "fSampleEdgeMode",
+	                             "fEmulateCfo",
+	                             "fJAMode",
+	                             "fOnSpill",
+	                             "fEventMode",
+	                             "fDtcID",
+	                             "fPartitionID",
+	                             "fMacAddrByte",
+	                             "fSleepTimeROCWrite",
+	                             "fSleepTimeROCReset"},  // output parameters
+	    1);                                              // requiredUserPermissions
+
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_base_registerFEMacros.icc"
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_registerFEMacros.icc"
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print_registerFEMacros.icc"
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc_registerFEMacros.icc"
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc_registerFEMacros.icc"
 
 	try
 	{
@@ -149,7 +146,7 @@ ROCTrackerInterface::ROCTrackerInterface(
 	}
 
 	temp1_.noiseTemp(inputTemp_);
-} //end constructor
+}  // end constructor
 
 // void ROCTrackerInterface::ReadTrackerFIFO(__ARGS__)
 // {
@@ -934,7 +931,7 @@ void ROCTrackerInterface::GetUIParameters(__ARGS__)
 	__SET_ARG_OUT__("fRocLaneMask", fRocLaneMask);
 	__SET_ARG_OUT__("fRocNHitsPerLane", fRocNHitsPerLane);
 	__SET_ARG_OUT__("fSampleEdgeMode", fSampleEdgeMode);
-	__SET_ARG_OUT__("fEmulateCfo", fEmulateCfo);	
+	__SET_ARG_OUT__("fEmulateCfo", fEmulateCfo);
 	__SET_ARG_OUT__("fJAMode", fJAMode);
 
 	__SET_ARG_OUT__("fOnSpill", fOnSpill);
@@ -956,20 +953,25 @@ void ROCTrackerInterface::SetUIParameters(__ARGS__)
 	fEnabled = __GET_ARG_IN__("fEnabled (Default := unchanged)", int, fEnabled);
 	fEnabled = __GET_ARG_IN__("fPcieAddr (Default := unchanged)", int, fPcieAddr);
 	fEnabled = __GET_ARG_IN__("fLinkMask (Default := unchanged)", int, fLinkMask);
-	fEnabled = __GET_ARG_IN__("fRocReadoutMode (Default := unchanged)", int, fRocReadoutMode);
+	fEnabled =
+	    __GET_ARG_IN__("fRocReadoutMode (Default := unchanged)", int, fRocReadoutMode);
 	fEnabled = __GET_ARG_IN__("fRocLaneMask (Default := unchanged)", int, fRocLaneMask);
-	fEnabled = __GET_ARG_IN__("fRocNHitsPerLane (Default := unchanged)", int, fRocNHitsPerLane);
-	fEnabled = __GET_ARG_IN__("fSampleEdgeMode (Default := unchanged)", int, fSampleEdgeMode);
-	fEnabled = __GET_ARG_IN__("fEmulateCfo (Default := unchanged)", int, fEmulateCfo);	
+	fEnabled =
+	    __GET_ARG_IN__("fRocNHitsPerLane (Default := unchanged)", int, fRocNHitsPerLane);
+	fEnabled =
+	    __GET_ARG_IN__("fSampleEdgeMode (Default := unchanged)", int, fSampleEdgeMode);
+	fEnabled = __GET_ARG_IN__("fEmulateCfo (Default := unchanged)", int, fEmulateCfo);
 	fEnabled = __GET_ARG_IN__("fJAMode (Default := unchanged)", int, fJAMode);
 	fEnabled = __GET_ARG_IN__("fOnSpill (Default := unchanged)", int, fOnSpill);
 	fEnabled = __GET_ARG_IN__("fEventMode (Default := unchanged)", int, fEventMode);
 	fEnabled = __GET_ARG_IN__("fDtcID (Default := unchanged)", int, fDtcID);
 	fEnabled = __GET_ARG_IN__("fPartitionID (Default := unchanged)", int, fPartitionID);
 	fEnabled = __GET_ARG_IN__("fMacAddrByte (Default := unchanged)", int, fMacAddrByte);
-	fEnabled = __GET_ARG_IN__("fSleepTimeROCWrite (Default := unchanged)", int, fSleepTimeROCWrite);
-	fEnabled = __GET_ARG_IN__("fSleepTimeROCReset (Default := unchanged)", int, fSleepTimeROCReset);
-	
+	fEnabled = __GET_ARG_IN__(
+	    "fSleepTimeROCWrite (Default := unchanged)", int, fSleepTimeROCWrite);
+	fEnabled = __GET_ARG_IN__(
+	    "fSleepTimeROCReset (Default := unchanged)", int, fSleepTimeROCReset);
+
 	__SET_ARG_OUT__("fEnabled", fEnabled);
 	__SET_ARG_OUT__("fPcieAddr", fPcieAddr);
 	__SET_ARG_OUT__("fLinkMask", fLinkMask);
@@ -978,7 +980,7 @@ void ROCTrackerInterface::SetUIParameters(__ARGS__)
 	__SET_ARG_OUT__("fRocLaneMask", fRocLaneMask);
 	__SET_ARG_OUT__("fRocNHitsPerLane", fRocNHitsPerLane);
 	__SET_ARG_OUT__("fSampleEdgeMode", fSampleEdgeMode);
-	__SET_ARG_OUT__("fEmulateCfo", fEmulateCfo);	
+	__SET_ARG_OUT__("fEmulateCfo", fEmulateCfo);
 	__SET_ARG_OUT__("fJAMode", fJAMode);
 
 	__SET_ARG_OUT__("fOnSpill", fOnSpill);
@@ -991,21 +993,25 @@ void ROCTrackerInterface::SetUIParameters(__ARGS__)
 	__SET_ARG_OUT__("fSleepTimeROCWrite", fSleepTimeROCWrite);
 	__SET_ARG_OUT__("fSleepTimeROCReset", fSleepTimeROCReset);
 
-	if (not fInitialized) 
+	if(not fInitialized)
 	{
-		for (int i=0; i<96; i++) {
+		for(int i = 0; i < 96; i++)
+		{
 			int ich     = adc_index[i];
-			int fpga    = i/48;
+			int fpga    = i / 48;
 			fgFpga[ich] = fpga;
 		}
 
-		for (int i=0; i<trkdaq::TrkSpiDataNWords; i++) {
+		for(int i = 0; i < trkdaq::TrkSpiDataNWords; i++)
+		{
 			fgSpiVarName[i] = kSpiVarName[i];
 		}
-		for (int i=0; i<trkdaq::TrkKeyDataNWords; i++) {
+		for(int i = 0; i < trkdaq::TrkKeyDataNWords; i++)
+		{
 			fgKeyVarName[i] = kKeyVarName[i];
 		}
-		for (int i=0; i<trkdaq::TrkIlpDataNWords; i++) {
+		for(int i = 0; i < trkdaq::TrkIlpDataNWords; i++)
+		{
 			fgIlpVarName[i] = kIlpVarName[i];
 		}
 
