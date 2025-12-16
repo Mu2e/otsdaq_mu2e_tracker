@@ -33,5 +33,4 @@ void FEMacro_Ui_GetRocID(__ARGS__);
 void FEMacro_Ui_GetRocDesignInfo(__ARGS__);
 void FEMacro_Ui_GetRocFwGitCommit(__ARGS__);
 void FEMacro_Ui_FindThreshold(__ARGS__);
-
 // clang-format on

@@ -19,5 +19,4 @@
                             std::vector<std::string>{"Format (Default = 1)"},          // inputs parameters
                             std::vector<std::string>{"Stream"},  // output parameters
                             1);  // requiredUserPermissions
-
 // clang-format on

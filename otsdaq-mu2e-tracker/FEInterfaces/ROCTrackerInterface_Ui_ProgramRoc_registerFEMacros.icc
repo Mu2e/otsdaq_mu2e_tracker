@@ -19,5 +19,4 @@
                             std::vector<std::string>{"Address", "NWords", "PrintLevel (Default = 0)"},          // inputs parameters
                             std::vector<std::string>{"Result", "Res", "Stream"},  // output parameters
                             1);  // requiredUserPermissions
-
 // clang-format on

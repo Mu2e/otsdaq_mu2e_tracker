@@ -159,5 +159,4 @@
                             std::vector<std::string>{"ChannelID", "PreampType", "threshold_mv", "tolerance_mv"},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
-
 // clang-format on

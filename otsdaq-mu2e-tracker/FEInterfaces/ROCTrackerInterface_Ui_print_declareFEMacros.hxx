@@ -13,5 +13,4 @@
 
 
 void FEMacro_Ui_print_PrintRocStatus(__ARGS__);
-
 // clang-format on

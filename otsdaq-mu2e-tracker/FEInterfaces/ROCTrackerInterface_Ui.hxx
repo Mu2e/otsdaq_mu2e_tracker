@@ -59,5 +59,4 @@ bool Ui_FindThreshold(const int   Link,
                        const int   PreampType,
                        const float threshold_mv,
                        const float tolerance_mv);
-
 // clang-format on

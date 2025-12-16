@@ -629,5 +629,4 @@ void ROCTrackerInterface::FEMacro_Ui_FindThreshold(__ARGS__)
 	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_FindThreshold()
-
 // clang-format on

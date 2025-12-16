@@ -22,5 +22,4 @@ int Ui_ProgramRoc_SpiWriteDirectory (int Link, const trkdaq::roc_fw_data_t* Dir,
 int Ui_ProgramRoc_SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
 int Ui_ProgramRoc_ProgramRoc        (int Link, const trkdaq::RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
-
 // clang-format on

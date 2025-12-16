@@ -23,5 +23,4 @@ void FEMacro_Ui_ControlRoc_ControlRoc_MeasureThresholds(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_ReadSpi(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_ReadIlp(__ARGS__);
 void FEMacro_Ui_ControlRoc_ControlRoc_GetKey (__ARGS__);
-
 // clang-format on

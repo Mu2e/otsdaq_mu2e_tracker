@@ -453,5 +453,4 @@ void ROCTrackerInterface::Ui_print_PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::o
     }
   } // end Ui_print_PrintSpiAll()
 
-
 // clang-format on

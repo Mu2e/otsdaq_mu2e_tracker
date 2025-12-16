@@ -1411,5 +1411,4 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadDeviceID(int              
     return 0;
   } // end Ui_ControlRoc_ControlRoc_ReadDeviceID()
 
-
 // clang-format on

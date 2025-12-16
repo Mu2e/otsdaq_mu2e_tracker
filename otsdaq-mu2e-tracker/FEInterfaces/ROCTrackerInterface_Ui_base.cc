@@ -553,5 +553,4 @@ std::string ROCTrackerInterface::Ui_base_GetRocDesignInfo (int Link)
 std::string ROCTrackerInterface::Ui_base_GetRocFwGitCommit(int Link) 
 { return std::string("undefined"); } // end Ui_base_GetRocFwGitCommit()
 
-
 // clang-format on

@@ -497,5 +497,4 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
     return rc;
   } // end Ui_ProgramRoc_ProgramRoc()
 
-
 // clang-format on

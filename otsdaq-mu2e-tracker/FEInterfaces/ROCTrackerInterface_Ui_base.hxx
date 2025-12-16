@@ -33,5 +33,4 @@ std::vector<float> Ui_base_GetConvertedRocRegisters (int ilink, bool history = f
 std::string Ui_base_GetRocID         (int Link);
 std::string Ui_base_GetRocDesignInfo (int Link);
 std::string Ui_base_GetRocFwGitCommit(int Link);
-
 // clang-format on

@@ -396,5 +396,4 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_GetKey (__ARGS__)
 	__SET_ARG_OUT__("Stream", Stream.str());
 
 } // end FEMacro_Ui_ControlRoc_ControlRoc_GetKey ()
-
 // clang-format on

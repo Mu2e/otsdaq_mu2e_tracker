@@ -138,5 +138,4 @@
                             std::vector<std::string>{},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
-
 // clang-format on

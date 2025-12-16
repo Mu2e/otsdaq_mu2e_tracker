@@ -55,5 +55,4 @@ void ROCTrackerInterface::FEMacro_Ui_print_PrintRocStatus(__ARGS__)
 	__SET_ARG_OUT__("Stream", Stream.str());
 
 } // end FEMacro_Ui_print_PrintRocStatus()
-
 // clang-format on

@@ -62,5 +62,4 @@ void ROCTrackerInterface::FEMacro_Ui_ProgramRoc_SpiReadFlash(__ARGS__)
 	__SET_ARG_OUT__("Stream", Stream.str());
 
 } // end FEMacro_Ui_ProgramRoc_SpiReadFlash()
-
 // clang-format on

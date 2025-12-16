@@ -1422,5 +1422,4 @@ bool ROCTrackerInterface::Ui_FindThreshold(const int Link,
     return rv;
   } // end Ui_FindThreshold()
 
-
 // clang-format on

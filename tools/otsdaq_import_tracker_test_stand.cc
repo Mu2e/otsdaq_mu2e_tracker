@@ -1198,11 +1198,11 @@ R"(
 			} //end main function search loop
 
 
-			outputFile << "\n// clang-format on\n";
-			outputHeaderFile << "\n// clang-format on\n";
-			outputFeMacroDeclareFile << "\n// clang-format on\n";
-			outputFeMacroRegisterFile << "\n// clang-format on\n";
-			outputFeMacroDefineFile << "\n// clang-format on\n";
+			outputFile << "// clang-format on\n";
+			outputHeaderFile << "// clang-format on\n";
+			outputFeMacroDeclareFile << "// clang-format on\n";
+			outputFeMacroRegisterFile << "// clang-format on\n";
+			outputFeMacroDefineFile << "// clang-format on\n";
 
 			outputFile.close();
 			outputHeaderFile.close();

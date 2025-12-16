@@ -96,5 +96,4 @@ int Ui_ControlRoc_ControlRoc_ReadDeviceID(int                    Link,
                                          trkdaq::ControlRoc_DeviceID_t& DevId,
                                          int                    PrintLevel = 0,
                                          std::ostream&          Stream     = std::cout);
-
 // clang-format on

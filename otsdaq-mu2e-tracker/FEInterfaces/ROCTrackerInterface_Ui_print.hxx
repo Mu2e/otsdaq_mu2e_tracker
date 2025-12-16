@@ -19,5 +19,4 @@ void Ui_print_PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::
 void Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
 void Ui_print_PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
 void Ui_print_PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
-
 // clang-format on

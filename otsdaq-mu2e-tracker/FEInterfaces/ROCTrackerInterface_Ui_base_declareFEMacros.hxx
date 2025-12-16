@@ -30,5 +30,4 @@ void FEMacro_Ui_base_GetConvertedRocRegisters(__ARGS__);
 void FEMacro_Ui_base_GetRocID         (__ARGS__);
 void FEMacro_Ui_base_GetRocDesignInfo (__ARGS__);
 void FEMacro_Ui_base_GetRocFwGitCommit(__ARGS__);
-
 // clang-format on

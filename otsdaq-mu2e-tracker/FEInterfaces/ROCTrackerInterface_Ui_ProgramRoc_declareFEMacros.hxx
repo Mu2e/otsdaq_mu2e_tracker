@@ -13,5 +13,4 @@
 
 
 void FEMacro_Ui_ProgramRoc_SpiReadFlash(__ARGS__);
-
 // clang-format on

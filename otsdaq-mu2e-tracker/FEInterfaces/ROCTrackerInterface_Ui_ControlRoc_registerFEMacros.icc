@@ -89,5 +89,4 @@
                             std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
                             std::vector<std::string>{"Result", "RawData", "Stream"},  // output parameters
                             1);  // requiredUserPermissions
-
 // clang-format on
