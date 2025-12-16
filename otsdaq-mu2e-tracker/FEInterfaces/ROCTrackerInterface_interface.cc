@@ -132,7 +132,11 @@ ROCTrackerInterface::ROCTrackerInterface(
 							},  // output parameters
 	                        1);  // requiredUserPermissions
 
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_base_registerFEMacros.icc"
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_registerFEMacros.icc"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print_registerFEMacros.icc"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc_registerFEMacros.icc"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc_registerFEMacros.icc"
 
 	try
 	{

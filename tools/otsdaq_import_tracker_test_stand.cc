@@ -66,6 +66,7 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"ControlRoc_Rates_t", "trkdaq::ControlRoc_Rates_t"},
 		{"REG_", "trkdaq::REG_"},
 			
+		{"trkdaq::REG_STATUS", "REG_STATUS"},
 
 		{"roc_serial_t", "std::string"},
 
@@ -75,6 +76,7 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"ifstream", "std::ifstream"},
 		{"ofstream", "std::ofstream"},
 		{"fstream", "std::fstream"},
+		{"std::istd::fstream", "std::ifstream"},  //fix accidental replacement
 		{"cout", "std::cout"},
 		{"endl", "std::endl"},
 		{"stringstream", "std::stringstream"},
@@ -139,6 +141,12 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"ControlRoc_ReadThresholds", "Ui_ControlRoc_ControlRoc_ReadThresholds"},
 		{"ControlRoc_ReadSettings", "Ui_ControlRoc_ControlRoc_ReadSettings"},
 		{"ControlRoc_PrintThresholds", "Ui_ControlRoc_ControlRoc_PrintThresholds"},
+
+		{"SpiWriteRecord", "Ui_ProgramRoc_SpiWriteRecord"},
+		{"SpiLoadImage", "Ui_ProgramRoc_SpiLoadImage"},
+		{"SpiIapIndex", "Ui_ProgramRoc_SpiIapIndex"},
+		{"SpiWriteDirectory", "Ui_ProgramRoc_SpiWriteDirectory"},
+		{"SpiClearMemory", "Ui_ProgramRoc_SpiClearMemory"},
 
 	};
 	
@@ -798,6 +806,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 			
 			headerIncludes << "\n\n#include \"otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h\"\n\n";
 			headerIncludes << "\n#include <TString.h>  // includes ROOT's Form\n";
+			headerIncludes << "\n#include <filesystem>\n";
 
 			headerIncludes << "\n\nusing namespace ots;\n";
 			headerIncludes << "\n#undef __MF_SUBJECT__\n";

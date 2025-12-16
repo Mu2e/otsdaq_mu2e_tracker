@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -15,6 +15,8 @@
 
 #include <TString.h>  // includes ROOT's Form
 
+#include <filesystem>
+
 
 using namespace ots;
 
@@ -24,7 +26,7 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiClearMemory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -72,7 +74,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::ro
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapIndex()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -100,14 +102,14 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_f
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
-    uint16_t status = getDTC()->ReadROCRegister(roc,trkdaq::REG_STATUS,1000);
+    uint16_t status = getDTC()->ReadROCRegister(roc,REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
   } // end Ui_ProgramRoc_SpiIapIndex()
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapAddress()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -136,14 +138,14 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
-    uint16_t status = getDTC()->ReadROCRegister(roc,trkdaq::REG_STATUS,1000);
+    uint16_t status = getDTC()->ReadROCRegister(roc,REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
   } // end Ui_ProgramRoc_SpiIapAddress()
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiLoadImage()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -156,7 +158,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 //-----------------------------------------------------------------------------
 // open input file and determine its size
 //-----------------------------------------------------------------------------
-    std::istd::fstream file(DirEntry->fn, std::ios::binary);
+    std::ifstream file(DirEntry->fn, std::ios::binary);
     file.seekg(0, std::ios::end);
     int fsize = file.tellg();
     file.seekg(0, std::ios::beg);
@@ -168,7 +170,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
            << " fsize:" << std::dec << fsize << std::endl;
  
     //  spi_clear(Link, spi_data[Index].offset, fsize);
-    SpiClearMemory(Link, DirEntry);
+    Ui_ProgramRoc_SpiClearMemory(Link, DirEntry);
 
     Stream << "-- after clear" << std::endl;
 //-----------------------------------------------------------------------------
@@ -205,7 +207,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 
         if (Doit) {
           uint16_t* data = (uint16_t*) &fileData[loc];
-          int rc         = SpiWriteRecord(Link,first_addr,nw,data);
+          int rc         = Ui_ProgramRoc_SpiWriteRecord(Link,first_addr,nw,data);
           if (rc != 0) {
             Stream << "-- ERROR: nwrites:" << nwrites << " rc:0x" << std::hex << rc << std::endl;
             nerrors++;
@@ -278,7 +280,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiReadFlash()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -328,7 +330,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int N
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteDirectory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -388,7 +390,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq:
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteRecord()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -431,7 +433,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
 //==============================================================================
 ///	Ui_ProgramRoc_ProgramRoc()
 /// 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 13:35:01 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -467,18 +469,18 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
 // 3. every time, fully rewrite the SPI directory
 //-----------------------------------------------------------------------------
     Stream << "--- writing SPI directory" << std::endl;
-    SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
+    Ui_ProgramRoc_SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
 
                                         // upload the .spi image
     
     Stream << "--- loading " << Fw->spi_directory[fw->index_spi].fn << std::endl;
-    rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
+    rc = Ui_ProgramRoc_SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
     if (rc != 0) return rc;
 
                                         // upload the .bin image, if defined
     if (fw->index_bin >= 0) {       
       Stream << "--- loading image:" << Fw->spi_directory[fw->index_bin].fn << std::endl;
-      rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
+      rc = Ui_ProgramRoc_SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
       if (rc != 0) return rc;
     }
 //-----------------------------------------------------------------------------
@@ -487,7 +489,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
 //-----------------------------------------------------------------------------
     if (Doit) {
       Stream << "--- activating SPI image" << std::endl;
-      rc = SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
+      rc = Ui_ProgramRoc_SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
     }
     
     return rc;

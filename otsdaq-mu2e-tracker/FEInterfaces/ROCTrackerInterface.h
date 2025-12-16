@@ -46,6 +46,8 @@ public:
 
 
 	//------------ for tracker-specific Ui functions
+
+	// from DtcInterface.h :  ------------------
 	int          fEnabled = 1;   // if comes from ODB, could be 0
 	int          fPcieAddr = 0;  //
 	int          fLinkMask = 0;  // int is OK, bit 31 is never used for arithmetics
@@ -133,7 +135,19 @@ public:
 		uint16_t              data[1];
 	};
 
+	const std::vector<int> RocRegisters = {
+		0,   18,    8,   15,   16,    7,      6,    4,
+		23,   24,   25,   26,   11,   12,     65,   65,   17,   28,
+		29,   30,   31,   32,   33,   34,      9,   10,   35,   36,
+		13,
+		37,   38,   38,   40,   41,   42,     43,   44,   45,   46,
+		48,   49,   51,   52,   54,   55,     57,   58,
+		72,   73,   74,   75,
+		0x90, 0x91, 0x92, 0x93, 0x94, 0x95
+	};
+	// end from DtcInterface.h  ------------------
 
+	// from DtcInterface.cc :  ------------------
 											// channel readout sequence
 											// the first 48 are readout by the digi FPGA on the CAL side
 											// the rest 48 - by the FPGA on the HV side
@@ -175,17 +189,51 @@ public:
 	const char* kIlpVarName[trkdaq::TrkIlpDataNWords] = {
 		"ILP_ID", "ILP_TEMP", "ILP_PRESSURE"
 	};
+	// end from DtcInterface.cc ------------------
 
-	const std::vector<int> RocRegisters = {
-		0,   18,    8,   15,   16,    7,      6,    4,
-		23,   24,   25,   26,   11,   12,     65,   65,   17,   28,
-		29,   30,   31,   32,   33,   34,      9,   10,   35,   36,
-		13,
-		37,   38,   38,   40,   41,   42,     43,   44,   45,   46,
-		48,   49,   51,   52,   54,   55,     57,   58,
-		72,   73,   74,   75,
-		0x90, 0x91, 0x92, 0x93, 0x94, 0x95
+
+	// from DtcInterface_ProgramRoc.cc :  ------------------
+	                                     // registers
+	int RREG                  = 384;
+	int REG_STATUS            = 132;
+											// commands
+	int SPI_CLEAR             = 3;
+	int PROGRAM_IAP_W_INDEX   = 4;
+	int PROGRAM_IAP_W_ADDRESS = 5;
+	int IAP_AUTO_UPDATE       = 6;
+	int SPI_FLASH_READ        = 7;
+	int SPI_WRITE_RECORD      = 8;
+	int SPI_WRITE_DIRECTORY   = 9;
+
+	trkdaq::RocFwData_t fgRocFwData = {
+											// spi_directory
+		{
+		{ 0,   0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV10.spi"          }, // 9524032 },
+		{ 1, 0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV12.spi"             }, // 9480352 },
+		{ 2, 0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV12-3_stage3init.bin"}, //   82272 },
+		{ 3, 0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV14.spi"             }, // 9482832 },
+		{ 4, 0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV14_stage3init.bin"  }, //   86384 },
+		{-1,        -1, ""                                                          },  //      -1 }
+		{-1,        -1, ""                                                          },  //      -1 }
+		{-1,        -1, ""                                                          },  //      -1 }
+		{-1,        -1, ""                                                          },  //      -1 }
+		{-1,        -1, ""                                                          }   //      -1 }
+		},
+											// firmware versions = pairs of images
+		{
+		{ "GoldenV10",  0, -1 },
+		{ "ROCV12",     1,  2 },
+		{ "ROCV14",     3,  4 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 },
+		{ "",          -1, -1 }
+		}
 	};
+	// end from DtcInterface_ProgramRoc.cc
 
 	// UI_DEFINE_ROCTRACKERINTERFACE_FUNCTIONS
 
@@ -200,6 +248,9 @@ public:
 
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc.hxx"
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc_declareFEMacros.hxx"
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc.hxx"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc_declareFEMacros.hxx"
 	
 
 	//------------ end for tracker-specific Ui functions

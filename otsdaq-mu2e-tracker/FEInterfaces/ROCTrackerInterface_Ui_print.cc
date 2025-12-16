@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -15,6 +15,8 @@
 
 #include <TString.h>  // includes ROOT's Form
 
+#include <filesystem>
+
 
 using namespace ots;
 
@@ -25,7 +27,7 @@ using namespace ots;
 //==============================================================================
 ///	Ui_print_PrintRocRegister()
 /// print value of the register Reg, for multiple ROCs
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -54,7 +56,7 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc,
 
 //==============================================================================
 ///	Ui_print_PrintRocRegister2()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -89,7 +91,7 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc
 ///	Ui_print_PrintRocStatus()
 /// most of the time Link = -1 meaning 'all enabled links'
 /// otherwise it is the link to print
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -249,7 +251,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
 ///	Ui_print_PrintBuffer()
 /// 'nw' : number of 16-bit words to print.
 /// if Stream == nullptr , use TLOG, otherwise - *Stream
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -294,7 +296,7 @@ void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offs
 
 //==============================================================================
 ///	Ui_print_PrintRatesSingleRoc()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -353,7 +355,7 @@ void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Ra
 
 //==============================================================================
 ///	Ui_print_PrintRatesAllRocs()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
@@ -420,7 +422,7 @@ void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rate
 //==============================================================================
 ///	Ui_print_PrintSpiAll()
 /// assume always data from 6 ROCs, some may be disabled
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 13:34:58 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:

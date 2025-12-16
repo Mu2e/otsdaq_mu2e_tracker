@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -15,6 +15,8 @@
 
 #include <TString.h>  // includes ROOT's Form
 
+#include <filesystem>
+
 
 using namespace ots;
 
@@ -25,7 +27,7 @@ using namespace ots;
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc()
 /// a boilerplate for a generic control_ROC.py CLI command - do we need it at  all ?
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -41,7 +43,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc(const char* Command, void* Par
 ///	Ui_ControlRoc_ControlRoc_DigiRW()
 /// digi_rw over the fiber: reg 263
 /// if Link = -1, use fLinkMask, otherwise operate assuming a single link
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -144,7 +146,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
 ///                   0x10 : first pulsed channel is channel 4, max value : 0x80
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -199,7 +201,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_Read()
 /// Link=-1: execute the comamnd for all enabled links
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -339,7 +341,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
 /// dutycycle = int(get_key_value(keys,"y",10))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
 ///                   0x10 : first pulsed channel is channel 4, max value : 0x80
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -423,7 +425,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_PulserOff()
 /// Link=-1: all enabled links
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -466,7 +468,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintL
 
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadSettings()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -567,7 +569,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
 ///                   0x10 : first pulsed channel is channel 4, max value : 0x80
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -640,7 +642,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstC
 
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_SetGain()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -690,7 +692,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelI
 
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_SetThreshold()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -740,7 +742,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int Cha
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_SetThresholds()
 /// order:  4 x 96 16 bit words. Gain cal, Gain HV, threshold CAL, threshold HV
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -783,7 +785,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThresholds(int Link, uint16
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_MeasureThresholds()
 /// Link: link number
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -818,7 +820,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_MeasureThresholds(int         
 ///	Ui_ControlRoc_ControlRoc_PrintThresholds()
 /// Link: link number
 /// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -865,7 +867,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PrintThresholds(int           
 ///	Ui_ControlRoc_ControlRoc_ReadThresholds()
 /// Link: link number, operate on one ROC
 /// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -976,7 +978,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadThresholds(int            
 
 //==============================================================================
 ///	Ui_ControlRoc_ConvertSpiData()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1049,7 +1051,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadSpi()
 /// read SPI, return vector of short's, optionally print
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1104,7 +1106,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>&
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadSpi_1()
 /// read SPI, convert into floats
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1151,7 +1153,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi_1(trkdaq::TrkSpiData_t
 ///	Ui_ControlRoc_ControlRoc_ReadGitCommit()
 /// pay with performance for compactness
 /// if Link = -1, a git commit for last enabled link is returned
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1196,7 +1198,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& Git
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadIlp()
 /// if Link = -1, interested in printing
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1232,7 +1234,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadIlp(std::vector<uint16_t>&
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_GetKey ()
 /// no data conversion
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1268,7 +1270,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_GetKey (std::vector<uint16_t>&
 ///	Ui_ControlRoc_ControlRoc_Rates()
 /// at this point, assume just one Link. If needed, make it more general (a mask) later
 /// only unformatted printout internally, 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -1354,7 +1356,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Rates(int                    L
 
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadDeviceID()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 13:35:03 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
