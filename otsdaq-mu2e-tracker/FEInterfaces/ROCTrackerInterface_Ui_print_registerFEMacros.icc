@@ -1,0 +1,19 @@
+
+//------------------------------------------------------------------------
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+//------------------------------------------------------------------------
+
+
+
+    registerFEMacroFunction("Ui_print PrintRocStatus",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_print_PrintRocStatus),
+                            std::vector<std::string>{"Format (Default = 1)"},          // inputs parameters
+                            std::vector<std::string>{"Stream"},  // output parameters
+                            1);  // requiredUserPermissions

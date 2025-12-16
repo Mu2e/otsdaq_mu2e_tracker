@@ -335,7 +335,7 @@ namespace trkdaq {
     rv = this->ReadROCBlockEnsured(Link, 260);
 
     if (PrintLevel & 0x1) {
-      PrintBuffer(rv.data(),rv.size(),&Stream);
+      PrintBuffer(rv.data(),rv.size(),0,&Stream);
     }
 
     return rv;
@@ -1090,7 +1090,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       else {
         ULong64_t ewt = ULong64_t(v[0]) | (ULong64_t(v[1]) << 16) | (ULong64_t(v[2]) << 32);
         Stream << "  ewt:" << ewt << " len:" << v[3] << std::endl;
-        PrintBuffer(v.data(),nw,&Stream);
+        PrintBuffer(v.data(),nw,0,&Stream);
       }
     }
     else {
@@ -1132,7 +1132,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
 
  // This is just an example, needs to be implemented for each subsystem
-  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
+  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history) {
     std::vector<std::string> roc_var_names;
     char var_name[128];
     // Basic ROC registers

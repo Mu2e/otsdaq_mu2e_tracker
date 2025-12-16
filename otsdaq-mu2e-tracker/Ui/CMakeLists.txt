@@ -10,10 +10,10 @@ cet_make_library(
         #	PreampChannel.cc PreampThreshold.cc
         program_drac.cc
         LIBRARIES PUBLIC
-	    otsdaq-mu2e-tracker::ParseAlignment
+	otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata
         artdaq-core::Data
-        # artdaq-core-demo::artdaq-core-demo_Overlays
+        # artdaq-core-demo::Overlays
         cetlib_except::cetlib_except
         mu2e-pcie-utils::CFOInterface
         mu2e-pcie-utils::DTCInterface

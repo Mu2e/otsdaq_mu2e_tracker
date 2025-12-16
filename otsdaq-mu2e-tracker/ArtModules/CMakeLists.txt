@@ -34,4 +34,4 @@ Offline::RecoDataProducts
 # )
 
 
-# cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq-core-demo::Overlays)
+# cet_build_plugin(ToyDump art::module LIBRARIES REG artdaq_core_demo::artdaq-core-demo_Overlays)

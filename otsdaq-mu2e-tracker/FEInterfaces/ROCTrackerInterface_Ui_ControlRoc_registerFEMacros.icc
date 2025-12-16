@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Thu Dec 11 20:03:11 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc on Tue Dec 16 12:02:00 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc and re-run the import tool:
@@ -10,3 +10,80 @@
 //------------------------------------------------------------------------
 
 
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_DumpSettings",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_DumpSettings),
+                            std::vector<std::string>{"Channel (Default = -1)", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_PulserOn",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_PulserOn),
+                            std::vector<std::string>{"FirstChannelMask (Default = 0x10)", "DutyCycle (Default = 10)", "PulserDelay (Default = 1000)", "PrintLevel (Default = 0x2)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_PulserOff",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_PulserOff),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_ReadSettings",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadSettings),
+                            std::vector<std::string>{"Channel", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Data", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_SetCalDac",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetCalDac),
+                            std::vector<std::string>{"FirstChannelMask", "PulseHeight", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_SetGain",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetGain),
+                            std::vector<std::string>{"ChannelID", "PreampType", "Gain", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_SetThreshold",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetThreshold),
+                            std::vector<std::string>{"ChannelID", "PreampType", "Threshold", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_MeasureThresholds",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_MeasureThresholds),
+                            std::vector<std::string>{"MaskC (Default = 0xFFFFFFFF)", "MaskD (Default = 0xFFFFFFFF)", "MaskE (Default = 0xFFFFFFFF)", "PrintLevel (Default = 0x2)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_ReadSpi",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadSpi),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "SpiRawData", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_ReadIlp",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadIlp),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "RawData", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_ControlRoc ControlRoc_GetKey ",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_GetKey ),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "RawData", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions

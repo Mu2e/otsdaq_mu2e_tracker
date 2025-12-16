@@ -9,6 +9,9 @@
 
 #include "otsdaq/Macros/StringMacros.h"
 
+///
+/// @file otsdaq_import_tracker_test_stand.cc
+/// @brief
 /// Extracts the function definitions in the tracker Ui folder into
 ///		the otsdaq-mu2e-tracker/otsdaq-mu2e-tracker/FEInterfaces/ folder (or any folder)
 ///
@@ -17,8 +20,11 @@
 /// usage:
 /// otsdaq_import_tracker_test_stand <import Ui path> <export FEInterface path>
 ///
+/// Created by rrivera, December 2025
 ///
+
 using namespace ots;
+
 
 //==============================================================================
 /// @brief Modifies the source code string for the FEInterface as follows:
@@ -35,22 +41,31 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"TrkSpiData_t", "trkdaq::TrkSpiData_t"},
 		{"roc_data_t", "DTCLib::roc_data_t"},
 		{"DTC_Link_ID", "DTCLib::DTC_Link_ID"},
-		{"DTCLib::DTCLib::DTC_Link_ID", "DTCLib::DTC_Link_ID"},
 		{"DTC_SubEvent", "DTCLib::DTC_SubEvent"},
-		{"DTCLib::DTCLib::DTC_SubEvent", "DTCLib::DTC_SubEvent"},
 		{"DTC_EventWindowTag", "DTCLib::DTC_EventWindowTag"},
-		{"DTCLib::DTCLib::DTC_EventWindowTag", "DTCLib::DTC_EventWindowTag"},
 		{"roc_address_t", "DTCLib::roc_address_t"},
-		{"DTCLib::DTCLib::roc_address_t", "DTCLib::roc_address_t"},
 		{"DTC_LinkEnableMode", "DTCLib::DTC_LinkEnableMode"},
-		{"DTCLib::DTCLib::DTC_LinkEnableMode", "DTCLib::DTC_LinkEnableMode"},
 		{"DTC_Link_ALL", "DTCLib::DTC_Link_ALL"},
-		{"DTCLib::DTCLib::DTC_Link_ALL", "DTCLib::DTC_Link_ALL"},
 		{"EventMode()", "((((int64_t)fOnSpill) << 32) | ((int64_t)fEventMode))"},
 		{"DTC_ROC_Links", "DTCLib::DTC_ROC_Links"},
-		{"DTCLib::DTCLib::DTC_ROC_Links", "DTCLib::DTC_ROC_Links"},
+		{"ControlRoc_DeviceID_t", "trkdaq::ControlRoc_DeviceID_t"},
 		{"TrkSpiDataNWords", "trkdaq::TrkSpiDataNWords"},
-		{"PrintBuffer", "DTCLib::Utilities::PrintBuffer"},
+
+		// {"RocRegisters", "trkdaq::RocRegisters"},
+		{"trkdaq::RocRegisters", "RocRegisters"},
+		{"Gettrkdaq::RocRegisters", "GetRocRegisters"}, //fix accidental replacement
+		{"GetConvertedtrkdaq::RocRegisters", "GetConvertedRocRegisters"}, //fix accidental replacement
+
+		{"roc_fw_data_t", "trkdaq::roc_fw_data_t"},
+		{"roc_fw_version_t", "trkdaq::roc_fw_version_t"},
+		{"RocFwData_t", "trkdaq::RocFwData_t"},
+		{"ControlRoc_DigiRW_Input_t", "trkdaq::ControlRoc_DigiRW_Input_t"},
+		{"ControlRoc_DigiRW_Output_t", "trkdaq::ControlRoc_DigiRW_Output_t"},
+		{"ControlRoc_Read_Input_t0", "trkdaq::ControlRoc_Read_Input_t0"},
+		{"ControlRoc_Read_Output_t0", "trkdaq::ControlRoc_Read_Output_t0"},
+		{"ControlRoc_Rates_t", "trkdaq::ControlRoc_Rates_t"},
+		{"REG_", "trkdaq::REG_"},
+			
 
 		{"roc_serial_t", "std::string"},
 
@@ -66,17 +81,27 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"hex", "std::hex"},
 		{"dec", "std::dec"},
 
+		{"override", ""},
+
 		{"trkdaq::trkdaq::", "trkdaq::"},
+		{"std::std::std::", "std::"},
 		{"std::std::", "std::"},
+		{"DTCLib::DTCLib::", "DTCLib::"},
 	};
 	std::vector<std::pair<std::string, std::string>> functionReplacements = {
-		{"ConfigureJA", "Ui_ConfigureJA"},
-		{"InitEmulatedCFOReadoutMode", "Ui_InitEmulatedCFOReadoutMode"},
-		{"InitExternalCFOReadoutMode", "Ui_InitExternalCFOReadoutMode"},
+		{"ConfigureJA", "Ui_base_ConfigureJA"},
+		{"InitEmulatedCFOReadoutMode", "Ui_base_InitEmulatedCFOReadoutMode"},
+		{"InitExternalCFOReadoutMode", "Ui_base_InitExternalCFOReadoutMode"},
+		{"ResetLinks", "Ui_base_ResetLinks"},
+		{"SetLinkMask", "Ui_base_SetLinkMask"},
+
+		{"ResetLink", "Ui_ResetLink"},
+
+		{"Ui_base_Ui_ResetLinks", "Ui_base_ResetLinks"}, //fix accidental replacement
+
 		{"InitReadout", "Ui_InitReadout"},
 		{"InitRocReadoutMode", "Ui_InitRocReadoutMode"},
 		{"LaunchRunPlanEmulatedCfo", "Ui_LaunchRunPlanEmulatedCfo"},
-		{"ConvertSpiData", "Ui_ConvertSpiData"},
 		{"ReadRegister", "Ui_ReadRegister"},
 		{"ReadSpiData", "Ui_ReadSpiData"},
 		{"RocConfigurePatternMode", "Ui_RocConfigurePatternMode"},
@@ -89,14 +114,32 @@ std::string modifySource(std::string& source, bool isHeader = false)
 		{"FindAlignment", "Ui_FindAlignment"},
 		{"FindAlignments", "Ui_FindAlignments"},
 		{"SetBit", "Ui_SetBit"},
-		{"SetLinkMask", "Ui_SetLinkMask"},
 		{"SetupCfoInterface", "Ui_SetupCfoInterface"},
 		{"ValidateDigiPatterns", "Ui_ValidateDigiPatterns"},
 		{"ValidateFixedPatterns", "Ui_ValidateFixedPatterns"},
 		{"ValidateVarPatterns", "Ui_ValidateVarPatterns"},
 		{"MonicaDigiClear", "Ui_MonicaDigiClear"},
 		{"MonicaVarLinkConfig", "Ui_MonicaVarLinkConfig"},
-		{"MonicaVarPatternConfig", "Ui_MonicaVarPatternConfig"}
+		{"MonicaVarPatternConfig", "Ui_MonicaVarPatternConfig"},
+		{"GetRocRegisters","Ui_GetRocRegisters"},
+		{"ProgramAndQueryThreshold","Ui_ProgramAndQueryThreshold"},
+		{"FindThreshold","Ui_FindThreshold"},	
+		{"RocBlockRead","Ui_RocBlockRead"},	
+
+		{"PrintBuffer", "Ui_print_PrintBuffer"},
+		{"PrintRocRegister", "Ui_print_PrintRocRegister"},
+		{"PrintRocRegister2", "Ui_print_PrintRocRegister2"},
+		{"Ui_print_Ui_print_", "Ui_print_"}, //fix accidental replacement
+
+		{"ControlRoc_ReadSpi","Ui_ControlRoc_ControlRoc_ReadSpi"},
+		{"ConvertSpiData", "Ui_ControlRoc_ConvertSpiData"},
+		{"ControlRoc_Ui_ReadDeviceID", "Ui_ControlRoc_ControlRoc_ReadDeviceID"},
+		{"ControlRoc_ReadGitCommit", "Ui_ControlRoc_ControlRoc_ReadGitCommit"},		
+		{"ControlRoc_SetThreshold", "Ui_ControlRoc_ControlRoc_SetThreshold"},
+		{"ControlRoc_ReadThresholds", "Ui_ControlRoc_ControlRoc_ReadThresholds"},
+		{"ControlRoc_ReadSettings", "Ui_ControlRoc_ControlRoc_ReadSettings"},
+		{"ControlRoc_PrintThresholds", "Ui_ControlRoc_ControlRoc_PrintThresholds"},
+
 	};
 	
 	for(const auto& [oldStr, newStr] : replacements)
@@ -124,98 +167,12 @@ std::string modifySource(std::string& source, bool isHeader = false)
 } //end modifySource()
 
 //==============================================================================
-/// @brief Extracts the declared function header from the full function header
-/// @param functionHeader the full function header
-/// @param sourceFile the source file the function is from
-std::string getDeclaredFunctionHeader(const std::string& functionHeader, const std::string& sourceFile)
-{		
-	//general case
-	size_t parenPos = functionHeader.find('(');
-	if(parenPos == std::string::npos)
-	{
-		__SS__ << "ERROR: could not find '(' in function header: " << functionHeader << __E__;
-		__SS_THROW__;
-	}
-	std::string beforeParen = functionHeader.substr(0, parenPos);
-	__COUTTV__(beforeParen);
-
-	//find in file the function name
-	std::ifstream in(sourceFile);
-	if (!in)
-	{
-		__SS__ << "\n\nERROR! Could not open file at " << sourceFile
-						<< " - error: " << errno << " - " << strerror(errno) << __E__;
-		__SS_THROW__;
-	}
-	std::string fileContents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-	// fileContents now contains the full contents of sourceFile	
-	size_t funcNamePos = 0;
-	while(1)  //search for function name loop in header
-	{
-		funcNamePos = fileContents.find(beforeParen, funcNamePos + 1);		
-		if(funcNamePos == std::string::npos)
-		{
-			__SS__ << "ERROR: could not find function name '" << beforeParen << "' in source file: " << sourceFile << __E__;
-			__SS_THROW__;
-		}
-		__COUTTV__(fileContents.substr(funcNamePos, 50));
-		//make sure found instance is not a comment or header with similar name
-		size_t prevNewLine = fileContents.rfind("\n", funcNamePos);
-		size_t prevComment = fileContents.rfind("//", funcNamePos);
-		if(prevComment != std::string::npos && prevNewLine != std::string::npos && 
-				prevComment > prevNewLine)		
-		{
-			__COUTT__ << "Found function name in comment, continuing search..." << std::endl;
-			continue; //then found function name is in comment
-		}
-
-		//make sure there is an arg list after function name
-		size_t nextNewline = fileContents.find("\n", funcNamePos);
-		size_t nextParenthesis = fileContents.find("(", funcNamePos);
-		
-		if(nextParenthesis == std::string::npos || 
-				(nextNewline != std::string::npos && nextParenthesis > nextNewline))
-		{
-			__COUTT__ << "Found function name without arg list, continuing search..." << std::endl;
-			continue; //then found function name is not a function definition
-		}
-		
-		//else found function name is valid, so break out of search loop
-		break;
-	} //end search for function name loop
-	
-	//find semicolon after function name
-	size_t semicolonPos = funcNamePos;
-	while(1)
-	{
-		semicolonPos = fileContents.find(';', semicolonPos + 1);
-		if(semicolonPos == std::string::npos)
-		{
-			__SS__ << "ERROR: could not find ';' after function name in source file: " << beforeParen << " in file " << sourceFile << __E__;
-			__SS_THROW__;
-		}
-		
-		//ignore semicolons in comments
-		size_t prevNewLine = fileContents.rfind("\n", semicolonPos);
-		size_t prevComment = fileContents.rfind("//", semicolonPos);
-		if(prevComment == std::string::npos || (prevNewLine != std::string::npos && prevComment < prevNewLine))			
-			break; //then ; is not in comment
-		//else is in comment, so continue searching
-	} //end search for semicolon loop
-
-	//extract declared function header
-	std::string declaredFunctionHeader = fileContents.substr(funcNamePos, semicolonPos - funcNamePos);
-	__COUTTV__(declaredFunctionHeader);
-	return declaredFunctionHeader;
-} //end getDeclaredFunctionHeader()
-
-//==============================================================================
 /// @brief Returns true if the function arguments in the function header are simple enough (i.e. int, string) for converting to FE macros
 ///		Also fills in the argTypes, argNames, argDefaults, outputTypes, outputNames vectors.
 /// @param functionHeader the full function header
 bool validateArgsForFEMacro(const std::string& functionHeader, const std::string& returnVal, 
 	std::vector<std::string>& argTypes, std::vector<std::string>& argNames, std::vector<std::string>& argDefaults, 
-	std::vector<std::string>& outputTypes, std::vector<std::string>& outputNames)
+	std::vector<std::string>& outputTypes, std::vector<std::string>& outputNames, bool ignoreAllowedTypes = false)
 {
 	size_t argTypePos = functionHeader.find('(');
 	if(argTypePos == std::string::npos)
@@ -232,12 +189,15 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 
 	//decide if there is an output return valu
 	//for now, only handle void return type with no outputs
-	if(returnVal != "void" && returnVal != "int" && returnVal != "unsigned int" && 
+	if(!ignoreAllowedTypes && returnVal != "void" && returnVal != "int" && returnVal != "unsigned int" && 
 			returnVal != "std::string" && returnVal != "bool" && returnVal != "double"
 			&& returnVal != "float" && returnVal != "std::vector<DTCLib::roc_data_t>" && 
+			returnVal != "std::vector<std::string>" &&
+			returnVal != "std::vector<uint32_t>" && 
+			returnVal != "std::vector<float>" && 
 			returnVal != "size_t" && returnVal != "uint16_t" && returnVal != "uint32_t")
 	{
-		__COUT_ERR__ << "- Return type: " << returnVal << " is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
+		__COUT_ERR__ << "- Return type '" << returnVal << "' is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
 		return false;
 	}
 	if(returnVal != "void")
@@ -253,6 +213,19 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 
 	std::string argList = functionHeader.substr(argTypePos + 1, argEndPos - argTypePos - 1);
 	__COUTTV__(argList);
+
+	//remove any comments from argList
+	while(1)
+	{
+		size_t commentPos = argList.find("//");
+		if(commentPos == std::string::npos)
+			break;
+		size_t endOfLinePos = argList.find('\n', commentPos);
+		if(endOfLinePos == std::string::npos)
+			endOfLinePos = argList.size();
+		argList.erase(commentPos, endOfLinePos - commentPos);
+	} //end comment removal loop
+
 	//split by commas
 	std::vector<std::string> args = StringMacros::getVectorFromString(argList, {','});
 	for(const auto& arg : args)
@@ -265,8 +238,8 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 		std::vector<std::string> argParts = StringMacros::getVectorFromString(arg, {' ','\t','\n'}, {} /* whitespace */);
 		if(argParts.size() < 2)
 		{
-			__COUT_ERR__ << "Could not parse argument: " << StringMacros::vectorToString(argParts)
-				 << " in function header: " << functionHeader << std::endl;
+			__COUT_ERR__ << "Could not parse argument '" << StringMacros::vectorToString(argParts)
+				 << "' in function header: " << functionHeader << std::endl;
 			return false;
 		}
 
@@ -301,25 +274,30 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 				__COUTTV__(argType);
 
 				//check if argType is simple enough
-				if(argType != "int" && argType != "unsigned int" && 
+				if(!ignoreAllowedTypes && argType != "int" && argType != "uint" && argType != "unsigned int" && 
 					argType != "std::string" && argType != "bool" && argType != "double"
-					&& argType != "float" && argType != "DTC_Lib::DTC_Link_ID" && 
-					(argType != "DTC_Lib::DTC_Link_ID&" || !isConst) &&
-					argType != "DTC_Lib::roc_address_t&" &&
+					&& argType != "float" && argType != "DTCLib::DTC_Link_ID" && 
+					(argType != "DTCLib::DTC_Link_ID&" || !isConst) &&
+					argType != "DTCLib::roc_address_t&" &&
+					argType != "std::ostream&" &&
 					(argType != "std::vector<DTCLib::roc_data_t>&" || isConst) &&
 					(argType != "std::vector<uint16_t>&" || isConst) &&
+					(argType != "std::vector<uint16_t>*" || isConst) &&
 					argType != "size_t" && argType != "uint16_t" && argType != "uint32_t")
 				{
-					__COUT_ERR__ << "- Argument type: " << (isConst?"const ":"") << 
-						argType << " is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
+					__COUT_ERR__ << "- Argument type '" << (isConst?"const ":"") << 
+						argType << "' is not supported for FE Macro conversion in function header: " << functionHeader << std::endl;
 					return false;
 				}
 				__COUTTV__(argType);
 
-				if(isConst)
-					argType = "const " + argType;
+				//do not add "const," since FE Macro must set parameter to pass (and argType search cannot overload const/no-const anyway)
+				// if(isConst)
+				// 	argType = "const " + argType;
 
 				if(argType == "std::vector<uint16_t>&" || 
+					argType == "std::vector<uint16_t>*" || 
+					argType == "std::ostream&" || 
 					argType == "std::vector<roc_data_t>&")				
 				{
 					__COUTT__ << " -- Treating " << argType << " as output parameter." << std::endl;
@@ -327,14 +305,43 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 				}	
 							
 				if(isOutputByReference)
-					argTypes.push_back("out"); //mark as output by reference
+					argTypes.push_back(std::string("out") + (argType[argType.size()-1] == '*'?"*":"")); //mark as output by reference or by pointer
 				else
 					argTypes.push_back(argType);
 				__COUTTV__(argTypes.back());
 			}
 			else if(i == 1)
 			{
-				argNames.push_back(part); //second part is name
+				if(part.find('=') != std::string::npos)
+				{
+					foundEquals = true;	
+
+					__COUTT__ << "Found default value in name part: " << part << std::endl;
+					auto equalParts = StringMacros::getVectorFromString(part, {'='});
+					if(equalParts.size() != 2)
+					{
+						__COUT_ERR__ << "Could not parse argument with = in '" << StringMacros::vectorToString(argParts)
+							 << "' in function header: " << functionHeader << std::endl;
+						return false;
+					}
+					argNames.push_back(equalParts[0]); //second part is name
+
+					if(equalParts[1].size() == 0) //case is 'name= Default'
+					{
+						__COUTT__ << "No default value YET after = in name part: " << part << std::endl;						
+					}
+					else
+					{
+						__COUTT__ << "Found default value after = in name part: " << part << std::endl;	
+						argDefaults.push_back(equalParts[1]); //default value
+						__COUTTV__(argDefaults.back());						
+					}
+				}
+				else 
+				{
+					__COUTT__ << "No default value in name part: " << part << std::endl;
+					argNames.push_back(part); //second part is name					
+				}
 				__COUTTV__(argNames.back());
 
 				if(isOutputByReference)
@@ -343,7 +350,7 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 					outputNames.push_back(argNames.back());
 				}
 			}
-			else if(i > 1 && !foundEquals) //possible =Default here
+			else if(i > 1 && !foundEquals) //possible 'name =Default' here 
 			{
 				if(part.size() > 1 &&
 						part[0] == '=') //handle case of no spaces around =
@@ -358,24 +365,39 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 				}
 				else
 				{
-					__COUT_ERR__ << "Could not parse argument missing = : " << StringMacros::vectorToString(argParts)
-						 << " in function header: " << functionHeader << std::endl;
+					__COUT_ERR__ << "Could not parse argument missing = in '" << StringMacros::vectorToString(argParts)
+						 << "' in function header: " << functionHeader << std::endl;
 					return false;
 				}
 			}
-			else if(i > 2 && foundEquals) //fourth part is default value
+			else if(i > 1 && foundEquals) //fourth part is default value
 			{		
-				argDefaults.push_back(part); 
-				__COUTTV__(argDefaults.back());
+				if(argDefaults.size() < argNames.size())
+				{
+					argDefaults.push_back(part); 
+					__COUTTV__(argDefaults.back());
+				}
+				else
+				{
+					__COUT_ERR__ << "Could not parse argument with multiple default values in '" << StringMacros::vectorToString(argParts)
+						 << "' in function header: " << functionHeader << std::endl;
+					return false;
+				}
 			}
 
 			++i;
 		} // end art parts loop
 		
-		if(argDefaults.size() != argNames.size())
+		if(argDefaults.size() < argNames.size())
 		{
 			argDefaults.push_back(""); //no default value
 			__COUTTV__(argDefaults.back());
+		}
+		else if(argDefaults.size() > argNames.size())
+		{
+			__COUT_ERR__ << "Could not parse argument with multiple default values in '" << StringMacros::vectorToString(argParts)
+				 << "' in function header: " << functionHeader << std::endl;
+			return false;
 		}
 	} //end main arg loop
 
@@ -388,6 +410,263 @@ bool validateArgsForFEMacro(const std::string& functionHeader, const std::string
 
 	return true;
 } //end validateArgsForFEMacro()
+
+//==============================================================================
+/// @brief Extracts the declared function header from the full function header
+/// @param functionHeader the full function header
+/// @param sourceFile the source file the function is from
+std::string getDeclaredFunctionHeader(const std::string& functionHeader, const std::string& sourceFile)
+{		
+	//general case
+	size_t parenPos = functionHeader.find('(');
+	if(parenPos == std::string::npos)
+	{
+		__SS__ << "ERROR: could not find '(' in function header: " << functionHeader << __E__;
+		__SS_THROW__;
+	}
+	std::string beforeParen = functionHeader.substr(0, parenPos);
+	__COUTTV__(beforeParen);
+
+	//get arg list to match when finding declaration in header file
+	std::vector<std::string> argTypes, argNames,  argDefaults, 
+					outputTypes, outputNames;
+	{ //extract arg types (do not modify types, since comparing against unmodified header)		
+		if(!validateArgsForFEMacro(functionHeader, "void" /* dummy return val arg */,
+			argTypes, argNames, argDefaults,
+			outputTypes, outputNames, true /* ignoreAllowedTypes */))
+		{
+			__SS__ << "ERROR: could not validate args for function header: " << functionHeader << __E__;
+			__SS_THROW__;	
+		}
+	}
+
+	//find in file the function name
+	std::ifstream in(sourceFile);
+	if (!in)
+	{
+		__SS__ << "\n\nERROR! Could not open file at " << sourceFile
+						<< " - error: " << errno << " - " << strerror(errno) << __E__;
+		__SS_THROW__;
+	}
+	std::string fileContents((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+	// fileContents now contains the full contents of sourceFile	
+	size_t funcNamePos = 0;
+	while(1)  //search for function name loop in header
+	{
+		funcNamePos = fileContents.find(beforeParen, funcNamePos + 1);		
+		if(funcNamePos == std::string::npos)
+		{
+			__SS__ << "\nERROR: could not find function name '" << beforeParen << "' in source file: " << sourceFile << __E__;
+			__SS_THROW__;
+		}
+		__COUTTV__(fileContents.substr(funcNamePos, 50));
+		//make sure found instance is not a comment or header with similar name
+		size_t prevNewLine = fileContents.rfind("\n", funcNamePos);
+		size_t prevComment = fileContents.rfind("//", funcNamePos);
+		if(prevComment != std::string::npos && prevNewLine != std::string::npos && 
+				prevComment > prevNewLine)		
+		{
+			__COUTT__ << "Found function name in comment, continuing search..." << std::endl;
+			continue; //then found function name is in comment
+		}
+
+		//make sure next character is whitespace or '(' for arg list
+		size_t charAfterFuncNamePos = funcNamePos + beforeParen.size();
+		if(charAfterFuncNamePos >= fileContents.size() || 
+			(fileContents[charAfterFuncNamePos] != ' ' && 
+			 fileContents[charAfterFuncNamePos] != '\t' &&
+			 fileContents[charAfterFuncNamePos] != '\n' &&
+			 fileContents[charAfterFuncNamePos] != '('))
+		{
+			__COUTT__ << "Found function name as part of another word, continuing search..." << std::endl;
+			continue; //then found function name is part of another word
+		}
+
+		//make sure there is an arg list after function name
+		size_t nextNewline = fileContents.find("\n", funcNamePos);
+		size_t nextParenthesis = fileContents.find("(", funcNamePos);
+		
+		if(nextParenthesis == std::string::npos || 
+				(nextNewline != std::string::npos && nextParenthesis > nextNewline))
+		{
+			__COUTT__ << "Found function name without arg list, continuing search..." << std::endl;
+			continue; //then found function name is not a function definition
+		}
+
+		//make sure all arg types exist to match function definition (Note: arg name mismatch is allowed in C++)
+		size_t argEndPos = fileContents.find(')', nextParenthesis);
+		if(argEndPos == std::string::npos)
+		{
+			__COUTT__ << "Found function name without arg list end, continuing search..." << std::endl;
+			continue; //then found function name is not a function definition
+		}
+		size_t argTypePos = nextParenthesis;
+		size_t maxArgTypePos = nextParenthesis;
+		bool mismatch = false;
+		for(const auto& argType : argTypes) //input arg types confirmation loop
+		{
+			if(argType.find("out") == 0) //skip output by reference args
+				continue;
+			size_t foundArgTypePos = argTypePos;
+			while(1)
+			{
+				foundArgTypePos = fileContents.find(argType, argTypePos);
+				if(foundArgTypePos == std::string::npos || foundArgTypePos > argEndPos)
+				{
+					__COUTT__ << "Could not find input arg type '" << argType << "' in function definition, continuing search..." << std::endl;
+					mismatch = true;
+					break; //then found function name is not the correct function definition
+				}
+				__COUTTV__(argType);
+				size_t charAfterPos = foundArgTypePos + argType.size();
+				//make sure it is clean argType match (i.e. not part of another word)
+				//	must be , or whitespace or end before and after
+				if(foundArgTypePos != nextParenthesis)
+				{
+					char charBefore = fileContents[foundArgTypePos - 1];
+					if(charBefore != ',' && charBefore != ' ' && charBefore != '\t' && 
+						charBefore != '\n' && charBefore != '(' && charBefore != ':')
+					{
+						__COUTT__ << "Found input arg type '" << argType << "' as part of another word, continuing search..." << 
+							fileContents.substr(foundArgTypePos-1, 20) << std::endl;
+						argTypePos = charAfterPos;
+						continue; //then keep looking for the argType
+					}
+				}
+				
+				if(charAfterPos < fileContents.size())
+				{
+					char charAfter = fileContents[charAfterPos];
+					if(charAfter != ',' && charAfter != ' ' && charAfter != '\t' && 
+						charAfter != '\n' && charAfter != ')')
+					{
+						__COUTT__ << "Found input arg type '" << argType << "' as part of another word, continuing search..." << 
+							fileContents.substr(foundArgTypePos-1, 20) << std::endl;
+						argTypePos = charAfterPos;
+						continue; //then keep looking for the argType
+					}
+				}
+				break;  //argType found cleanly
+			} //end argType find loop
+			argTypePos = fileContents.find(',', foundArgTypePos + argType.size());
+			__COUTTV__(argTypePos);
+			if(argTypePos == std::string::npos || argTypePos > argEndPos)
+				argTypePos = argEndPos; //move to end of arg list if no more
+			else 
+				__COUTTV__(fileContents.substr(argTypePos, 20));
+			maxArgTypePos = argTypePos;
+			__COUTTV__(maxArgTypePos);
+			__COUTTV__(fileContents.substr(maxArgTypePos, 20));
+		} //end input arg types confirmation loop
+		if(mismatch)
+			continue;
+
+		argTypePos = nextParenthesis;
+		mismatch = false;
+		bool isFirst = true;
+		for(const auto& argType : outputTypes) //output arg types confirmation loop
+		{
+			if(isFirst)
+			{
+				isFirst = false;
+				continue; //skip return value
+			}
+			size_t foundArgTypePos = argTypePos;
+			while(1)
+			{
+				foundArgTypePos = fileContents.find(argType, argTypePos);
+				if(foundArgTypePos == std::string::npos || foundArgTypePos > argEndPos)
+				{
+					__COUTT__ << "Could not find output arg type '" << argType << "' in function definition, continuing search..." << std::endl;
+					mismatch = true;
+					break; //then found function name is not the correct function definition
+				}
+				__COUTTV__(argType);
+
+				size_t charAfterPos = foundArgTypePos + argType.size();
+				//make sure it is clean argType match (i.e. not part of another word)
+				//	must be , or whitespace or end before and after
+				if(foundArgTypePos != nextParenthesis)
+				{
+					char charBefore = fileContents[foundArgTypePos - 1];
+					if(charBefore != ',' && charBefore != ' ' && charBefore != '\t' && 
+						charBefore != '\n' && charBefore != '(')
+					{
+						__COUTT__ << "Found input arg type '" << argType << "' as part of another word, continuing search..." << 
+							fileContents.substr(foundArgTypePos-1, 20) << std::endl;
+						argTypePos = charAfterPos;
+						continue; //then keep looking for the argType
+					}
+				}
+				if(charAfterPos < fileContents.size())
+				{
+					char charAfter = fileContents[charAfterPos];
+					if(charAfter != ',' && charAfter != ' ' && charAfter != '\t' && 
+						charAfter != '\n' && charAfter != ')')
+					{
+						__COUTT__ << "Found input arg type '" << argType << "' as part of another word, continuing search..." <<
+						 	fileContents.substr(foundArgTypePos-1, 20) << std::endl;
+						argTypePos = charAfterPos;
+						continue; //then keep looking for the argType
+					}
+				}
+				break;  //argType found cleanly
+			} //end argType find loop
+			argTypePos = fileContents.find(',', foundArgTypePos + argType.size());
+			__COUTTV__(argTypePos);
+			if(argTypePos == std::string::npos || argTypePos > argEndPos)
+				argTypePos = argEndPos; //move to end of arg list if no more
+			else 
+				__COUTTV__(fileContents.substr(argTypePos, 20));				
+			if(argTypePos > maxArgTypePos)
+			{
+				maxArgTypePos = argTypePos;
+				__COUTTV__(maxArgTypePos);
+				__COUTTV__(fileContents.substr(maxArgTypePos, 20));
+			}
+		} //end output arg types confirmation loop
+		if(mismatch)
+			continue;
+
+		__COUTTV__(maxArgTypePos);
+		__COUTTV__(fileContents.substr(maxArgTypePos, 20));
+
+		//confirm no more parameters exist that would indicate overload function mismatch
+		size_t nextComma = fileContents.find(',', maxArgTypePos);
+		if(nextComma != std::string::npos && nextComma < argEndPos)
+		{
+			__COUTT__ << "Found extra arg type after expected types, continuing search..." << std::endl;
+			continue; //then found function name is not the correct function definition
+		}
+		
+		//else found function name is valid, so break out of search loop
+		break;
+	} //end search for function name loop
+	
+	//find semicolon after function name
+	size_t semicolonPos = funcNamePos;
+	while(1)
+	{
+		semicolonPos = fileContents.find(';', semicolonPos + 1);
+		if(semicolonPos == std::string::npos)
+		{
+			__SS__ << "ERROR: could not find ';' after function name in source file: " << beforeParen << " in file " << sourceFile << __E__;
+			__SS_THROW__;
+		}
+		
+		//ignore semicolons in comments
+		size_t prevNewLine = fileContents.rfind("\n", semicolonPos);
+		size_t prevComment = fileContents.rfind("//", semicolonPos);
+		if(prevComment == std::string::npos || (prevNewLine != std::string::npos && prevComment < prevNewLine))			
+			break; //then ; is not in comment
+		//else is in comment, so continue searching
+	} //end search for semicolon loop
+
+	//extract declared function header
+	std::string declaredFunctionHeader = fileContents.substr(funcNamePos, semicolonPos - funcNamePos);
+	__COUTTV__(declaredFunctionHeader);
+	return declaredFunctionHeader;
+} //end getDeclaredFunctionHeader()
 
 //==============================================================================
 /// @brief Imports the tracker test stand UI files and modifies them for the FEInterface
@@ -444,11 +723,11 @@ void ImportTrackerTestStand(int argc, char* argv[])
 
 	//usually at otsdaq-mu2e-tracker/otsdaq-mu2e-tracker/Ui/DtcInterface.cc
 	std::vector<std::string> filesToImport = {
-	    "DtcInterface.cc", "DtcInterface_ProgramRoc.cc", "DtcInterface_ControlRoc.cc"};	
+	    "DtcInterfaceBase.cc", "DtcInterface.cc", "DtcInterface_print.cc", "DtcInterface_ProgramRoc.cc", "DtcInterface_ControlRoc.cc"};	
 	std::vector<std::string> headerFilesToImport = {
-	    "DtcInterface.hh", "DtcInterface.hh", "DtcInterface.hh"};	 
+	    "DtcInterfaceBase.hh", "DtcInterface.hh", "DtcInterface.hh",  		"DtcInterface.hh", 			"DtcInterface.hh"};	 
 	std::vector<std::string> prepend = {
-	    "Ui", "Ui_ProgramRoc", "Ui_ControlRoc"};	 
+	    "Ui_base", 				"Ui",				 "Ui_print", 			"Ui_ProgramRoc", 			"Ui_ControlRoc"};
 	for(size_t i = 0; i < filesToImport.size(); i++)
 	{
 		std::string importFile = importPath + "/" + filesToImport[i];
@@ -567,7 +846,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					break; // no more functions found
 				}
 
-				__COUTV__(fileContents.substr(funcPos, 50));
+				__COUT__ << "===========> Considering next DtcInterface:: pos = " << (fileContents.substr(funcPos, 50)) << __E__;
 								
 				size_t endFuncPos = fileContents.find(")", funcPos);
 				if (endFuncPos == std::string::npos)
@@ -588,7 +867,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				
 				__COUTV__(fileContents.substr(bracePos, 50));	
 
-				std::string functionHeader = fileContents.substr(funcPos + functionNeedle.size(), bracePos - (funcPos + functionNeedle.size()) - 1 /* remove new line */);
+				std::string functionHeader = fileContents.substr(funcPos + functionNeedle.size(), bracePos - (funcPos + functionNeedle.size()));
 
 				//enforce that there are no special characters in function header between funcPos and bracePos				
 				if (functionHeader.find("{") != std::string::npos || 
@@ -657,7 +936,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				}
 
 				// prepend the specified string
-				__COUT__ << "// Found: " + prepend[i] + "_" + functionHeader;
+				__COUT__ << "Found: " + prepend[i] + "_" + functionHeader;
 
 				size_t startFunc = fileContents.rfind('\n',funcPos);
 				if(startFunc == std::string::npos)
@@ -666,7 +945,14 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					continue; // malformed function definition, so skip			
 				}
 				std::string functionReturnVal = fileContents.substr(startFunc + 1, funcPos - (startFunc + 1));
+				__COUTTV__(functionReturnVal);
+				functionReturnVal = StringMacros::trim(functionReturnVal);
 				__COUTV__(functionReturnVal);
+				if(functionReturnVal.size() == 0)
+				{
+					__COUTT__ << "Ignoring constructors/destructors functions." << std::endl;
+					continue; // malformed function definition, so skip			
+				}
 				__COUTTV__(startFunc);
 
 				//accept as comment lines with "// "
@@ -715,10 +1001,12 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				// if args are simple (int, string), then output the FE Macro declaration, registration, and definition
 				std::vector<std::string> argTypes, argNames,  argDefaults, 
 					outputTypes, outputNames;
+				__COUT__ << "Validating args for FE Macro... " << declaredFunctionHeader << std::endl;
 				if(validateArgsForFEMacro(declaredFunctionHeader, functionReturnVal,
 					argTypes, argNames, argDefaults,
 					outputTypes, outputNames))
 				{
+					__COUT__ << "Valid FE Macro! " << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << std::endl;
 					// --------------------------------------------
 					// FE Macro declaration ----------------
 					outputFeMacroDeclareFile << "void FEMacro_" << prepend[i] << "_" << functionHeader.substr(0, functionHeader.find('(')) << "(__ARGS__);\n";
@@ -734,8 +1022,9 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					outputFeMacroRegisterFile << "                            std::vector<std::string>{";					
 					for(size_t o = 0, ocount = 0; o < argNames.size(); o++) //input args loop
 					{
-						if(argTypes[o] == "out")
-							continue; //skip output by reference args
+						if((argTypes[o].size() == 3 || argTypes[o].size() == 4) && 
+								argTypes[o].find("out") == 0)
+							continue; //skip output by reference/pointer args
 
 						if(argNames[o] == "Link" || argNames[o] == "LinkMask")
 							continue; //skip link args (take from ROC member variable)
@@ -785,10 +1074,15 @@ R"(
 
 					for(size_t o = 0; o < argNames.size(); o++) //declare input args
 					{
-						if(argTypes[o] == "out")
-							continue; //skip output by reference args
-							
-						outputFeMacroDefineFile << "\t" << argTypes[o] << " " << argNames[o] << " = ";
+						if((argTypes[o].size() == 3 || argTypes[o].size() == 4) && 
+								argTypes[o].find("out") == 0)
+							continue; //skip output by reference/pointer args
+
+						
+						if(argTypes[o].find('&') != std::string::npos) //remove the & from output by reference args
+							outputFeMacroDefineFile << "\t" << argTypes[o].substr(0, argTypes[o].size()-1) << " " << argNames[o] << " = ";
+						else
+							outputFeMacroDefineFile << "\t" << argTypes[o] << " " << argNames[o] << " = ";
 						
 						
 						if(argNames[o] == "Link") // for link args, take from ROC member variable							
@@ -808,8 +1102,12 @@ R"(
 							if(argDefaults[o].size())
 								outputFeMacroDefineFile << " (Default = " << argDefaults[o] << ")";
 
-							outputFeMacroDefineFile << "\"" << ", " << 
-								argTypes[o];
+							if(argTypes[o].find('&') != std::string::npos) //remove the & from output by reference args
+								outputFeMacroDefineFile << "\"" << ", " << 
+									argTypes[o].substr(0, argTypes[o].size()-1);
+							else
+								outputFeMacroDefineFile << "\"" << ", " << 
+									argTypes[o];
 							
 							if(argDefaults[o].size())
 								outputFeMacroDefineFile << ", " << argDefaults[o];
@@ -824,8 +1122,14 @@ R"(
 						if(outputTypes[o] == "void")
 							continue; //no output to declare
 
-
 						if(outputTypes[o].find('&') != std::string::npos) //remove the & from output by reference args
+						{
+							if(outputTypes[o] == "std::ostream&") //special case for ostream
+								outputFeMacroDefineFile << "\t" << "std::stringstream" << " " << outputNames[o] << ";\n";
+							else
+								outputFeMacroDefineFile << "\t" << outputTypes[o].substr(0, outputTypes[o].size()-1) << " " << outputNames[o] << ";\n";
+						}
+						else if(outputTypes[o].find('*') != std::string::npos) //remove the * from output by reference args
 							outputFeMacroDefineFile << "\t" << outputTypes[o].substr(0, outputTypes[o].size()-1) << " " << outputNames[o] << ";\n";
 						else
 							outputFeMacroDefineFile << "\t" << outputTypes[o] << " " << outputNames[o] << ";\n";
@@ -840,6 +1144,8 @@ R"(
 					{
 						if(o > 0)
 							outputFeMacroDefineFile << ", ";
+						if(argTypes[o] == "out*") //needed to pass as pointer for output result
+							outputFeMacroDefineFile << "&";						
 						outputFeMacroDefineFile << argNames[o];
 					}					
 					outputFeMacroDefineFile << ");\n\n";
@@ -851,7 +1157,12 @@ R"(
 
 						//handle special output types
 						if(outputTypes[o].find("std::vector") != std::string::npos)
-							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", StringMacros::vectorToString(" << outputNames[o] << "));\n";							
+							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", StringMacros::vectorToString(" << outputNames[o] << "));\n";
+						else if(outputTypes[o] == "std::ostream&") //special case for ostream
+						{
+							outputFeMacroDefineFile << "\t__COUT_MULTI__(2, " << outputNames[o] << ".str());\n";
+							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", " << outputNames[o] << ".str());\n";
+						}
 						else //normal output type
 							outputFeMacroDefineFile << "\t__SET_ARG_OUT__(\"" << outputNames[o] << "\", " << outputNames[o] << ");\n";
 					} //end set output args loop

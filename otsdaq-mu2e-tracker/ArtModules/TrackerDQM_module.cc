@@ -2,10 +2,10 @@
 // tracker DQM module
 ///////////////////////////////////////////////////////////////////////////////
 #include "TRACE/tracemf.h"
-#define TRACE_NAME "TrackerDQM"
+#define  TRACE_NAME "TrackerDQM"
 
-#include "TROOT.h"
 #include "TSystem.h"
+#include "TROOT.h"
 
 #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_EventHeader.h"
 
@@ -13,32 +13,22 @@
 //-----------------------------------------------------------------------------
 // convert DTC ID into an index within the station (0 or 1)
 //-----------------------------------------------------------------------------
-int TrackerDQM::dtcIndex(int DtcID)
-{
-	int dtc_index(-1);
-
-	if(DtcID == 0)
-		dtc_index = 0;  // generic
-	else if(DtcID == 1)
-		dtc_index = 1;  // generic
-	else if(DtcID == 18)
-		dtc_index = 1;  // daq09, new
-	else if(DtcID == 19)
-		dtc_index = 0;  // daq09, new
-	else if(DtcID == 42)
-		dtc_index = 1;  // daq09, old
-	else if(DtcID == 73)
-		dtc_index = 0;  // daq09, old
-	else if(DtcID == 44)
-		dtc_index = 0;  // daq22
-	else if(DtcID == 45)
-		dtc_index = 1;  // daq22
-	else
-	{
-		TLOG(TLVL_ERROR) << "Unknown DTC ID:" << DtcID << " .Throw an exception";
-		throw 10;
-	}
-	return dtc_index;
+int TrackerDQM::dtcIndex(int DtcID) {
+  int dtc_index(-1);
+  
+  if      (DtcID ==  0) dtc_index = 0;  // generic
+  else if (DtcID ==  1) dtc_index = 1;  // generic
+  else if (DtcID == 18) dtc_index = 1;  // daq09, new
+  else if (DtcID == 19) dtc_index = 0;  // daq09, new
+  else if (DtcID == 42) dtc_index = 1;  // daq09, old
+  else if (DtcID == 73) dtc_index = 0;  // daq09, old
+  else if (DtcID == 44) dtc_index = 0;  // daq22
+  else if (DtcID == 45) dtc_index = 1;  // daq22
+  else {
+    TLOG(TLVL_ERROR) << "Unknown DTC ID:" << DtcID << " .Throw an exception";
+    throw 10;
+  }
+  return dtc_index;
 }
 
 //-----------------------------------------------------------------------------
@@ -266,159 +256,35 @@ TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf) :
   }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket* Hit,
-                                     float*                                       Wf,
-                                     WfParam_t*                                   Wp)
-{
-	int n_adc_packets = Hit->NumADCPackets;
-
-	Wf[0] = reverseBits(Hit->ADC00);
-	Wf[1] = reverseBits(Hit->ADC01A + (Hit->ADC01B << 6));
-	Wf[2] = reverseBits(Hit->ADC02);
-
-	for(int i = 0; i < n_adc_packets; i++)
-	{
-		mu2e::TrackerDataDecoder::TrackerADCPacket* ahit =
-		    (mu2e::TrackerDataDecoder::TrackerADCPacket*)(((uint16_t*)Hit) + 8 + 8 * i);
-		int loc = 12 * i + 2;
-
-		Wf[loc + 1]  = reverseBits(ahit->ADC0);
-		Wf[loc + 2]  = reverseBits(ahit->ADC1A + (ahit->ADC1B << 6));
-		Wf[loc + 3]  = reverseBits(ahit->ADC2);
-		Wf[loc + 4]  = reverseBits(ahit->ADC3);
-		Wf[loc + 5]  = reverseBits(ahit->ADC4A + (ahit->ADC4B << 6));
-		Wf[loc + 6]  = reverseBits(ahit->ADC5);
-		Wf[loc + 7]  = reverseBits(ahit->ADC6);
-		Wf[loc + 8]  = reverseBits(ahit->ADC7A + (ahit->ADC7B << 6));
-		Wf[loc + 9]  = reverseBits(ahit->ADC8);
-		Wf[loc + 10] = reverseBits(ahit->ADC9);
-		Wf[loc + 11] = reverseBits(ahit->ADC10A + (ahit->ADC10B << 6));
-		Wf[loc + 12] = reverseBits(ahit->ADC11);
-	}
-	//-----------------------------------------------------------------------------
-	// waveform processing
-	// 1. determine the baseline
-	//-----------------------------------------------------------------------------
-	Wp->bl = 0;
-	for(int i = 0; i < _nSamplesBL; i++)
-	{
-		Wp->bl += Wf[i];
-	}
-	Wp->bl = Wp->bl / _nSamplesBL;
-	//-----------------------------------------------------------------------------
-	// 2. subtract the baseline and calculate the charge
-	//-----------------------------------------------------------------------------
-	int nsamples = 15 + 12 * (Hit->NumADCPackets - 1);
-	for(int i = 0; i < nsamples; i++)
-	{
-		Wf[i] = Wf[i] - Wp->bl;
-	}
-
-	int tail  = 0;
-	Wp->fs    = -1;
-	Wp->q     = 0;
-	Wp->qt    = 0;
-	Wp->ph    = -1;
-	Wp->q_x_i = 0;
-	Wp->ns    = 0;
-
-	for(int i = _nSamplesBL; i < nsamples; i++)
-	{
-		if(Wf[i] > _minPulseHeight)
-		{
-			if(tail == 0)
-			{
-				// first sample above the threshold
-				if(Wp->fs < 0)
-					Wp->fs = i;
-
-				Wp->q += Wf[i];
-				// as integrating the charge, also calculate the time
-				Wp->q_x_i += Wf[i] * i;
-				Wp->ns += 1;
-
-				if(Wf[i] > Wp->ph)
-				{
-					Wp->ph = Wf[i];
-				}
-			}
-		}
-		else if(Wf[i] < 0)
-		{
-			if(Wp->ph > 0)
-			{
-				tail = 1;
-			}
-			if(tail == 1)
-				Wp->qt -= Wf[i];
-		}
-	}
-	Wp->tm = Wp->q_x_i / (Wp->q + 1.e-12);
-	//-----------------------------------------------------------------------------
-	// done
-	//-----------------------------------------------------------------------------
-	if(Wp->q < 100)
-	{
-		TLOG(TLVL_DEBUG) << "event=" << _edata._event->run() << ":"
-		                 << _edata._event->subRun() << ":" << _edata._event->event()
-		                 << " Q=" << Wp->q;
-	}
-}
-
+// initialize reference channels, at this point use channels 91 and 94 for all 
+// ROC's (the readout order is defined in firmware and is the same for all channels)
 //-----------------------------------------------------------------------------
-TrackerDQM::TrackerDQM(art::EDAnalyzer::Table<Config> const& conf)
-    : art::EDAnalyzer(conf)
-    ,
+  _activeLinks[0]       = &_activeLinks_0;
+  _activeLinks[1]       = &_activeLinks_1;
+  
+  _nActiveLinks[0]      = _activeLinks[0]->size();
+  _nActiveLinks[1]      = _activeLinks[1]->size();
 
-    _trkfCollTag(conf().trkfCollTag())
-    , _diagLevel(conf().diagLevel())
-    , _minNBytes(conf().minNBytes())
-    , _maxNBytes(conf().maxNBytes())
-    ,
-    // _dataHeaderOffset   (conf().dataHeaderOffset   ()),
-    _activeLinks_0(conf().activeLinks_0())
-    , _activeLinks_1(conf().activeLinks_1())
-    , _refChCal(conf().refChCal())
-    , _refChHV(conf().refChHV())
-    , _dumpDTCRegisters(conf().dumpDTCRegisters())
-    , _analyzeFragments(conf().analyzeFragments())
-    , _maxFragmentSize(conf().maxFragmentSize())
-    , _pulserFrequency(conf().pulserFrequency())
-    , _nADCPackets(conf().nADCPackets())
-    , _nSamplesBL(conf().nSamplesBL())
-    , _minPulseHeight(conf().minPulseHeight())
-    , _minNErrors(conf().minNErrors())
-    , _errorCode(conf().errorCode())
-    , _validateADCPatterns(conf().validateADCPatterns())
-    , _fillHistograms(conf().fillHistograms())
-    , _fillWfHistograms(conf().fillWfHistograms())
-    , _interactiveMode(conf().interactiveMode())
-    , _debugBits(conf().debugBits())
-    ,
+  _nStations = 1; // for now
+  for (int ist=0; ist<_nStations; ist++) {
+    for (int idtc=0; idtc<2; idtc++) {
+      for (int ilink=0; ilink<kMaxNLinks; ilink++) {
+        RocData_t* rd = &_edata.station[ist].roc[idtc][ilink];
+        rd->link      = ilink;
+        
+        if (ilink < _nActiveLinks[idtc]) {
+          _referenceChannel[ilink][0] = _refChCal[ilink];
+          _referenceChannel[ilink][1] = _refChHV [ilink];
+        }
 
-    _port(conf().port())
-{
-	//-----------------------------------------------------------------------------
-	// parse debug bits
-	//-----------------------------------------------------------------------------
-	const char* key;
-	// a flag is an integer!
-	int nbits = _debugBits.size();
-	for(int i = 0; i < nbits; i++)
-	{
-		int index(0), value(0);
-		key = _debugBits[i].data();
-		sscanf(key, "bit%i:%i", &index, &value);
-		_debugBit[index] = value;
+        rd->ref_ch[0] = &rd->channel[_referenceChannel[ilink][0]];
+        rd->ref_ch[1] = &rd->channel[_referenceChannel[ilink][1]];
+      }
+    }
+  }
 
-		printf("... TrackerDQM: bit=%3i is set to %i \n", index, _debugBit[index]);
-	}
-	//-----------------------------------------------------------------------------
-	// for now, assume only one station, but implement data structures handling
-	// full tracker
-	//-----------------------------------------------------------------------------
-	_station = 0;
-	_plane   = 0;
+  _tdc_bin             = (5/256.*1e-3);       // TDC bin width (Richie), in us
+  _tdc_bin_ns          = _tdc_bin*1e3;        // convert to ns
 
   int nch_plot = _plotWaveforms.size();
   for (int i=0; i<4; ++i) {
@@ -481,199 +347,51 @@ void TrackerDQM::book_channel_histograms(art::TFileDirectory* Dir, int RunNumber
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::book_dtc_histograms(
-    art::TFileDirectory* Dir, int RunNumber, DtcHist_t* Hist, int IStation, int IDtc)
-{
+void TrackerDQM::book_dtc_histograms(art::TFileDirectory* Dir, int RunNumber, DtcHist_t* Hist, int IStation, int IDtc) {
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::book_roc_histograms(art::TFileDirectory* Dir,
-                                     int                  RunNumber,
-                                     RocHist_t*           Hist,
-                                     int                  Station,
-                                     int                  Dtc,
-                                     int                  Link)
-{
-	Hist->nbytes = Dir->make<TH1F>(
-	    "nbytes",
-	    Form("run %06i: link_%02i:%i:%i n bytes", RunNumber, Station, Dtc, Link),
-	    10000,
-	    0.,
-	    10000.);
-	Hist->npackets = Dir->make<TH1F>(
-	    "npackets",
-	    Form("run %06i: link %02i:%i:%i n packets", RunNumber, Station, Dtc, Link),
-	    1000,
-	    0.,
-	    1000.);
-	Hist->nhits = Dir->make<TH1F>(
-	    "nhits",
-	    Form("run %06i: link %02i:%i:%i n hits", RunNumber, Station, Dtc, Link),
-	    300,
-	    0.,
-	    300.);
-	Hist->valid = Dir->make<TH1F>(
-	    "valid",
-	    Form("run %06i: link %02i:%i:%i valid", RunNumber, Station, Dtc, Link),
-	    2,
-	    0.,
-	    2.);
-	Hist->error_code = Dir->make<TH1F>(
-	    "errcode",
-	    Form("run %06i: link %02i:%i:%i errcode", RunNumber, Station, Dtc, Link),
-	    512,
-	    0.,
-	    512.);
+void TrackerDQM::book_roc_histograms(art::TFileDirectory* Dir, int RunNumber, RocHist_t* Hist, int Station, int Dtc, int Link) {
+  Hist->nbytes          = Dir->make<TH1F>("nbytes"  ,        Form("run %06i: link_%02i:%i:%i n bytes"      ,RunNumber,Station,Dtc,Link),10000,    0., 10000.);
+  Hist->npackets        = Dir->make<TH1F>("npackets",        Form("run %06i: link %02i:%i:%i n packets"    ,RunNumber,Station,Dtc,Link), 1000,    0.,  1000.);
+  Hist->nhits           = Dir->make<TH1F>("nhits"   ,        Form("run %06i: link %02i:%i:%i n hits"       ,RunNumber,Station,Dtc,Link),  300,    0.,   300.);
+  Hist->valid           = Dir->make<TH1F>("valid"   ,        Form("run %06i: link %02i:%i:%i valid"        ,RunNumber,Station,Dtc,Link),    2,    0.,     2.);
+  Hist->error_code      = Dir->make<TH1F>("errcode" ,        Form("run %06i: link %02i:%i:%i errcode"      ,RunNumber,Station,Dtc,Link),  512,    0.,   512.);
 
-	Hist->n_empty =
-	    Dir->make<TH1F>("nempt", Form("run %06i: N(empty)", RunNumber), 100, 0., 100.);
-	Hist->n_invalid_dr = Dir->make<TH1F>(
-	    "ninvr", Form("run %06i: N(invalid DR)", RunNumber), 100, 0., 100.);
-	Hist->n_corrupt =
-	    Dir->make<TH1F>("ncorr", Form("run %06i: N(corrupt)", RunNumber), 100, 0., 100.);
-	Hist->n_timeouts =
-	    Dir->make<TH1F>("ntmo", Form("run %06i: N(timeouts)", RunNumber), 100, 0., 100.);
-	Hist->n_overflows = Dir->make<TH1F>(
-	    "nover", Form("run %06i: N(overflows)", RunNumber), 100, 0., 100.);
+  Hist->n_empty         = Dir->make<TH1F>("nempt"      , Form("run %06i: N(empty)"     ,RunNumber),  100, 0.,    100.);
+  Hist->n_invalid_dr    = Dir->make<TH1F>("ninvr"      , Form("run %06i: N(invalid DR)",RunNumber),  100, 0.,    100.);
+  Hist->n_corrupt       = Dir->make<TH1F>("ncorr"      , Form("run %06i: N(corrupt)"   ,RunNumber),  100, 0.,    100.);
+  Hist->n_timeouts      = Dir->make<TH1F>("ntmo"       , Form("run %06i: N(timeouts)"  ,RunNumber),  100, 0.,    100.);
+  Hist->n_overflows     = Dir->make<TH1F>("nover"      , Form("run %06i: N(overflows)" ,RunNumber),  100, 0.,    100.);
 
-	Hist->nerr_tot = Dir->make<TH1F>(
-	    "nerr_tot",
-	    Form("run %06i: link %02i:%i:%i N errors", RunNumber, Station, Dtc, Link),
-	    1000,
-	    0.,
-	    2000.);
-	Hist->nerr_vs_evt = Dir->make<TH1F>(
-	    "nerr_vs_evt",
-	    Form("run %06i: link %02i:%i:%i N err vs evt", RunNumber, Station, Dtc, Link),
-	    1000,
-	    0.,
-	    5000000.);
-	Hist->eflg_vs_evt = Dir->make<TH1F>(
-	    "eflg_vs_evt",
-	    Form("run %06i: link %02i:%i:%i eflag vs evt", RunNumber, Station, Dtc, Link),
-	    1000,
-	    0.,
-	    5000000.);
+  Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: link %02i:%i:%i N errors"     ,RunNumber,Station,Dtc,Link), 1000, 0.,   2000.);
+  Hist->nerr_vs_evt     = Dir->make<TH1F>("nerr_vs_evt", Form("run %06i: link %02i:%i:%i N err vs evt" ,RunNumber,Station,Dtc,Link), 1000, 0.,   5000000.);
+  Hist->eflg_vs_evt     = Dir->make<TH1F>("eflg_vs_evt", Form("run %06i: link %02i:%i:%i eflag vs evt" ,RunNumber,Station,Dtc,Link), 1000, 0.,   5000000.);
 
-	Hist->nh_vs_ch = Dir->make<TH2F>(
-	    "nh_vs_ch",
-	    Form("run %06i: link %02i:%i:%i nh vs ch", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.,
-	    50,
-	    0,
-	    50);
-	Hist->nh_vs_adc0 = Dir->make<TH2F>(
-	    "nh_vs_adc0",
-	    Form("run %06i: link %02i:%i:%i nh vs adc", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.,
-	    50,
-	    0,
-	    50);
+  Hist->nh_vs_ch        = Dir->make<TH2F>("nh_vs_ch"  ,      Form("run %06i: link %02i:%i:%i nh vs ch"     ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
+  Hist->nh_vs_adc0      = Dir->make<TH2F>("nh_vs_adc0",      Form("run %06i: link %02i:%i:%i nh vs adc"    ,RunNumber,Station,Dtc,Link),  100,0.,100., 50,0,50);
 
-	Hist->dt0r_vs_ch = Dir->make<TH2F>(
-	    "dt0r_vs_ch_0",
-	    Form("run %06i: link %02i:%i:%i dt0r vs ch[0]", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.,
-	    2500,
-	    -25,
-	    25);
-	Hist->dt1r_vs_ch = Dir->make<TH2F>(
-	    "dt1r_vs_ch_0",
-	    Form("run %06i: link %02i:%i:%i dt1r vs ch[0]", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.,
-	    2500,
-	    -25,
-	    25);
+  Hist->dt0r_vs_ch      = Dir->make<TH2F>("dt0r_vs_ch_0",    Form("run %06i: link %02i:%i:%i dt0r vs ch[0]",RunNumber,Station,Dtc,Link),  100,0.,100.,2500,-25,25);
+  Hist->dt1r_vs_ch      = Dir->make<TH2F>("dt1r_vs_ch_0",    Form("run %06i: link %02i:%i:%i dt1r vs ch[0]",RunNumber,Station,Dtc,Link),  100,0.,100.,2500,-25,25);
 
-	Hist->dt0r01 = Dir->make<TH1F>(
-	    "dt0r01",
-	    Form("run %06i: link %02i:%i:%i dt0r01", RunNumber, Station, Dtc, Link),
-	    40000,
-	    -20000,
-	    20000);
-	Hist->dt1r01 = Dir->make<TH1F>(
-	    "dt1r01",
-	    Form("run %06i: link %02i:%i:%i dt1r01", RunNumber, Station, Dtc, Link),
-	    40000,
-	    -20000,
-	    20000);
+  Hist->dt0r01          = Dir->make<TH1F>("dt0r01",          Form("run %06i: link %02i:%i:%i dt0r01"       ,RunNumber,Station,Dtc,Link), 40000,-20000,20000);
+  Hist->dt1r01          = Dir->make<TH1F>("dt1r01",          Form("run %06i: link %02i:%i:%i dt1r01"       ,RunNumber,Station,Dtc,Link), 40000,-20000,20000);
 
-	Hist->nhits_vs_ich = Dir->make<TH1F>(
-	    "nh_vs_ich",
-	    Form("run %06i: link %02i:%i:%i nh vs ich", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.);
-	Hist->nhits_vs_adc = Dir->make<TH1F>(
-	    "nh_vs_adc",
-	    Form("run %06i: link %02i:%i:%i nh vs adc", RunNumber, Station, Dtc, Link),
-	    100,
-	    0.,
-	    100.);
-	// Hist->nhits_vs_adc[1] = Dir->make<TH1F>("nh_vs_adc_1",     Form("run %06i: link
-	// %02i:%i:%i nh vs adc_1"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+  Hist->nhits_vs_ich    = Dir->make<TH1F>("nh_vs_ich"  ,     Form("run %06i: link %02i:%i:%i nh vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+  Hist->nhits_vs_adc = Dir->make<TH1F>("nh_vs_adc",     Form("run %06i: link %02i:%i:%i nh vs adc"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
+  // Hist->nhits_vs_adc[1] = Dir->make<TH1F>("nh_vs_adc_1",     Form("run %06i: link %02i:%i:%i nh vs adc_1"  ,RunNumber,Station,Dtc,Link),  100, 0.,   100.);
 
-	Hist->dt0rc_vs_ch[0] =
-	    Dir->make<TH2F>("dt0rc_vs_ch_0",
-	                    Form("run %06i: link %02i:%i:%i dt0rc vs ch[0], ns",
-	                         RunNumber,
-	                         Station,
-	                         Dtc,
-	                         Link),
-	                    100,
-	                    0.,
-	                    100.,
-	                    1000,
-	                    -10,
-	                    10);
-	Hist->dt0rc_vs_ch[1] =
-	    Dir->make<TH2F>("dt0rc_vs_ch_1",
-	                    Form("run %06i: link %02i:%i:%i dt0rc vs ch[1], ns",
-	                         RunNumber,
-	                         Station,
-	                         Dtc,
-	                         Link),
-	                    100,
-	                    0.,
-	                    100.,
-	                    1000,
-	                    -10,
-	                    10);
+  Hist->dt0rc_vs_ch[0]  = Dir->make<TH2F>("dt0rc_vs_ch_0",   Form("run %06i: link %02i:%i:%i dt0rc vs ch[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  Hist->dt0rc_vs_ch[1]  = Dir->make<TH2F>("dt0rc_vs_ch_1",   Form("run %06i: link %02i:%i:%i dt0rc vs ch[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  
+  Hist->dt1rc_vs_ch[0]  = Dir->make<TH2F>("dt1rc_vs_ch_0",   Form("run %06i: link %02i:%i:%i dt1rc vs ch[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  Hist->dt1rc_vs_ch[1]  = Dir->make<TH2F>("dt1rc_vs_ch_1",   Form("run %06i: link %02i:%i:%i dt1rc vs ch[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
 
-	Hist->dt1rc_vs_ch[0] =
-	    Dir->make<TH2F>("dt1rc_vs_ch_0",
-	                    Form("run %06i: link %02i:%i:%i dt1rc vs ch[0], ns",
-	                         RunNumber,
-	                         Station,
-	                         Dtc,
-	                         Link),
-	                    100,
-	                    0.,
-	                    100.,
-	                    1000,
-	                    -10,
-	                    10);
-	Hist->dt1rc_vs_ch[1] =
-	    Dir->make<TH2F>("dt1rc_vs_ch_1",
-	                    Form("run %06i: link %02i:%i:%i dt1rc vs ch[1], ns",
-	                         RunNumber,
-	                         Station,
-	                         Dtc,
-	                         Link),
-	                    100,
-	                    0.,
-	                    100.,
-	                    1000,
-	                    -10,
-	                    10);
+  Hist->dt0rc_vs_adc[0] = Dir->make<TH2F>("dt0rc_vs_adc_0",  Form("run %06i: link %02i:%i:%i dt0rc vs adc[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  Hist->dt0rc_vs_adc[1] = Dir->make<TH2F>("dt0rc_vs_adc_1",  Form("run %06i: link %02i:%i:%i dt0rc vs adc[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  
+  Hist->dt1rc_vs_adc[0] = Dir->make<TH2F>("dt1rc_vs_adc_0",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[0], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
+  Hist->dt1rc_vs_adc[1] = Dir->make<TH2F>("dt1rc_vs_adc_1",  Form("run %06i: link %02i:%i:%i dt1rc vs adc[1], ns",RunNumber,Station,Dtc,Link),  100,0.,100.,1000,-10,10);
 
   if (_fillWfHistograms) {
     Hist->fs_vs_ich       = Dir->make<TProfile>("fs_vs_ich"  , Form("run %06i: link %02i:%i:%i fs vs ich"    ,RunNumber,Station,Dtc,Link),  100, 0.,   100.,0,  30);
@@ -705,16 +423,11 @@ void TrackerDQM::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, 
   Hist->n_nch_errors    = Dir->make<TH1F>("n_nch_err"  , Form("run %06i: N nch errors" ,RunNumber),  100, 0.,    100.);
   Hist->valid           = Dir->make<TH1F>("valid"      , Form("run %06i: valid code"   ,RunNumber),  100, 0.,    100.);
 
-	Hist->n_empty =
-	    Dir->make<TH1F>("nempt", Form("run %06i: N(empty)", RunNumber), 100, 0., 100.);
-	Hist->n_invalid_dr = Dir->make<TH1F>(
-	    "ninvr", Form("run %06i: N(invalid dr)", RunNumber), 100, 0., 100.);
-	Hist->n_corrupt =
-	    Dir->make<TH1F>("ncorr", Form("run %06i: N(corrupt)", RunNumber), 100, 0., 100.);
-	Hist->n_timeouts =
-	    Dir->make<TH1F>("ntmo", Form("run %06i: N(timeouts)", RunNumber), 100, 0., 100.);
-	Hist->n_overflows = Dir->make<TH1F>(
-	    "nover", Form("run %06i: N(overflows)", RunNumber), 100, 0., 100.);
+  Hist->n_empty         = Dir->make<TH1F>("nempt"      , Form("run %06i: N(empty)"     ,RunNumber),  100, 0.,    100.);
+  Hist->n_invalid_dr    = Dir->make<TH1F>("ninvr"      , Form("run %06i: N(invalid dr)",RunNumber),  100, 0.,    100.);
+  Hist->n_corrupt       = Dir->make<TH1F>("ncorr"      , Form("run %06i: N(corrupt)"   ,RunNumber),  100, 0.,    100.);
+  Hist->n_timeouts      = Dir->make<TH1F>("ntmo"       , Form("run %06i: N(timeouts)"  ,RunNumber),  100, 0.,    100.);
+  Hist->n_overflows     = Dir->make<TH1F>("nover"      , Form("run %06i: N(overflows)" ,RunNumber),  100, 0.,    100.);
 
   Hist->error_code      = Dir->make<TH1F>("error_code" , Form("run %06i: error code"   ,RunNumber),  512, 0.,    512.);
   Hist->nerr_tot        = Dir->make<TH1F>("nerr_tot"   , Form("run %06i: N errors"     ,RunNumber), 1000, 0.,   2000.);
@@ -724,6 +437,7 @@ void TrackerDQM::book_event_histograms(art::TFileDirectory* Dir, int RunNumber, 
   Hist->t4mt2[0]        = Dir->make<TH1F>("t4mt2_0"    , Form("run %06i: t4[0]-t2[0]"  ,RunNumber), 25000, -25000,  25000);
   Hist->t4mt2[1]        = Dir->make<TH1F>("t4mt2_1"    , Form("run %06i: t4[1]-t2[1]"  ,RunNumber), 25000, -25000,  25000);
 }
+
 
 //-----------------------------------------------------------------------------
 // for now - make the interface work with one station only
@@ -755,61 +469,25 @@ void TrackerDQM::book_histograms(int RunNumber) {
   book_station_histset[ 0] = 1;		// all events
   book_station_histset[ 1] = 0;	        // events with the error code = 0
 
-	int book_event_histset[kNEventHistSets];
-	for(int i = 0; i < kNEventHistSets; i++)
-		book_event_histset[i] = 0;
-
-	book_event_histset[0] = 1;  // all events
-	book_event_histset[1] = 1;  // events with the error code = 0
-	char folder_name[100];
-	for(int i = 0; i < kNEventHistSets; i++)
-	{
-		if(book_event_histset[i] != 0)
-		{
-			sprintf(folder_name, "evt_%i", i);
-			art::TFileDirectory top_dir = tfs->mkdir(folder_name);
-
-			_hist.event[i] = new EventHist_t;
-			book_event_histograms(&top_dir, RunNumber, _hist.event[i]);
-		}
-	}
-
-	int book_station_histset[kNStationHistSets];
-	for(int i = 0; i < kNStationHistSets; i++)
-		book_station_histset[i] = 0;
-
-	book_station_histset[0] = 1;  // all events
-	book_station_histset[1] = 1;  // events with the error code = 0
-
-	for(int ist = 0; ist < kNStationHistSets; ist++)
-	{
-		if(book_station_histset[ist] != 0)
-		{
-			sprintf(folder_name, "stn_%02i", ist);
-			art::TFileDirectory stn_dir = tfs->mkdir(folder_name);
-			_hist.station[ist]          = new StationHist_t;
-
-			for(int idtc = 0; idtc < 2; idtc++)
-			{
-				art::TFileDirectory dtc_dir = stn_dir.mkdir(Form("dtc%i", idtc));
-				book_dtc_histograms(
-				    &dtc_dir, RunNumber, &_hist.station[ist]->dtc[idtc], ist, idtc);
-				for(int i = 0; i < _nActiveLinks[idtc]; i++)
-				{
-					int link = (_activeLinks[idtc])->at(i);  // this assumes one station
-					art::TFileDirectory roc_dir = dtc_dir.mkdir(Form("roc%i", link));
-					book_roc_histograms(&roc_dir,
-					                    RunNumber,
-					                    &_hist.station[ist]->dtc[idtc].roc[link],
-					                    ist,
-					                    idtc,
-					                    link);
-				}
-			}
-		}
-	}
-
-	printf("[mu2e::TrackerDQM] pointer to the module: 0x%8p\n", (void*)this);
+  for (int ist=0; ist<kNStationHistSets; ist++) {
+    if (book_station_histset[ist] != 0) {
+      sprintf(folder_name,"stn_%02i",ist);
+      art::TFileDirectory stn_dir = tfs->mkdir(folder_name);
+      _hist.station[ist] = new StationHist_t;
+      
+      for (int idtc=0; idtc<2; idtc++) {
+        art::TFileDirectory dtc_dir = stn_dir.mkdir(Form("dtc%i",idtc));
+        book_dtc_histograms(&dtc_dir,RunNumber,&_hist.station[ist]->dtc[idtc],ist,idtc);
+        for (int i=0; i<_nActiveLinks[idtc]; i++) {
+          int link  = (_activeLinks[idtc])->at(i);        // this assumes one station
+          art::TFileDirectory roc_dir = dtc_dir.mkdir(Form("roc%i",link));
+          book_roc_histograms(&roc_dir,RunNumber,&_hist.station[ist]->dtc[idtc].roc[link],ist,idtc,link);
+        }
+      }
+    }
+  }
+        
+  printf("[mu2e::TrackerDQM] pointer to the module: 0x%8p\n",(void*) this);
 }
 
 //-----------------------------------------------------------------------------
@@ -836,18 +514,14 @@ void TrackerDQM::beginJob() {
     // delete [] tmp_argv;
   }
 
-	// app->Run()
-	// _app->Run(true);
-	// delete [] tmp_argv;
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::endJob()
-{
-	// delete _app;
-	// delete _canvas[0];
-	// delete _canvas[1];
-	// delete _canvas[2];
+void TrackerDQM::endJob() {
+  // delete _app;
+  // delete _canvas[0];
+  // delete _canvas[1];
+  // delete _canvas[2];
 }
 
 //-----------------------------------------------------------------------------
@@ -917,11 +591,16 @@ void TrackerDQM::beginRun(const art::Run& aRun) {
 //-----------------------------------------------------------------------------
 // in the end of the run need to save histograms - will figure that out
 //-----------------------------------------------------------------------------
-void TrackerDQM::endRun(const art::Run& aRun)
-{
-	//  int rn  = aRun.run();
+void TrackerDQM::endRun(const art::Run& aRun) {
+  //  int rn  = aRun.run();
 
-	_initialized = 0;
+  _initialized = 0;
+}
+
+
+//-----------------------------------------------------------------------------
+void TrackerDQM::fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data) {
+  Hist->nhits->Fill(Data->nhits());
 }
 
 //-----------------------------------------------------------------------------
@@ -1106,40 +785,26 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd) {
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::fill_dtc_histograms(DtcHist_t* Hist, StationData_t* Sd, int IDtc) {}
+void TrackerDQM::fill_event_histograms(EventHist_t* Hist, EventData_t* Ed) {
 
-//-----------------------------------------------------------------------------
-void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd)
-{
-	Hist->nbytes->Fill(Rd->nbytes);
-	Hist->npackets->Fill(Rd->npackets);
-	Hist->nhits->Fill(Rd->nhits);
-	Hist->valid->Fill(Rd->valid);
-	Hist->error_code->Fill(Rd->error_code);
+  Hist->error_code->Fill(Ed->error_code);
+  Hist->nerr_tot->Fill(Ed->nerr_tot);
+  Hist->valid->Fill(Ed->valid);
 
-	Hist->n_empty->Fill(Rd->n_empty);
-	Hist->n_invalid_dr->Fill(Rd->n_invalid_dr);
-	Hist->n_corrupt->Fill(Rd->n_corrupt);
-	Hist->n_timeouts->Fill(Rd->n_timeouts);
-	Hist->n_overflows->Fill(Rd->n_overflows);
+  Hist->nbtot->Fill(Ed->nbtot);
+  Hist->nhits->Fill(Ed->nhtot);
+  Hist->nfrag->Fill(Ed->nfrag);
 
-	Hist->nerr_tot->Fill(Rd->nerr_tot);
-	Hist->nerr_vs_evt->Fill(_edata._event->event(), Rd->nerr_tot);
-	int eflg = (Rd->nerr_tot > 0);
-	Hist->eflg_vs_evt->Fill(_edata._event->event(), eflg);
+  Hist->n_empty->Fill     (Ed->n_empty);
+  Hist->n_invalid_dr->Fill(Ed->n_invalid_dr);
+  Hist->n_corrupt->Fill   (Ed->n_corrupt);
+  Hist->n_timeouts->Fill  (Ed->n_timeouts);
+  Hist->n_overflows->Fill (Ed->n_overflows);
 
-	if(Rd->nhits > 0)
-	{
-		Hist->dt0r01->Fill(Rd->dt0r01);
-		Hist->dt1r01->Fill(Rd->dt1r01);
-	}
-	//-----------------------------------------------------------------------------
-	// fill channel histograms
-	//-----------------------------------------------------------------------------
-	for(int ich = 0; ich < kNChannels; ich++)
-	{
-		ChannelHist_t* hch = &Hist->channel[ich];
-		ChannelData_t* chd = &Rd->channel[ich];
+  for (int i=0; i<Ed->nfrag; i++) {
+    int fsize = Ed->fragments[i].nbytes;
+    Hist->fsize->Fill(fsize);
+  }
 
   Hist->nerr_vs_evt->Fill  (Ed->_event->event(),Ed->nerr_tot);
   int eflg = (Ed->nerr_tot > 0);
@@ -1156,21 +821,18 @@ void TrackerDQM::fill_roc_histograms(RocHist_t* Hist, RocData_t* Rd)
 //-----------------------------------------------------------------------------
 // to handle more than one station, this function will need to evolve
 //-----------------------------------------------------------------------------
-int TrackerDQM::fill_station_histograms(StationHist_t* Hist, EventData_t* Data)
-{
-	for(int idtc = 0; idtc < 2; idtc++)
-	{
-		for(int ir = 0; ir < _nActiveLinks[idtc]; ir++)
-		{
-			int link = _activeLinks[idtc]->at(ir);
-			fill_roc_histograms(&Hist->dtc[idtc].roc[link],
-			                    &Data->station[0].roc[idtc][link]);
-		}
-	}
-
-	return 0;
+int TrackerDQM::fill_station_histograms(StationHist_t* Hist, EventData_t* Data) {
+    
+  for (int idtc=0; idtc<2; idtc++) {
+    for (int ir=0; ir<_nActiveLinks[idtc]; ir++) {
+      int link = _activeLinks[idtc]->at(ir);
+      fill_roc_histograms(&Hist->dtc[idtc].roc[link],&Data->station[0].roc[idtc][link]);
+    }
+  }
+  
+  return 0;
 }
-
+    
 //-----------------------------------------------------------------------------
 // fill_roc_histograms also fills the channel histograms
 // if in error, only histogram the error code
@@ -1203,76 +865,69 @@ int TrackerDQM::fill_histograms() {
 }
 
 //-----------------------------------------------------------------------------
-int TrackerDQM::init_event(const art::Event& AnEvent)
-{
-	_edata._event = &AnEvent;
+int TrackerDQM::init_event(const art::Event& AnEvent) {
+  _edata._event = &AnEvent;
 
-	_edata.nbtot = 0;
-	_edata.nhtot = 0;
-	_edata.nfrag = 0;
-	_edata.valid = 0;
-	//-----------------------------------------------------------------------------
-	// reset error counters
-	//-----------------------------------------------------------------------------
-	_edata.error_code = 0;
-	_edata.nerr_tot   = 0;
+  _edata.nbtot      = 0;
+  _edata.nhtot      = 0;
+  _edata.nfrag      = 0;
+  _edata.valid      = 0;
+//-----------------------------------------------------------------------------
+// reset error counters
+//-----------------------------------------------------------------------------
+  _edata.error_code    = 0;
+  _edata.nerr_tot      = 0;
 
   _edata.n_nb_errors   = 0;
   _edata.n_nws_errors  = 0;
   _edata.n_cid_errors  = 0;
   _edata.n_nch_errors  = 0;
 
-	_edata.n_empty      = 0;
-	_edata.n_invalid_dr = 0;
-	_edata.n_corrupt    = 0;
-	_edata.n_timeouts   = 0;
-	_edata.n_overflows  = 0;
+  _edata.n_empty       = 0;
+  _edata.n_invalid_dr  = 0;
+  _edata.n_corrupt     = 0;
+  _edata.n_timeouts    = 0;
+  _edata.n_overflows   = 0;
 
-	_edata.fragments.clear();
-	//-----------------------------------------------------------------------------
-	// clear all counters
-	//-----------------------------------------------------------------------------
-	for(int ist = 0; ist < kNStations; ist++)
-	{
-		StationData_t* sd = &_edata.station[ist];
-
-		sd->n_empty      = 0;
-		sd->n_invalid_dr = 0;
-		sd->n_corrupt    = 0;
-		sd->n_timeouts   = 0;
-		sd->n_overflows  = 0;
-
-		for(int dtc = 0; dtc < 2; dtc++)
-		{
-			for(int lnk = 0; lnk < 6; lnk++)
-			{
-				RocData_t* rd    = &sd->roc[dtc][lnk];
-				rd->n_empty      = 0;
-				rd->n_invalid_dr = 0;
-				rd->n_corrupt    = 0;
-				rd->n_timeouts   = 0;
-				rd->n_overflows  = 0;
-				rd->nerr_tot     = 0;
-				rd->error_code   = 0;
-				for(int ich = 0; ich < kNChannels; ich++)
-				{
-					ChannelData_t* chd = &rd->channel[ich];
-					chd->hit.clear();
-					chd->wp.clear();
-				}
-			}
-		}
-	}
-	return 0;
+  _edata.fragments.clear();
+//-----------------------------------------------------------------------------
+// clear all counters
+//-----------------------------------------------------------------------------
+  for (int ist=0; ist<kNStations; ist++) {
+    StationData_t* sd = &_edata.station[ist];
+    
+    sd->n_empty       = 0;
+    sd->n_invalid_dr  = 0;
+    sd->n_corrupt     = 0;
+    sd->n_timeouts    = 0;
+    sd->n_overflows   = 0;
+    
+    for (int dtc=0; dtc<2; dtc++) {
+      for (int lnk=0; lnk<6; lnk++) {
+        RocData_t* rd    = &sd->roc[dtc][lnk];
+        rd->n_empty      = 0;
+        rd->n_invalid_dr = 0;
+        rd->n_corrupt    = 0;
+        rd->n_timeouts   = 0;
+        rd->n_overflows  = 0;
+        rd->nerr_tot     = 0;
+        rd->error_code   = 0;
+        for (int ich=0; ich<kNChannels; ich++) {
+          ChannelData_t* chd = &rd->channel[ich];
+          chd->hit.clear();
+          chd->wp.clear();
+        }
+      }
+    }
+  }
+  return 0;
 }
+
 
 //-----------------------------------------------------------------------------
 // a fragment may have multiple ROC blocks
 //-----------------------------------------------------------------------------
-void TrackerDQM::analyze_dtc_fragment(const art::Event&       Evt,
-                                      const artdaq::Fragment* Fragment)
-{
-	short* fdata = (short*)Fragment->dataBegin();
+void TrackerDQM::analyze_dtc_fragment(const art::Event& Evt, const artdaq::Fragment* Fragment) {
 
   short* fdata = (short*) Fragment->dataBegin() + sizeof(DTCLib::DTC_EventHeader)/sizeof(short);
 
@@ -1377,24 +1032,11 @@ void TrackerDQM::analyze_dtc_fragment(const art::Event&       Evt,
   }
 }
 
+
 //--------------------------------------------------------------------------------
 // assume that we only have tracker fragment(s)
 //-----------------------------------------------------------------------------
-void TrackerDQM::analyze(const art::Event& AnEvent)
-{
-	init_event(AnEvent);
-	//-----------------------------------------------------------------------------
-	// first get all fragments, select Tracker ones
-	//-----------------------------------------------------------------------------
-	auto handle = AnEvent.getValidHandle<std::vector<artdaq::Fragment>>("daq:TRK");
-	//-----------------------------------------------------------------------------
-	// proxy for event histograms
-	//-----------------------------------------------------------------------------
-	if(_diagLevel > 0)
-	{
-		printf(
-		    " Event : %06i:%08i%08i\n", AnEvent.run(), AnEvent.subRun(), AnEvent.event());
-	}
+void TrackerDQM::analyze(const art::Event& AnEvent) {
 
   init_event(AnEvent);
 //-----------------------------------------------------------------------------
@@ -1409,15 +1051,13 @@ void TrackerDQM::analyze(const art::Event& AnEvent)
   
   int ifrag = 0;
 
-	for(const artdaq::Fragment& frag : *handle)
-	{
-		//-----------------------------------------------------------------------------
-		// different fragments correspond to different DTCs, somewhere there should be the
-		// DTC ID
-		//-----------------------------------------------------------------------------
-		ushort* buf    = (ushort*)(frag.dataBegin());
-		int     nbytes = buf[0];
-		int     fsize  = frag.sizeBytes();
+  for (const artdaq::Fragment& frag : *handle) {
+//-----------------------------------------------------------------------------
+// different fragments correspond to different DTCs, somewhere there should be the DTC ID
+//-----------------------------------------------------------------------------
+    ushort* buf = (ushort*) (frag.dataBegin());
+    int nbytes  = buf[0];
+    int fsize   = frag.sizeBytes();
 
     if (nbytes < 2) {
       _edata.error_code  |= kNBytesErrorBit;
@@ -1429,17 +1069,14 @@ void TrackerDQM::analyze(const art::Event& AnEvent)
                                kNBytesErrorBit,nbytes);
     }
 
-			TLOG(TLVL_DEBUG) << Form(
-			    "event %i:%i:%i : ERROR_CODE:0x%04x nbytes=%i EMPTY_FRAGMENT",
-			    AnEvent.run(),
-			    AnEvent.subRun(),
-			    AnEvent.event(),
-			    kNBytesErrorBit,
-			    nbytes);
-		}
+    _edata.nfrag += 1;
+    _edata.nbtot += nbytes;        // including the artdaq part
 
-		_edata.nfrag += 1;
-		_edata.nbtot += nbytes;  // including the artdaq part
+    if (_diagLevel > 2) {
+      printf("%s\n",Form("---------- fragment # %3i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x\n",
+                         ifrag,nbytes,fsize,_edata.error_code));
+      print_fragment(&frag,nbytes/2);
+    }
 
     //    if ((_edata.error == 0) and _analyzeFragments) analyze_fragment(event,&frag);
     if (_analyzeFragments) analyze_dtc_fragment(AnEvent,&frag);
@@ -1483,18 +1120,14 @@ void TrackerDQM::analyze(const art::Event& AnEvent)
   if (_dumpDTCRegisters) {
     auto h = AnEvent.getValidHandle<std::vector<artdaq::Fragment>>("daq:TRKDTC");
 
-		//    if ((_edata.error == 0) and _analyzeFragments)
-		//    analyze_fragment(event,&frag);
-		if(_analyzeFragments)
-			analyze_dtc_fragment(AnEvent, &frag);
-		ifrag++;
-	}
-	//-----------------------------------------------------------------------------
-	// update per-event counters
-	//-----------------------------------------------------------------------------
-	for(int ist = 0; ist < kNStations; ist++)
-	{
-		StationData_t* sd = &_edata.station[ist];
+    for (const artdaq::Fragment& frag : *h) {
+      int *buf  = (int*) (frag.dataBegin());
+      int nreg  = buf[0];
+      int fsize = frag.sizeBytes();
+      printf("%s: -------- DTC registers dump n(reg)=%5i size: %5i\n",__func__,nreg,fsize);
+      print_fragment(&frag,2+4*nreg);
+    }
+  }
 
   gSystem->ProcessEvents();
 //-----------------------------------------------------------------------------
@@ -1510,6 +1143,7 @@ void TrackerDQM::analyze(const art::Event& AnEvent)
   if (_diagLevel > 1) printf("%s\n",Form(" -- DONE"));
 }
 
+
 //--------------------------------------------------------------------------------
 // assume that we only have tracker fragment(s)
 //-----------------------------------------------------------------------------
@@ -1523,113 +1157,85 @@ void TrackerDQM::print_message(const char* Message) {
 //-----------------------------------------------------------------------------
 // NWords : the number of short words
 //-----------------------------------------------------------------------------
-void TrackerDQM::print_fragment(const artdaq::Fragment* Frag, int NWords)
-{
-	//-----------------------------------------------------------------------------
-	// print fragments in HEX, for the tracker, the data has to be in 2-byte words
-	//-----------------------------------------------------------------------------
-	ushort* buf = (ushort*)(Frag->dataBegin());
+void TrackerDQM::print_fragment(const artdaq::Fragment* Frag, int NWords) {
+//-----------------------------------------------------------------------------
+// print fragments in HEX, for the tracker, the data has to be in 2-byte words
+//-----------------------------------------------------------------------------
+  ushort* buf = (ushort*) (Frag->dataBegin());
 
-	int loc = 0;
-
-	for(int i = 0; i < NWords; i++)
-	{
-		if(loc == 0)
-			printf(" 0x%08x: ", i * 2);
-
-		ushort word = buf[i];
-		printf("0x%04x ", word);
-
-		loc += 1;
-		if(loc == 8)
-		{
-			printf("\n");
-			loc = 0;
-		}
-	}
-
-	if(loc != 0)
-		printf("\n");
+  int loc     = 0;
+  
+  for (int i=0; i<NWords; i++) {
+    if (loc == 0) printf(" 0x%08x: ",i*2);
+    
+    ushort  word = buf[i];
+    printf("0x%04x ",word);
+    
+    loc += 1;
+    if (loc == 8) {
+      printf("\n");
+      loc = 0;
+    }
+  }
+      
+  if (loc != 0) printf("\n");
 }
 
 //-----------------------------------------------------------------------------
 // only need to print a couple of packets
 //-----------------------------------------------------------------------------
-void TrackerDQM::print_hit(const mu2e::TrackerDataDecoder::TrackerDataPacket* Hit)
-{
-	uint16_t* dat = (uint16_t*)Hit;
+void TrackerDQM::print_hit(const mu2e::TrackerDataDecoder::TrackerDataPacket* Hit) {
+  uint16_t* dat = (uint16_t*) Hit;
 
-	int loc(0);
-	for(int i = 0; i < 16; i++)
-	{
-		printf(" 0x%04x", dat[i]);
-		int res = (loc + 1) % 8;
-		if(res == 0)
-		{
-			printf("\n");
-			loc = 0;
-		}
-		else
-		{
-			loc = loc + 1;
-		}
-	}
-	if(loc != 0)
-		printf("\n");
+  int loc(0);
+  for (int i=0; i<16; i++) {
+    printf(" 0x%04x", dat[i]);
+    int res = (loc+1) % 8;
+    if (res == 0) {
+      printf("\n");
+      loc = 0;
+    }
+    else {
+      loc = loc+1;
+    }
+  }
+  if (loc != 0) printf("\n");
+    
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::debug(const art::Event& AnEvent)
-{
-	auto handle = AnEvent.getValidHandle<std::vector<artdaq::Fragment>>(_trkfCollTag);
+void TrackerDQM::debug(const art::Event& AnEvent) {
+  
+  auto handle = AnEvent.getValidHandle<std::vector<artdaq::Fragment> >(_trkfCollTag);
 
-	int ifrag = 0;
-	for(const artdaq::Fragment& frag : *handle)
-	{
-		ushort*           buf       = (ushort*)(frag.dataBegin());
-		int               fsize     = frag.sizeBytes();
-		SubEventHeader_t* sh        = (SubEventHeader_t*)buf;
-		int               nbytes    = buf[0];
-		int               dtc_index = dtcIndex(sh->dtcID);
+  int ifrag = 0;
+  for (const artdaq::Fragment& frag : *handle) {
+    ushort* buf          = (ushort*) (frag.dataBegin());
+    int fsize            = frag.sizeBytes();
+    SubEventHeader_t* sh = (SubEventHeader_t*) buf;
+    int nbytes           = buf[0];
+    int dtc_index        = dtcIndex(sh->dtcID);
+    
+    if (DebugBit(0) == 1) {
+      print_message(Form("bit:000: fragment # %3i dtc_index:%i nbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
+                         ifrag,dtc_index,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
+      print_fragment(&frag,nbytes/2);
+    }
 
-		if(DebugBit(0) == 1)
-		{
-			print_message(
-			    Form("bit:000: fragment # %3i dtc_index:%i nbytes: %5i fsize: %5i "
-			         "ERROR_CODE: 0x%04x NERR_TOT: %5i",
-			         ifrag,
-			         dtc_index,
-			         nbytes,
-			         fsize,
-			         _edata.error_code,
-			         _edata.nerr_tot));
-			print_fragment(&frag, nbytes / 2);
-		}
+    if ((DebugBit(3) & 0x1) and (_edata.nerr_tot > _minNErrors)) {
+      print_message(Form("bit:003: fragment # %3i dtc_index:%i nnbytes: %5i fsize: %5i ERROR_CODE: 0x%04x NERR_TOT: %5i",
+                         ifrag,dtc_index,nbytes,fsize,_edata.error_code,_edata.nerr_tot));
 
-		if((DebugBit(3) & 0x1) and (_edata.nerr_tot > _minNErrors))
-		{
-			print_message(
-			    Form("bit:003: fragment # %3i dtc_index:%i nnbytes: %5i fsize: %5i "
-			         "ERROR_CODE: 0x%04x NERR_TOT: %5i",
-			         ifrag,
-			         dtc_index,
-			         nbytes,
-			         fsize,
-			         _edata.error_code,
-			         _edata.nerr_tot));
+      if (DebugBit(3) & 0x2) print_fragment(&frag,nbytes/2);
+    }
+    ifrag++;
+  }
 
-			if(DebugBit(3) & 0x2)
-				print_fragment(&frag, nbytes / 2);
-		}
-		ifrag++;
-	}
+  if ((DebugBit(2) == 1) and (_edata.error_code == _errorCode)) {
+    print_message(Form("bit:002: ERROR_CODE: 0x%04x NERR_TOT: %5i",
+                       _edata.error_code,_edata.nerr_tot));
+  }
 
-	if((DebugBit(2) == 1) and (_edata.error_code == _errorCode))
-	{
-		print_message(Form("bit:002: ERROR_CODE: 0x%04x NERR_TOT: %5i",
-		                   _edata.error_code,
-		                   _edata.nerr_tot));
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1689,27 +1295,64 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
     int offset_in_bytes = offset*2;
     hit     = (mu2e::TrackerDataDecoder::TrackerDataPacket*) (first_address+0x08+offset);
 
-	_edata.nhtot += Rd->nhits;
-	_edata.valid += Dh->valid * 10;
+    if (DebugBit(5) != 0) {
+      printf("offset : 0x%04x\n",offset);
+      print_hit(hit);
+    }
+        
+    if (hit->ErrorFlags != 0) {  // 4 bits
+//-----------------------------------------------------------------------------
+// 2024-11-21 Richie: MSB to LSB: ewm overlap, missed last hit, fifo was full. 
+// 0x1: fifo was full      
+// 0x2: missed last hit
+// 0x4: ewm overlap   
+// 0x8: reserved      
+//-----------------------------------------------------------------------------
+      if (DebugBit(0) == 1) {
+        TLOG(TLVL_ERROR) << "dtc_id:" << Rd->dtc_id  << " link:" << Rd->link
+                         << " ih=" << ihit
+                         << " first_address:0x" << std::hex << first_address 
+                         << " offset(bytes):0x" << std::hex << offset_in_bytes
+                         << " HIT ERROR FLAG:0x" << std::hex << hit->ErrorFlags
+                         << std::endl;
+      }
+      _edata.error_code |= kHitErrorBit;
+      _edata.nerr_tot   += 1;
 
-	short* first_address = (short*)Dh;
+      Rd->error_code    |= kHitErrorBit;
+      Rd->nerr_tot      += 1;
+    }
+        
+    if (hit->NumADCPackets != _nADCPackets) {
+// this is an error which doesn't allow to proceed looping over the hits
+      if (DebugBit(0) != 0) {
+        TLOG(TLVL_ERROR) << "DTC:" << Rd->dtc_id  << " link:" << Rd->link
+                         << " ih=" << ihit
+                         << " first_address:0x" << std::hex << first_address
+                         << " offset:0x" << std::hex << offset_in_bytes
+                         << " WRONG NUMBER OF ADC PACKETS: " << std::dec << hit->NumADCPackets
+                         << " BAIL OUT" << std::endl;
+      }
+          
+      if (DebugBit(4) != 0) print_hit(hit);
 
-	for(int ihit = 0; ihit < Rd->nhits; ihit++)
-	{
-		//-----------------------------------------------------------------------------
-		// first packet, 16 bytes, or 8 ushort's is the data header packet
-		//-----------------------------------------------------------------------------
-		mu2e::TrackerDataDecoder::TrackerDataPacket* hit;
-		int offset          = ihit * (8 + 8 * _nADCPackets);  // in 2-byte words
-		int offset_in_bytes = offset * 2;
-		hit =
-		    (mu2e::TrackerDataDecoder::TrackerDataPacket*)(first_address + 0x08 + offset);
+      _edata.error_code |= kNWfsErrorBit;
+      _edata.nerr_tot   += 1;
+      Rd->error_code    |= kNWfsErrorBit;
+      Rd->nerr_tot      += 1;
+      break;
+    }
 
     int ich = hit->StrawIndex & 0x7f;
 
-			Rd->error_code |= kHitErrorBit;
-			Rd->nerr_tot += 1;
-		}
+    if (ich > 95) {
+      //-----------------------------------------------------------------------------
+      // non existing channel ID : flag an error, don't save the hit, but continue
+      //-----------------------------------------------------------------------------
+      _edata.error_code |= kChIDErrorBit;
+      _edata.nerr_tot   += 1;
+      Rd->error_code    |= kChIDErrorBit;
+      Rd->nerr_tot      += 1;
 
       if (DebugBit(0) != 0) {
         TLOG(TLVL_ERROR) << Form("event %i:%i:%i : ",_edata._event->run(),_edata._event->subRun(),_edata._event->event())
@@ -1739,15 +1382,51 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
         }
       }
 
-			if(DebugBit(4) != 0)
-				print_hit(hit);
+      if (offs == -1) {
+        TLOG(TLVL_ERROR) << Form("event %i:%i:%i",_edata._event->run(),_edata._event->subRun(),_edata._event->event())
+                         << Form(", : WRONG ADC PATTERN 0x%04x in %s: ",kAdcPatternErrorBit,__func__)
+                         << Form(" link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                                 link,offset_in_bytes,hit->StrawIndex);
+            
+        _edata.error_code |= kAdcPatternErrorBit;
+        _edata.nerr_tot   += 1;
+        Rd->error_code    |= kAdcPatternErrorBit;
+        Rd->nerr_tot      += 1;
+      }
+      else {
+//-----------------------------------------------------------------------------
+// starting pattern found, validating - the first word (#0) already checked,
+// thus starting from 1 
+//-----------------------------------------------------------------------------
+        for (int i=1; i<nw; i++) {
+          int ipat = (offs+i) % 4;
+          if (w[loc+i] == pattern[ipat]) continue;
+//-----------------------------------------------------------------------------
+// in trouble
+//-----------------------------------------------------------------------------
+          TLOG(TLVL_ERROR) << Form("event %i:%i:%i",_edata._event->run(),_edata._event->subRun(),_edata._event->event())
+                           << Form(", : WRONG ADC PATTERN 0x%04x in %s: ",kAdcPatternErrorBit,__func__)
+                           << Form(" link = %i offset(bytes): 0x%04x hit->StrawIndex = 0x%04x\n",
+                                   link,offset_in_bytes,hit->StrawIndex);
+            
+          _edata.error_code |= kAdcPatternErrorBit;
+          _edata.nerr_tot   += 1;
+          Rd->error_code    |= kAdcPatternErrorBit;
+          Rd->nerr_tot      += 1;
+        }
+      }
+    }
+  }
+//-----------------------------------------------------------------------------
+// hits in all channels counted, modulo those with corrupted channel IDs
+// time difference between this channel and a reference channel
+// determined using the first hit only
+//-----------------------------------------------------------------------------
+  for (int i=0; i<kNChannels; i++) {
+    ChannelData_t* chd = &Rd->channel[i];
 
-			_edata.error_code |= kNWfsErrorBit;
-			_edata.nerr_tot += 1;
-			Rd->error_code |= kNWfsErrorBit;
-			Rd->nerr_tot += 1;
-			break;
-		}
+    int nh   = chd->nhits();
+    int fpga = _adc_index_0[i] / 48;
 
     ChannelData_t* rch = ref_ch[fpga];
 //-----------------------------------------------------------------------------
@@ -1805,6 +1484,7 @@ void TrackerDQM::analyze_roc_data(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
 }
 
 //-----------------------------------------------------------------------------
-void TrackerDQM::analyze_roc_patterns(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {}
+void TrackerDQM::analyze_roc_patterns(RocDataHeaderPacket_t* Dh, RocData_t* Rd) {
+}
 
 DEFINE_ART_MODULE(TrackerDQM)

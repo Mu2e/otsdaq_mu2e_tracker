@@ -1,6 +1,6 @@
 
 //-----------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -24,14 +24,14 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiClearMemory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) 
 {
     int rc(0);
     std::vector<uint16_t> input;
@@ -72,14 +72,14 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapIndex()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) 
 {
     std::vector<uint16_t> input;
 
@@ -100,21 +100,21 @@ using namespace ots;
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
-    uint16_t status = getDTC()->ReadROCRegister(roc,REG_STATUS,1000);
+    uint16_t status = getDTC()->ReadROCRegister(roc,trkdaq::REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
   } // end Ui_ProgramRoc_SpiIapIndex()
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiIapAddress()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) 
 {
     std::vector<uint16_t> input;
 
@@ -136,21 +136,21 @@ using namespace ots;
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
-    uint16_t status = getDTC()->ReadROCRegister(roc,REG_STATUS,1000);
+    uint16_t status = getDTC()->ReadROCRegister(roc,trkdaq::REG_STATUS,1000);
     if (PrintLevel != 0) Stream << __func__ << ":END status:" << status << std::endl;
     return (int) status;
   } // end Ui_ProgramRoc_SpiIapAddress()
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiLoadImage()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const roc_fw_data_t* DirEntry, int Doit, int NWrites, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_fw_data_t* DirEntry, int Doit, int NWrites, int PrintLevel, std::ostream& Stream) 
 {
     //   int rc(0);
 //-----------------------------------------------------------------------------
@@ -278,15 +278,15 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiReadFlash()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int NWords, std::vector<uint16_t>* Res,
-                                 int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int NWords, std::vector<uint16_t>* Res,
+                                 int PrintLevel, std::ostream& Stream) 
 {
 
     std::vector<uint16_t> input;
@@ -313,13 +313,13 @@ using namespace ots;
 //-----------------------------------------------------------------------------
 // validation: reading back and comparing
 //-----------------------------------------------------------------------------
-    RocBlockRead(Link,RREG,*Res);
+    Ui_RocBlockRead(Link,RREG,*Res);
     int nw_read = Res->size();
     
     if (PrintLevel != 0) {
       std::cout << "nw:" << nw << " nw read:" << nw_read << std::endl;
       if (PrintLevel & 0x2) {
-        DTCLib::Utilities::PrintBuffer(Res->data(),nw_read);
+        Ui_print_PrintBuffer(Res->data(),nw_read);
       }
     }
     
@@ -328,14 +328,14 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteDirectory()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) 
 {
     int rc(0);
     
@@ -375,11 +375,11 @@ using namespace ots;
   
     // std::vector<uint16_t> res;
 
-    // dtc_i->RocBlockRead(Link,RREG,res);
+    // dtc_i->Ui_RocBlockRead(Link,RREG,res);
     // int nw = res.size();
     
     // std::cout << "nw read:" << nw << std::endl;
-    // dtc_i->DTCLib::Utilities::PrintBuffer(res.data(),nw);
+    // dtc_i->Ui_print_PrintBuffer(res.data(),nw);
     
     //  return nw;
     std::cout << __func__ << ":END" << std::endl;
@@ -388,14 +388,14 @@ using namespace ots;
 
 //==============================================================================
 ///	Ui_ProgramRoc_SpiWriteRecord()
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, int NWords, const uint16_t* Data, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, int NWords, const uint16_t* Data, int PrintLevel, std::ostream& Stream) 
 {
     int rc(0);
 
@@ -431,14 +431,14 @@ using namespace ots;
 //==============================================================================
 ///	Ui_ProgramRoc_ProgramRoc()
 /// 
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-  int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream)
+int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) 
 {
     int rc(0);
                                         // offset=-1 flags the end
@@ -446,10 +446,10 @@ using namespace ots;
     for (int i=0; Fw->spi_directory[i].offset>=0; i++) nimages++;
     
                                         // 2. find if the requested firmware version is available
-    const roc_fw_version_t* fw(nullptr);
+    const trkdaq::roc_fw_version_t* fw(nullptr);
   
     for (int i=0; Fw->version[i].name != ""; ++i) {
-      const roc_fw_version_t* fww = &Fw->version[i];
+      const trkdaq::roc_fw_version_t* fww = &Fw->version[i];
       if (fww->name == Version) {
                                         // protect against trivial mistakes
         if ((fww->index_spi < nimages) and (fww->index_bin < nimages)) { 

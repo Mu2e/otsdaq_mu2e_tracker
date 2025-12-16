@@ -7,33 +7,32 @@
 
 #include <map>
 
-class AlignmentChannel
-{
+class AlignmentChannel{
   public:
-	AlignmentChannel() = default;
-	AlignmentChannel(unsigned int, bool, bool, bool, bool, unsigned int, bool);
+    AlignmentChannel() = default;
+    AlignmentChannel(unsigned int, bool, bool, bool, bool, unsigned int, bool);
 
-	unsigned int ADC() const;
-	unsigned int Channel() const;
-	bool         Active() const;
-	bool         Complete() const;
-	bool         Error() const;
-	unsigned int BitSlipStep() const;
-	bool         BitSlipDone() const;
-	bool         PatternMatch() const;
+    unsigned int ADC() const;
+    unsigned int Channel() const;
+    bool Active() const;
+    bool Complete() const;
+    bool Error() const;
+    unsigned int BitSlipStep() const;
+    bool BitSlipDone() const;
+    bool PatternMatch() const;
 
   protected:
-	static const std::map<unsigned int, unsigned int> adc_to_straw_map;
+    static const std::map<unsigned int, unsigned int> adc_to_straw_map;
 
   private:
-	unsigned int adc;
-	unsigned int channel;
-	bool         active;
-	bool         complete;
-	bool         error;
-	bool         bitslip_done;
-	unsigned int bitslip_step;
-	bool         pattern_match;
+    unsigned int adc;
+    unsigned int channel;
+    bool active;
+    bool complete;
+    bool error;
+    bool bitslip_done;
+    unsigned int bitslip_step;
+    bool pattern_match;
 };
 
 #endif

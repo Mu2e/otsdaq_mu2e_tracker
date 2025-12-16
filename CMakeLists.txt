@@ -120,6 +120,6 @@ add_subdirectory(otsdaq-mu2e-tracker)
 add_subdirectory(tools)
 
 # Test Programs
-#add_subdirectory(test)
+add_subdirectory(test)
 
 cet_cmake_config()

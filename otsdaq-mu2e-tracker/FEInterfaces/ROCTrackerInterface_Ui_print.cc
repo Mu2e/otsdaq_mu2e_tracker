@@ -1,56 +1,79 @@
-///////////////////////////////////////////////////////////////////////////////
-// separate print routines
-///////////////////////////////////////////////////////////////////////////////
-#include "iostream"
-#include "vector"
-#include "DtcInterface.hh"
-#include "TString.h"
-
-#include "TRACE/tracemf.h"
-#define  TRACE_NAME "DtcInterface"
-
-using namespace DTCLib;
-using namespace std;
-
-#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
-
-namespace trkdaq {
 
 //-----------------------------------------------------------------------------
-// print value of the register Reg, for multiple ROCs
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
+
+
+#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
+
+
+#include <TString.h>  // includes ROOT's Form
+
+
+using namespace ots;
+
+#undef __MF_SUBJECT__
+#define __MF_SUBJECT__ "FE-ROCTrackerInterface"
+
+
+//==============================================================================
+///	Ui_print_PrintRocRegister()
+/// print value of the register Reg, for multiple ROCs
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) 
+{
 
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
       
-      DTC_Link_ID link = DTC_Link_ID(i);
+      DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t dat;
       
-      dat = fDtc->ReadROCRegister(link,Reg,100);
+      dat = getDTC()->ReadROCRegister(link,Reg,100);
       text += Form("     0x%04x",dat);
     }
     std::string sreg = Form("reg(%2i)",Reg);
 
     if (Format == 1) text += Form(" %s",Desc.data());
     Stream << Form("%-18s %s\n",sreg.data(),text.data());
-  }
+  } // end Ui_print_PrintRocRegister()
 
-  //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream) {
+//==============================================================================
+///	Ui_print_PrintRocRegister2()
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream) 
+{
 
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
       
-      DTC_Link_ID link = DTC_Link_ID(i);
+      DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t iw1, iw2, iw;
       
-      iw1 = fDtc->ReadROCRegister(link,Reg  ,100);
-      iw2 = fDtc->ReadROCRegister(link,Reg+1,100);
+      iw1 = getDTC()->ReadROCRegister(link,Reg  ,100);
+      iw2 = getDTC()->ReadROCRegister(link,Reg+1,100);
       iw  = (iw2 << 16) | iw1;
       text += Form(" 0x%08x",iw);
     }
@@ -60,13 +83,21 @@ namespace trkdaq {
     std::string sreg = Form("reg(%2i)<<16|reg(%2i)",Reg+1,Reg);
 
     Stream << Form("%-18s%s\n",sreg.data(),text.data());
-  }
-  
-//-----------------------------------------------------------------------------
-// most of the time Link = -1 meaning 'all enabled links'
-// otherwise it is the link to print
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+  } // end Ui_print_PrintRocRegister2()
+
+//==============================================================================
+///	Ui_print_PrintRocStatus()
+/// most of the time Link = -1 meaning 'all enabled links'
+/// otherwise it is the link to print
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) 
+{
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
@@ -94,130 +125,139 @@ namespace trkdaq {
     Stream << "------------------------------------------------------------------------\n";
 
     reg =  0; desc = "ALWAYS 0x1234";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg = 18; desc = " ??";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg =  8; desc = "ROC pattern mode ??"; 
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg = 60; desc = "ROC readout timeout delay "; 
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg = 15; desc = "N simulated hits per lane";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg = 16; desc = " ??";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg =  7; desc = "Fiber loss/lock counter";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg =  6; desc = "Bad Markers counter";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg =  4; desc = "Loopback coarse delay";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg = 23; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 25; desc = "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 11; desc = "Num EWM seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
     
     reg = 64; desc = "Num windows seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 27; desc = "Num HB seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 29; desc = "Num null HB seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 31; desc = "Num HB on hold";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 33; desc = "Num PREFETCH seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    cout << Form("\n");
+    std::cout << Form("\n");
 
     reg =  9; desc = "Num DATA REQ seen";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 35; desc = "Num DATA REQ written to DDR";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 13; desc = "Num skipped DATA REQ";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg = 37; desc = "Num DATA REQ read from DDR";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     reg = 39; desc = "Num DATA REQ sent to DTC";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     reg = 41; desc = "Num DATA REQ with null data";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    cout << Form("\n");
+    std::cout << Form("\n");
       
     reg = 43; desc = "Last spill tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     reg = 45; desc = "Last HB tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     reg = 48; desc = "Last PREFETCH tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     reg = 51; desc = "Last fetched tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 54; desc = "Last DATA REQ tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     reg = 57; desc = "OFFSET tag";
-    PrintRocRegister2(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    cout << std::endl;
+    std::cout << std::endl;
       
     reg = 72; desc = "Num HB tag inconsistencies";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
     reg = 73; desc = "Num DATA REQ tag inconsistencies";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
     reg = 74; desc = "Num HB tag lost";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
     reg = 75; desc = "Num DATA REQ tag lost";
-    PrintRocRegister(reg,desc,Format,link_mask,Stream);
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg = 0x90; desc = "total N packets (DCS+data)";    // r_144
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); // 
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); // 
     reg = 0x91; desc = "N(DCS) packets sent to DTC";    // r_145
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x92; desc = "Num of non-DCS packets";        // r_146
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x93; desc = "Num of data header packets";    // r_147
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x94; desc = "Num of data payload packets";   // r_148
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x95; desc = "Num of empty data packets";     // r_149
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
 
     Stream << "------------------------------------------------------------------------\n";
-  }
-//-----------------------------------------------------------------------------
-// 'nw' : number of 16-bit words to print.
-// if Stream == nullptr , use TLOG, otherwise - *Stream
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream) {
+  } // end Ui_print_PrintRocStatus()
+
+//==============================================================================
+///	Ui_print_PrintBuffer()
+/// 'nw' : number of 16-bit words to print.
+/// if Stream == nullptr , use TLOG, otherwise - *Stream
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream) 
+{
 
     ushort*      p16 = (ushort*) ptr;
 
@@ -250,10 +290,19 @@ namespace trkdaq {
         TLOG(TLVL_DEBUG+1) << line << std::endl;
       }
     }
-  }
+  } // end Ui_print_PrintBuffer()
 
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
+//==============================================================================
+///	Ui_print_PrintRatesSingleRoc()
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) 
+{
     
 //-----------------------------------------------------------------------------
 // formatted printout
@@ -300,10 +349,19 @@ namespace trkdaq {
     }
       
     Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
-  }
+  } // end Ui_print_PrintRatesSingleRoc()
 
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintRatesAllRocs(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
+//==============================================================================
+///	Ui_print_PrintRatesAllRocs()
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) 
+{
 //-----------------------------------------------------------------------------
 // do the printing
 // bit 2: formattted printout, parallel
@@ -357,12 +415,20 @@ namespace trkdaq {
       
       Stream << std::endl;
     }
-  }
-  
-//-----------------------------------------------------------------------------
-// assume always data from 6 ROCs, some may be disabled
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::ostream& Stream) {
+  } // end Ui_print_PrintRatesAllRocs()
+
+//==============================================================================
+///	Ui_print_PrintSpiAll()
+/// assume always data from 6 ROCs, some may be disabled
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc on Tue Dec 16 12:01:53 2025 CST
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_print.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::Ui_print_PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::ostream& Stream) 
+{
 
     Stream << " SPI Parameter ";
     for (int lnk=0; lnk<6; lnk++) {
@@ -373,7 +439,7 @@ namespace trkdaq {
            << "--------------------------------------------------------------------------"
            << std::endl;
     
-    for (int i=0; i<TrkSpiDataNWords; ++i) {
+    for (int i=0; i<trkdaq::TrkSpiDataNWords; ++i) {
       Stream << std::format("{:15s}",fgSpiVarName[i]);
       for (int lnk=0; lnk<6; lnk++) {
         if (not LinkEnabled(lnk)) continue;
@@ -381,6 +447,5 @@ namespace trkdaq {
       }
       Stream << std::endl;
     }
-  }
-  
-};
+  } // end Ui_print_PrintSpiAll()
+

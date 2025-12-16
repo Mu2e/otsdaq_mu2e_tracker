@@ -3,14 +3,13 @@
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 #include "TRACE/tracemf.h"
-#define TRACE_NAME "DtcInterface_ControlRoc"
+#define  TRACE_NAME "DtcInterface_ControlRoc"
 
-#include "TString.h"  // includes ROOT's Form
+#include "TString.h"     // includes ROOT's Form
 
 using namespace DTCLib;
 
-namespace trkdaq
-{
+namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // a boilerplate for a generic control_ROC.py CLI command - do we need it at  all ?
 //-----------------------------------------------------------------------------
@@ -81,7 +80,7 @@ namespace trkdaq
 
         if (PrintLevel > 0) {
           if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
-          if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0,&Stream);
           if (PrintLevel & 0x2) {
             Stream << std::endl;
 
@@ -257,7 +256,7 @@ namespace trkdaq
         
         Stream << "--------------- link :" << i << std::endl;
 
-        if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,&Stream);
+        if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,0,&Stream);
       
         if (PrintLevel & 0x2) {
           trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
@@ -357,7 +356,7 @@ namespace trkdaq
         fDtc->ReadROCBlock(v2,roc,REG_PULSERON,nw,false,100);
 
         if (PrintLevel & 0x1) {
-          PrintBuffer(v2.data(),nw,&Stream);
+          PrintBuffer(v2.data(),nw,0,&Stream);
         }
       }
       else {
@@ -395,7 +394,7 @@ namespace trkdaq
         TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
 
         if (PrintLevel & 0x1) {
-          PrintBuffer(res.data(),nw,&Stream);
+          PrintBuffer(res.data(),nw,0,&Stream);
         }
       }
       else {
@@ -484,7 +483,7 @@ namespace trkdaq
 // everything was OK
 //-----------------------------------------------------------------------------        
       if (PrintLevel & 0x1) {
-        PrintBuffer(Settings.data(),nw,&Stream);
+        PrintBuffer(Settings.data(),nw,0,&Stream);
       }
     }
 
@@ -556,7 +555,7 @@ namespace trkdaq
       fDtc->ReadROCBlock(v2,roc,REG_SETCALDAC,nw,false,100);
 
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw,&Stream);
+        PrintBuffer(v2.data(),nw,0,&Stream);
       }
     }
 
@@ -566,20 +565,17 @@ namespace trkdaq
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel) {
 //-----------------------------------------------------------------------------
-int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain)
-{
-	//-----------------------------------------------------------------------------
-	// convert into enum
-	//-----------------------------------------------------------------------------
-	auto roc = DTC_Link_ID(Link);
-	//-----------------------------------------------------------------------------
-	// write parameters into reg 266 (block write) , sleep for some time,
-	// then wait till reg 128 returns 0x8000
-	//-----------------------------------------------------------------------------
-	std::vector<uint16_t> vec;
-	vec.push_back(uint16_t(ChannelID));
-	vec.push_back(uint16_t(Gain));
-	vec.push_back(uint16_t(PreampType));
+// convert into enum
+//-----------------------------------------------------------------------------
+    auto roc  = DTC_Link_ID(Link);
+//-----------------------------------------------------------------------------
+// write parameters into reg 266 (block write) , sleep for some time, 
+// then wait till reg 128 returns 0x8000
+//-----------------------------------------------------------------------------
+    std::vector<uint16_t> vec;
+    vec.push_back(uint16_t(ChannelID ));
+    vec.push_back(uint16_t(Gain      ));
+    vec.push_back(uint16_t(PreampType));
 
     bool increment_address(false);
     fDtc->WriteROCBlock   (roc,REG_SETGAIN,vec,false,increment_address,100);
@@ -590,50 +586,7 @@ int DtcInterface::ControlRoc_SetGain(int Link, int ChannelID, int PreampType, in
     while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
     TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
-int DtcInterface::ControlRoc_SetThreshold(int Link,
-                                          int ChannelID,
-                                          int PreampType,
-                                          int Threshold)
-{
-	//-----------------------------------------------------------------------------
-	// convert into enum
-	//-----------------------------------------------------------------------------
-	auto roc = DTC_Link_ID(Link);
-	//-----------------------------------------------------------------------------
-	// write parameters into reg 267 (block write) , sleep for some time,
-	// then wait till reg 128 returns 0x8000
-	//-----------------------------------------------------------------------------
-	std::vector<uint16_t> vec;
-	vec.push_back(uint16_t(ChannelID));
-	vec.push_back(uint16_t(Threshold));
-	vec.push_back(uint16_t(PreampType));
-
-	bool increment_address(false);
-	fDtc->WriteROCBlock(roc, 267, vec, false, increment_address, 100);
-	std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-	// 0x86 = 0x82 + 4
-	uint16_t u;
-	while((u = fDtc->ReadROCRegister(roc, 128, 100)) != 0x8000) {};
-	TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n", 128, u);
-	//-----------------------------------------------------------------------------
-	// register 129: number of words to read, currently-  (+ 4) (ask Monica)
-	//-----------------------------------------------------------------------------
-	int nw = fDtc->ReadROCRegister(roc, 129, 100);
-	TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n", 129, nw);
-
-	nw = nw - 4;
-	std::vector<uint16_t> v2;
-	fDtc->ReadROCBlock(v2, roc, 267, nw, false, 100);
-
-	PrintBuffer(v2.data(), nw);
-	//-----------------------------------------------------------------------------
-	//
-	//-----------------------------------------------------------------------------
-	ResetRoc(Link);
-	return 0;
-}
-
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
     int nw = fDtc->ReadROCRegister(roc,129,100);
     TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
@@ -650,12 +603,6 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
     return 0;
   }
 
-	vec.push_back((MaskC) & 0xffff);
-	vec.push_back((MaskC >> 16) & 0xffff);
-	vec.push_back((MaskD) & 0xffff);
-	vec.push_back((MaskD >> 16) & 0xffff);
-	vec.push_back((MaskE) & 0xffff);
-	vec.push_back((MaskE >> 16) & 0xffff);
 
 //-----------------------------------------------------------------------------  
   int DtcInterface::ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel) {
@@ -697,10 +644,6 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
     return 0;
   }
 
-		printf(" i, hw, cal, tot : %3i %10.3f %10.3f %10.3f\n", i, hw, cal, tot);
-	}
-	return 0;
-}
 
 //-----------------------------------------------------------------------------
 // order:  4 x 96 16 bit words. Gain cal, Gain HV, threshold CAL, threshold HV
@@ -887,7 +830,7 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
       return -3;
     }
 
-    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0,&Stream);
 //-----------------------------------------------------------------------------
 // convert to floats
 //-----------------------------------------------------------------------------
@@ -1003,7 +946,7 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
 // PrintLevel bit 0: print SPI data in hex 
 //-----------------------------------------------------------------------------
       if ((PrintLevel & 0x1) != 0) {
-        PrintBuffer(SpiRawData.data(),nw,&Stream);
+        PrintBuffer(SpiRawData.data(),nw,0,&Stream);
       }
 //-----------------------------------------------------------------------------
 // PrintLevel bit 1: parse SPI data and print them
@@ -1042,7 +985,7 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
 //-----------------------------------------------------------------------------
       if ((PrintLevel & 0x1) != 0) {
         int nw = data.size();
-        PrintBuffer(data.data(),nw,&Stream);
+        PrintBuffer(data.data(),nw,0,&Stream);
       }
 //-----------------------------------------------------------------------------
 // do not perform conversion, if wrong number of words
@@ -1082,7 +1025,7 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
         else {
           std::stringstream ss;
           int nw = data.size();
-          if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,0,&Stream);
           
           for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
           GitCommit = ss.str();
@@ -1110,14 +1053,14 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
         if (link_enabled) {
           RocBlockRead(i,REG_READILP,Data);
           int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
         }
       }
     }
     else {
       RocBlockRead(Link,REG_READILP,Data);
       int nw = Data.size();
-      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
     }
     
     return rc;
@@ -1137,14 +1080,14 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
         if (link_enabled) {
           RocBlockRead(i,REG_GETKEY,Data);
           int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
         }
       }
     }
     else {
       RocBlockRead(Link,REG_GETKEY,Data);
       int nw = Data.size();
-      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
     }
 
     return rc;
@@ -1223,7 +1166,7 @@ int DtcInterface::ControlRoc_SetThreshold(int Link,
 // print output - in two formats
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x1) {
-      PrintBuffer(V2->data(),nw,Stream);
+      PrintBuffer(V2->data(),nw,0,Stream);
     }
 
     TLOG(TLVL_DEBUG+1) << " -- END";

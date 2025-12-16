@@ -1,6 +1,6 @@
 
 //------------------------------------------------------------------------
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Thu Dec 11 20:03:10 2025 CST
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc on Tue Dec 16 12:01:59 2025 CST
 /// Do not modify this file directly.
 ///
 /// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc and re-run the import tool:
@@ -10,3 +10,10 @@
 //------------------------------------------------------------------------
 
 
+
+    registerFEMacroFunction("Ui_ProgramRoc SpiReadFlash",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ProgramRoc_SpiReadFlash),
+                            std::vector<std::string>{"Address", "NWords", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result", "Res", "Stream"},  // output parameters
+                            1);  // requiredUserPermissions

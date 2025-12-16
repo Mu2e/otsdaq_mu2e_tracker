@@ -15,6 +15,10 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "artdaq-core-mu2e/Overlays/Decoders/TrackerDataDecoder.hh"
 
+#include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
+#include "otsdaq-mu2e-tracker/Ui/BisectionSearch.hh"
+
 
 namespace ots
 {
@@ -64,7 +68,19 @@ public:
 	int fSleepTimeROCWrite = 0;  // the two are different
 	int fSleepTimeROCReset = 0;  //
 
+    int                  fCounter = 0;
 
+    const char*         fgSpiVarName[trkdaq::TrkSpiDataNWords]; //
+    const char*         fgKeyVarName[trkdaq::TrkKeyDataNWords]; //
+    const char*         fgIlpVarName[trkdaq::TrkIlpDataNWords]; //
+    int           		fgFpga[96];                     // 0:CAL or 1:HV
+	bool 	   			fInitialized = false;	
+
+	int          LinkEnabled		  (int Link) 	{ return (fLinkMask >> 4*Link) & 0x1 ; }
+    const char*  SpiVarName           (int I) 		{ return fgSpiVarName[I]; }
+    const char*  SpiVarNamePrintBuffer(int I) 		{ return fgSpiVarName[I]; }
+    const char*  KeyVarName           (int I) 		{ return fgKeyVarName[I]; }
+    const char*  IlpVarName           (int I) 		{ return fgIlpVarName[I]; }
 
 	struct RocDataHeaderPacket_t
 	{  // 8 16-byte words in total
@@ -117,10 +133,74 @@ public:
 		uint16_t              data[1];
 	};
 
+
+											// channel readout sequence
+											// the first 48 are readout by the digi FPGA on the CAL side
+											// the rest 48 - by the FPGA on the HV side
+	const int adc_index[96] = {
+		91, 85, 79, 73, 67, 61, 55, 49,          // lane 0
+		43, 37, 31, 25, 19, 13,  7,  1,
+		90, 84, 78, 72, 66, 60, 54, 48,
+		
+		42, 36, 30, 24, 18, 12,  6,  0,          // lane 1
+		93, 87, 81, 75, 69, 63, 57, 51,
+		45, 39, 33, 27, 21, 15,  9,  3,
+		
+		44, 38, 32, 26, 20, 14,  8,  2,          // lane 2
+		92, 86, 80, 74, 68, 62, 56, 50,
+		47, 41, 35, 29, 23, 17, 11,  5,
+		
+		95, 89, 83, 77, 71, 65, 59, 53,          // lane 3
+		46, 40, 34, 28, 22, 16, 10,  4,
+		94, 88, 82, 76, 70, 64, 58, 52
+	};
+
+	const char* kSpiVarName[trkdaq::TrkSpiDataNWords] = {
+		"I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
+		"VDMBHV5_0", "V1_8HV"  , "V3_3HV", "V2_5" ,                   //  4
+		"A0"     , "A1"  ,    "A2"  , "A3"  ,                         //  8
+		"I1_8CAL", "I1_2"  , "ICAL5_0"  ,                             // 12
+		"ADCSPARE",                                                   // 15
+		"V3_3"  , "VCAL5_0", "V1_8CAL", "V1_0",                       // 16
+		"ROCPCBTEMP", "HVPCBTEMP", "CALPCBTEMP", "RTD",               // 20
+		"ROC_RAIL_1V", "ROC_RAIL_1_8V", "ROC_RAIL_2_5V", "ROC_TEMP",  // 24
+		"CAL_RAIL_1V", "CAL_RAIL_1_8V", "CAL_RAIL_2_5V", "CAL_TEMP",  // 28
+		"HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
+	};
+
+	const char* kKeyVarName[trkdaq::TrkKeyDataNWords] = {
+		"KEY_TEMP", "KEY_V2P5", "KEY_V5P1", "KEY_DCDCTEMP"
+	};
+
+	const char* kIlpVarName[trkdaq::TrkIlpDataNWords] = {
+		"ILP_ID", "ILP_TEMP", "ILP_PRESSURE"
+	};
+
+	const std::vector<int> RocRegisters = {
+		0,   18,    8,   15,   16,    7,      6,    4,
+		23,   24,   25,   26,   11,   12,     65,   65,   17,   28,
+		29,   30,   31,   32,   33,   34,      9,   10,   35,   36,
+		13,
+		37,   38,   38,   40,   41,   42,     43,   44,   45,   46,
+		48,   49,   51,   52,   54,   55,     57,   58,
+		72,   73,   74,   75,
+		0x90, 0x91, 0x92, 0x93, 0x94, 0x95
+	};
+
 	// UI_DEFINE_ROCTRACKERINTERFACE_FUNCTIONS
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_base.hxx"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_base_declareFEMacros.hxx"
 
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui.hxx"
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_declareFEMacros.hxx"
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print.hxx"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print_declareFEMacros.hxx"
+
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc.hxx"
+	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ControlRoc_declareFEMacros.hxx"
+	
 
 	//------------ end for tracker-specific Ui functions
 
@@ -270,5 +350,6 @@ public:
 };
 
 }  // namespace ots
+
 
 #endif

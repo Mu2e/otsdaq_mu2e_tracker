@@ -987,6 +987,27 @@ void ROCTrackerInterface::SetUIParameters(__ARGS__)
 	__SET_ARG_OUT__("fSleepTimeROCWrite", fSleepTimeROCWrite);
 	__SET_ARG_OUT__("fSleepTimeROCReset", fSleepTimeROCReset);
 
+	if (not fInitialized) 
+	{
+		for (int i=0; i<96; i++) {
+			int ich     = adc_index[i];
+			int fpga    = i/48;
+			fgFpga[ich] = fpga;
+		}
+
+		for (int i=0; i<trkdaq::TrkSpiDataNWords; i++) {
+			fgSpiVarName[i] = kSpiVarName[i];
+		}
+		for (int i=0; i<trkdaq::TrkKeyDataNWords; i++) {
+			fgKeyVarName[i] = kKeyVarName[i];
+		}
+		for (int i=0; i<trkdaq::TrkIlpDataNWords; i++) {
+			fgIlpVarName[i] = kIlpVarName[i];
+		}
+
+		fInitialized = true;
+	}
+
 	__FE_COUT__ << "Done" << __E__;
 }  // end SetUIParameters()
 
