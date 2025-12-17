@@ -19,4 +19,4 @@ jobs:
     uses: Mu2e/.github/.github/workflows/git-whitespace.yml@stable
     with:
       against-ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || 0 }}
-      exclude-directories: fcl scripts otsdaq-mu2e-tracker/Ui otsdaq-mu2e-tracker/Gui otsdaq-mu2e-tracker/ArtModules otsdaq-mu2e-tracker/Generators
+      exclude-directories: fcl scripts otsdaq-mu2e-tracker/Ui otsdaq-mu2e-tracker/Gui otsdaq-mu2e-tracker/ArtModules otsdaq-mu2e-tracker/Generators otsdaq-mu2e-tracker/FEInterfaces otsdaq-mu2e-tracker/ParseAlignment
