@@ -4,54 +4,66 @@
 #------------------------------------------------------------------------------
 otsdaq_mu2e_tracker : {
 
-    TrackerDQM : { module_type:TrackerDQM
-        analyzeFragments    : 1           ## set to 0 to print only
-        interactiveMode     : 1           ##
-        fillHistograms      : 1
-        fillWfHistograms    : 1           ##
-        plotWaveforms       : [ -1, -1]   ## nothing
-        validateADCPatterns : 0           ## no validation by default
+    analyzers : {
 
-        trkfCollTag         : "daq:TRK"
+        TrackerDQM : { module_type:TrackerDQM
+            analyzeFragments    : 1           ## set to 0 to print only
+            interactiveMode     : 1           ##
+            fillHistograms      : 1
+            fillWfHistograms    : 1           ##
+            plotWaveforms       : [ -1, -1]   ## nothing
+            validateADCPatterns : 0           ## no validation by default
+            timeRefChannels     : [ "0:0" ]
+
+            trkfCollTag         : "daq:TRK"
 #------------------------------------------------------------------------------
 #	    diagLevel           : 2           # print one line per event
 #	    diagLevel           : 3           # print the whole event in hex
 #------------------------------------------------------------------------------
-        diagLevel           : 10          ## print all events
-        debugBits           : [
-                               "bit0:0",
-                               "bit1:0"
-                              ]
+            diagLevel           : 10          ## print all events
+            debugBits           : [
+                                   "bit0:0",
+                                   "bit1:0"
+                                  ]
 
-        minNBytes           : -1
-        maxNBytes           : 1000000
-        maxFragmentSize     : 20000       ## to catch obvious errors
-        nADCPackets         : 1
-        minNErrors          : 100
-        errorCode           : 258
+            minNBytes           : -1
+            maxNBytes           : 1000000
+            maxFragmentSize     : 20000       ## to catch obvious errors
+            nADCPackets         : 1
+            minNErrors          : 100
+            errorCode           : 258
 #------------------------------------------------------------------------------
 # old format: offset 0x00 :  0  (16 bytes = (0x00 + 0x08) in 2-byte words)
 # new format: offset 0x20 : 40  (80 bytes = (0x20 + 0x08) in 2-byte words)
 # currently redefined in beginRun
 #------------------------------------------------------------------------------
-        dumpDTCRegisters    :  0
+            dumpDTCRegisters    :  0
 #------------------------------------------------------------------------------
 # reference channel to calculate dt(i) = T(0,i)-T(0,referenceChannel)
 # reference channel number is run-dependent
 #------------------------------------------------------------------------------
-        activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
-        activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
-        refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
-        refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
+            activeLinks_0       : [ 0 , 1, 2, 3, 4, 5]
+            activeLinks_1       : [ 0 , 1, 2, 3, 4, 5]
+            refChCal            : [ 0 , 91, 91, 91, 91, 91 ]
+            refChHV             : [ 0 , 94, 94, 94, 94, 94 ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed
 # in interpreted mode in the art event loop
 # see https://github.com/Mu2e/Stntuple/blob/muse/doc/event_display.org#plugins
 #------------------------------------------------------------------------------
-        timeWindow          : 2000
-        pulserFrequency     :  250
-        nSamplesBL          : 10
-        minPulseHeight      : 5.
-        port                : 8877
+            timeWindow          : 2000
+            pulserFrequency     :  250
+            nSamplesBL          : 10
+            minPulseHeight      : 5.
+            port                : 8877
+        }
+
+        MakeDigiNtuple: { module_type:MakeDigiNtuple
+            debugMode     : 0
+            diagLevel     : 0
+	    sdCollTag     : "StrawDigisFromArtdaqFragments"   #
+            saveWaveforms : 0
+        }
+
     }
 }

@@ -1,11 +1,15 @@
 #+startup:fold -*- buffer-read-only:t -*- 
 * ------------------------------------------------------------------------------
-* source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
+* source code: https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py 
+- a full list of commands - on the top of the file
 * local repo : file:~mu2etrk/products/trackerScripts
+* ROC repo (over-the-fiber commands): https://github.com/vlrusu/ROC
 * ------------------------------------------------------------------------------
+* ROC registers: https://docs.google.com/spreadsheets/d/1NlWtPUn64cViw0eazsdYzVVy0x8Lu7de/edit?gid=1958375111#gid=1958375111
 * control_ROC commands                                                       
 ** digi_rw   [-w 1]                                                          
 - it looks that '-w 1' means *write*
+-  "-h 0 writes to both HV/CAL"
 
     - digi_rw -h 2 -a 2
     - digi_rw -h 2 -a 1
@@ -16,6 +20,8 @@
 *** set pulser frequency:                                                    
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+*** to take out new delay
+          set  0xF5 register on both digis to 0. 
 *** details on over-the-fiber implementation (from Monica)                   
 - DCS block register  263, or 0x107.
 #+begin_src 
@@ -89,6 +95,7 @@ This is how the inputs are used to generate the outputs
     - set_preamp_thresh -c 45 -d 420 -hv 0
 ** measure_thresholds [-c channel]                                           
     - measure_thresholds -c 91 : channel 91
+** TODO program_digi 
 ** pulser_on -c 3 -d 10000 -y 200                                            
     -c 3 : (go by 8) : pulse channels 3,11,19,27,35,43,51,59,67,75,83 91
 ** [#B] readDeviceID                                                         
@@ -102,6 +109,38 @@ readDeviceID
 
 ('DRAC ROC ID #', '5a71c')
 #+end_src
+** readDDR                                                                   
+#+begin_src
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),33,0x09,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x01,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x00,false,1000);
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),20,1000)
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x01,false,1000);
+dtc_i->fDtc->WriteROCRegister(DTC_Link_ID(0),32,0x00,false,1000);
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),20,1000)
+dtc_i->fDtc->ReadROCRegister(DTC_Link_ID(0),21,1000)
+v2.clear()
+dtc_i->fDtc->ReadROCBlock(v2,DTC_Link_ID(0),512,512,false,1000)
+dtc_i->PrintBuffer(v2.data(),512)
+#+end_src
+- DDR block length - 1 kByte
+- block format:
+-    first 3 words - EWT
+-    data length in units of 64-bit words
+-    EWT again (?)
+-    (data length << 8) + block number (data of one event could span across more than one 1Kbyte block
+-    data payload..
+
+cmd:dtc_control_roc_read_ddr args:{"pcie":0,"roc":4}
+reg_21(nwords):512  reg_20:0x8080
+0x00000000: 0x6592 0x0000 0x0000 0x0038 0x6592 0x0000 0x0000 0x3801
+0x00000010: 0x88c9 0x5ada 0x3113 0x5628 0x2013 0x00c1 0x5592 0x1956
+0x00000020: 0x5193 0x1936 0x4594 0x1916 0x3d92 0x1906 0x4d90 0x1916
+0x00000030: 0x88c9 0x0290 0x3715 0xfe6c 0x2014 0x00c1 0x4992 0x1926
+0x00000040: 0x5193 0x1956 0x5190 0x1966 0x5195 0x1936 0x5994 0x1956
+0
 ** readSPI : no parameters                                                   
  conversion constants : https://github.com/bonventre/trackerScripts/blob/master/constants.py#L99
 ** set_digi_rw                                                               
@@ -133,7 +172,8 @@ Vadim's cheatsheet: file:images/vadim_digi_pattern_codes.png
     -m 3   : mode  ... need -m 3 for internal pulser 
     -l 8   : defines the look-back number of ADC samples for the waveform readout (may want to set to 0) 
     -p 0/1 : 0: 
-    -t     : triggering 
+    -t     : triggering
+    -s     : number of samples (?)
     channels go as follows -C : first 32, -D : next 32, -E: last 32
 
    - read -a 0 -t 0 -s 1 -l 8 -T 10 -m 0 -p 0
@@ -335,25 +375,123 @@ set_digi_rw -s 0
 
 * TODO control_ROC command implementation over the fiber                     
 
-|--------------------+--------+-----------------------------------------------------------|
-| command            | status | comments                                                  |
-|--------------------+--------+-----------------------------------------------------------|
-| digi_rw            |        | implemented                                               |
-|--------------------+--------+-----------------------------------------------------------|
-| readSPI            | OK     | implemented                                               |
-| find_alignment     |        | implemented by Ed, minor wrinkle - parameter order, stars |
-| set_preamp_thresh  |        |                                                           |
-| measure_thresholds |        | ok                                                        |
-| pulser_on          |        |                                                           |
-| readDeviceID       |        |                                                           |
-| set_digi_rw        |        | shouldn't need, all goes over the fiber                   |
-| rates              |        |                                                           |
-| read               | OK     | implemented                                               |
-|--------------------+--------+-----------------------------------------------------------|
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| command            | addr | status                  | comments                                                  |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| digi_rw            |      | OK                      | implemented                                               |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+| read_spi           |  258 | OK                      | implemented                                               |
+| find_alignment     |      | OK                      | implemented by Ed, minor wrinkle - parameter order, stars |
+| get_key            |  274 | implemented             |                                                           |
+| measure_thresholds |      | OK                      | ok                                                        |
+| program_digi       |      |                         |                                                           |
+| pulser_on          |      | OK                      |                                                           |
+| pulser_off         |      | OK                      |                                                           |
+| readDeviceID       |      | OK                      | check the byte order                                      |
+| rates              |  271 | OK                      |                                                           |
+| read               |      | OK                      | tested to the extent needed                               |
+| read_git_rev       |  272 | implemented, not tested |                                                           |
+| read_ilp           |  273 | implemented, not tested |                                                           |
+| set_digi_rw        |      | not needed              |                                                           |
+| set_preamp_thresh  |      | OK                      |                                                           |
+|--------------------+------+-------------------------+-----------------------------------------------------------|
+
+
+0.1) READRATES: ADDR 271
+
+it takes 8 input parameters: lookback_number (def=100),  samples_number (def=10), and the 6 channel masks
+
+1)  READGITREV   from  ADDR = 272
+       -  initiated by simple DCS_WRITE to ADDR of any value,
+         followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to NWORDS
+      -  NWORDS = N-4 words, where N is the number returned by a simple DCS_READ of addr 129
+
+      The returned words Word[i] are a string of bytes which should be decoded
+      into an ASCII string equal to "bc03ed5cda33bb9d4e0d66af56f2bad7a6c87e15"
+
+2) READILP  from ADDR  273
+      - initiated by simple DCS_WRITE to ADDR of any value,
+        followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
+        (ie DCS_READ of addr 129 should return 8)
+ 
+        The 4 returned words Word[3:0] should be parsed like this:  
+   
+        keys = ['ILPID','TEMP','PRESSURE']
+        values = [ "0x{:2x}".format(d[0]),   "{:.1f}".format(d[1] / 100.),   "{:.1f}".format(d[2] / 524288.0]
+        
+        where:    d[0] = Word[0]
+                  d[1] = Word[1]
+                  d[2] = (Word[2] & 0x0000_FFFF) + (Word[3]<<16 & 0xFFFF_0000)
+
+3) GETKEY from ADDR  274
+      -  initiated by simple DCS_WRITE to ADDR of any value,
+         followed by a DCB_BLOCK_READ of  ADDR with a number of words equal to 4,
+         (ie DCS_READ of addr 129 should return 8)
+
+        The 4 returned words Word[3:0] should be parsed like this: 
+
+        keys     = ['TEMP[degC]','2.5V','5.1V','DCDCTEMP']
+        temp     = float(d[0])/4096*3300/10
+        v2p5     = float(d[1])/4096*3.355
+        v5p1     = float(d[2])/4096*3.355*2
+        dcdctemp = float(d[3])/4096*3300/10
+        values   = [round(temp,2), round(v2p5,3), round(v5p1,3), round(dcdctemp,2)]
+        rd       = dict(list(zip(keys, values)))
+
+       where   d[i] = Word[i],  i=0 to 3
+
+4) PULSER_ON  via "rocUtil block_write -a 268 -w 5" 
+where the 5 words to be passed are:
+
+chan_1in8   = dtcbuffer[0];                        // -c     integer 0 to 7
+chan_mask   = dtcbuffer[1];                        // -C     8-bit mask (not clear to me
+                                                   // why needed because it is derived by "chan_1in8"...maybe we can remove?) 
+dutyCycle   = dtcbuffer[2];                        // -y
+pulserDelay = (dtcbuffer[4]>>16)  &  dtcbuffer[3]; // -d    integer equal to int(1./pulserFreq * 1000000)
+
+
+The "rocUtil block_read -a 268 -c 4" will return these words
+
+         *(registers_1_addr + CRDCS_WRITE_TX) = chan_mask;
+         *(registers_1_addr + CRDCS_WRITE_TX) = dutyCycle;
+         *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF);
+         *(registers_1_addr + CRDCS_WRITE_TX) = (pulserDelay & 0xFFFF0000)>>16;
+
+4.5)  PULSER_OFF is addr=269 
+
+5) MEASURE_THRESHOLD via "rocUtil block_write -a 270 -w 7"
+
+         where the 7 words to be passed are:
+
+         chan_num        = dtcbuffer[0];                           // -c
+         channel_mask[0] = (dtcbuffer[2]>>16)  &  dtcbuffer[1];    // -C
+         channel_mask[1] = (dtcbuffer[4]>>16)  &  dtcbuffer[3];    // -D
+         channel_mask[2] = (dtcbuffer[6]>>16)  &  dtcbuffer[5];    // -E 
+
+The "rocUtil block_read -a 270 -c 288" will return 288 thresholds
+
+6) readSerialNumber
+
+   s=struct.Struct(‘16B32B2H’)
+   d            = s.unpack(data)
+   DeviceSerial = ‘’
+   DesignInfo   = ‘’
+   for i in range(16):
+     DeviceSerial = “{:02x}“.format(d[i]) + DeviceSerial
+   for i in range(32):
+     DesignInfo = “{:02x}“.format(d[i+16]) + DesignInfo
+
+   DeviceSerial = ‘0x’+DeviceSerial
+   DesignInfo   = ‘0x’+DesignInfo
+   keys   = [‘DeviceSerial’,‘DesignInfo’,‘DesignVer’,‘BackLevelVer’]
+   values = [DeviceSerial, DesignInfo, “0x{:04x}“.format(d[48]), “0x{:04x}“.format(d[49])]
+
 * ------------------------------------------------------------------------------
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
+- from the ROOT prompt:
+root [2] dtc_control_roc_digi_rw(0x85,1,0,1) 
 
 * setting up preamps to generate pulses [by Vadim]                           
 ** 1) run control_ROC, find_alignment, exit                                  
@@ -392,11 +530,11 @@ python3 diagnostic.py -m V -tv 30 -f settings_pasha_002.dat -p /dev/ttyUSB0
 python3 control_ROC.py --ts 1
 measure_thresholds                                
 # (this should show the CAL thresholds (third column) about between
-# 17-20mV ? there is one channel 28 that is nor working)
+# 17-20mV ? there is one channel 28 that is not working)
 pulser_on -c 4 -d 1000 -y 200
 # -d 1000: 50kHz , -d 10000 : 5kHz
 # -y 200 : about 4 us, -y 10 : 200ns 
-# Charge injection works in modulo 8. In other words, '-c 0' will pulse channels 0,8,16,etc. 
+# Charge injection works in modulo 8. In other wcords, '-c 0' will pulse channels 0,8,16,etc. 
 # In the example above, -c 4 will pulse channels 4, 12,20, etc. 
 # Of course, there will be cross talk, so other channels will show, 
 # but that can be easily rejected offline. 
@@ -447,8 +585,8 @@ set_digi_rw -s 0
 * 1) after each DIGIs power up, run control_ROC.py on trackerpi1/trackerpi5  
 1. start control_ROC.py on the PI
    1.a : let serial drive commands to DIGI
-   1.b : do alignment, what is alignment ?
-   1.c : read smth, why ?
+   1.b : do timing alignment
+   1.c : run 'read' command to initializa the digi readout mode 
    1.d : in the end, let fiber drive commands to DIGI
 #+begin_src     set_digi_rw -s 1                                             
 mu2e@trackerpi1:~/trackerScripts $ python3 control_ROC.py /dev/ttyUSB0 115200
@@ -532,7 +670,6 @@ ll & hv_tot(3 downto 0) & hv_tdc(23 downto 0)
 "00" & adc11(9 downto 0) & adc10(9 downto 0) & adc9(9 downto 0)
 "00" & adc14(9 downto 0) & adc13(9 downto 0) & adc12(9 downto 0)
 
-
 * 5.6) (Richie) there is an active FIXME: time = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF))) * 5/256. ns 
 * 6) VST data format                                                         
 
@@ -594,7 +731,6 @@ read -a 4 -t 0 -s 1 -l 8 -T 10 -m 3 -p 1 -C 0  -D 1400 -E 88000000
  - 0x000000b0: 0x00ac 0xe195 0x1406 0xe147 0x0406 0x0041 0x56aa 0x2aa5 : hit #4 data 
  - 0x000000c0: 0xa955 0x155a 0x56aa 0x2aa5 0xa955 0x155a 0x56aa 0x2aa5 : hit #4 data 
 * 6.5) channel map - sequence in which the channels are supposed to come     
-
 #+begin_src c++ 
 uint8_t hvcal=1; // 1:CAL 2:HV 0:both
 
@@ -617,6 +753,58 @@ uint8_t channel_map[96] = {
 - example: CAL lane 0 channel 0: 91 .. 
 - bit 91 = 32+32+27
 - in control_ROC: -C0 -D0 -E08000000
+
+* programming over the fiber
+- directory catalog:
+#+begin_src
+ Root > spi_flash_read(dtc_i,3,0x000000,32,&dat,0x2)
+nw read:32
+11-06 18:18:49.967316       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x0000 0x0001 0x0000 0x0101 0x0000 0x0500 0x0000 0x0201
+11-06 18:18:49.967358       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0x0000 0x0504 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff
+11-06 18:18:49.967372       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff
+11-06 18:18:49.967393       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff
+#+end_src
+- decoding: offsets of entries:
+  - 0x0010000      - Golden... 
+  - 0x1010000      - V12    - image 'knows' about 0x2010000
+  - 0x5000000      - V12-bin
+  - 0x2010000      - V14    - image 'knows' about 0x2010000
+  - 0x5040000      - V14-bin
+
+- reading initial 32 bytes of each image:
+#+begin_src
+root [6] spi_flash_read(dtc_i,3,0x10000,32,&dat,0x2)
+nw read:32
+11-06 18:23:50.081374       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x88f1 0xd150 0x194c 0x6d5c 0xddee 0x155e 0x9722 0x1474
+11-06 18:23:50.081412       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0xc80f 0x14e2 0x0c72 0xcd8b 0xecb1 0x76e2 0x78a9 0xc482
+11-06 18:23:50.081427       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0xa843 0x797d 0xdbec 0x3ee0 0xde09 0xf12f 0x6996 0x8dee
+11-06 18:23:50.081440       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x0102 0x0200 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000
+root [7] spi_flash_read(dtc_i,3,0x1010000,32,&dat,0x2)
+nw read:32
+11-06 18:24:40.434722       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x8ff1 0xa7ab 0x7407 0xc18e 0xab9c 0xbb43 0xb90d 0xf9bc
+11-06 18:24:40.434761       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0xce62 0xe7d0 0xc84c 0x4153 0x1101 0xb4cb 0x62c6 0x832c
+11-06 18:24:40.434776       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0x65e2 0x014d 0xab7e 0x3096 0xb56f 0x3b43 0xdc3c 0x65f4
+11-06 18:24:40.434789       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x0102 0x0200 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000
+root [8] spi_flash_read(dtc_i,3,0x5000000,32,&dat,0x2)
+nw read:32
+11-06 18:25:23.387950       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x0000 0x1102 0x0000 0x2000 0x60e7 0x0000 0x9c03 0x0002
+11-06 18:25:23.387986       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0x6047 0x0000 0xfc75 0x0003 0x1809 0x0003 0x0082 0x0002
+11-06 18:25:23.388022       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0x1c89 0x0001 0x4063 0x0000 0x10f6 0x0000 0x9c83 0x0002
+11-06 18:25:23.388028       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x3c81 0x0003 0x1c05 0x0001 0x9823 0x0002 0x70b7 0x0000
+root [9] spi_flash_read(dtc_i,3,0x2010000,32,&dat,0x2)
+nw read:32
+11-06 18:26:18.472440       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x8ff1 0xa7ab 0x7407 0xc18e 0xab9c 0xbb43 0xb90d 0xf9bc
+11-06 18:26:18.472476       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0xce62 0xe7d0 0xc84c 0x4153 0x1101 0xb4cb 0x62c6 0x832c
+11-06 18:26:18.472499       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0x65e2 0x014d 0xab7e 0x3096 0xb56f 0x3b43 0xdc3c 0x65f4
+11-06 18:26:18.472505       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x0102 0x0200 0x0000 0x0000 0x0000 0x0000 0x0000 0x0000
+root [10] spi_flash_read(dtc_i,3,0x5040000,32,&dat,0x2)
+nw read:32
+11-06 18:26:42.598695       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000000: 0x0000 0x1102 0x0000 0x2000 0x60e7 0x0000 0x9c03 0x0002
+11-06 18:26:42.598734       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000010: 0x6047 0x0000 0xfc75 0x0003 0x1809 0x0003 0x0082 0x0002
+11-06 18:26:42.598739       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000020: 0x1c89 0x0001 0x4063 0x0000 0x10f6 0x0000 0x9c83 0x0002
+11-06 18:26:42.598745       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x3c81 0x0003 0x1c05 0x0001 0x9823 0x0002 0x70b7 0x0000
+#+end_src
+
 
 * ------------------------------------------------------------------------------
 * back to [[file:otsdaq_mu2e_tracker.org]]

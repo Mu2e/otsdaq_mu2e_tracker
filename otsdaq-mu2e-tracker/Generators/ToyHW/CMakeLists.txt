@@ -11,5 +11,3 @@ cet_make_library(
         
 install_headers()
 install_source()
-# artdaq-core-mu2e::Overlays
-#

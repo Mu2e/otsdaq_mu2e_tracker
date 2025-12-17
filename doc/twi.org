@@ -1,0 +1,47 @@
+#+startup:fold -*- buffer-read-only:t -*-
+
+
+Enable TWI protocol via fiber by writing 1 to reg = 6 (this is a RDWR register)
+
+To read from a given address:
+
+1) set bit(8)=1 and bits(7:0) to the address
+2) Latch the address by issuing INIT
+3) Check status of BUSY
+4) Read the data
+
+
+a) READ OF CAL DIGI REG 0xR
+
+1) Write to reg = 25 (0x19) the value of 0x100+0xR
+2) Write to reg = 23 (0x17) the value of 0x1, then write 0x0
+3) Read reg = 69 (0x45) and check that bit(0)=0
+4) Read of reg = 70 (0x46) will return the read value
+
+b) READ OF HV DIGI REG 0xN
+
+1) Write to reg = 28 (0x1C) the value of 0x100+0xR
+2) Write to reg = 26 (0x1A) value of 1 followed by 0
+3) Read reg = 69 (0x45) and check that bit(4)=0
+4) Read of reg = 71 (0x47) will return the read value
+
+
+To write to an address according the TWI protocol, one has to:
+
+1) Set the ADDR to write
+2) Set the VALUE to write
+3) Latch the address by issuing INIT
+
+c) WRITE OF 0xV to CAL DIGI REG 0xW
+
+1) Write to reg = 25 (0x19) the value of 0xW
+2) Write to reg = 24 (0x18) the value of 0xV
+3) Write to reg = 23 (0x17) value of 1 followed by 0
+
+d) WRITE OF 0xV to HV DIGI REG 0xW
+
+1) Write to reg = 28 (0x1C) the value of 0xW
+2) Write to reg = 27 (0x1B) the value of 0xV
+3) Write to reg = 26 (0x1A) value of 1 followed by 0
+
+Disable TWI protocol via fiber by writing 0 to reg = 6 (this is a RDWR register)

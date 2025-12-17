@@ -4,9 +4,9 @@ include(ArtDictionary)
 art_dictionary(
   DICTIONARY_LIBRARIES
   otsdaq-mu2e-tracker_gui
-#  artdaq-core-mu2e::Overlays
-#  mu2e-pcie-utils::CFOInterface
-#  mu2e-pcie-utils::DTCInterface
+#  artdaq_core_mu2e::artdaq-core-mu2e_Overlays
+#  mu2e_pcie_utils::CFOInterface
+#  mu2e_pcie_utils::DTCInterface
 )
 
 set (dict_name "otsdaq-mu2e-tracker_gui_root_dict")
