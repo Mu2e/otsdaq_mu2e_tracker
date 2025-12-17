@@ -8,9 +8,9 @@ int test_find_thresholds(int PcieAddr, int Link, int Channel = -1, float VThresh
 
   int  link_mask = (1 << 4*link_mask);
   bool skip_init(false);
-  
+
   auto dtc_i = DtcInterface::Instance(PcieAddr,link_mask,skip_init);
-  
+
   dtc_i->FindAlignments(1,Link);
 
   int ich1(Channel), ich2(Channel+1);

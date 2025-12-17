@@ -52,7 +52,7 @@ physics: {
 #	    diagLevel           : 3           # print the whole event in hex
 #------------------------------------------------------------------------------
             diagLevel           : 0           ## print all events
-            timeRefChannels     : [ "0:3" , "1:4" ] 
+            timeRefChannels     : [ "0:3" , "1:4" ]
 #------------------------------------------------------------------------------
 # if rootMacro is non-empty, it defines the name of a ROOT macro to be executed
 # in interpreted mode in the art event loop

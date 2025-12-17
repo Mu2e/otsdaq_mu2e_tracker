@@ -85,7 +85,7 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read)
 		if (elapsed_secs_since_datataking_start < 0) elapsed_secs_since_datataking_start = 0;
     //nadccounts are the channels
 		if (static_cast<size_t>(elapsed_secs_since_datataking_start) < change_after_N_seconds_ || send_calls_ == 0) {
-			TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to " 
+			TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to "
                            << sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);
 			*bytes_read = sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);//data size
 		}
@@ -139,7 +139,7 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read)
 
     data_t* p = (data_t*) (((demo::ToyFragment::Header*) buffer) + 1);
     for(size_t i=0; i<nADCChannels_-1; i++) {
-      p[i] = 100;  
+      p[i] = 100;
     }
 	}
 	else {

@@ -37,7 +37,7 @@ void print_legacy_table(const Alignment& alignment, std::ostream& Stream) {
 
   Stream.setf(std::ios_base::left);
   for (const auto& iteration: alignment.Iterations()){
-    Stream << "******   Iteration " 
+    Stream << "******   Iteration "
               << iteration.Index()
               << "   ******"
               << std::endl;

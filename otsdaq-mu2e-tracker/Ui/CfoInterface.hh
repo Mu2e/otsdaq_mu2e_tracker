@@ -14,7 +14,7 @@
 
 namespace trkdaq {
 
-  class CfoInterface { 
+  class CfoInterface {
   public:
     static CfoInterface* fgInstance;
 
@@ -31,7 +31,7 @@ namespace trkdaq {
     CfoInterface(int PcieAddr = -1, uint DtcMask = 0x1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled,
                  bool SkipInit = false);
   public:
-    
+
     virtual ~CfoInterface();
 
     static CfoInterface* Instance(int PcieAddr = -1, uint DtcMask = 0);
@@ -56,14 +56,14 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         CompileRunPlan(const char* InputFn, const char* OutputFn);
 //-----------------------------------------------------------------------------
-// TODO: need one more function which would 
-// 1. generate off-spill run plan for N evens, 
+// TODO: need one more function which would
+// 1. generate off-spill run plan for N evens,
 // 2. compile and load it
 // 'EWLength' in units of 25 ns (40 MHz clock ticks)
 //-----------------------------------------------------------------------------
     void         SetEventMode      (int Mode) { fEventMode  = Mode; }
     void         SetJAMode         (int Mode) { fJAMode     = Mode; }
-    
+
     void         SetOffspillRunPlan(int NEvents, int EWLength);
   };
 

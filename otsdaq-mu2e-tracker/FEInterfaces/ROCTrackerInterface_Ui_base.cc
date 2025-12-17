@@ -36,15 +36,15 @@ using namespace ots;
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode) 
+int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 {
     int rc(0);
 
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
-    
+
     TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
-                     << " ROC ReadoutMode:" << fRocReadoutMode; 
+                     << " ROC ReadoutMode:" << fRocReadoutMode;
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 //-----------------------------------------------------------------------------
     rc = Ui_InitRocReadoutMode();
     getDTC()->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-    
+
     TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
     return rc;
   } // end Ui_base_InitReadout()
@@ -93,7 +93,7 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitRocReadoutMode() 
+int ROCTrackerInterface::Ui_base_InitRocReadoutMode()
 {
     return 0;
   } // end Ui_base_InitRocReadoutMode()
@@ -109,14 +109,14 @@ int ROCTrackerInterface::Ui_base_InitRocReadoutMode()
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_ConfigureJA(int ClockSource, int Reset) 
+int ROCTrackerInterface::Ui_base_ConfigureJA(int ClockSource, int Reset)
 {
     int nmax_iter(10);
     int clock_source(ClockSource), reset(Reset);
 
     if (reset        == -1) reset        = (fJAMode     ) & 0xf;
     if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
-    
+
     getDTC()->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
     usleep(100000);
     int ok(0);
@@ -125,7 +125,7 @@ int ROCTrackerInterface::Ui_base_ConfigureJA(int ClockSource, int Reset)
       usleep(100000);
       if (ok == 1) break;
     }
-    
+
     int rc = 0;
     if (ok == 0) {
       TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
@@ -151,7 +151,7 @@ int ROCTrackerInterface::Ui_base_ConfigureJA(int ClockSource, int Reset)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode() 
+int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
 {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
     int rc(0);
@@ -166,12 +166,12 @@ int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
     }
 
     getDTC()->DisableAutogenDRP();
-    
+
     getDTC()->SoftReset();                                             // write 0x9100:bit_31 = 1
 
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
-    
+
     rc = Ui_base_ConfigureJA(clock_source,reset);
     getDTC()->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
                                                                    // this one is OK...
@@ -186,7 +186,7 @@ int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
     getDTC()->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
 
     // ROC links are disabled here, but re-enabled later, in Ui_InitReadout()
-    
+
     TLOG(TLVL_DEBUG) << "-- END, rc:" << rc;
     return rc;
   } // end Ui_base_InitEmulatedCFOReadoutMode()
@@ -196,7 +196,7 @@ int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
 /// example
 /// write value 0x10800244 to register 0x9100 - disable emulated CFO bits
 /// write value 0x00004141 to register 0x9114 - set link mask
-/// DTC doesn' know about an external CFO, so it should only prepare itself to receive 
+/// DTC doesn' know about an external CFO, so it should only prepare itself to receive
 /// EVMs/HBs from the outside
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
 /// Do not modify this file directly.
@@ -205,7 +205,7 @@ int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode) 
+int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode)
 {
     int rc(0);
 
@@ -219,18 +219,18 @@ int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode)
     }
 
     // getDTC()->HardReset();                  // write 0x9100:bit_00=1
-    getDTC()->SoftReset();                 // write 0x9100:bit_31=1   
+    getDTC()->SoftReset();                 // write 0x9100:bit_31=1
 
     getDTC()->DisableCFOEmulation  ();         // r_0x9100:bit_30 = 0
     getDTC()->DisableCFOEmulatorDRP();         // r_0x9100:bit_24 = 0
     getDTC()->DisableAutogenDRP    ();         // r_0x9100:bit_23 = 0
 
-    // do it only when the bit is set ? 
+    // do it only when the bit is set ?
     getDTC()->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
 
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
-    
+
     rc = Ui_base_ConfigureJA(clock_source,reset);
     if (rc < 0) {
       TLOG(TLVL_ERROR) << "failed to configure the JA for PCIE:" << fPcieAddr;
@@ -242,12 +242,12 @@ int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode)
     getDTC()->SetCFO40MHzClockMarkerEnable(DTCLib::DTC_Link_ALL,EnableClockMarkers);
 
     getDTC()->SetExternalCFOSampleEdgeMode(fSampleEdgeMode);
-    
+
     getDTC()->EnableAutogenDRP();           // r_0x9100:bit_23
 
     // dtc->SetCFOEmulationMode();      // r_0x9100:bit_15 = 1
 
-    // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
+    // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1
 
     getDTC()->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
     //    getDTC()->EnableTransmitCFOLink();      // r_0x9114:bit_06 = 1 (if the dTC is in the middle of the chain)
@@ -270,21 +270,21 @@ int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_base_LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag) 
+void ROCTrackerInterface::Ui_base_LaunchRunPlanEmulatedCfo(int EWLength, int NMarkers, int FirstEWTag)
 {
 
     TLOG(TLVL_DEBUG+1) << "--- START";
-    
+
     getDTC()->DisableCFOEmulation();
     getDTC()->SoftReset();                                             // write 0x9100:bit_31 = 1
 
-    getDTC()->SetCFOEmulationEventWindowInterval(EWLength);  
+    getDTC()->SetCFOEmulationEventWindowInterval(EWLength);
     getDTC()->SetCFOEmulationNumHeartbeats      (NMarkers);
 
     uint64_t ew_mode = ((((int64_t)fOnSpill) << 32) | ((int64_t)fEventMode));     // this really is the event mode
 
     TLOG(TLVL_DEBUG+1) << " checkpoint 001";
-    
+
     getDTC()->SetCFOEmulationEventMode          (ew_mode  );
 
     getDTC()->SetCFOEmulationTimestamp          (DTCLib::DTC_EventWindowTag((uint64_t) FirstEWTag));
@@ -306,15 +306,15 @@ void ROCTrackerInterface::Ui_base_LaunchRunPlanEmulatedCfo(int EWLength, int NMa
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-uint32_t ROCTrackerInterface::Ui_base_ReadRegister(uint16_t Register) 
+uint32_t ROCTrackerInterface::Ui_base_ReadRegister(uint16_t Register)
 {
 
     uint32_t data;
     int      timeout(150);
-    
+
     mu2edev* dev = getDTC()->GetDevice();
     dev->read_register(Register,timeout,&data);
-    
+
     return data;
   } // end Ui_base_ReadRegister()
 
@@ -328,13 +328,13 @@ uint32_t ROCTrackerInterface::Ui_base_ReadRegister(uint16_t Register)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_ResetLinks(int LinkMask, int SetNewMask) 
+int ROCTrackerInterface::Ui_base_ResetLinks(int LinkMask, int SetNewMask)
 {
     int rc(0);
     if ((LinkMask != 0) and (SetNewMask != 0)) fLinkMask = LinkMask;
 
     Ui_base_SetLinkMask();
-    
+
     for (int i=0; i<6; i++) {
       if (LinkEnabled(i)) {
         int ret = Ui_ResetLink(i);   // this function is virtual
@@ -354,7 +354,7 @@ int ROCTrackerInterface::Ui_base_ResetLinks(int LinkMask, int SetNewMask)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_ResetLink(int Link) 
+int ROCTrackerInterface::Ui_base_ResetLink(int Link)
 {
     return 0;
   } // end Ui_base_ResetLink()
@@ -369,15 +369,15 @@ int ROCTrackerInterface::Ui_base_ResetLink(int Link)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_base_SetBit(int Register, int Bit, int Value) 
+void ROCTrackerInterface::Ui_base_SetBit(int Register, int Bit, int Value)
 {
     int tmo_ms(100);
 
     uint32_t data;
     getDTC()->GetDevice()->read_register(Register,tmo_ms,&data);
-    
+
     uint32_t w = (1 << Bit);
-    
+
     data = (data ^ w) | (Value << Bit);
     getDTC()->GetDevice()->write_register(Register,tmo_ms,data);
   } // end Ui_base_SetBit()
@@ -393,10 +393,10 @@ void ROCTrackerInterface::Ui_base_SetBit(int Register, int Bit, int Value)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_base_SetLinkMask(int Mask) 
+void ROCTrackerInterface::Ui_base_SetLinkMask(int Mask)
 {
     if (Mask != 0) fLinkMask = Mask;
-    
+
     for (int i=0; i<6; i++) {
       int enabled= (fLinkMask >> 4*i) & 0x1;
       if (enabled) getDTC()->EnableLink (DTCLib::DTC_Link_ID(i),DTCLib::DTC_LinkEnableMode());
@@ -415,7 +415,7 @@ void ROCTrackerInterface::Ui_base_SetLinkMask(int Mask)
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 void ROCTrackerInterface::Ui_base_SetupCfoInterface(int CFOEmulationMode, int ForceCFOEdge,
-                                       int EnableCFORxTx   , int EnableAutogenDRP) 
+                                       int EnableCFORxTx   , int EnableAutogenDRP)
 {
     // int tmo_ms(150);
 
@@ -439,7 +439,7 @@ void ROCTrackerInterface::Ui_base_SetupCfoInterface(int CFOEmulationMode, int Fo
       getDTC()->EnableReceiveCFOLink  ();
       getDTC()->EnableTransmitCFOLink ();
     }
-    
+
     if (EnableAutogenDRP == 0) getDTC()->DisableAutogenDRP();
     else                       getDTC()->EnableAutogenDRP ();
   } // end Ui_base_SetupCfoInterface()
@@ -454,7 +454,7 @@ void ROCTrackerInterface::Ui_base_SetupCfoInterface(int CFOEmulationMode, int Fo
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::vector<std::string> ROCTrackerInterface::Ui_base_GetRocRegistersNames(bool history) 
+std::vector<std::string> ROCTrackerInterface::Ui_base_GetRocRegistersNames(bool history)
 {
     std::vector<std::string> registers;
     // Basic ROC registers
@@ -481,7 +481,7 @@ std::vector<std::string> ROCTrackerInterface::Ui_base_GetRocRegistersNames(bool 
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::vector<uint32_t> ROCTrackerInterface::Ui_base_GetRocRegisters(int ilink, bool history) 
+std::vector<uint32_t> ROCTrackerInterface::Ui_base_GetRocRegisters(int ilink, bool history)
 {
     std::vector<uint32_t> val;
     // Basic ROC registers
@@ -509,7 +509,7 @@ std::vector<uint32_t> ROCTrackerInterface::Ui_base_GetRocRegisters(int ilink, bo
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::vector<float> ROCTrackerInterface::Ui_base_GetConvertedRocRegisters(int ilink, bool history) 
+std::vector<float> ROCTrackerInterface::Ui_base_GetConvertedRocRegisters(int ilink, bool history)
 {
     auto registers = Ui_GetRocRegisters(ilink, history);
     return std::vector<float>(registers.begin(), registers.end());
@@ -526,7 +526,7 @@ std::vector<float> ROCTrackerInterface::Ui_base_GetConvertedRocRegisters(int ili
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::string ROCTrackerInterface::Ui_base_GetRocID         (int Link) 
+std::string ROCTrackerInterface::Ui_base_GetRocID         (int Link)
 { return std::string("undefined"); } // end Ui_base_GetRocID         ()
 
 //==============================================================================
@@ -538,7 +538,7 @@ std::string ROCTrackerInterface::Ui_base_GetRocID         (int Link)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::string ROCTrackerInterface::Ui_base_GetRocDesignInfo (int Link) 
+std::string ROCTrackerInterface::Ui_base_GetRocDesignInfo (int Link)
 { return std::string("undefined"); } // end Ui_base_GetRocDesignInfo ()
 
 //==============================================================================
@@ -550,7 +550,7 @@ std::string ROCTrackerInterface::Ui_base_GetRocDesignInfo (int Link)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::string ROCTrackerInterface::Ui_base_GetRocFwGitCommit(int Link) 
+std::string ROCTrackerInterface::Ui_base_GetRocFwGitCommit(int Link)
 { return std::string("undefined"); } // end Ui_base_GetRocFwGitCommit()
 
 // clang-format on

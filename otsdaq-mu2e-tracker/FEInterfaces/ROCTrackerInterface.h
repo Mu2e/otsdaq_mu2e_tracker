@@ -93,7 +93,7 @@ public:
     const char*         fgKeyVarName[trkdaq::TrkKeyDataNWords]; //
     const char*         fgIlpVarName[trkdaq::TrkIlpDataNWords]; //
     int           		fgFpga[96];                     // 0:CAL or 1:HV
-	bool 	   			fInitialized = false;	
+	bool 	   			fInitialized = false;
 
 	int          LinkEnabled		  (int Link) 	{ return (fLinkMask >> 4*Link) & 0x1 ; }
     const char*  SpiVarName           (int I) 		{ return fgSpiVarName[I]; }
@@ -172,15 +172,15 @@ public:
 		91, 85, 79, 73, 67, 61, 55, 49,          // lane 0
 		43, 37, 31, 25, 19, 13,  7,  1,
 		90, 84, 78, 72, 66, 60, 54, 48,
-		
+
 		42, 36, 30, 24, 18, 12,  6,  0,          // lane 1
 		93, 87, 81, 75, 69, 63, 57, 51,
 		45, 39, 33, 27, 21, 15,  9,  3,
-		
+
 		44, 38, 32, 26, 20, 14,  8,  2,          // lane 2
 		92, 86, 80, 74, 68, 62, 56, 50,
 		47, 41, 35, 29, 23, 17, 11,  5,
-		
+
 		95, 89, 83, 77, 71, 65, 59, 53,          // lane 3
 		46, 40, 34, 28, 22, 16, 10,  4,
 		94, 88, 82, 76, 70, 64, 58, 52
@@ -268,7 +268,7 @@ public:
 
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc.hxx"
 	#include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_ProgramRoc_declareFEMacros.hxx"
-	
+
 
 	//------------ end for tracker-specific Ui functions
 

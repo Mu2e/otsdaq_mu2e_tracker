@@ -36,17 +36,17 @@ using namespace ots;
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream)
 {
 
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
-      
+
       DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t dat;
-      
+
       dat = getDTC()->ReadROCRegister(link,Reg,100);
       text += Form("     0x%04x",dat);
     }
@@ -65,17 +65,17 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc,
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream)
 {
 
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
-      
+
       DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t iw1, iw2, iw;
-      
+
       iw1 = getDTC()->ReadROCRegister(link,Reg  ,100);
       iw2 = getDTC()->ReadROCRegister(link,Reg+1,100);
       iw  = (iw2 << 16) | iw1;
@@ -100,7 +100,7 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream)
 {
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
@@ -123,38 +123,38 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
       link_mask |= (1 << 4*i);
       text += Form("    ROC%i   ",i);
     }
-                     
+
     if (Format != 0) text += " Description";
     Stream << Form("%s\n",text.data());
     Stream << "------------------------------------------------------------------------\n";
 
     reg =  0; desc = "ALWAYS 0x1234";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 18; desc = " ??";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
-    reg =  8; desc = "ROC pattern mode ??"; 
+
+    reg =  8; desc = "ROC pattern mode ??";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
-    reg = 60; desc = "ROC readout timeout delay "; 
+
+    reg = 60; desc = "ROC readout timeout delay ";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 15; desc = "N simulated hits per lane";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 16; desc = " ??";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg =  7; desc = "Fiber loss/lock counter";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg =  6; desc = "Bad Markers counter";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg =  4; desc = "Loopback coarse delay";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 23; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -163,7 +163,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
 
     reg = 11; desc = "Num EWM seen";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 64; desc = "Num windows seen";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -192,24 +192,24 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
 
     reg = 37; desc = "Num DATA REQ read from DDR";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 39; desc = "Num DATA REQ sent to DTC";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 41; desc = "Num DATA REQ with null data";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     std::cout << Form("\n");
-      
+
     reg = 43; desc = "Last spill tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 45; desc = "Last HB tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 48; desc = "Last PREFETCH tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 51; desc = "Last fetched tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -218,23 +218,23 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
 
     reg = 57; desc = "OFFSET tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     std::cout << std::endl;
-      
+
     reg = 72; desc = "Num HB tag inconsistencies";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 73; desc = "Num DATA REQ tag inconsistencies";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 74; desc = "Num HB tag lost";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 75; desc = "Num DATA REQ tag lost";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg = 0x90; desc = "total N packets (DCS+data)";    // r_144
-    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); // 
+    Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x91; desc = "N(DCS) packets sent to DTC";    // r_145
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x92; desc = "Num of non-DCS packets";        // r_146
@@ -260,7 +260,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream) 
+void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream)
 {
 
     ushort*      p16 = (ushort*) ptr;
@@ -270,12 +270,12 @@ void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offs
 
     // if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
     // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
-   
+
     for (int i=0; i<nw; i++) {
       if (n == 0) line = Form("0x%08x:",i*2+Offset);
       ushort  word = p16[i];
       line += Form(" 0x%04x",word);
-      
+
       n   += 1;
       if (n == 8) {
         if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
@@ -286,7 +286,7 @@ void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offs
         n = 0;
       }
     }
-    
+
     if (n != 0) {
       if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
       else {
@@ -305,9 +305,9 @@ void ROCTrackerInterface::Ui_print_PrintBuffer(const void* ptr, int nw, int Offs
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream)
 {
-    
+
 //-----------------------------------------------------------------------------
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
@@ -323,9 +323,9 @@ void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Ra
 //-----------------------------------------------------------------------------
     float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-      
+
     int loc = 576;   // = 96*6
-    
+
     total[1]  = float((*Rates)[loc  ])+(int((*Rates)[loc+1]) << 16); // hv - check the order with Vadim
     total[0]  = float((*Rates)[loc+2])+(int((*Rates)[loc+3]) << 16); // cal
 
@@ -341,17 +341,17 @@ void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Ra
       float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
       float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
       float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
-      
+
       int ch_mask = 1;
       if ((ChMask != nullptr) and (ChMask->size() == 96) and (ChMask->at(ich) == 0)) {
         ch_mask = 0;
       }
-    
+
       Stream << std::format("- {:5d} {:3d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f}\n",
                             ich,ch_mask,counts_hv,counts_cal,counts_coin,
                             rate_hv,rate_cal,rate_coin);
     }
-      
+
     Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
   } // end Ui_print_PrintRatesSingleRoc()
 
@@ -364,14 +364,14 @@ void ROCTrackerInterface::Ui_print_PrintRatesSingleRoc(std::vector<uint16_t>* Ra
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream)
 {
 //-----------------------------------------------------------------------------
 // do the printing
 // bit 2: formattted printout, parallel
 //-----------------------------------------------------------------------------
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-    
+
     Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
     Stream << "  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  |\n";
     Stream << "--------------------------------------------------------------------------------------------\n";
@@ -396,7 +396,7 @@ void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rate
     for (int ich=0; ich<96; ich++) {
       int loc               = 6*ich;
       Stream << std::format("{:2d}|",ich);
-      
+
       for (int lnk=0; lnk<6; lnk++) {
         std::vector<uint16_t>* dat = &Rates[lnk];
         int nw = dat->size();
@@ -416,7 +416,7 @@ void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rate
           Stream << std::format("     {:8.3f} {:c}",rate_coin,c);
         }
       }
-      
+
       Stream << std::endl;
     }
   } // end Ui_print_PrintRatesAllRocs()
@@ -431,7 +431,7 @@ void ROCTrackerInterface::Ui_print_PrintRatesAllRocs(std::vector<uint16_t>* Rate
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_print_PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::ostream& Stream) 
+void ROCTrackerInterface::Ui_print_PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::ostream& Stream)
 {
 
     Stream << " SPI Parameter ";
@@ -442,7 +442,7 @@ void ROCTrackerInterface::Ui_print_PrintSpiAll(trkdaq::TrkSpiData_t* Spi, std::o
     Stream << std::endl
            << "--------------------------------------------------------------------------"
            << std::endl;
-    
+
     for (int i=0; i<trkdaq::TrkSpiDataNWords; ++i) {
       Stream << std::format("{:15s}",fgSpiVarName[i]);
       for (int lnk=0; lnk<6; lnk++) {

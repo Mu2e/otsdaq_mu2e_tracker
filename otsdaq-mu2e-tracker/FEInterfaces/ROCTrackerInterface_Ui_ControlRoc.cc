@@ -36,7 +36,7 @@ using namespace ots;
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc(const char* Command, void* Par) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc(const char* Command, void* Par)
 {
     return 0;
   } // end Ui_ControlRoc_ControlRoc()
@@ -56,19 +56,19 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
                                       trkdaq::ControlRoc_DigiRW_Output_t* Output    ,
                                       int                         Link      ,
                                       int                         PrintLevel,
-                                      std::ostream&               Stream    ) 
+                                      std::ostream&               Stream    )
 {
 //-----------------------------------------------------------------------------
 //    const int  reg (263);  // for digi_rw
-    
+
     std::vector<uint16_t> vec;
-  
+
     vec.push_back(Input->rw     );
     vec.push_back(Input->hvcal  );
     vec.push_back(Input->address);
     vec.push_back(Input->data[0]);
     vec.push_back(Input->data[1]);
-    
+
     if (PrintLevel > 0) {
       Stream << Form("Input->rw           : %i\n"    ,Input->rw);
       Stream << Form("Input->hwcal        : 0x%04x\n",Input->hvcal);
@@ -76,7 +76,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
       Stream << Form("Input->data[0]      : 0x%04x\n",Input->data[0]);
       Stream << Form("Input->data[1]      : 0x%04x\n",Input->data[1]);
     }
-    
+
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // if Link != -1, use it, but don't redefine fLinkMask - that would be wa-a-ay too smart !
@@ -95,9 +95,9 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
       try {
         getDTC()->WriteROCBlock   (roc,trkdaq::REG_DIGIRW,vec,false,increment_address,100);
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-      
-        uint16_t u; 
-        while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+        uint16_t u;
+        while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
         if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -116,7 +116,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
             Stream << std::endl;
 
             trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
-          
+
             Stream << Form("rw           : %i\n"        ,o->rw);
             Stream << Form("hvcal        : 0x%04x\n"    ,o->hvcal);
             Stream << Form("address      : 0x%04x\n"    ,o->address);
@@ -132,7 +132,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
       }
     }
 //-----------------------------------------------------------------------------
-// 
+//
 //-----------------------------------------------------------------------------
     // Ui_base_ResetLinks();
     return 0;
@@ -141,9 +141,9 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_DumpSettings()
 /// from https
-/// chan_mask = int(get_key_value(keys,"C"),16) 
+/// chan_mask = int(get_key_value(keys,"C"),16)
 /// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
-/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023 
+/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023
 /// obsolete
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
@@ -155,7 +155,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream)
 {
     int rc (0);
     TLOG(TLVL_DEBUG) << "Link:" << Link << " Channel:" << Channel << std::endl;
@@ -168,7 +168,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
       l1 = 0;
       l2 = 6;
     }
-    
+
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
       TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
@@ -184,11 +184,11 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
 
       Stream << " ich gain_cal gain_hv thr_cal thr_hv" << std::endl;
       Stream << "------------------------------------" << std::endl;
-      
+
       int nch = settings.size()/4;
       for (int ich=0; ich < nch; ++ich) {
         int channel  = first_channel+ich;
-        
+
         int gain_cal = settings[ich];
         int gain_hv  = settings[ich+  nch];
         int thr_cal  = settings[ich+2*nch];
@@ -213,10 +213,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_Input_t0* Par       ,
                                     int                       Link      ,
                                     int                       PrintLevel,
-                                    std::ostream&             Stream    ) 
+                                    std::ostream&             Stream    )
 {
 //-----------------------------------------------------------------------------
-// write parameters into reg 266 (via block write), sleep for some time, 
+// write parameters into reg 266 (via block write), sleep for some time,
 // then wait till reg 128 returns 0x8000
 /*
             adc_mode        = dtcbuffer[0];                                  // -a
@@ -230,10 +230,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
             enable_pulser   = (uint8_t) dtcbuffer[12];         // -p
             max_total_delay = dtcbuffer[13];                 // -d (def 1)
             marker_clock    = (uint8_t) dtcbuffer[14];          // -m
-*/    
+*/
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
-    
+
     TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
 
     int link1(Link), link2(Link+1);
@@ -247,52 +247,52 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
     }
                                         // rely on supplied constructor
     trkdaq::ControlRoc_Read_Input_t0 default_par, *par;
-    
+
     if (Par != nullptr) par = Par;
     else                par = &default_par;
-    
+
     vec.push_back(par->adc_mode);
     vec.push_back(par->tdc_mode);
     vec.push_back(par->num_lookback);
-        
+
     if (par->num_samples > 63) {
       TLOG(TLVL_WARNING) << "num_samples:" << par->num_samples << " gt 63, truncate to 63" ;
       par->num_samples = 63;
     }
 
     vec.push_back(par->num_samples);
-      
+
     uint16_t w1 = par->num_triggers[0];
     uint16_t w2 = par->num_triggers[1];
-      
+
     vec.push_back(w1);
     vec.push_back(w2);
-      
-    for (int i=0; i<6; i++) vec.push_back(par->ch_mask[i]); 
-        
+
+    for (int i=0; i<6; i++) vec.push_back(par->ch_mask[i]);
+
     vec.push_back(par->enable_pulser);
     vec.push_back(par->marker_clock );
     vec.push_back(par->mode  );
     vec.push_back(par->clock );
-      
+
     bool increment_address(false);
-    
+
     for (int i=link1; i<link2; ++i) {
       if (not LinkEnabled(i))                            continue;
       auto roc  = DTCLib::DTC_Link_ID(i);
       getDTC()->WriteROCBlock(roc,trkdaq::REG_READ,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-      
+
                                         // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = getDTC()->ReadROCRegister(roc,129,100);
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
-      
+
       nw = nw-4;
       std::vector<uint16_t> vout;
       getDTC()->ReadROCBlock(vout,roc,trkdaq::REG_READ,nw,false,100);
@@ -300,11 +300,11 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
 // bits 0 and 1 - this function
 //-----------------------------------------------------------------------------
       if (PrintLevel & 0x3) {
-        
+
         Stream << "--------------- link :" << i << std::endl;
 
         if (PrintLevel & 0x1) Ui_print_PrintBuffer(vout.data(),nw,0,&Stream);
-      
+
         if (PrintLevel & 0x2) {
           trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
           Stream << Form("adc_mode      : %i\n",o->adc_mode);
@@ -336,7 +336,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_PulserOn()
 /// from https
-/// chan_mask = int(get_key_value(keys,"C"),16) 
+/// chan_mask = int(get_key_value(keys,"C"),16)
 /// oddoreven = int(get_key_value(keys,"P"),16)
 /// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
 /// delay     = int(get_key_value(keys,"d",1000))
@@ -351,7 +351,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Read(trkdaq::ControlRoc_Read_I
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
-                                        int PrintLevel, std::ostream& Stream) 
+                                        int PrintLevel, std::ostream& Stream)
 {
     int rc (0); //, reg(268);
     TLOG(TLVL_DEBUG) << " -- START: Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
@@ -360,7 +360,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
            << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay << std::endl;
 //-----------------------------------------------------------------------------
-// write parameters into reg 268 (block write) , sleep for some time, 
+// write parameters into reg 268 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
@@ -368,7 +368,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
     vec.push_back(uint16_t(DutyCycle));
     vec.push_back(uint16_t((PulserDelay >>  0) & 0xffff));
     vec.push_back(uint16_t((PulserDelay >> 16) & 0xffff));
-    
+
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -378,7 +378,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
       l1 = 0;
       l2 = 6;
     }
-    
+
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
       TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
@@ -396,8 +396,8 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
       }
 
                                         // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {};
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -434,7 +434,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOn(int Link, int FirstCh
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
     TLOG(TLVL_DEBUG) << "-- START:" << __func__;
@@ -443,7 +443,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintL
       l1 = 0;
       l2 = 6;
     }
-    
+
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i)) continue;
 //-----------------------------------------------------------------------------
@@ -454,14 +454,14 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintL
 
       if (rc == 0) {
         int nw = res.size();
-        TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
+        TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw;
 
         if (PrintLevel & 0x1) {
           Ui_print_PrintBuffer(res.data(),nw,0,&Stream);
         }
       }
       else {
-        Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << trkdaq::REG_PULSEROFF << std::endl; 
+        Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << trkdaq::REG_PULSEROFF << std::endl;
       }
     }
     TLOG(TLVL_DEBUG) << " -- END " << __func__ << " rc:" << rc;
@@ -478,19 +478,19 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PulserOff(int Link, int PrintL
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Channel, std::vector<uint16_t>& Settings,
-                                            int PrintLevel, std::ostream& Stream) 
+                                            int PrintLevel, std::ostream& Stream)
 {
     int rc (0);
     TLOG(TLVL_DEBUG) << "-- START: Link:" << Link << " Channel:" << Channel;
 
     Stream << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
-// write parameters into reg 268 (block write) , sleep for some time, 
+// write parameters into reg 268 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
     vec.push_back(uint16_t(Channel));
-    
+
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // Link = -1 : doesn't make sense - creates too many degrees of freedom
@@ -499,7 +499,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
       TLOG(TLVL_ERROR) << "wrong link:" << Link;
       return -1;
     }
-    
+
     if (LinkEnabled(Link)) {
       TLOG(TLVL_DEBUG) << "      -- Link:" << Link << std::endl;
 //-----------------------------------------------------------------------------
@@ -518,7 +518,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
 
       uint16_t u;
       try {
-        while ((u = getDTC()->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
+        while ((u = getDTC()->ReadROCRegister(link_id,128,100)) != 0x8000) {};
         TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
       }
       catch(...) {
@@ -552,7 +552,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
       }
 //-----------------------------------------------------------------------------
 // everything was OK
-//-----------------------------------------------------------------------------        
+//-----------------------------------------------------------------------------
       if (PrintLevel & 0x1) {
         Ui_print_PrintBuffer(Settings.data(),nw,0,&Stream);
       }
@@ -564,9 +564,9 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_SetCalDac()
 /// from https
-/// chan_mask = int(get_key_value(keys,"C"),16) 
+/// chan_mask = int(get_key_value(keys,"C"),16)
 /// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
-/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023 
+/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023
 /// obsolete
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
@@ -579,7 +579,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstChannelMask, int PulseHeight,
-                                         int PrintLevel, std::ostream& Stream) 
+                                         int PrintLevel, std::ostream& Stream)
 {
     int rc (0); //, reg(268);
     TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
@@ -588,13 +588,13 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstC
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
            << std::dec << " PulseHeight:" << PulseHeight << std::endl;
 //-----------------------------------------------------------------------------
-// write parameters into reg 268 (block write) , sleep for some time, 
+// write parameters into reg 268 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
     vec.push_back(uint16_t(FirstChannelMask));
     vec.push_back(uint16_t(PulseHeight));
-    
+
     bool increment_address(false);
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -604,7 +604,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstC
       l1 = 0;
       l2 = 6;
     }
-    
+
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
       TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
@@ -621,8 +621,8 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstC
         continue;
       }
 
-      uint16_t u; 
-      while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {};
       TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -651,14 +651,14 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetCalDac(int Link, int FirstC
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelID, int PreampType, int Gain, int PrintLevel)
 {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
     auto roc  = DTCLib::DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
-// write parameters into reg 266 (block write) , sleep for some time, 
+// write parameters into reg 266 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
@@ -671,8 +671,8 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelI
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {};
     TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -686,7 +686,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelI
 
     if (PrintLevel != 0) Ui_print_PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
-// 
+//
 //-----------------------------------------------------------------------------
     // Ui_ResetLink(Link);
     return 0;
@@ -701,14 +701,14 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetGain(int Link, int ChannelI
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int ChannelID, int PreampType, int Threshold, int PrintLevel)
 {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
     auto roc  = DTCLib::DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
-// write parameters into reg 267 (block write) , sleep for some time, 
+// write parameters into reg 267 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
@@ -721,8 +721,8 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int Cha
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {};
     TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -736,7 +736,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int Cha
 
     if (PrintLevel != 0) Ui_print_PrintBuffer(v2.data(),nw);
 //-----------------------------------------------------------------------------
-// 
+//
 //-----------------------------------------------------------------------------
     return 0;
   } // end Ui_ControlRoc_ControlRoc_SetThreshold()
@@ -752,7 +752,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThreshold(int Link, int Cha
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThresholds(int Link, uint16_t* GT_Cal_HV,
-                                             int PrintLevel, std::ostream& Stream) 
+                                             int PrintLevel, std::ostream& Stream)
 {
 //-----------------------------------------------------------------------------
 // convert into enum
@@ -762,7 +762,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThresholds(int Link, uint16
       return -1;
     };
 //-----------------------------------------------------------------------------
-// write parameters into reg 267 (block write) , sleep for some time, 
+// write parameters into reg 267 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec(GT_Cal_HV,GT_Cal_HV+4*96);
@@ -772,8 +772,8 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_SetThresholds(int Link, uint16
     getDTC()->WriteROCBlock(roc,trkdaq::REG_SETGAINTHR,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,100)) != 0x8000) {};
     TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, if empty: 0x1000
@@ -799,20 +799,20 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_MeasureThresholds(int         
                                                  uint32_t      MaskD,
                                                  uint32_t      MaskE,
                                                  int           PrintLevel,
-                                                 std::ostream& Stream) 
+                                                 std::ostream& Stream)
 {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
 //    auto roc  = DTCLib::DTC_Link_ID(Link);
 //-----------------------------------------------------------------------------
-// write parameters into reg 264 (block write) , sleep for some time, 
+// write parameters into reg 264 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x8) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
 
     std::vector<float> thr; // 3*96
-    
+
     Ui_ControlRoc_ControlRoc_ReadThresholds (Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
     Ui_ControlRoc_ControlRoc_PrintThresholds(Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
     return 0;
@@ -835,7 +835,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_PrintThresholds(int           
                                                uint32_t            MaskD,
                                                uint32_t            MaskE,
                                                int                 PrintLevel,
-                                               std::ostream&       Stream) 
+                                               std::ostream&       Stream)
 {
 //-----------------------------------------------------------------------------
 //  print, if requested
@@ -882,7 +882,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadThresholds(int            
                                               uint32_t            MaskD     ,
                                               uint32_t            MaskE     ,
                                               int                 PrintLevel,
-                                              std::ostream&       Stream    ) 
+                                              std::ostream&       Stream    )
 {
 //-----------------------------------------------------------------------------
 // convert into enum
@@ -890,7 +890,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadThresholds(int            
     auto roc  = DTCLib::DTC_Link_ID(Link);
     Thr.clear();
 //-----------------------------------------------------------------------------
-// write parameters into reg 264 (block write) , sleep for some time, 
+// write parameters into reg 264 (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x8) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
@@ -901,7 +901,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadThresholds(int            
     mask[0] = MaskC;
     mask[1] = MaskD;
     mask[2] = MaskE;
-    
+
     vec.push_back((MaskC      ) & 0xffff);
     vec.push_back((MaskC >> 16) & 0xffff);
     vec.push_back((MaskD      ) & 0xffff);
@@ -987,10 +987,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadThresholds(int            
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t>& Data, trkdaq::TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t>& Data, trkdaq::TrkSpiData_t* Spi, int PrintLevel, std::ostream& Stream)
 {
     // const char* keys[] = {
-    //   "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    , 
+    //   "I3.3","I2.5","I1.8HV","IHV5.0","VDMBHV5.0","V1.8HV","V3.3HV" ,"V2.5"    ,
     //   "A0"  ,"A1"  ,"A2"    ,"A3"    ,"I1.8CAL"  ,"I1.2"  ,"ICAL5.0","ADCSPARE",
     //   "V3.3","VCAL5.0","V1.8CAL","V1.0","ROCPCBTEMP","HVPCBTEMP","CALPCBTEMP","RTD",
     //   "ROC_RAIL_1V(mV)","ROC_RAIL_1.8V(mV)","ROC_RAIL_2.5V(mV)","ROC_TEMP(CELSIUS)",
@@ -1007,11 +1007,11 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
       float toffset = 0.509;
       float tslope  = 0.00645;
       float tconst  = 0.000806;
-      float tlm45   = 0.080566;  
+      float tlm45   = 0.080566;
     } constants;
 
     int nw = Data.size();
-    
+
     float* val = (float*) Spi;
 
     for (int i=0; i<nw; i++) {
@@ -1025,7 +1025,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
         val[i] = Data[i]*constants.iconst5 ;
       }
       else if (i==4 or i==5 or i==6 or i==7 or i==16 or i==17 or i==18 or i==19) {
-        val[i] = Data[i]*3.3*2/4096 ; 
+        val[i] = Data[i]*3.3*2/4096 ;
       }
       else if (i==15) {
         val[i] = Data[i]*3.3/4096;
@@ -1040,7 +1040,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
         if   ((i%4) < 3) val[i] = Data[i]/8.;
         else             val[i] = Data[i]/16.-273.15;
       }
-      
+
       if (PrintLevel > 0) {
         //        Stream << Form("%-20s : %10.3f\n",keys[i],val[i]);
         Stream << Form("%-20s : %10.3f\n",fgSpiVarName[i],val[i]);
@@ -1060,13 +1060,13 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream)
 {
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
     int rc(0);
-    
+
     int l1 = Link;
     int l2 = l1+1;
 
@@ -1077,7 +1077,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>&
 
     for (int i=l1; i<l2; ++i) {
       if (not LinkEnabled(i)) continue;
-      
+
       rc = Ui_RocBlockRead(i,trkdaq::REG_READSPI,SpiRawData);
 
       int nw = SpiRawData.size();
@@ -1087,7 +1087,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>&
         rc = -1;
       }
 //-----------------------------------------------------------------------------
-// PrintLevel bit 0: print SPI data in std::hex 
+// PrintLevel bit 0: print SPI data in std::hex
 //-----------------------------------------------------------------------------
       if ((PrintLevel & 0x1) != 0) {
         Ui_print_PrintBuffer(SpiRawData.data(),nw,0,&Stream);
@@ -1115,7 +1115,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>&
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi_1(trkdaq::TrkSpiData_t* Spi, int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi_1(trkdaq::TrkSpiData_t* Spi, int Link, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
 //-----------------------------------------------------------------------------
@@ -1162,12 +1162,12 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi_1(trkdaq::TrkSpiData_t
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
     int nw_expected(40);
 //-----------------------------------------------------------------------------
-// ReadGitCommit: reg 
+// ReadGitCommit: reg
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> data;
 
@@ -1185,7 +1185,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& Git
           std::stringstream ss;
           int nw = data.size();
           if (PrintLevel & 0x1) Ui_print_PrintBuffer(data.data(),nw,0,&Stream);
-          
+
           for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
           GitCommit = ss.str();
         }
@@ -1193,7 +1193,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& Git
         if (PrintLevel & 0x2) Stream << std::format("GitCommit:{}\n",GitCommit);
       }
     }
-    
+
     return rc;
   } // end Ui_ControlRoc_ControlRoc_ReadGitCommit()
 
@@ -1207,7 +1207,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadGitCommit(std::string& Git
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadIlp(std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadIlp(std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
 //-----------------------------------------------------------------------------
@@ -1229,7 +1229,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadIlp(std::vector<uint16_t>&
       int nw = Data.size();
       if (PrintLevel & 0x1) Ui_print_PrintBuffer(Data.data(),nw,0,&Stream);
     }
-    
+
     return rc;
   } // end Ui_ControlRoc_ControlRoc_ReadIlp()
 
@@ -1243,10 +1243,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadIlp(std::vector<uint16_t>&
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_GetKey (std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_GetKey (std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
-    
+
     int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
 
     if (Link == -1) {
@@ -1271,7 +1271,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_GetKey (std::vector<uint16_t>&
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_Rates()
 /// at this point, assume just one Link. If needed, make it more general (a mask) later
-/// only unformatted printout internally, 
+/// only unformatted printout internally,
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc
 /// Do not modify this file directly.
 ///
@@ -1283,11 +1283,11 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Rates(int                    L
                                       std::vector<uint16_t>* V2,
                                       int                    PrintLevel,
                                       trkdaq::ControlRoc_Rates_t*    Par,
-                                      std::ostream*          Stream) 
+                                      std::ostream*          Stream)
 {
     int                 rc(0);
     trkdaq::ControlRoc_Rates_t  par;   // default construction : (num_lookback=100,num_samples=10,ch_mask=6x0xffff)
-    
+
     TLOG(TLVL_DEBUG+1) << " -- START PrintLevel:" << PrintLevel;
 
     if (Par != nullptr) par = *Par;
@@ -1311,12 +1311,12 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Rates(int                    L
       return -2;
     }
 //-----------------------------------------------------------------------------
-// write parameters into reg ***  (block write) , sleep for some time, 
+// write parameters into reg ***  (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 // ch_mask always includes the first channel
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
-      
+
     vec.push_back(par.num_lookback);
     vec.push_back(par.num_samples );
 
@@ -1325,14 +1325,14 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Rates(int                    L
     }
 
     TLOG(TLVL_DEBUG+1) << " -- 002";
-  
+
     auto roc  = DTCLib::DTC_Link_ID(Link);
     getDTC()->WriteROCBlock   (roc,trkdaq::REG_READRATES,vec,false,false,1000);
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
     // 0x86 = 0x82 + 4
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,5000)) != 0x8000) {};
     if (PrintLevel) printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently (+ 4) (ask Monica)
@@ -1368,7 +1368,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_Rates(int                    L
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadDeviceID(int                    Link      ,
                                              trkdaq::ControlRoc_DeviceID_t& DevId     ,
                                              int                    PrintLevel,
-                                             std::ostream&          Stream    ) 
+                                             std::ostream&          Stream    )
 {
 
     std::vector<uint16_t> dat = Ui_ReadDeviceID(DTCLib::DTC_Link_ID(Link));
@@ -1402,10 +1402,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadDeviceID(int              
 
 
     if (PrintLevel & 0x1) {
-      Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer); 
-      Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo); 
-      Stream << std::format("DesignVer   :{}\n",DevId.DesignVer); 
-      Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial); 
+      Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer);
+      Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo);
+      Stream << std::format("DesignVer   :{}\n",DevId.DesignVer);
+      Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial);
     }
 
     return 0;

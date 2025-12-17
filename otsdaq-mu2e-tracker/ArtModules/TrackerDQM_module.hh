@@ -93,7 +93,7 @@ class TrackerDQM : public art::EDAnalyzer {
     kNChHitsErrorBit    = 0x0010,
     kHitErrorBit        = 0x0100,  // hit error reported by the digi FPGA
     kAdcPatternErrorBit = 0x0200,  // wrong ADC pattern
-      
+
     kNErrorBits         = 7
   };
 
@@ -123,8 +123,8 @@ class TrackerDQM : public art::EDAnalyzer {
 // subevent header is 3 packets
 //-----------------------------------------------------------------------------
   struct SubEventHeader_t {
-    // packet #1 
-    uint32_t       byteCount   : 24;    
+    // packet #1
+    uint32_t       byteCount   : 24;
     uint16_t       unused      :  8;
     uint16_t       eventTag[3]     ;
     uint16_t       numRocs     :  8;
@@ -196,13 +196,13 @@ class TrackerDQM : public art::EDAnalyzer {
     uint8_t             subrun       : 2;
     uint8_t             eventMode    : 5;
                                         // decoding status
-      
+
     int                 empty     () { return (status & 0x01) == 0; }
     int                 invalid_dr() { return (status & 0x02); }
     int                 corrupt   () { return (status & 0x04); }
     int                 timeout   () { return (status & 0x08); }
     int                 overflow  () { return (status & 0x10); }
-      
+
     int                 error_code() { return (status & 0x1e); }
   };
 
@@ -229,7 +229,7 @@ class TrackerDQM : public art::EDAnalyzer {
     TH1F*         q;                  // waveform charge Q
     TH1F*         qt;                 // tail charge Qt
     TH1F*         qtq;                // Qt/Q
-    
+
     TH1F*         raw_wf[kMaxNHWfPerChannel];
     TH1F*         wf    [kMaxNHWfPerChannel];
   };
@@ -326,14 +326,14 @@ class TrackerDQM : public art::EDAnalyzer {
     EventHist_t*   event  [kNEventHistSets  ];
     StationHist_t* station[kNStationHistSets];
   };
-    
+
   struct ChannelData_t {
     int      error;                    // 1:filled up
     float    dt0r;                     // time dist btw this channel and an FPGA reference channel, TDC0, ns
     float    dt1r;                     // time dist btw this channel and an FPGA reference channel, TDC1, ns
     float    dt0r_c;                   // the same, corrected for the FPGA-specific generator time offset
     float    dt1r_c;
-    
+
     std::vector<mu2e::TrackerDataDecoder::TrackerDataPacket*> hit;
     std::vector<WfParam_t>                              wp;
 
@@ -349,7 +349,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int       valid;
     int       dtc_id;
     int       dtc_index;
-      
+
     int       n_empty;
     int       n_invalid_dr;
     int       n_corrupt;
@@ -358,7 +358,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int       error_code;             // anything but not-empty a byte..
 
     int       nerr_tot;
-      
+
     ChannelData_t  channel[kNChannels];
     ChannelData_t* ref_ch [2];
 
@@ -372,7 +372,7 @@ class TrackerDQM : public art::EDAnalyzer {
     int       nhits[2];
     int       error[2];
     RocData_t roc  [2][6];
-      
+
     int       n_empty;
     int       n_invalid_dr;
     int       n_corrupt;
@@ -391,13 +391,13 @@ class TrackerDQM : public art::EDAnalyzer {
     int           nhtot;
     int           nfrag;
     int           valid;
-      
+
     int           n_nb_errors;     // 0x01 : wrong event size
     int           n_nws_errors;    // 0x02 : too many wf samples
     int           n_lid_errors;    // 0x04 : wrong link ID
     int           n_cid_errors;    // 0x08 : wrond hit channel ID
     int           n_nch_errors;    // 0x10 : too many hits/channel
-      
+
     int           n_empty;
     int           n_invalid_dr;
     int           n_corrupt;
@@ -434,8 +434,8 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _analyzeFragments;
   int              _maxFragmentSize;
   int              _pulserFrequency;    // in kHz, either 60 or 250
-  
-  int              _timeWindow;         // time window (spacing between the two EWMs for a given run) 
+
+  int              _timeWindow;         // time window (spacing between the two EWMs for a given run)
   int              _nADCPackets;        // number of waveform packets
   int              _nSamplesBL;
   float            _minPulseHeight;
@@ -453,13 +453,13 @@ class TrackerDQM : public art::EDAnalyzer {
 
   int              _dtcr [2];
   int              _linkr[2];
-  
+
   int              _debugBit[100];
 
   int              _port;                     // http://localhost:port serves histograms
   std::vector<int> _plotWaveforms;
 
-  std::vector<std::string> _refChDt;          // i.e. [ "0:4", "1:3" ] 
+  std::vector<std::string> _refChDt;          // i.e. [ "0:4", "1:3" ]
 //-----------------------------------------------------------------------------
 // the rest
 //-----------------------------------------------------------------------------
@@ -467,14 +467,14 @@ class TrackerDQM : public art::EDAnalyzer {
   int              _np_per_hit;
   int              _nActiveLinks[2];
   int              _referenceChannel[kMaxNLinks][2];
-    
+
   int              _adc_index_0 [kNChannels]; // seq num of the channel 'i' in the readout sequence
   int              _adc_index_1 [kNChannels]; // fixed map, seq num of the channel 'i' in the readout sequence
   double           _gen_offset  [kNChannels];
 
   double           _freq;           // generator frequency, defined by the run number
   double           _dt;             // expected distance between the two pulses
-  double           _tdc_bin;        // 
+  double           _tdc_bin;        //
   double           _tdc_bin_ns;     // TDC bin, in nanoseconds
   int              _initialized;    // histograms are booked in beginRun, protect ...
 
@@ -483,7 +483,7 @@ class TrackerDQM : public art::EDAnalyzer {
 
   Hist_t           _hist;
   PlotWaveform_t   _plot_wf[4];
-  
+
   art::ServiceHandle<art::TFileService> tfs;
 
   TApplication*      _app;
@@ -491,12 +491,12 @@ class TrackerDQM : public art::EDAnalyzer {
   TBrowser*          _browser;
 //
 //-----------------------------------------------------------------------------
-// 
+//
 //-----------------------------------------------------------------------------
 public:
-  
+
   explicit     TrackerDQM(art::EDAnalyzer::Table<Config> const& conf);
-  
+
   void         analyze (art::Event const& anEvent) override;
   void         beginJob()                          override;
   void         beginRun(art::Run   const& aRun   ) override;
@@ -515,12 +515,12 @@ public:
                                        int IStation, int IDtc);
   void         book_roc_histograms    (art::TFileDirectory* Dir, int RunNumber, RocHist_t*     Hist,
                                        int IStation, int IDtc, int Link);
-    
+
   void         book_histograms        (int RunNumber);
   void         debug                  (const art::Event& event);
   int          DebugBit(int I)        {return _debugBit[I]; }
   int          dtcIndex               (int DtcID);
-  
+
   void         fill_channel_histograms(ChannelHist_t* Hist, ChannelData_t* Data);
   void         fill_dtc_histograms    (DtcHist_t*     Hist, StationData_t* Data, int IDtc);
   void         fill_event_histograms  (EventHist_t*   Hist, EventData_t*   Data);
@@ -531,7 +531,7 @@ public:
   int          fill_histograms        ();
 
   int          init_event             (const art::Event& AnEvent);
-    
+
   // NWords: number of 2-byte words
   void         print_fragment     (const artdaq::Fragment* Fragment, int NWords);
   void         print_hit          (const mu2e::TrackerDataDecoder::TrackerDataPacket* Hit);

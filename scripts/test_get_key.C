@@ -18,5 +18,3 @@ int test_get_key(int Link, int PcieAddr = -1) {
          temp,v2p5,v5p1,dcdctemp);
   return 0;
 }
-
-

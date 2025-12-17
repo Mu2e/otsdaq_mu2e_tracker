@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 ///////////////////////////////////////////////////////////////////////////////
 #include "artdaq/DAQdata/Globals.hh"
 #define TRACE_NAME "TrackerBR"
@@ -55,7 +55,7 @@ namespace mu2e {
       kReadPattern = 1
     };
 //-----------------------------------------------------------------------------
-// FHiCL-configurable variables. 
+// FHiCL-configurable variables.
 // C++ variable names are the FHiCL parameter names prepended with a "_"
 //-----------------------------------------------------------------------------
     std::string                           _artdaqLabel;
@@ -73,8 +73,8 @@ namespace mu2e {
     int                                   _readData;               // 1: read data, 0: save empty fragment
     int                                   _readDTCRegisters;       // 1: read and save the DTC registers
     int                                   _printFreq;              // printout frequency
-    int                                   _maxEventsPerSubrun;     // 
-    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally); 
+    int                                   _maxEventsPerSubrun;     //
+    int                                   _readoutMode;            // 0:digis; 1:ROC pattern (all defined externally);
 
     trkdaq::DtcInterface*                 _dtc_i;
     DTCLib::DTC*                          _dtc;
@@ -90,14 +90,14 @@ namespace mu2e {
   public:
     explicit TrackerBR(fhicl::ParameterSet const& ps);
     virtual ~TrackerBR();
-    
+
   private:
     // The "getNext_" function is used to implement user-specific
     // functionality; it's a mandatory override of the pure virtual
     // getNext_ function declared in CommandableFragmentGenerator
-    
+
     bool readEvent    (artdaq::FragmentPtrs& output);
-    bool simulateEvent(artdaq::FragmentPtrs& output);  
+    bool simulateEvent(artdaq::FragmentPtrs& output);
     bool getNext_     (artdaq::FragmentPtrs& output) override;
 
     bool sendEmpty_   (artdaq::FragmentPtrs& output);
@@ -105,11 +105,11 @@ namespace mu2e {
     void start      () override {}
     void stopNoMutex() override {}
     void stop       () override;
-    
+
     //    void print_dtc_registers(DTC* Dtc, const char* Header);
     void printBuffer        (const void* ptr, int sz);
 //-----------------------------------------------------------------------------
-// try follow Simon ... perhaps one can improve on bool? 
+// try follow Simon ... perhaps one can improve on bool?
 // also do not pass strings by value
 //-----------------------------------------------------------------------------
     int  message(const std::string& msg_type, const std::string& message);
@@ -122,19 +122,19 @@ namespace mu2e {
       _lastReportTime = now;
       return deltaw;
     }
-    
+
     void   _startProcTimer() { procStartTime_ = std::chrono::steady_clock::now(); }
 
 //-----------------------------------------------------------------------------
-// - the first one came from the generator template, 
+// - the first one came from the generator template,
 // - the second one - comments in the CommandableFragmentGenerator.hh
-// - the base class provides the one w/o the underscore 
-// - the comments seem to have a general confusion 
+// - the base class provides the one w/o the underscore
+// - the comments seem to have a general confusion
 //   do we really need both ?
 //-----------------------------------------------------------------------------
     std::vector<uint16_t>         fragmentIDs_() { return _fragment_ids; }
     virtual std::vector<uint16_t> fragmentIDs () override;
-    
+
     double _getProcTimerCount() {
       auto now = std::chrono::steady_clock::now();
       auto deltaw =
@@ -152,27 +152,27 @@ std::vector<uint16_t> mu2e::TrackerBR::fragmentIDs() {
   std::vector<uint16_t> v;
   v.push_back(0);
   if (_readDTCRegisters) v.push_back(FragmentType::TRKDTC);
-  
+
   return v;
 }
 
 //-----------------------------------------------------------------------------
-// sim_mode="N" means real DTC 
+// sim_mode="N" means real DTC
 //-----------------------------------------------------------------------------
 mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps)
   : CommandableFragmentGenerator(ps)
   , _artdaqLabel       (ps.get<std::string>             ("artdaqLabel"                     ))
   , _lastReportTime    (std::chrono::steady_clock::now())
-  , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"       , std::vector<uint16_t>()))  // 
+  , _fragment_ids      (ps.get<std::vector<uint16_t>>   ("fragment_ids"       , std::vector<uint16_t>()))  //
   , _debugLevel        (ps.get<int>                     ("debugLevel"         ,           0))
   , _nEventsDbg        (ps.get<size_t>                  ("nEventsDbg"         ,         100))
-  , _pcieAddr          (ps.get<int>                     ("pcieAddr"           ,          -1)) 
-  , _tfmHost           (ps.get<std::string>             ("tfmHost"                         ))  // 
-  , _readData          (ps.get<int>                     ("readData"           ,           1))  // 
-  , _printFreq         (ps.get<int>                     ("printFreq"          ,         100))  // 
-  , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun" ,       10000))  // 
-  , _readoutMode       (ps.get<int>                     ("readoutMode"        ,           1))  // 
-  
+  , _pcieAddr          (ps.get<int>                     ("pcieAddr"           ,          -1))
+  , _tfmHost           (ps.get<std::string>             ("tfmHost"                         ))  //
+  , _readData          (ps.get<int>                     ("readData"           ,           1))  //
+  , _printFreq         (ps.get<int>                     ("printFreq"          ,         100))  //
+  , _maxEventsPerSubrun(ps.get<int>                     ("maxEventsPerSubrun" ,       10000))  //
+  , _readoutMode       (ps.get<int>                     ("readoutMode"        ,           1))  //
+
 {
   TLOG(TLVL_INFO) << "CONSTRUCTOR (1) readData:" << _readData;
 //-----------------------------------------------------------------------------
@@ -187,13 +187,13 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps)
 // //-----------------------------------------------------------------------------
 //   HNDLE  hDB;
 //   cm_get_experiment_database(&hDB, NULL);
-// 
+//
 //   OdbInterface* odb_i         = OdbInterface::Instance(hDB);
 //   std::string active_run_conf = odb_i->GetActiveRunConfig(hDB);
 //   HNDLE h_active_run_conf     = odb_i->GetRunConfigHandle(hDB,active_run_conf);
 //   std::string rpc_host        = get_short_host_name("local");
 //   HNDLE h_daq_host_conf       = odb_i->GetDaqHostHandle(hDB,h_active_run_conf,rpc_host);
-//   
+//
 //   HNDLE h_component;
 //   KEY   component;
 //   int   ncomp(0);
@@ -213,7 +213,7 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps)
 //   }
 //   if (pcie_addr != -1) _pcieAddr = pcie_addr;
 // #endif
-  
+
   bool skip_init(true);
   _dtc_i = trkdaq::DtcInterface::Instance(_pcieAddr,0x0,skip_init);
   _dtc      = _dtc_i->Dtc();
@@ -228,15 +228,15 @@ mu2e::TrackerBR::TrackerBR(fhicl::ParameterSet const& ps)
 }
 
 //-----------------------------------------------------------------------------
-// let the boardreader send messages back to the TFM and report problems 
+// let the boardreader send messages back to the TFM and report problems
 // so far, make the TFM hist a talk-to parameter
 // GetPartitionNumber() is an artdaq global function - see artdaq/artdaq/DAQdata/Globals.hh
 //-----------------------------------------------------------------------------
 int mu2e::TrackerBR::message(const std::string& msg_type, const std::string& message) {
-    
+
   auto _xmlrpcUrl = "http://" + _tfmHost + ":" + std::to_string((10000 +1000 * GetPartitionNumber()))+"/RPC2";
 
-  xmlrpc_client_call(&_env, _xmlrpcUrl.data(), "message","(ss)", msg_type.data(), 
+  xmlrpc_client_call(&_env, _xmlrpcUrl.data(), "message","(ss)", msg_type.data(),
                      (artdaq::Globals::app_name_+":"+message).data());
   if (_env.fault_occurred) {
     TLOG(TLVL_ERROR) << "XML-RPC rc=" << _env.fault_code << " " << _env.fault_string;
@@ -291,24 +291,24 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
         uint64_t      ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
 
         TStamp = ew_tag;  // hack
-        
+
         TLOG(TLVL_DBG) << "DTC block i: " << i<< " nbytes:" << nb << std::endl;
         nbytes += nb;
         if (nb > 0) {
           artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, TStamp);
 
           frag->resizeBytes(nb);
-      
+
           void* afd  = frag->dataBegin();
 
           memcpy(afd,ev->GetRawBufferPointer(),nb);
           Frags.emplace_back(frag);
 //-----------------------------------------------------------------------------
-// this is essentially it, now - diagnostics 
+// this is essentially it, now - diagnostics
 //-----------------------------------------------------------------------------
           uint64_t ew_tag = ev->GetEventWindowTag().GetEventWindowTag(true);
 
-          if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) { 
+          if ((_debugLevel > 0) and (ev_counter() < _nEventsDbg)) {
             TLOG(TLVL_INFO) << " subevent:" << i << " EW tag:" << ew_tag << " nbytes: " << nb << std::endl;
             _dtc_i->PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
           }
@@ -322,13 +322,13 @@ int mu2e::TrackerBR::readData(artdaq::FragmentPtrs& Frags, ulong& TStamp) {
           message("alarm", "TrackerBR::ReadData::ERROR event="+std::to_string(ev_counter())+" nbytes=0") ;
         }
       }
-      
+
       TLOG(TLVL_DBG+1) << "read data , NDTCs=" << sz << " nbytes=" << nbytes << std::endl;
     }
     catch (...) {
       TLOG(TLVL_ERROR) << "ERROR reading data";
     }
-  
+
   int print_event = (ev_counter() % _printFreq) == 0;
   if (print_event) {
     TLOG(TLVL_DBG+1) << "event readSuccess timeout: nbytes\n" << ev_counter() << " " << readSuccess
@@ -347,7 +347,7 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
   TLOG(TLVL_DBG) << "start" << std::endl;
   _dtc->GetDevice()->ResetDeviceTime();
 //-----------------------------------------------------------------------------
-// a hack : reduce the PMT logfile size 
+// a hack : reduce the PMT logfile size
 //-----------------------------------------------------------------------------
 // int print_event = (ev_counter() % _printFreq) == 0;
 // make sure even a fake fragment goes in
@@ -356,7 +356,7 @@ bool mu2e::TrackerBR::readEvent(artdaq::FragmentPtrs& Frags) {
 
   if (_readData) {
 //-----------------------------------------------------------------------------
-// read data 
+// read data
 //-----------------------------------------------------------------------------
     readData(Frags,tstamp);
   }
@@ -382,35 +382,35 @@ bool mu2e::TrackerBR::simulateEvent(artdaq::FragmentPtrs& Frags) {
   artdaq::Fragment* frag = new artdaq::Fragment(ev_counter(), _fragment_ids[0], FragmentType::TRK, tstamp);
 
   const uint16_t fake_event [] = {
-    0x01d0 , 0x0000 , 0x0000 , 0x0000 , 0x01c8 , 0x0000 , 0x0169 , 0x0000,   // 0x000000: 
-    0x0000 , 0x0101 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0100 , 0x0000,   // 0x000010: 
-    0x01b0 , 0x0000 , 0x0169 , 0x0000 , 0x0000 , 0x0101 , 0x0000 , 0x0000,   // 0x000020: 
-    0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x01ee,   // 0x000030: 
-    0x0190 , 0x8150 , 0x0018 , 0x0169 , 0x0000 , 0x0000 , 0x0155 , 0x0000,   // 0x000040: 
-    0x005b , 0x858d , 0x1408 , 0x8560 , 0x0408 , 0x0041 , 0xa955 , 0x155a,   // 0x000050: 
-    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000060: 
-    0x005b , 0x548e , 0x1415 , 0x5462 , 0x0415 , 0x0041 , 0xa955 , 0x155a,   // 0x000070: 
-    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000080: 
-    0x005b , 0x2393 , 0x1422 , 0x2362 , 0x0422 , 0x0041 , 0xa955 , 0x155a,   // 0x000090: 
-    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x0000a0: 
-    0x002a , 0x859a , 0x1408 , 0x85b2 , 0x0408 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000b0: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000c0: 
-    0x002a , 0x549a , 0x1415 , 0x54b5 , 0x0415 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000d0: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000e0: 
-    0x002a , 0x239c , 0x1422 , 0x23b5 , 0x0422 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000f0: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000100: 
-    0x00de , 0xca6a , 0x1400 , 0xca5c , 0x0400 , 0x0041 , 0x56aa , 0x2aa5,   // 0x000110: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000120: 
-    0x00de , 0x996a , 0x140d , 0x995c , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000130: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000140: 
-    0x00de , 0x686c , 0x141a , 0x685d , 0x041a , 0x0041 , 0xa955 , 0x155a,   // 0x000150: 
-    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000160: 
-    0x00ac , 0xc90d , 0x1500 , 0xcabf , 0x0400 , 0x0041 , 0xa955 , 0x155a,   // 0x000170: 
-    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000180: 
-    0x00ac , 0x980d , 0x150d , 0x99c5 , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000190: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0001a0: 
-    0x00ac , 0x670d , 0x151a , 0x68c5 , 0x041a , 0x0041 , 0x56aa , 0x2aa5,   // 0x0001b0: 
-    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5    // 0x0001c0: 
+    0x01d0 , 0x0000 , 0x0000 , 0x0000 , 0x01c8 , 0x0000 , 0x0169 , 0x0000,   // 0x000000:
+    0x0000 , 0x0101 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0100 , 0x0000,   // 0x000010:
+    0x01b0 , 0x0000 , 0x0169 , 0x0000 , 0x0000 , 0x0101 , 0x0000 , 0x0000,   // 0x000020:
+    0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x0000 , 0x01ee,   // 0x000030:
+    0x0190 , 0x8150 , 0x0018 , 0x0169 , 0x0000 , 0x0000 , 0x0155 , 0x0000,   // 0x000040:
+    0x005b , 0x858d , 0x1408 , 0x8560 , 0x0408 , 0x0041 , 0xa955 , 0x155a,   // 0x000050:
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000060:
+    0x005b , 0x548e , 0x1415 , 0x5462 , 0x0415 , 0x0041 , 0xa955 , 0x155a,   // 0x000070:
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000080:
+    0x005b , 0x2393 , 0x1422 , 0x2362 , 0x0422 , 0x0041 , 0xa955 , 0x155a,   // 0x000090:
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x0000a0:
+    0x002a , 0x859a , 0x1408 , 0x85b2 , 0x0408 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000b0:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000c0:
+    0x002a , 0x549a , 0x1415 , 0x54b5 , 0x0415 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000d0:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0000e0:
+    0x002a , 0x239c , 0x1422 , 0x23b5 , 0x0422 , 0x0041 , 0x56aa , 0x2aa5,   // 0x0000f0:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000100:
+    0x00de , 0xca6a , 0x1400 , 0xca5c , 0x0400 , 0x0041 , 0x56aa , 0x2aa5,   // 0x000110:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000120:
+    0x00de , 0x996a , 0x140d , 0x995c , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000130:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x000140:
+    0x00de , 0x686c , 0x141a , 0x685d , 0x041a , 0x0041 , 0xa955 , 0x155a,   // 0x000150:
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000160:
+    0x00ac , 0xc90d , 0x1500 , 0xcabf , 0x0400 , 0x0041 , 0xa955 , 0x155a,   // 0x000170:
+    0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a,   // 0x000180:
+    0x00ac , 0x980d , 0x150d , 0x99c5 , 0x040d , 0x0041 , 0x56aa , 0x2aa5,   // 0x000190:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5,   // 0x0001a0:
+    0x00ac , 0x670d , 0x151a , 0x68c5 , 0x041a , 0x0041 , 0x56aa , 0x2aa5,   // 0x0001b0:
+    0xa955 , 0x155a , 0x56aa , 0x2aa5 , 0xa955 , 0x155a , 0x56aa , 0x2aa5    // 0x0001c0:
   };
 
   int nb = 0x1d0;

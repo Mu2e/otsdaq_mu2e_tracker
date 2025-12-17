@@ -65,13 +65,13 @@ namespace  trkdaq {
       Stream << __func__ << "ERROR: wrong file name:" << Dir->fn << "  ?" << std::endl;
       return -1;
     }
-    
+
     int offset = Dir->offset;
 
     input.push_back(SPI_CLEAR);                 // SPI clear
-    input.push_back( offset         & 0xFFFF);  // 
-    input.push_back((offset  >> 16) & 0xFFFF);  // 
-    input.push_back( nbytes         & 0xFFFF);  // 
+    input.push_back( offset         & 0xFFFF);  //
+    input.push_back((offset  >> 16) & 0xFFFF);  //
+    input.push_back( nbytes         & 0xFFFF);  //
     input.push_back((nbytes  >> 16) & 0xFFFF);  // 5 words in total
 
     bool increment_address(false);
@@ -81,9 +81,9 @@ namespace  trkdaq {
     if (PrintLevel != 0) {
       Stream << __func__ << ": SPI_CLEAR input written " << std::endl;
     }
-  
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
     // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
     if (PrintLevel != 0) {
       Stream << __func__ << ":END" << std::endl;
@@ -96,9 +96,9 @@ namespace  trkdaq {
     std::vector<uint16_t> input;
 
     input.push_back(PROGRAM_IAP_W_INDEX);               // SPI clear
-    input.push_back( DirEntry->index        & 0xFFFF);  // 
-    input.push_back((DirEntry->index >> 16) & 0xFFFF);  // 
-    input.push_back(0);                                 // 
+    input.push_back( DirEntry->index        & 0xFFFF);  //
+    input.push_back((DirEntry->index >> 16) & 0xFFFF);  //
+    input.push_back(0);                                 //
     input.push_back(0);                                 // 5 words total
 
     bool increment_address(false);
@@ -108,7 +108,7 @@ namespace  trkdaq {
     sleep(40);
                                                         // wait till the command is executed
     uint16_t u;
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
                                         // images loaded, do soft reset before checking the ROC
     fDtc->SoftReset();
@@ -122,9 +122,9 @@ namespace  trkdaq {
     std::vector<uint16_t> input;
 
     input.push_back(PROGRAM_IAP_W_ADDRESS);              // SPI clear
-    input.push_back( DirEntry->offset        & 0xFFFF);  // 
-    input.push_back((DirEntry->offset >> 16) & 0xFFFF);  // 
-    input.push_back(0);                                  // 
+    input.push_back( DirEntry->offset        & 0xFFFF);  //
+    input.push_back((DirEntry->offset >> 16) & 0xFFFF);  //
+    input.push_back(0);                                  //
     input.push_back(0);                                  // 5 words in total
 
     bool increment_address(false);
@@ -135,7 +135,7 @@ namespace  trkdaq {
     sleep(40);
                                                           // wait till the command is executed
     uint16_t u;
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
                                         // images loaded, do soft reset before checking the ROC
     fDtc->SoftReset();
@@ -160,7 +160,7 @@ namespace  trkdaq {
     Stream << __func__ << ": -- before spi_clear : index:" << DirEntry->index
            << " fn:" << DirEntry->fn
            << " fsize:" << std::dec << fsize << std::endl;
- 
+
     //  spi_clear(Link, spi_data[Index].offset, fsize);
     SpiClearMemory(Link, DirEntry);
 
@@ -187,7 +187,7 @@ namespace  trkdaq {
         nw   = (fsize-loc)/2;
         done = 1;
       }
-    
+
       if (nw > 0) {
 //-----------------------------------------------------------------------------
 // write next record
@@ -205,10 +205,10 @@ namespace  trkdaq {
             nerrors++;
           }
         }
-        
+
         loc        += 2*nw;
         first_addr += 2*nw;
-        
+
         nwrites ++;
         if ((NWrites > 0) and (nwrites > NWrites)) break;
       }
@@ -232,7 +232,7 @@ namespace  trkdaq {
 //       if (loc + 2*nw > fsize) {
 //         nw   = (fsize-loc)/2;
 //       }
-      
+
 //       if (nw <= 0) {
 //         done = 1;
 //       }
@@ -244,7 +244,7 @@ namespace  trkdaq {
 //                   << " first_addr:0x" << std::hex << first_addr
 //                   << " loc:" << std::dec << loc
 //                   << std::endl;
-        
+
 //         std::vector<uint16_t> res;
 //         spi_flash_read(DtcInterface, Link, first_addr, nw, &res);
 // //-----------------------------------------------------------------------------
@@ -260,12 +260,12 @@ namespace  trkdaq {
 //         if (ierror != 0) break;
 //         loc        += 2*nw;
 //         first_addr += nw;
-      
+
 //         nreads ++;
 //       }
 //     }
 //  }
-  
+
     Stream << __func__ << ":END ierror:" << ierror << std::endl;
     return nerrors;
   }
@@ -289,9 +289,9 @@ namespace  trkdaq {
     if (PrintLevel & 0x1) {
       std::cout << " input written " << std::endl;
     }
-  
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
     int nw (-1);
     nw = fDtc->ReadROCRegister(roc,129,1000);  // should return NWords+4
@@ -300,21 +300,21 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     RocBlockRead(Link,RREG,*Res);
     int nw_read = Res->size();
-    
+
     if (PrintLevel != 0) {
       std::cout << "nw:" << nw << " nw read:" << nw_read << std::endl;
       if (PrintLevel & 0x2) {
         PrintBuffer(Res->data(),nw_read);
       }
     }
-    
+
     return nw_read;
   }
 
 //-----------------------------------------------------------------------------
   int DtcInterface::SpiWriteDirectory(int Link, const roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    
+
     int nimages = 0;
     for (int i=0; Dir[i].offset >= 0; ++i) nimages++;
 
@@ -327,36 +327,36 @@ namespace  trkdaq {
     input.push_back(0               );    // nimages MSB
     input.push_back(0               );    // 2nd command : 2 16-bit words - uunused
     input.push_back(0               );    // unused
-  
+
     for (int i=0; i<nimages; ++i) {
       int offset = Dir[i].offset;
       input.push_back( offset        & 0xFFFF);                             //
       input.push_back((offset >> 16) & 0xFFFF);                             //
     }
-    
+
     bool increment_address(false);
 
     auto roc  = DTCLib::DTC_Link_ID(Link);
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-    
+
     std::cout << __func__ << ": SPI_WRITE_DIRECTORY input written " << std::endl;
-    
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
     // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
-  
+
 
     // int nw (-1);
     // nw = dtc_i->fDtc->ReadROCRegister(roc,129,1000);
-  
+
     // std::vector<uint16_t> res;
 
     // dtc_i->RocBlockRead(Link,RREG,res);
     // int nw = res.size();
-    
+
     // std::cout << "nw read:" << nw << std::endl;
     // dtc_i->PrintBuffer(res.data(),nw);
-    
+
     //  return nw;
     std::cout << __func__ << ":END" << std::endl;
     return rc;
@@ -369,9 +369,9 @@ namespace  trkdaq {
     std::vector<uint16_t> input;
 
     input.push_back(SPI_WRITE_RECORD);            // SPI clear
-    input.push_back( FirstAddr        & 0xFFFF);  // 
-    input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
-    input.push_back( NWords           & 0xFFFF);  // 
+    input.push_back( FirstAddr        & 0xFFFF);  //
+    input.push_back((FirstAddr >> 16) & 0xFFFF);  //
+    input.push_back( NWords           & 0xFFFF);  //
     input.push_back((NWords    >> 16) & 0xFFFF);  // 5 words in total
 
     for (int i=0; i<NWords; ++i) {
@@ -383,9 +383,9 @@ namespace  trkdaq {
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
     // if (PrintLevel != 0) Stream << " data written, nb:" << NWords*2 << std::endl;
-  
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
     rc = fDtc->ReadROCRegister(roc,132,1000);
 
@@ -396,22 +396,22 @@ namespace  trkdaq {
   }
 
 //-----------------------------------------------------------------------------
-// 
+//
 //-----------------------------------------------------------------------------
   int DtcInterface::ProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
     int rc(0);
                                         // offset=-1 flags the end
     int nimages(0);
     for (int i=0; Fw->spi_directory[i].offset>=0; i++) nimages++;
-    
+
                                         // 2. find if the requested firmware version is available
     const roc_fw_version_t* fw(nullptr);
-  
+
     for (int i=0; Fw->version[i].name != ""; ++i) {
       const roc_fw_version_t* fww = &Fw->version[i];
       if (fww->name == Version) {
                                         // protect against trivial mistakes
-        if ((fww->index_spi < nimages) and (fww->index_bin < nimages)) { 
+        if ((fww->index_spi < nimages) and (fww->index_bin < nimages)) {
           fw = fww;
         }
         break;
@@ -429,13 +429,13 @@ namespace  trkdaq {
     SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
 
                                         // upload the .spi image
-    
+
     Stream << "--- loading " << Fw->spi_directory[fw->index_spi].fn << std::endl;
     rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
     if (rc != 0) return rc;
 
                                         // upload the .bin image, if defined
-    if (fw->index_bin >= 0) {       
+    if (fw->index_bin >= 0) {
       Stream << "--- loading image:" << Fw->spi_directory[fw->index_bin].fn << std::endl;
       rc = SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
       if (rc != 0) return rc;
@@ -448,7 +448,7 @@ namespace  trkdaq {
       Stream << "--- activating SPI image" << std::endl;
       rc = SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
     }
-    
+
     return rc;
   }
 

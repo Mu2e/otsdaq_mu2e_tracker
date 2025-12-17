@@ -138,16 +138,16 @@
 //-----------------------------------------------------------------------------
 class DtcGui {
   // RQ_OBJECT("DtcGui")
-public: 
+public:
 
-  enum { 
+  enum {
     kIN_PROGRESS = 0,
     kSUBMITTED   = 1,
     kCOMPLETED   = 2
   };
 
   struct RocData_t {
-    TString fName;         // 
+    TString fName;         //
     int     fLink;
   };
 
@@ -158,7 +158,7 @@ public:
     int        fRocReadoutMode;
     int        fRocLaneMask;
     int        fRocNHitsPerLane;
-    
+
     int        fJAMode;
     int        fOnSpill;
 
@@ -166,7 +166,7 @@ public:
     int        fEventMode;
     int        fPartitionID;
     int        fMacAddrByte;
-    
+
     int        fEmulateCfo;
 
     RocData_t  fRocData[6];
@@ -299,7 +299,7 @@ public:
     int              fPause;
     int              fSleepTimeMs;
   };
-  
+
   ThreadContext_t  fEmuCfoTC;
   ThreadContext_t  fExtCfoTC;
   ThreadContext_t  fReaderTC;
@@ -376,6 +376,6 @@ public:
   void     write_dtc_register  ();
   void     write_roc_register  ();
 
-}; 
+};
 
 #endif

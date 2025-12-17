@@ -35,7 +35,7 @@ using namespace ots;
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
     std::vector<uint16_t> input;
@@ -48,13 +48,13 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::ro
       Stream << __func__ << "ERROR: wrong file name:" << Dir->fn << "  ?" << std::endl;
       return -1;
     }
-    
+
     int offset = Dir->offset;
 
     input.push_back(SPI_CLEAR);                 // SPI clear
-    input.push_back( offset         & 0xFFFF);  // 
-    input.push_back((offset  >> 16) & 0xFFFF);  // 
-    input.push_back( nbytes         & 0xFFFF);  // 
+    input.push_back( offset         & 0xFFFF);  //
+    input.push_back((offset  >> 16) & 0xFFFF);  //
+    input.push_back( nbytes         & 0xFFFF);  //
     input.push_back((nbytes  >> 16) & 0xFFFF);  // 5 words in total
 
     bool increment_address(false);
@@ -64,9 +64,9 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::ro
     if (PrintLevel != 0) {
       Stream << __func__ << ": SPI_CLEAR input written " << std::endl;
     }
-  
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
     // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
     if (PrintLevel != 0) {
       Stream << __func__ << ":END" << std::endl;
@@ -83,14 +83,14 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiClearMemory(int Link, const trkdaq::ro
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream)
 {
     std::vector<uint16_t> input;
 
     input.push_back(PROGRAM_IAP_W_INDEX);               // SPI clear
-    input.push_back( DirEntry->index        & 0xFFFF);  // 
-    input.push_back((DirEntry->index >> 16) & 0xFFFF);  // 
-    input.push_back(0);                                 // 
+    input.push_back( DirEntry->index        & 0xFFFF);  //
+    input.push_back((DirEntry->index >> 16) & 0xFFFF);  //
+    input.push_back(0);                                 //
     input.push_back(0);                                 // 5 words total
 
     bool increment_address(false);
@@ -100,7 +100,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_f
     sleep(40);
                                                         // wait till the command is executed
     uint16_t u;
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
@@ -118,14 +118,14 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapIndex(int Link, const trkdaq::roc_f
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc_fw_data_t* DirEntry, int PrintLevel, std::ostream& Stream)
 {
     std::vector<uint16_t> input;
 
     input.push_back(PROGRAM_IAP_W_ADDRESS);              // SPI clear
-    input.push_back( DirEntry->offset        & 0xFFFF);  // 
-    input.push_back((DirEntry->offset >> 16) & 0xFFFF);  // 
-    input.push_back(0);                                  // 
+    input.push_back( DirEntry->offset        & 0xFFFF);  //
+    input.push_back((DirEntry->offset >> 16) & 0xFFFF);  //
+    input.push_back(0);                                  //
     input.push_back(0);                                  // 5 words in total
 
     bool increment_address(false);
@@ -136,7 +136,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc
     sleep(40);
                                                           // wait till the command is executed
     uint16_t u;
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
                                         // images loaded, do soft reset before checking the ROC
     getDTC()->SoftReset();
@@ -154,7 +154,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiIapAddress(int Link, const trkdaq::roc
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_fw_data_t* DirEntry, int Doit, int NWrites, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_fw_data_t* DirEntry, int Doit, int NWrites, int PrintLevel, std::ostream& Stream)
 {
     //   int rc(0);
 //-----------------------------------------------------------------------------
@@ -170,7 +170,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
     Stream << __func__ << ": -- before spi_clear : index:" << DirEntry->index
            << " fn:" << DirEntry->fn
            << " fsize:" << std::dec << fsize << std::endl;
- 
+
     //  spi_clear(Link, spi_data[Index].offset, fsize);
     Ui_ProgramRoc_SpiClearMemory(Link, DirEntry);
 
@@ -197,7 +197,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
         nw   = (fsize-loc)/2;
         done = 1;
       }
-    
+
       if (nw > 0) {
 //-----------------------------------------------------------------------------
 // write next record
@@ -215,10 +215,10 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
             nerrors++;
           }
         }
-        
+
         loc        += 2*nw;
         first_addr += 2*nw;
-        
+
         nwrites ++;
         if ((NWrites > 0) and (nwrites > NWrites)) break;
       }
@@ -242,7 +242,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 //       if (loc + 2*nw > fsize) {
 //         nw   = (fsize-loc)/2;
 //       }
-      
+
 //       if (nw <= 0) {
 //         done = 1;
 //       }
@@ -254,7 +254,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 //                   << " first_addr:0x" << std::hex << first_addr
 //                   << " loc:" << std::dec << loc
 //                   << std::endl;
-        
+
 //         std::vector<uint16_t> res;
 //         spi_flash_read(DtcInterface, Link, first_addr, nw, &res);
 // //-----------------------------------------------------------------------------
@@ -270,12 +270,12 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 //         if (ierror != 0) break;
 //         loc        += 2*nw;
 //         first_addr += nw;
-      
+
 //         nreads ++;
 //       }
 //     }
 //  }
-  
+
     Stream << __func__ << ":END ierror:" << ierror << std::endl;
     return nerrors;
   } // end Ui_ProgramRoc_SpiLoadImage()
@@ -290,7 +290,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiLoadImage(int Link, const trkdaq::roc_
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
 int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int NWords, std::vector<uint16_t>* Res,
-                                 int PrintLevel, std::ostream& Stream) 
+                                 int PrintLevel, std::ostream& Stream)
 {
 
     std::vector<uint16_t> input;
@@ -308,9 +308,9 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int N
     if (PrintLevel & 0x1) {
       std::cout << " input written " << std::endl;
     }
-  
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
     int nw (-1);
     nw = getDTC()->ReadROCRegister(roc,129,1000);  // should return NWords+4
@@ -319,14 +319,14 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int N
 //-----------------------------------------------------------------------------
     Ui_RocBlockRead(Link,RREG,*Res);
     int nw_read = Res->size();
-    
+
     if (PrintLevel != 0) {
       std::cout << "nw:" << nw << " nw read:" << nw_read << std::endl;
       if (PrintLevel & 0x2) {
         Ui_print_PrintBuffer(Res->data(),nw_read);
       }
     }
-    
+
     return nw_read;
   } // end Ui_ProgramRoc_SpiReadFlash()
 
@@ -339,10 +339,10 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiReadFlash(int Link, int Address, int N
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq::roc_fw_data_t* Dir, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
-    
+
     int nimages = 0;
     for (int i=0; Dir[i].offset >= 0; ++i) nimages++;
 
@@ -355,36 +355,36 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq:
     input.push_back(0               );    // nimages MSB
     input.push_back(0               );    // 2nd command : 2 16-bit words - uunused
     input.push_back(0               );    // unused
-  
+
     for (int i=0; i<nimages; ++i) {
       int offset = Dir[i].offset;
       input.push_back( offset        & 0xFFFF);                             //
       input.push_back((offset >> 16) & 0xFFFF);                             //
     }
-    
+
     bool increment_address(false);
 
     auto roc  = DTCLib::DTC_Link_ID(Link);
     getDTC()->WriteROCBlock(roc,RREG,input,false,increment_address,100);
-    
+
     std::cout << __func__ << ": SPI_WRITE_DIRECTORY input written " << std::endl;
-    
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
     // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
-  
+
 
     // int nw (-1);
     // nw = dtc_i->getDTC()->ReadROCRegister(roc,129,1000);
-  
+
     // std::vector<uint16_t> res;
 
     // dtc_i->Ui_RocBlockRead(Link,RREG,res);
     // int nw = res.size();
-    
+
     // std::cout << "nw read:" << nw << std::endl;
     // dtc_i->Ui_print_PrintBuffer(res.data(),nw);
-    
+
     //  return nw;
     std::cout << __func__ << ":END" << std::endl;
     return rc;
@@ -399,16 +399,16 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteDirectory(int Link, const trkdaq:
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, int NWords, const uint16_t* Data, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, int NWords, const uint16_t* Data, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
 
     std::vector<uint16_t> input;
 
     input.push_back(SPI_WRITE_RECORD);            // SPI clear
-    input.push_back( FirstAddr        & 0xFFFF);  // 
-    input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
-    input.push_back( NWords           & 0xFFFF);  // 
+    input.push_back( FirstAddr        & 0xFFFF);  //
+    input.push_back((FirstAddr >> 16) & 0xFFFF);  //
+    input.push_back( NWords           & 0xFFFF);  //
     input.push_back((NWords    >> 16) & 0xFFFF);  // 5 words in total
 
     for (int i=0; i<NWords; ++i) {
@@ -420,9 +420,9 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
     getDTC()->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
     // if (PrintLevel != 0) Stream << " data written, nb:" << NWords*2 << std::endl;
-  
-    uint16_t u; 
-    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
     rc = getDTC()->ReadROCRegister(roc,132,1000);
 
@@ -434,7 +434,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
 
 //==============================================================================
 ///	Ui_ProgramRoc_ProgramRoc()
-/// 
+///
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc
 /// Do not modify this file directly.
 ///
@@ -442,21 +442,21 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) 
+int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream)
 {
     int rc(0);
                                         // offset=-1 flags the end
     int nimages(0);
     for (int i=0; Fw->spi_directory[i].offset>=0; i++) nimages++;
-    
+
                                         // 2. find if the requested firmware version is available
     const trkdaq::roc_fw_version_t* fw(nullptr);
-  
+
     for (int i=0; Fw->version[i].name != ""; ++i) {
       const trkdaq::roc_fw_version_t* fww = &Fw->version[i];
       if (fww->name == Version) {
                                         // protect against trivial mistakes
-        if ((fww->index_spi < nimages) and (fww->index_bin < nimages)) { 
+        if ((fww->index_spi < nimages) and (fww->index_bin < nimages)) {
           fw = fww;
         }
         break;
@@ -474,13 +474,13 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
     Ui_ProgramRoc_SpiWriteDirectory(Link,Fw->spi_directory,PrintLevel,Stream);
 
                                         // upload the .spi image
-    
+
     Stream << "--- loading " << Fw->spi_directory[fw->index_spi].fn << std::endl;
     rc = Ui_ProgramRoc_SpiLoadImage(Link,&Fw->spi_directory[fw->index_spi],Doit);
     if (rc != 0) return rc;
 
                                         // upload the .bin image, if defined
-    if (fw->index_bin >= 0) {       
+    if (fw->index_bin >= 0) {
       Stream << "--- loading image:" << Fw->spi_directory[fw->index_bin].fn << std::endl;
       rc = Ui_ProgramRoc_SpiLoadImage(Link,&Fw->spi_directory[fw->index_bin],Doit);
       if (rc != 0) return rc;
@@ -493,7 +493,7 @@ int ROCTrackerInterface::Ui_ProgramRoc_ProgramRoc(int Link, const trkdaq::RocFwD
       Stream << "--- activating SPI image" << std::endl;
       rc = Ui_ProgramRoc_SpiIapIndex(Link,&Fw->spi_directory[fw->index_spi]);
     }
-    
+
     return rc;
   } // end Ui_ProgramRoc_ProgramRoc()
 

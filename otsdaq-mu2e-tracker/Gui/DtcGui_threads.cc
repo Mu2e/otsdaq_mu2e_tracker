@@ -1,4 +1,4 @@
-// -*- buffer-read-only:t -*- 
+// -*- buffer-read-only:t -*-
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 using namespace trkdaq;
@@ -21,7 +21,7 @@ void* DtcGui::ReaderThread(void* Context) {
   // int rc(0);
 
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_dtc_blocks;
-  
+
   int              match_ts  (0);
   ulong            offset    (0);       // used in validation mode
   int              nerr_tot  (0);
@@ -36,7 +36,7 @@ void* DtcGui::ReaderThread(void* Context) {
   DTC*             dtc     = dtc_i->Dtc();
 
   int              print_freq = dtc_gui->fPrintFreq->GetIntNumber();
-  
+
   TLOG(TLVL_DEBUG) << "START print_freq:" << print_freq << std::endl;
 //-----------------------------------------------------------------------------
 // reset connected ROC's - event tag issue
@@ -52,7 +52,7 @@ void* DtcGui::ReaderThread(void* Context) {
   for (int ir=0; ir<6; ir++) {
     nerr_roc_tot[ir] = 0;
   }
-  
+
   TStopwatch timer;
   timer.Start();
 
@@ -77,16 +77,16 @@ void* DtcGui::ReaderThread(void* Context) {
         list_of_dtc_blocks = dtc->GetSubEventData(event_tag, match_ts);
         //        TThread::UnLock();
         sz = list_of_dtc_blocks.size();
-        
+
         for (int i=0; i<sz; i++) {
           DTC_SubEvent* dtc_block = list_of_dtc_blocks[i].get();
           int      nbytes         = dtc_block->GetSubEventByteCount();
           ew_tag                  = dtc_block->GetEventWindowTag().GetEventWindowTag(true);
           char*    data           = (char*) dtc_block->GetRawBufferPointer();
           nbytes_tot             += nbytes;
-          
+
           int nerr(0);
-          
+
           if (dtc_gui->fValidate) {
             if      (dtc_i->RocReadoutMode() == 0) {
               nerr      = dtc_i->ValidateVarPatterns((ushort*)data,ew_tag,&offset,tc->fPrintLevel,nerr_roc);
@@ -102,7 +102,7 @@ void* DtcGui::ReaderThread(void* Context) {
               nerr_roc_tot[ir] += nerr_roc[ir];
             }
           }
-          
+
           char* roc_data  = data+0x30;
 
           ushort rs[6], rnb[6];
@@ -149,7 +149,7 @@ void* DtcGui::ReaderThread(void* Context) {
 //          TThread::Lock();
           dtc_i->Dtc()->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
           //        TThread::UnLock();
-          
+
           if (tc->fPrintLevel > 10) {
             cout << Form(">>>> ------- tstamp = %10lu event_tg:%10lu NDTCs:%2i\n",tstamp,event_tag.GetEventWindowTag(true),sz);
           }
@@ -170,7 +170,7 @@ void* DtcGui::ReaderThread(void* Context) {
   timer.Stop();
 //-----------------------------------------------------------------------------
 // print summary
-//-----------------------------------------------------------------------------  
+//-----------------------------------------------------------------------------
   if (tc->fPrintLevel > 0) {
     ulong nev = tstamp-dtc_gui->fFirstTS->GetIntNumber();
     cout << Form("nevents: %10li nbytes_tot: %12li Validate:%i\n",nev, nbytes_tot,dtc_gui->fValidate);
@@ -179,7 +179,7 @@ void* DtcGui::ReaderThread(void* Context) {
                  nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
                  nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
   }
-  
+
   TLOG(TLVL_DEBUG) << "END , nerr_tot: " << nerr_tot << std::endl;
   return nullptr;
 }
@@ -208,7 +208,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
   int t0 = first_ts/dtc_gui->fCfoPrintFreq;
 
   //  dtc_i->InitReadout();
-  
+
   while (tc->fStop == 0) {
     // gSystem->Sleep(sleep_us);
     usleep(sleep_us);
@@ -216,7 +216,7 @@ void* DtcGui::EmuCfoThread(void* Context) {
     // dtc_i->InitReadout();
     dtc_i->LaunchRunPlanEmulatedCfo(ew_length,nevents+1,first_ts);
     //    TThread::UnLock();
-    
+
     first_ts = first_ts+nevents;
     int t1 = first_ts/dtc_gui->fCfoPrintFreq;
     if (t1 > t0) {
@@ -242,7 +242,7 @@ void* DtcGui::ExtCfoThread(void* Context) {
   DtcGui*          dtc_gui = (DtcGui*) Context;
                                         // should point to the CFO tab element
   DtcTabElement_t* dtel    = dtc_gui->fDtcTel+dtc_gui->fActiveDtcID;
-         
+
   ThreadContext_t* tc      = &dtc_gui->fExtCfoTC;
   CfoInterface*    cfo_i   = dtc_gui->fCFO_i;
   CFOLib::CFO*     cfo     = cfo_i->Cfo();
@@ -269,7 +269,7 @@ void* DtcGui::ExtCfoThread(void* Context) {
     TLOG(TLVL_INFO+1) << Form("thread alive\n");
     gSystem->Sleep(tc->fSleepTimeMs);
   }
-  
+
   cfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
   TLOG(TLVL_INFO) << "END" << std::endl;
   return nullptr;
@@ -278,7 +278,7 @@ void* DtcGui::ExtCfoThread(void* Context) {
 //-----------------------------------------------------------------------------
 int DtcGui::manage_emu_cfo_thread() {
   int rc(1);
-  
+
   TLOG(TLVL_DEBUG) << Form("START: fEmuCfoTC.fRunning = %i\n",fEmuCfoTC.fRunning);
 
   if (fEmuCfoTC.fRunning == 0) {
@@ -298,7 +298,7 @@ int DtcGui::manage_emu_cfo_thread() {
     fEmuCfoTC.fTp      = new TThread("emu_cfo_thread",DtcGui::EmuCfoThread,this);
     fEmuCfoTC.fTp->Run();
     rc = 0;
-    
+
     TThread::Lock();
     TGButton* btn = (TGButton*) gTQSender;
     btn->ChangeBackground(fRunningColor);
@@ -315,7 +315,7 @@ int DtcGui::manage_emu_cfo_thread() {
     btn->ChangeBackground(fValidatedColor);
     TThread::UnLock();
   }
-  
+
   TLOG(TLVL_DEBUG) << Form("END: fEmuCfoTC.fRunning = %i\n",fEmuCfoTC.fRunning);
   return rc;
 }
@@ -324,7 +324,7 @@ int DtcGui::manage_emu_cfo_thread() {
 //-----------------------------------------------------------------------------
 int DtcGui::manage_ext_cfo_thread() {
   int rc(1);
-  
+
   TLOG(TLVL_DEBUG) << Form("START: fExtCfoTC.fRunning = %i\n",fExtCfoTC.fRunning);
 
   if (fExtCfoTC.fRunning == 0) {
@@ -361,7 +361,7 @@ int DtcGui::manage_ext_cfo_thread() {
     btn->SetName("Stop ExtCFO");
     TThread::UnLock();
   }
-  
+
   TLOG(TLVL_DEBUG) <<  Form("EN: fExtCfoTC.fRunning = %i\n",fExtCfoTC.fRunning);
   return rc;
 }
@@ -372,7 +372,7 @@ int DtcGui::manage_reader_thread() {
   int rc(1);
 
   TLOG(TLVL_DEBUG) <<  Form("START fReaderTC.fRunning=%i\n",fReaderTC.fRunning);
-  
+
   if (fReaderTC.fRunning == 0) {
 //-----------------------------------------------------------------------------
 // start thread
@@ -382,7 +382,7 @@ int DtcGui::manage_reader_thread() {
       fReaderTC.fTp->Kill() ;
       delete fReaderTC.fTp;
     }
-  
+
     fReaderTC.fDtel    = fDtcTel+fActiveDtcID;
     fReaderTC.fRunning = 1;
     fReaderTC.fStop    = 0;

@@ -5,12 +5,12 @@
 otsdaq_mu2e_tracker : {
 
     analyzers : {
-    
+
         TrackerDQM : { module_type:TrackerDQM
             analyzeFragments    : 1           ## set to 0 to print only
             interactiveMode     : 1           ##
             fillHistograms      : 1
-            fillWfHistograms    : 1           ## 
+            fillWfHistograms    : 1           ##
             plotWaveforms       : [ -1, -1]   ## nothing
             validateADCPatterns : 0           ## no validation by default
             timeRefChannels     : [ "0:0" ]
@@ -25,7 +25,7 @@ otsdaq_mu2e_tracker : {
                                    "bit0:0",
                                    "bit1:0"
                                   ]
-        
+
             minNBytes           : -1
             maxNBytes           : 1000000
             maxFragmentSize     : 20000       ## to catch obvious errors
@@ -57,13 +57,13 @@ otsdaq_mu2e_tracker : {
             minPulseHeight      : 5.
             port                : 8877
         }
-        
+
         MakeDigiNtuple: { module_type:MakeDigiNtuple
             debugMode     : 0
             diagLevel     : 0
 	    sdCollTag     : "StrawDigisFromArtdaqFragments"   #
             saveWaveforms : 0
         }
-                
+
     }
 }
