@@ -53,8 +53,8 @@ echo -e `date +"%h%y %T"` "otsdaq_import_tracker_test_stand.sh:${LINENO}  \t IMP
 echo -e `date +"%h%y %T"` "otsdaq_import_tracker_test_stand.sh:${LINENO}  \t IMPORT_FEINTERFACE_PATH=$2"
 
 #####################
-# now run import executable 
-	
+# now run import executable
+
 otsdaq_import_tracker_test_stand $1 $2
 #####################
 
