@@ -172,10 +172,11 @@ int program_drac::spi_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const s
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 //-----------------------------------------------------------------------------
-// 25 sec was not enough on the tower, 30 sec was OK.
-// may need to increase the sleep time in the future
+// 25 sec was not enough on the tower, 30 sec was OK for the first test.
+// increase the sleep time to 35 sec - there were ROCs looked as they needed
+// more than 30 sec
 //-----------------------------------------------------------------------------
-  sleep(30);
+  sleep(35);
   TLOG(TLVL_INFO) << std::format("after sleep\n");
   
                                         // the fw has been reloaded to FPGA, reset the DTC
@@ -183,13 +184,6 @@ int program_drac::spi_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const s
   Dtc_i->InitReadout(-1,1);
 
   return rc;
-                                        // no point in testing - just wait long enough
-  // uint16_t u;
-  // while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-
-  // uint16_t status;
-  // status = Dtc_i->fDtc->ReadROCRegister(roc,REG_STATUS,1000);
-  // TLOG(TLVL_INFO) << "-- END status:" << status << std::endl;
 }
 
 
@@ -1082,6 +1076,7 @@ int program_drac::spi_print_digi_info(const std::vector<uint16_t>& Dat) {
   TLOG(TLVL_INFO) << std::format("cal/hv:{} op:{} err_code:0x{:04x}",cal_hv,op,err_code);
   TLOG(TLVL_INFO) << std::format("silicon signature:0x{}",silicon_signature.str());
   TLOG(TLVL_INFO) << std::format("design_name      :0x{}",design_name.str());
+  TLOG(TLVL_INFO) << std::format("design_ver       :  {}",design_ver);
   TLOG(TLVL_INFO) << std::format("checksum         :0x{:08x}",checksum);
   TLOG(TLVL_INFO) << std::format("security lock    :0x{}",security_lock.str());
   TLOG(TLVL_INFO) << std::format("serial number    :0x{}",serial_number.str());
