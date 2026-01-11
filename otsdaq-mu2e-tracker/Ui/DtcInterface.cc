@@ -210,29 +210,24 @@ namespace trkdaq {
 // 2025-01-19 PM    ResetLinks();       // forget it ! ... /*this seems to be necesary*/
     
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
-      rc = MonicaVarPatternConfig();                  // readout ROC patterns
+      rc = MonicaVarPatternConfig();    // read ROC patterns
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
-      rc = MonicaVarLinkConfig();                      // readout ROC digis
+      rc = MonicaVarLinkConfig();       // read digis
       if (rc < 0) {
         TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
         return rc;
       }
         
-
-      // ostringstream sout;
-      // PrintRocStatus(1,-1,sout);
-      // TLOG(TLVL_DEBUG) << "after MonicaVarLinkConfig:\n" << sout.str();
-      
       rc = MonicaDigiClear();                          //
-      if (rc < 0) {
-        return rc;
-      }
+      if (rc < 0)  return rc;
     }
     else {
-      TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
+      TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
+      rc = -1;
     }
-    TLOG(TLVL_DEBUG) << Form("-- END: fRocReadoutMode=%i\n",fRocReadoutMode);
+    
+    TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
   }
@@ -249,13 +244,19 @@ namespace trkdaq {
       lnk2 = 6;
     }
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      if (not LinkEnabled(lnk))       continue;
+      if (not LinkLocked(lnk)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+        rc += -10;
+        continue;
+      }
       try {
         fDtc->WriteROCRegister(DTC_Link_ID(lnk),15,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
       catch(...) {
         TLOG(TLVL_ERROR) << "Failed to reboot the MCU:" << lnk;
-        rc = -1;
+        rc += -1;
       }
     }
     return rc;
@@ -274,13 +275,19 @@ namespace trkdaq {
       lnk2 = 6;
     }
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      if (not LinkEnabled(lnk))       continue;
+      if (not LinkLocked(lnk)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+        rc += -10;
+        continue;
+      }
       try {
         fDtc->WriteROCRegister(DTC_Link_ID(lnk),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
-      catch(...) {
+      catch (...) {
         TLOG(TLVL_ERROR) << "Failed to reset link:" << lnk;
-        rc = -1;
+        rc += -1;
       }
     }
     return rc;
@@ -289,26 +296,31 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // preserve historic naming convention- Monica named her script 'var_pattern_config'
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocConfigurePatternMode() {
-    MonicaVarPatternConfig();
+  int DtcInterface::RocConfigurePatternMode() {
+    return MonicaVarPatternConfig();
   }
 
 //-----------------------------------------------------------------------------
 // Version --> R29k
-// as thre is no point inhaving different ROCs with different data versions, assume
+// as there is no point in having different ROCs with different data versions, assume
 // that specifying the mask means that we want it to be redefined
 //-----------------------------------------------------------------------------
-  void DtcInterface::RocSetDataVersion(int Version, int LinkMask) {
+  int DtcInterface::RocSetDataVersion(int Version, int LinkMask) {
+    int tmo_ms(100), rc(0);
+    
     if (LinkMask != 0) fLinkMask = LinkMask;
     
-    int tmo_ms(100);
     for (int i=0; i<6; i++) {
-      int enabled = (fLinkMask >> 4*i) & 0x1;
-      if (enabled != 0) {
-        fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
+      if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        rc += -10;
+        continue;
       }
+      fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
     }
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -320,7 +332,9 @@ namespace trkdaq {
 
     int ilink = int(Link);
     if (not LinkEnabled(ilink)) {
-      Stream << "ERROR: Link " << ilink << " is not enabled" << std::endl; 
+      std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),ilink);
+      Stream << "ERROR: " << msg << std::endl;
+      TLOG(TLVL_ERROR) << msg;
       return rv;
     }
                                         // reset only ROC in question
@@ -771,14 +785,19 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // origin: test_stand/monica_002/var_pattern_config.sh from Feb 14 2024
 //
-//  -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
+// -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
+//
 // adding 0x2000 prevents ROC from reinitializing the pattern, so two subsequent
 // buffer test runs would return different results
 // lane mask default: 0xf
+// if any of the called functions returns negative code, the diagnostics will show up in the TRACE prontout
 //-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarPatternConfig(int LaneMask, int NHitsPerLane) {
-
-    ResetLinks();                                      // use fLinkMask
+    int rc(0);
+    
+    rc = ResetLinks();                               // use fLinkMask
+    if (rc < 0) return rc;
+    
     int version = 1;
     RocSetDataVersion(version);                      // Version --> R29
 
@@ -1015,8 +1034,17 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
   int DtcInterface::RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected) {
     int rc(0), nw(0);
+
+    if (not LinkEnabled(Link)) {
+      TLOG(TLVL_WARNING) << std::format("link:{} is not enabled",Link);
+      return rc;
+    }
+    else if (not LinkLocked(Link)) {
+      TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",Link);
+      return -1;
+    }
 //-----------------------------------------------------------------------------
-// convert into enum
+// link is enabled and locked, convert into enum
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("Link:{} Reg:{:03d} NExpected:{}",Link,Reg,NExpected);
     auto link_id  = DTC_Link_ID(Link);
@@ -1060,9 +1088,24 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // read a given block number from ROC DDR memory
 // block size: 1 kB
 // ROC reg 15: last memory block read
+// returns 0 if read was successful, negative number if error
 //-----------------------------------------------------------------------------
   int DtcInterface::ReadRocDDR(int Link, int Block, std::ostream& Stream) {
     int rc(0);
+    TLOG(TLVL_DEBUG) << std::format("-- START link:{} block:{}",Link,Block);
+
+    if (not LinkEnabled(Link)) {
+      std::string msg = std::format("link:{} is not enabled",Link);
+      TLOG(TLVL_WARNING) << msg;
+      Stream << msg;
+      return rc;
+    }
+    else if (not LinkLocked(Link)) {
+      std::string msg = std::format("link:{} enabled but not locked",Link);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << msg;
+      return -1;
+    }
 
     DTC_Link_ID link_id = DTC_Link_ID(Link);
   
@@ -1097,6 +1140,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       Stream << std::endl << "ERROR:001 wrong number of words nw:" << nw << " read (not 512)\n";
       rc = -1;
     }
+    TLOG(TLVL_DEBUG) << std::format("-- END rc:{}",rc);
     return rc;
   }
 
@@ -1150,7 +1194,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return roc_var_names;
   }
 
-  // This is just an example, needs to be implemented for each subsystem
+//-----------------------------------------------------------------------------
+// This is just an example, needs to be implemented for each subsystem
   std::vector<uint32_t> DtcInterface::GetRocRegisters(int ilink, bool history) {
     std::vector<uint32_t> roc_reg;
     // Basic ROC registers
@@ -1185,6 +1230,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     }
     return roc_reg;
   }
+
+
   //-----------------------------------------------------------------------------
 // This is just an example, needs to be implemented for each subsystem
   std::vector<float> DtcInterface::GetConvertedRocRegisters(int ilink, bool history) {
@@ -1290,6 +1337,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return rv;
   }
 
+//-----------------------------------------------------------------------------
   bool DtcInterface::FindThreshold(const int Link,
                                    const int ChannelID,
                                    const int PreampType,
@@ -1317,6 +1365,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return rv;
   }
 
+//-----------------------------------------------------------------------------
   bool DtcInterface::FindThreshold(const int Link,
                                    const int ChannelID,
                                    const int PreampType,

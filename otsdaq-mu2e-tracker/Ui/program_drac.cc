@@ -1137,7 +1137,7 @@ int program_drac::spi_read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16
 
 //-----------------------------------------------------------------------------
 int program_drac::spi_read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs, int DebugMode) {
-  int rc(0);
+  //  int rc(0);
   
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 

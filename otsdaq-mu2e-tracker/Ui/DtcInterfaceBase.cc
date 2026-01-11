@@ -137,8 +137,8 @@ namespace mu2edaq {
 // both of Init_XX_CFOReadoutMode disable all links, need to re-enable
 // do we need to reset the ROCs at this point ?
 //-----------------------------------------------------------------------------
-    ResetLinks();
-    // SetLinkMask();
+    rc = ResetLinks();
+    if (rc < 0) return rc;
                                         // this should do for now, later - set the partition ID
                                         // at begin run, for example, as follows
 
@@ -348,6 +348,12 @@ namespace mu2edaq {
     dev->read_register(Register,timeout,&data);
     
     return data;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::LinkLocked(int Link) {
+    uint32_t dat = ReadRegister(0x9140);
+    return (dat >> Link) & 0x1;
   }
 
 //-----------------------------------------------------------------------------

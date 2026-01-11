@@ -95,6 +95,7 @@ namespace mu2edaq {
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
+    int          LinkLocked (int Link);
 
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
