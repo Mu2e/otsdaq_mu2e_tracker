@@ -285,6 +285,8 @@ namespace trkdaq {
     std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
                                                  int                 PrintLevel = 0,
                                                  std::ostream&       Stream     = std::cout);
+
+    int          ReadPanelID       (int Link, int PrintLevel = 0);
     
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                     ulong       FirstTS,
