@@ -21,9 +21,9 @@ ROCTrackerInterface::ROCTrackerInterface(
 	__CFG_COUT__ << "Constructor..." << __E__;
 
 	try
-	{		
+	{
 		ConfigurationTree rocTypeLink =
-			Configurable::getSelfNode().getNode("ROCTypeLinkTable");
+		    Configurable::getSelfNode().getNode("ROCTypeLinkTable");
 
 		TrackerParameter_1_ = rocTypeLink.getNode("NumberParam1").getValue<int>();
 
@@ -34,9 +34,10 @@ ROCTrackerInterface::ROCTrackerInterface(
 	}
 	catch(const std::runtime_error& e)
 	{
-		__COUT__ << "Ignoring error testing Tracker subsystem parameters: " << e.what() << __E__;
+		__COUT__ << "Ignoring error testing Tracker subsystem parameters: " << e.what()
+		         << __E__;
 	}
-	
+
 	try
 	{
 		inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
