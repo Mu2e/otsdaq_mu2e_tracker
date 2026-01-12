@@ -20,15 +20,34 @@ ROCTrackerInterface::ROCTrackerInterface(
 
 	__CFG_COUT__ << "Constructor..." << __E__;
 
-	ConfigurationTree rocTypeLink =
-	    Configurable::getSelfNode().getNode("ROCTypeLinkTable");
+	try
+	{		
+		ConfigurationTree rocTypeLink =
+			Configurable::getSelfNode().getNode("ROCTypeLinkTable");
 
-	TrackerParameter_1_ = rocTypeLink.getNode("NumberParam1").getValue<int>();
+		TrackerParameter_1_ = rocTypeLink.getNode("NumberParam1").getValue<int>();
 
-	TrackerParameter_2_ = rocTypeLink.getNode("TrueFalseParam2").getValue<bool>();
+		TrackerParameter_2_ = rocTypeLink.getNode("TrueFalseParam2").getValue<bool>();
 
-	__FE_COUTV__(TrackerParameter_1_);
-	__FE_COUTV__(TrackerParameter_2_);
+		__FE_COUTV__(TrackerParameter_1_);
+		__FE_COUTV__(TrackerParameter_2_);
+	}
+	catch(const std::runtime_error& e)
+	{
+		__COUT__ << "Ignoring error testing Tracker subsystem parameters: " << e.what() << __E__;
+	}
+	
+	try
+	{
+		inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
+	}
+	catch(...)
+	{
+		__CFG_COUT__ << "inputTemperature field not defined. Defaulting..." << __E__;
+		inputTemp_ = 15.;
+	}
+
+	temp1_.noiseTemp(inputTemp_);
 
 	registerFEMacroFunction("ROC Status",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -135,17 +154,6 @@ ROCTrackerInterface::ROCTrackerInterface(
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_print_registerFEMacros.icc"
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface_Ui_registerFEMacros.icc"
 
-	try
-	{
-		inputTemp_ = getSelfNode().getNode("inputTemperature").getValue<double>();
-	}
-	catch(...)
-	{
-		__CFG_COUT__ << "inputTemperature field not defined. Defaulting..." << __E__;
-		inputTemp_ = 15.;
-	}
-
-	temp1_.noiseTemp(inputTemp_);
 }  // end constructor
 
 // void ROCTrackerInterface::ReadTrackerFIFO(__ARGS__)
