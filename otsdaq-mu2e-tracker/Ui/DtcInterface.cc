@@ -436,7 +436,15 @@ namespace trkdaq {
       0xFFFF,                        // bitmask for channels 80 - 95
     };
 
-    // register 264: find alignment routine
+    int lnk = Link;
+    if (not LinkLocked(lnk)) {
+      std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+      TLOG(TLVL_ERROR) << msg;
+      vector<roc_data_t> x;
+      return Alignment(x);
+    }
+
+      // register 264: find alignment routine
     bool increment_address = false; // read via fifo
     fDtc->WriteROCBlock(Link, REG_FINDALIGNMENT, writeable, false, increment_address, 100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -473,6 +481,12 @@ namespace trkdaq {
     for (int i = 0 ; i < 6 ; i++){
       int enabled = (link_mask >> 4*i) & 0x1;
       if (enabled == 0)                                     continue;
+      if (not LinkLocked(i)) {
+        std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << " ERROR: " << msg << "\n";
+        continue;
+      }
 //-----------------------------------------------------------------------------
 // perform one iteration
 //-----------------------------------------------------------------------------
@@ -1193,7 +1207,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       else {
         ULong64_t ewt = ULong64_t(v[0]) | (ULong64_t(v[1]) << 16) | (ULong64_t(v[2]) << 32);
         Stream << "  ewt:" << ewt << " len:" << v[3] << std::endl;
-        PrintBuffer(v.data(),nw,&Stream);
+        PrintBuffer(v.data(),nw,0,&Stream);
       }
     }
     else {
