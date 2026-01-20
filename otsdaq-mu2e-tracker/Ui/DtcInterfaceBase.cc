@@ -235,7 +235,8 @@ namespace mu2edaq {
     fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
 
     fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
-
+    int force_cfo_edge = 0x0;                                      // two bits matter
+    fDtc->SetExternalCFOSampleEdgeMode(force_cfo_edge);            // r_0x9100:bit6 = 0 bit_5=0
     fDtc->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
 
     // ROC links are disabled here, but re-enabled later, in InitReadout()
