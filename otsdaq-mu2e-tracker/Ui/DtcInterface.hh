@@ -12,7 +12,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "iostream"
+#include <iostream>
+
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
@@ -240,13 +241,13 @@ namespace trkdaq {
     virtual std::string              GetRocDesignInfo (int Link) override;
     virtual std::string              GetRocFwGitCommit(int Link) override;
 
-    virtual int                      InitRocReadoutMode()         override;
+    virtual int                      InitRocReadoutMode(std::ostream* Stream = nullptr)      override;
 //-----------------------------------------------------------------------------
 // reset digitizers .. to be called in the beginning of each event ???
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
     int          MonicaDigiClear       ();
-    int          MonicaVarLinkConfig   ();
+    int          MonicaVarLinkConfig   (std::ostream* Stream = nullptr);
     int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
 //-----------------------------------------------------------------------------
 // reboot microcontroller unit, Link=-1: all active links

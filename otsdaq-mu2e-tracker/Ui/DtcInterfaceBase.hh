@@ -18,6 +18,7 @@
 #include "otsdaq-mu2e-tracker/ParseAlignment/Alignment.hh"
 #include "otsdaq-mu2e-tracker/ParseAlignment/PrintLegacyTable.hh"
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "TString.h"
 
 namespace mu2edaq {
 
@@ -26,6 +27,58 @@ namespace mu2edaq {
     kCalorimeter = 2,
     kCRV         = 3,
     kSTM         = 4,
+  };
+
+  struct RocInputData_t {
+    TString fName;         // 
+    int     fLink;
+  };
+
+  struct DtcInputData_t {
+    TString    fName;                   // expect fName to be uppercased
+    int        fPcieAddr;
+    int        fLinkMask;               // active links, for DTC - ROCs, for CFO: nDTCs
+    int        fRocReadoutMode;
+    int        fRocLaneMask;
+    int        fRocNHitsPerLane;
+    
+    int        fJAMode;
+    int        fOnSpill;
+
+    int        fDtcID;                  // 4 pieces to be written to 0x9154
+    int        fEventMode;
+    int        fPartitionID;
+    int        fMacAddrByte;
+    
+    int        fEmulateCfo;
+
+    RocInputData_t  fRocData[6];
+    RocInputData_t* fActiveRoc;
+
+    DtcInputData_t(const char* Name = "", int PcieAddr = 0) {
+      fName            = Name;
+      fPcieAddr        = PcieAddr;
+      fLinkMask        = 0;             // by default, not reading anything
+      fRocReadoutMode  = 0;             // 0:patterns 1:digis
+      fRocLaneMask     = 0xf;
+      fRocNHitsPerLane = 2;             // Monicas's default
+      fJAMode          = 0;
+      fOnSpill         = 0;
+      fDtcID           = -1;
+      fPartitionID     = -1;
+      fEventMode       =  1;
+      fMacAddrByte     = -1;
+
+
+      fActiveRoc = nullptr;
+      for (int i=0;i<6; i++) {
+        fRocData[i].fName = Form("ROC%i",i);
+        fRocData[i].fLink = i;
+      }
+    }
+
+    int IsDtc() { return fName == "DTC"; }
+    int IsCfo() { return fName == "CFO"; }
   };
 
   class DtcInterface { 
@@ -84,19 +137,10 @@ namespace mu2edaq {
     int          DtcID     () { return fDtcID; }
     //    int          IsCrv     () { return fIsCrv; }
 
-    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1);
-    virtual int  InitRocReadoutMode(); 
+    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream* Stream = nullptr);
+    virtual int  InitRocReadoutMode(std::ostream* Stream = nullptr); 
     
     int          InitEmulatedCFOReadoutMode();
-
-                                        // EWLength - in 25 ns ticks
-                                        // to be executed on the emulated CFO side
-    
-    void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
-
-    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
-    int          LinkLocked (int Link);
-
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
                                         //                2: auto
@@ -105,6 +149,16 @@ namespace mu2edaq {
                                         // if rc < 0, can't continue
     int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
+    // read configuration data from a file and store them in 'DtcData'
+    static int   InitConfiguration(const char* ConfigName, DtcInputData_t* DtcData);
+
+                                        // EWLength - in 25 ns ticks
+                                        // to be executed on the emulated CFO side
+    
+    void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
+
+    int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
+    int          LinkLocked (int Link);
     
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);

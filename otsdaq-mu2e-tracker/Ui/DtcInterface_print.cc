@@ -112,8 +112,8 @@ namespace trkdaq {
 
     if (link_mask == 0) {
       std::string msg = std::format("dtc:{} link:{} : no locked links.",PcieAddr(),Link);
-      Stream << " WARNING: " << msg << "\n";
-      TLOG(TLVL_WARNING) << msg;
+      Stream << " ERROR: " << msg << "\n";
+      TLOG(TLVL_ERROR) << msg;
       return;
     }
                      

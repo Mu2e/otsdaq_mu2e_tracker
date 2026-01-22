@@ -259,7 +259,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // this is fully tracker-specific
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitRocReadoutMode() {
+  int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
     int rc(0);
     
     TLOG(TLVL_DEBUG) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
@@ -803,7 +803,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // to be added 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarLinkConfig() {
+  int DtcInterface::MonicaVarLinkConfig(std::ostream* Stream) {
     int rc(0);
     
     fRocReadoutMode = 1;                            // 1: read digis
@@ -816,8 +816,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (enabled) {
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        TLOG(TLVL_INFO) << "wrote lane_mask:" << std::hex << lane_mask
-                        << " to ROC:" << i <<" reg:8, read back:" << fDtc->ReadROCRegister(DTC_Link_ID(i), 8,100);
+        std::string msg = std::format("wrote lane_mask:0x{:04x} read back reg_8:{}",lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
+        TLOG(TLVL_INFO) << msg;
+        if (Stream) (*Stream) << msg << std::endl;
       }
     }
     
@@ -845,8 +846,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
           if ((u >> 0x8) != 0xF) {
             // still in trouble
-            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs  link mask is 0x%04x, call Monica and Richie\n",
-                                     i,u);
+            std::string msg = std::format("ROC link:{} not ready to read DIGIs: link mask:0x{:04x}, call Monica and Richie",i,u);
+            if (Stream) (*Stream) << msg << std::endl;
+            TLOG(TLVL_ERROR) << msg; 
             rc -= 1;
           }
         }

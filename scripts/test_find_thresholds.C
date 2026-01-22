@@ -60,7 +60,7 @@ int find_thresholds_panel(int Link, int Channel = -1, float VThreshold = 15, flo
     std::lock_guard<std::mutex> lock(mtx);
     std::ofstream of;
     
-    // Open the file for writing
+    // Open file for writing
     std::string fn = std::format("{}_dtc_{}_link_{}.json",gSystem->Getenv("HOSTNAME"),dtc_i->PcieAddr(),Link);
     of.open(fn);
  

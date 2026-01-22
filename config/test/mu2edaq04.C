@@ -6,14 +6,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
-int init_run_configuration(DtcGui* X) {
+int init_run_configuration(mu2edaq::DtcInputData_t* dtc) {
   int rc(0);
 
   printf("[init_run_configuration] : test : %s\n",gSystem->Getenv("HOSTNAME"));
 
-  DtcGui::DtcData_t* dat = (DtcGui::DtcData_t*) X->fDtcData;
+  //  DtcGui::DtcInputData_t* dat = (DtcGui::DtcInputData_t*) X->fDtcData;
 
-  X->fNDtcs           = 1;
+  // X->fNDtcs           = 1;
 
   dat[0].fName        = "CFO";
   dat[0].fPcieAddr    = 0;

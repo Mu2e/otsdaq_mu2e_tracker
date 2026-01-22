@@ -7,6 +7,6 @@
 #pragma link C++  nestedclasses;
 #pragma link C++  nestedtypedefs;
 #
-#pragma link C++  class  DaqEvent;
-#pragma link C++  class  DaqStrawDigi;
+#  #pragma link C++  class  DaqEvent;
+#  #pragma link C++  class  DaqStrawDigi;
 #endif

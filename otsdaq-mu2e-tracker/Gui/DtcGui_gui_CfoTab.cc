@@ -5,7 +5,7 @@ using namespace trkdaq;
 using namespace std;
 
 //-----------------------------------------------------------------------------
-void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t* DtcData) {
+void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::DtcInputData_t* DtcData) {
 
   DtcTel.fData = DtcData;
 

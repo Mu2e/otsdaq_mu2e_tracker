@@ -146,59 +146,6 @@ public:
     kCOMPLETED   = 2
   };
 
-  struct RocData_t {
-    TString fName;         // 
-    int     fLink;
-  };
-
-  struct DtcData_t {
-    TString    fName;                   // expect fName to be uppercased
-    int        fPcieAddr;
-    int        fLinkMask;               // active links, for DTC - ROCs, for CFO: nDTCs
-    int        fRocReadoutMode;
-    int        fRocLaneMask;
-    int        fRocNHitsPerLane;
-    
-    int        fJAMode;
-    int        fOnSpill;
-
-    int        fDtcID;                  // 4 pieces to be written to 0x9154
-    int        fEventMode;
-    int        fPartitionID;
-    int        fMacAddrByte;
-    
-    int        fEmulateCfo;
-
-    RocData_t  fRocData[6];
-    RocData_t* fActiveRoc;
-
-    DtcData_t(const char* Name = "", int PcieAddr = 0) {
-      fName            = Name;
-      fPcieAddr        = PcieAddr;
-      fLinkMask        = 0;             // by default, not reading anything
-      fRocReadoutMode  = 0;             // 0:patterns 1:digis
-      fRocLaneMask     = 0xf;
-      fRocNHitsPerLane = 2;             // Monicas's default
-      fJAMode          = 0;
-      fOnSpill         = 0;
-      fDtcID           = -1;
-      fPartitionID     = -1;
-      fEventMode       =  1;
-      fMacAddrByte     = -1;
-
-
-      fActiveRoc = nullptr;
-      for (int i=0;i<6; i++) {
-        fRocData[i].fName = Form("ROC%i",i);
-        fRocData[i].fLink = i;
-      }
-    }
-
-    int IsDtc() { return fName == "DTC"; }
-    int IsCfo() { return fName == "CFO"; }
-  };
-
-
   struct RocTabElement_t {
     TGCompositeFrame* fFrame;
     TGTabElement*     fTab;             // its own tab element
@@ -237,7 +184,7 @@ public:
     RocTabElement_t*  fActiveRocTel;
     int               fActiveRocID;
     Pixel_t           fRocTabColor;    	// non-active roc tab tip
-    DtcData_t*        fData;
+    mu2edaq::DtcInputData_t*        fData;
   };
 
   trkdaq::CfoInterface* fCFO_i;         // need  one accessible from here
@@ -261,8 +208,8 @@ public:
   TGTabElement*       fActiveDtcTab;
   int                 fActiveDtcID;
 
-  DtcData_t           fDtcData[2];
-  DtcData_t*          fActiveDtc;
+  mu2edaq::DtcInputData_t           fDtcData[2];
+  mu2edaq::DtcInputData_t*          fActiveDtc;
 
   int                 fNRocs;
 //-----------------------------------------------------------------------------
@@ -312,9 +259,9 @@ public:
   void     DoDtcTab          (Int_t id);
   void     DoRocTab          (Int_t id);
 
-  void     BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
-  void     BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, DtcData_t* DtcData);
-  void     BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, RocData_t* RocData);
+  void     BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, mu2edaq::DtcInputData_t* DtcData);
+  void     BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& TabElement, mu2edaq::DtcInputData_t* DtcData);
+  void     BuildRocTabElement(TGTab*& Tab, RocTabElement_t& TabElement, mu2edaq::RocInputData_t* RocData);
 
   void     BuildGui          (const TGWindow *Parent, UInt_t Width, UInt_t Height);
 

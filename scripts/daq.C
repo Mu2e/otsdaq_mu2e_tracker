@@ -1,6 +1,9 @@
 //
 #define __CLING__ 1
 
+#ifndef DAQ_C
+#define DAQ_C
+
 #include "iostream"
 #include "nlohmann/json.hpp"
 
@@ -381,6 +384,33 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
 }
 
 //-----------------------------------------------------------------------------
+// initialize the DTC interface, don't forget to call InitReadout()
+//-----------------------------------------------------------------------------
+trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
+  mu2edaq::DtcInputData_t dat;
+  
+  mu2edaq::DtcInterface::InitConfiguration(ConfigName,&dat);
+  
+  trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
+   if (dtc_i) {
+     dtc_i->fDtcID       = dat.fDtcID;
+     dtc_i->fLinkMask    = dat.fLinkMask;
+     dtc_i->fPartitionID = dat.fPartitionID;
+     dtc_i->fOnSpill     = dat.fOnSpill;
+     dtc_i->fEventMode   = dat.fEventMode;
+     dtc_i->fMacAddrByte = dat.fMacAddrByte;
+  
+     dtc_i->SetRocReadoutMode (dat.fRocReadoutMode);
+     dtc_i->SetRocLaneMask    (dat.fRocLaneMask);
+     dtc_i->SetRocNHitsPerLane(dat.fRocNHitsPerLane);
+  
+     dtc_i->SetJAMode(dat.fJAMode);
+     dtc_i->SetEmulateCfo(dat.fEmulateCfo);
+   }
+  return dtc_i;
+}
+
+//-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
@@ -656,3 +686,5 @@ void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link) {
 }
 
 void daq() {}
+
+#endif

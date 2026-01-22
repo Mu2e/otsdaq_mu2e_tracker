@@ -7,13 +7,14 @@
 #ifndef __mu2edaq_dtc_interface_cc__
 #define __mu2edaq_dtc_interface_cc__
 
-#define __CLING__ 1
-
 #include "iostream"
 #include "vector"
 
 #include "DtcInterfaceBase.hh"
-#include "TString.h"    // includes ROOT's Form
+#include "TString.h"             // includes ROOT's Form
+#include "TInterpreter.h"
+#include "TROOT.h"
+#include "TSystem.h"
 
 #include "TRACE/tracemf.h"
 #define  TRACE_NAME "DtcInterfaceBase"
@@ -112,7 +113,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // InitReadout : in most cases, no parameters
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode) {
+  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode, std::ostream* Stream) {
     int rc(0);
 
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
@@ -151,7 +152,7 @@ namespace mu2edaq {
 // Init*CFOReadoutMode functions disable all links, at this point the links
 // should still be disabled
 //-----------------------------------------------------------------------------
-    rc = InitRocReadoutMode();
+    rc = InitRocReadoutMode(Stream);
     fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
     
     TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
@@ -161,7 +162,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // This needs to be implemented specific for the subsystems
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitRocReadoutMode() {
+  int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
     return 0;
   }
 
@@ -305,6 +306,52 @@ namespace mu2edaq {
   }
 
 
+//-----------------------------------------------------------------------------
+// 1) first check for project name like "pasha/mu2edaq09_pcie0"
+// if file config/pasha/mu2edaq09_pcie0.C exists , use that
+// 2) otherwise assume config file name config/$project/$hostname.C
+// config file should contain function init_run_configuration(DtcGui*)
+//
+// assumes that MU2E_DAQ_DIR points to the directory from where root is started
+//-----------------------------------------------------------------------------
+  int DtcInterface::InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData) {
+    int           rc(0);
+    TInterpreter* cint = gROOT->GetInterpreter();
+    
+    TInterpreter::EErrorCode irc;
+  
+    TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
+    FILE* f = fopen(macro,"r");
+    if (f == nullptr) {
+      char buf[128];
+      gethostname(buf,128);
+      std::string hn = buf;
+      std::string hostname = hn.substr(0,hn.find('.'));
+      macro = std::format("{}/config/dtc_gui/{}/{}.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName,hostname);
+      f     = fopen(macro,"r");
+      if (f == nullptr) {
+        TLOG(TLVL_ERROR) << "failed to find config file for " << ConfigName << " , EXIT" << std::endl;
+        rc = -1;
+      }
+    }
+    
+    if (rc != 0) return rc;
+    
+    TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
+    
+    cint->LoadMacro(macro.Data(), &irc);
+    
+    rc = irc;
+    if (rc != 0) return rc;
+    
+    TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx);",(long int) DtcData);
+    
+    TLOG(TLVL_DEBUG+1) << Form(" cmd=%s\n",cmd.Data());
+    
+    gInterpreter->ProcessLine(cmd.Data(),&irc);
+    
+    return irc;
+  }
 
     
 //-----------------------------------------------------------------------------

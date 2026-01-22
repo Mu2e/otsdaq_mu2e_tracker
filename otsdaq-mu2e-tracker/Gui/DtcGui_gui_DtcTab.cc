@@ -8,10 +8,10 @@ using namespace trkdaq;
 using namespace std;
 
 //-----------------------------------------------------------------------------
-void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t* DtcData) {
+void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::DtcInputData_t* DtcData) {
 
   DtcTel.fData = DtcData;
-  
+
   DtcTel.fDTC_i = DtcInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
   DtcTel.fDTC_i->fDtcID       = DtcData->fDtcID;
   DtcTel.fDTC_i->fPartitionID = DtcData->fPartitionID;

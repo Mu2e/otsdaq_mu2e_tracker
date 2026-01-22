@@ -1,4 +1,4 @@
-
+//
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 #include "TROOT.h"
@@ -15,9 +15,9 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
 
   //
   char buf[100];
-  FILE* pip = gSystem->OpenPipe("hostname | awk -F . '{print $1}'","r");
-  fgets(buf,100,pip); // expect just one line
-  gSystem->ClosePipe(pip);
+  FILE* pipe = gSystem->OpenPipe("hostname | awk -F . '{print $1}'","r");
+  fgets(buf,100,pipe); // expect just one line
+  gSystem->ClosePipe(pipe);
 
   TLOG(TLVL_DEBUG+5) << Form("buf = %s\n",buf);
 
@@ -28,13 +28,14 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   fRunningColor   = 0xFF3399; // 16724889;
   fStoppedColor   = 0xcccccc; // perhaps , gray
 
-  TLOG(TLVL_DEBUG+5) << Form("host:%s project:%s\n",fHostname.Data(),Project);
+  TLOG(TLVL_DEBUG+1) << std::format("host:{} project:{}\n",fHostname.Data(),Project);
 
-  InitRunConfiguration(Project);
+  fNDtcs          = 1;
+  DtcInterface::InitConfiguration(Project,fDtcData);
 
-  TLOG(TLVL_DEBUG+5) << Form("before BuildGui\n");
+  TLOG(TLVL_DEBUG+1) << Form("before BuildGui\n");
   BuildGui(p,w,h);
-  TLOG(TLVL_DEBUG+5) << Form("after BuildGui\n");
+  TLOG(TLVL_DEBUG+1) << Form("after BuildGui\n");
 
 // //-----------------------------------------------------------------------------
 // // two PCIE cards
@@ -92,49 +93,6 @@ DtcGui::~DtcGui() {
   if (fEmuCfoTC.fTp) fEmuCfoTC.fTp->Join();
   if (fExtCfoTC.fTp) fExtCfoTC.fTp->Join();
   if (fReaderTC.fTp) fReaderTC.fTp->Join();
-}
-
-//-----------------------------------------------------------------------------
-// 1) first check for project name like "pasha/mu2edaq09_pcie0"
-// if file config/pasha/mu2edaq09_pcie0.C exists , use that
-// 2) otherwise assume config file name config/$project/$hostname.C
-// config file should contain function init_run_configuration(DtcGui*)
-//
-// assumes that MU2E_DAQ_DIR points to the directory from where root is started
-//-----------------------------------------------------------------------------
-int DtcGui::InitRunConfiguration(const char* Config) {
-  int           rc(0);
-  TInterpreter* cint = gROOT->GetInterpreter();
-
-  TInterpreter::EErrorCode irc;
-
-  TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),Config);
-  FILE* f = fopen(macro,"r");
-  if (f == nullptr) {
-    macro = Form("%s/config/dtc_gui/%s/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),Config,fHostname.Data());
-    f     = fopen(macro,"r");
-    if (f == nullptr) {
-      TLOG(TLVL_ERROR) << "failed to find config file for " << Config << " , EXIT" << std::endl;
-      rc = -1;
-    }
-  }
-
-  if (rc != 0) return rc;
-
-  TLOG (TLVL_DEBUG+5) << Form(" loading configuration from file=%s\n",macro.Data());
-  
-  cint->LoadMacro(macro.Data(), &irc);
-
-  rc = irc;
-  if (rc != 0) return rc;
-  
-  TString cmd = Form("init_run_configuration((DtcGui*) 0x%0lx);",(long int) this);
-  
-  TLOG(TLVL_DEBUG+5) << Form(" cmd=%s\n",cmd.Data());
-    
-  gInterpreter->ProcessLine(cmd.Data(),&irc);
-
-  return irc;
 }
 
 //-----------------------------------------------------------------------------
@@ -270,10 +228,10 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   // lab->MoveResize(x4offset,y0+2*(dy+5),dx4,dy);
   
   fFirstTS = new TGNumberEntry(fButtonsFrame, 0, 9,999,
-                                       TGNumberFormat::kNESInteger,
-                                       TGNumberFormat::kNEANonNegative,
-                                       TGNumberFormat::kNELLimitMinMax,
-                                       0, 100000);
+                               TGNumberFormat::kNESInteger,
+                               TGNumberFormat::kNEANonNegative,
+                               TGNumberFormat::kNELLimitMinMax,
+                               0, 100000);
   fFirstTS->Connect("ValueSet(Long_t)", "DtcGui", this, "set_first_ts()");
   (fFirstTS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_first_ts()");
 
@@ -288,10 +246,11 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetWrapLength(-1);
   
   fSleepUS = new TGNumberEntry(fButtonsFrame, 2000000, 9,999,
-                                       TGNumberFormat::kNESInteger,
-                                       TGNumberFormat::kNEANonNegative,
-                                       TGNumberFormat::kNELLimitMinMax,
-                                       0, 100000000);
+                               TGNumberFormat::kNESInteger,
+                               TGNumberFormat::kNEANonNegative,
+                               TGNumberFormat::kNELLimitMinMax,
+                               0, 100000000);
+  
   fSleepUS->Connect("ValueSet(Long_t)", "DtcGui", this, "set_sleep_us()");
   (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_sleep_us()");
 
