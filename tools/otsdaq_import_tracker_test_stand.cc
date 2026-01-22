@@ -9,6 +9,9 @@
 
 #include "otsdaq/Macros/StringMacros.h"
 
+// Shared test utilities
+#include "otsdaq/Macros/TestUtilities.h"
+
 ///
 /// @file otsdaq_import_tracker_test_stand.cc
 /// @brief
@@ -1472,16 +1475,13 @@ void ImportTrackerTestStand(int argc, char* argv[])
 //==============================================================================
 int main(int argc, char* argv[])
 {
-	if(getenv("OTSDAQ_LOG_FHICL") == NULL)
-		setenv("OTSDAQ_LOG_FHICL",
-		       (std::string(__ENV__("USER_DATA")) +
-		        "/MessageFacilityConfigurations/MessageFacilityWithCout.fcl")
-		           .c_str(),
-		       1);
+	//==============================================================================
+	// Define environment variables
+	//	Note: normally these environment variables are set by ots script
 
-	if(getenv("OTSDAQ_LOG_ROOT") == NULL)
-		setenv(
-		    "OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
+	test::util::check_and_make_envs();
+
+	////////////////////////////////////////////////////
 
 	INIT_MF("ImportTrackerTestStand");
 	ImportTrackerTestStand(argc, argv);
