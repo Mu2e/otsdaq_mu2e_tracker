@@ -437,6 +437,9 @@ namespace trkdaq {
     };
 
     int lnk = Link;
+
+    TLOG(TLVL_DEBUG) << std::format("-- START: link:{}",lnk);
+
     if (not LinkLocked(lnk)) {
       std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
       TLOG(TLVL_ERROR) << msg;
@@ -459,6 +462,8 @@ namespace trkdaq {
 
     // return
     auto rv = Alignment(returned);
+    
+    TLOG(TLVL_DEBUG) << "-- END";
     return rv;
   }
 
@@ -477,6 +482,7 @@ namespace trkdaq {
     int link_mask = fLinkMask;
     if (Link != -1) link_mask = 0x1 << 4*Link;
 
+    TLOG(TLVL_DEBUG) << std::format("-- START: link_mask:0x{:04x}",link_mask);
     
     for (int i = 0 ; i < 6 ; i++){
       int enabled = (link_mask >> 4*i) & 0x1;
@@ -524,6 +530,7 @@ namespace trkdaq {
       n_slipped += n_non_null;
     }
     
+    TLOG(TLVL_DEBUG) << std::format("-- END: n_slipped:{}",n_slipped);
     return n_slipped;
   }
 

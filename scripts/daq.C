@@ -393,6 +393,7 @@ trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
   
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
    if (dtc_i) {
+     dtc_i->fPcieAddr    = dat.fPcieAddr;
      dtc_i->fDtcID       = dat.fDtcID;
      dtc_i->fLinkMask    = dat.fLinkMask;
      dtc_i->fPartitionID = dat.fPartitionID;
