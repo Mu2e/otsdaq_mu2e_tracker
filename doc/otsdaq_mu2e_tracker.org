@@ -171,8 +171,11 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 /home/mu2ehwdev/program_both_DTCs_AL9.sh   /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  0 /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # PCIE address
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  N /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # JTAG index N
+
+vivado_lab -mode batch -source /home/mu2ehwdev/ots_spack/srcs/otsdaq-mu2e/tools/program_both_DTCs.tcl \
+           -tclargs /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit
 #+end_src
-* programming ROCs
+* programming ROCs                                                           
 #+begin_src
 auto x = dtc_gui("mu2e-trk-XX-pcieY")                // GUI is used as a convenience to initialize the DTC
 auto dtc_t = trkdaq::DtcInterface::Instance(-1);     // get a pointer

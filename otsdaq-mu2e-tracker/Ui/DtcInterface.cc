@@ -273,7 +273,7 @@ namespace trkdaq {
       rc = MonicaVarPatternConfig();    // read ROC patterns
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
-      rc = MonicaVarLinkConfig();       // read digis
+      rc = MonicaVarLinkConfig(Stream);       // read digis
       if (rc < 0) {
         TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
         return rc;
@@ -823,7 +823,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (enabled) {
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        std::string msg = std::format("wrote lane_mask:0x{:04x} read back reg_8:{}",lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
+        std::string msg = std::format("link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",i,lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
         TLOG(TLVL_INFO) << msg;
         if (Stream) (*Stream) << msg << std::endl;
       }
@@ -853,7 +853,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
           if ((u >> 0x8) != 0xF) {
             // still in trouble
-            std::string msg = std::format("ROC link:{} not ready to read DIGIs: link mask:0x{:04x}, call Monica and Richie",i,u);
+            std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
             if (Stream) (*Stream) << msg << std::endl;
             TLOG(TLVL_ERROR) << msg; 
             rc -= 1;
