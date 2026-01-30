@@ -279,14 +279,14 @@ namespace trkdaq {
       return -1;
     }
 
-    if (Rw == 1) {
+    if (Rw == 0) {
       PanelID = v2[0];
       if ((PrintLevel & 0x2) != 0) {
         printf("panel ID: MN%03d\n",PanelID);
       }
     }
 
-    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,panel_id);
+    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,PanelID);
     return rc;
   }
   

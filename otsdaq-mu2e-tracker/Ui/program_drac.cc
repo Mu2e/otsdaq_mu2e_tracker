@@ -41,17 +41,17 @@
 
 program_drac::FwVersion_t drac_fw[] = {
     { "GoldenV17",  0,
-      { 1,    0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV17.spi"          }, // 9530672 },
-      {-1,         -1, ""                                                          }, //     -1 }
+      { 1,    0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV17.spi"            }, // 9530672 },
+      {-1,         -1, ""                                                            }, //     -1 }
     },
     { "ROCV16",     1,
-      { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"             }, // 9482832 },
-      { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"  }, //  86384 }
+      { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
+      { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"    }, //  86384 }
     },
                                         // end of data marker 
-    { "ROCV16_TEST",2,
-      { 1,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"             }, // 9482832 },
-      { 1,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"  }, //  86384 }
+    { "ROCV16-1",   2,
+      { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
+      { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16-1_stage3init.bin"  }, //  86384 }
     },
                                         // end of data marker 
     { "",          -1,
