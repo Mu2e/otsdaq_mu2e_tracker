@@ -288,6 +288,8 @@ namespace trkdaq {
                                                  std::ostream&       Stream     = std::cout);
 
     int          ReadPanelID       (int Link, int PrintLevel = 0);
+                                        // a newer read/write version - to be debugged
+    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel);
     
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                     ulong       FirstTS,

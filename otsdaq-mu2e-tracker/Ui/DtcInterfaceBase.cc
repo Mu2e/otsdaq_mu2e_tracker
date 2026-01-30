@@ -120,7 +120,9 @@ namespace mu2edaq {
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
     
     TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
-                     << " ROC ReadoutMode:" << fRocReadoutMode; 
+                     << " ROC ReadoutMode:" << fRocReadoutMode;
+    
+    fDtc->SoftReset();  // 2026-01-29 , suggested by Ryan
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
