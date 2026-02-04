@@ -119,7 +119,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream) {
     int rc (0);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " Channel:" << Channel << std::endl;
+    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{} Channel:{}",Link,Channel);
     Stream           << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -136,7 +136,10 @@ namespace  trkdaq {
 
       std::vector<uint16_t> settings;
       rc = ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
-      if (rc != 0) continue;
+      if (rc != 0) {
+                                        // return immediately 
+        break;
+      }
 //-----------------------------------------------------------------------------
 // print
 //-----------------------------------------------------------------------------
@@ -158,6 +161,7 @@ namespace  trkdaq {
       }
     }
 
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
   }
 

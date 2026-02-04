@@ -2,6 +2,8 @@
 #------------------------------------------------------------------------------
 # defaults for running in a DQM client mode
 #------------------------------------------------------------------------------
+BEGIN_PROLOG
+
 otsdaq_mu2e_tracker : {
 
     analyzers : {
@@ -57,13 +59,7 @@ otsdaq_mu2e_tracker : {
             minPulseHeight      : 5.
             port                : 8877
         }
-        
-        MakeDigiNtuple: { module_type:MakeDigiNtuple
-            debugMode     : 0
-            diagLevel     : 0
-	    sdCollTag     : "StrawDigisFromArtdaqFragments"   #
-            saveWaveforms : 0
-        }
-                
     }
 }
+
+END_PROLOG
