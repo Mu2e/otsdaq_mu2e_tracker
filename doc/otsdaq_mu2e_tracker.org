@@ -175,7 +175,10 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 vivado_lab -mode batch -source /home/mu2ehwdev/ots_spack/srcs/otsdaq-mu2e/tools/program_both_DTCs.tcl \
            -tclargs /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit
 #+end_src
-* programming ROCs                                                           
+* programming ROCs and DIGIs over the fiber                                  
+- source code: [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc]]
+- example of the program_drac config file: [[file:../config/spi_directory.json]]
+** programming ROCs:                                                         
 #+begin_src
 auto x = dtc_gui("mu2e-trk-XX-pcieY")                // GUI is used as a convenience to initialize the DTC
 auto dtc_t = trkdaq::DtcInterface::Instance(-1);     // get a pointer
@@ -192,7 +195,7 @@ t.spi_program_roc    (dtc_i,roc,"ROCV16");                // program the FPGA
 - memory layout is coded in [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc::/FwVersion_t drac_fw/]]
 - reading an image back takes about 30 min per large image
 - so far, reading back and validating was not adding anything
-* programming DIGIs over the fiber with CLI/ROOT                             
+** programming DIGIs                                                         
 #+begin_src
 program_drac t;
 t.spi_program_digis(dtc_i,0,"CalV6.dat")
@@ -206,7 +209,7 @@ t.spi_read_digi_id(dtc_i,0,1,0xf)
 #+end_src
 - cycle the ROC LV after the programming is completed - need to do that after
   programming each FPGA
-* reprogramming the Minnesota ID
+** reprogramming the Minnesota ID                                            
 #+begin_src
 auto dtc_i = dtc_init("mu2e-trk-08-pcie1")
 program_drac t;

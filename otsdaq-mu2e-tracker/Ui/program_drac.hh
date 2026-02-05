@@ -20,7 +20,9 @@
 #ifndef __program_drac_hh__
 #define __program_drac_hh__
 
-#include "iostream"
+#include <iostream>
+#include <vector>
+
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 #include "dtcInterfaceLib/DTC.h"
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
@@ -55,7 +57,7 @@ public:
   struct ImageData_t {
     int         load_flag;
     int         offset;
-    const char* fn;
+    std::string fn;
   };
 
   struct FwVersion_t {
@@ -67,10 +69,12 @@ public:
 
   int kSPI_CLEAR_SLEEP_US;
 
-  program_drac() {
-    kSPI_CLEAR_SLEEP_US = 200000;       // 0.2 sec
-  }
-
+  std::vector<FwVersion_t> _drac_fw;
+//-----------------------------------------------------------------------------
+// functions
+//-----------------------------------------------------------------------------
+  program_drac(const char* ConfigFile = "", bool PrintConfig = false);
+  
   const program_drac::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
   const program_drac::FwVersion_t* get_version   (const std::string& Version);
   
