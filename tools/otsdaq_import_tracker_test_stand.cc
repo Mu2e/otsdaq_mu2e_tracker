@@ -1353,8 +1353,8 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					outputFeMacroDefineFile << "\n";
 					if(outputNames.size() && functionReturnVal != "void")
 						outputFeMacroDefineFile << "\t" << outputNames[0] << " =\n\t";
-					outputFeMacroDefineFile
-					    << "\t" << prepend[i] << "_"
+					outputFeMacroDefineFile << "\t" << "trackerDTC_->" 
+					    // << "\t" << prepend[i] << "_"
 					    << functionHeader.substr(0, functionHeader.find('(')) << "(";
 
 					for(size_t o = 0; o < argNames.size(); o++)
