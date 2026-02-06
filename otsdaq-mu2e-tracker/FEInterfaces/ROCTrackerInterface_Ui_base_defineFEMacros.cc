@@ -49,8 +49,8 @@ void ROCTrackerInterface::FEMacro_Ui_base_InitReadout(__ARGS__)
 
 	int Result;
 
-	Result =
-		Ui_base_InitReadout(EmulateCfo, RocReadoutMode);
+	Result = trackerDTC_->InitReadout(EmulateCfo, RocReadoutMode);
+		// Ui_base_InitReadout(EmulateCfo, RocReadoutMode);
 
 	__SET_ARG_OUT__("Result", Result);
 

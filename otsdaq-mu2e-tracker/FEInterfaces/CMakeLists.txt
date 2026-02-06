@@ -11,6 +11,7 @@ cet_build_plugin(ROCTrackerInterface otsdaq::FEInterface
     LIBRARIES REG otsdaq-mu2e::ROCPolarFireCoreInterface
     otsdaq::RootUtilities
     otsdaq-mu2e-tracker::ParseAlignment
+    otsdaq-mu2e-tracker::Ui
  )
 
 
