@@ -69,9 +69,9 @@ namespace trkdaq {
     }
 
     if (fgInstance == nullptr) fgInstance = new CfoInterface(pcie_addr,LinkMask,DTC_SimMode_NoCFO);
-      
+
     if (fgInstance->PcieAddr() != pcie_addr) {
-      TLOG(TLVL_ERROR) << Form("CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n", 
+      TLOG(TLVL_ERROR) << Form("CfoInterface::Instance has been already initialized with PcieAddress = %i. BAIL out\n",
                                fgInstance->PcieAddr());
       return nullptr;
     }
@@ -93,23 +93,23 @@ namespace trkdaq {
       usleep(100000);
       if (ok == 1) break;
     }
-    
+
     // fCfo->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) TLOG(TLVL_ERROR) << "failed to setup CFO JA\n" << std::endl; 
+    if (ok == 0) TLOG(TLVL_ERROR) << "failed to setup CFO JA\n" << std::endl;
 
     return ok;
   }
 
 //-----------------------------------------------------------------------------
-// really ? 
+// really ?
 //-----------------------------------------------------------------------------
   void CfoInterface::Halt() {
     // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
   }
-  
+
 //-----------------------------------------------------------------------------
 // looks that it is only for the off-spill
 // [at this point] disabling the BeamOn mode may be an overkill, but...
@@ -120,18 +120,18 @@ namespace trkdaq {
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
 
     fCfo->SoftReset();
-    usleep(10);	
+    usleep(10);
 
     fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
   }
-  
+
 //-----------------------------------------------------------------------------
   void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn) {
     CFOLib::CFO_Compiler compiler;
 
     std::string fn1(InputFn );
     std::string fn2(OutputFn);
-    
+
     compiler.processFile(fn1,fn2);
   }
 
@@ -144,7 +144,7 @@ namespace trkdaq {
     int rc(0);
 
     TLOG(TLVL_INFO) << Form("runplan: %s  LinkMask:0x%08x\n",RunPlan,LinkMask);
-    
+
     fCfo->DisableLinks();                                    // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
                                         // these functions don't use CFO_Link_ALL
@@ -172,16 +172,16 @@ namespace trkdaq {
     TLOG(TLVL_INFO) << Form("Done\n");
     return rc;
   }
-  
+
 //-----------------------------------------------------------------------------
   uint32_t CfoInterface::ReadRegister(uint16_t Register) {
 
     uint32_t data;
     int      timeout(150);
-    
+
     mu2edev* dev = fCfo->GetDevice();
     dev->read_register(Register,timeout,&data);
-    
+
     return data;
   }
 
@@ -206,7 +206,7 @@ namespace trkdaq {
     PrintRegister(0x9148,"Enable Beam On Mode                        ");
     PrintRegister(0x914c,"Enable Beam Off Mode                       ");
     PrintRegister(0x918c,"Number of DTCs                             ");
-    
+
     PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
     PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
     PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
@@ -251,7 +251,7 @@ namespace trkdaq {
     mu2edev* dev = fCfo->GetDevice();
     dev->begin_dcs_transaction();
     dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
-    dev->end_dcs_transaction(); // 
+    dev->end_dcs_transaction(); //
 
     TLOG(TLVL_INFO) << Form("DONE\n");
   }

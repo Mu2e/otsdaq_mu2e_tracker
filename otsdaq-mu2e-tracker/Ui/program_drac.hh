@@ -10,7 +10,7 @@
 // 0x2010000      : spi#2
 // 0x3010000      : spi#3
 // 0x4010000      : spi#4
-// 
+//
 // 0x5000000      : bin#1 (no bin#0)
 // 0x5040000      : bin#2
 // 0x5080000      : bin#2
@@ -34,7 +34,7 @@ public:
                                         // registers
   enum {
     REG_STATUS            = 132,
-    
+
     RREG                  = 384,
     REG_DIGI              = 385,
                                         // commands
@@ -77,18 +77,18 @@ public:
   
   const program_drac::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
   const program_drac::FwVersion_t* get_version   (const std::string& Version);
-  
+
   int  spi_clear_memory         (trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0);
 
   int  spi_print_digi_id        (const std::vector<uint16_t>& Dat);
   int  spi_print_digi_info      (const std::vector<uint16_t>& Dat);
-  
+
                                         // Fn: "CalVX.dat" or "HVVX.dat", the name defines the FPGA
 
   int  spi_program_digis        (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, int DebugMode = 0);
-  
+
                                         // the next three functions do the FPGA programming, use the first one
-  
+
   int  spi_program_roc          (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version);
   void spi_program_iap_w_index  (trkdaq::DtcInterface* Dtc_i, int Link, int Index);
   void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageStartAddr);
@@ -102,7 +102,7 @@ public:
   int  spi_validate_image       (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode = 0);
 
                                         // if Type = "", validate both images, otherwise use the file extention: "spi" or "bin"
-  
+
   int  spi_validate_version     (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type = "", int DebugMode = 0);
 
   int  spi_write_directory      (trkdaq::DtcInterface* Dtc_i, int Link);
@@ -112,15 +112,15 @@ public:
   int  spi_write_image          (trkdaq::DtcInterface* Dtc_i, int Link, const program_drac::ImageData_t* SpiData, int DebugMode = 0);
 
                                         // this one only uploads image to SPI memory, but doesn't program the FPGA
-  
+
   int  spi_write_version        (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, int DebugMode = 0);
 
                                         // tests
-  
+
   void test_read_file           (const char* Fn);
   int  test_spi_write_record    (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords, int DelayUs = 0);
   int  test_spi_read_record     (trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int NWords);
 
-  
+
 };
 #endif

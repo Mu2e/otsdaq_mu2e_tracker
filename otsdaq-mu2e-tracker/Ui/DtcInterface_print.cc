@@ -34,7 +34,7 @@ namespace trkdaq {
       
       DTC_Link_ID link = DTC_Link_ID(i);
       uint32_t dat;
-      
+
       dat = fDtc->ReadROCRegister(link,Reg,100);
       text += Form("     0x%04x",dat);
     }
@@ -63,7 +63,7 @@ namespace trkdaq {
       
       DTC_Link_ID link = DTC_Link_ID(i);
       uint32_t iw1, iw2, iw;
-      
+
       iw1 = fDtc->ReadROCRegister(link,Reg  ,100);
       iw2 = fDtc->ReadROCRegister(link,Reg+1,100);
       iw  = (iw2 << 16) | iw1;
@@ -78,7 +78,7 @@ namespace trkdaq {
 
     TLOG(TLVL_DEBUG) << std::format("-- END");
   }
-  
+
 //-----------------------------------------------------------------------------
 // most of the time Link = -1 meaning 'all enabled links'
 // otherwise it is the link to print
@@ -123,31 +123,31 @@ namespace trkdaq {
 
     reg =  0; desc = "ALWAYS 0x1234";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 18; desc = " ??";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
-    reg =  8; desc = "ROC pattern mode ??"; 
+
+    reg =  8; desc = "ROC pattern mode ??";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
-    reg = 60; desc = "ROC readout timeout delay "; 
+
+    reg = 60; desc = "ROC readout timeout delay ";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 15; desc = "N simulated hits per lane";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 16; desc = " ??";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg =  7; desc = "Fiber loss/lock counter";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg =  6; desc = "Bad Markers counter";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg =  4; desc = "Loopback coarse delay";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 23; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -156,7 +156,7 @@ namespace trkdaq {
 
     reg = 11; desc = "Num EWM seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 64; desc = "Num windows seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -185,10 +185,10 @@ namespace trkdaq {
 
     reg = 37; desc = "Num DATA REQ read from DDR";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 39; desc = "Num DATA REQ sent to DTC";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 41; desc = "Num DATA REQ with null data";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
@@ -196,13 +196,13 @@ namespace trkdaq {
       
     reg = 43; desc = "Last spill tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 45; desc = "Last HB tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 48; desc = "Last PREFETCH tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 51; desc = "Last fetched tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -216,18 +216,18 @@ namespace trkdaq {
       
     reg = 72; desc = "Num HB tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 73; desc = "Num DATA REQ tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 74; desc = "Num HB tag lost";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-      
+
     reg = 75; desc = "Num DATA REQ tag lost";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
     reg = 0x90; desc = "total N packets (DCS+data)";    // r_144
-    PrintRocRegister(reg,desc,Format,link_mask,Stream); // 
+    PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x91; desc = "N(DCS) packets sent to DTC";    // r_145
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
     reg = 0x92; desc = "Num of non-DCS packets";        // r_146
@@ -255,12 +255,12 @@ namespace trkdaq {
 
     // if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
     // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
-   
+
     for (int i=0; i<nw; i++) {
       if (n == 0) line = Form("0x%08x:",i*2+Offset);
       ushort  word = p16[i];
       line += Form(" 0x%04x",word);
-      
+
       n   += 1;
       if (n == 8) {
         if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
@@ -271,7 +271,7 @@ namespace trkdaq {
         n = 0;
       }
     }
-    
+
     if (n != 0) {
       if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
       else {
@@ -283,7 +283,7 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
-    
+
 //-----------------------------------------------------------------------------
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
@@ -299,9 +299,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     float total[2];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-      
+
     int loc = 576;   // = 96*6
-    
+
     total[1]  = float((*Rates)[loc  ])+(int((*Rates)[loc+1]) << 16); // hv - check the order with Vadim
     total[0]  = float((*Rates)[loc+2])+(int((*Rates)[loc+3]) << 16); // cal
 
@@ -317,17 +317,17 @@ namespace trkdaq {
       float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
       float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
       float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
-      
+
       int ch_mask = 1;
       if ((ChMask != nullptr) and (ChMask->size() == 96) and (ChMask->at(ich) == 0)) {
         ch_mask = 0;
       }
-    
+
       Stream << std::format("- {:5d} {:3d} {:10d} {:10d} {:10d}         {:10.3f} {:10.3f} {:10.3f}\n",
                             ich,ch_mask,counts_hv,counts_cal,counts_coin,
                             rate_hv,rate_cal,rate_coin);
     }
-      
+
     Stream << std::format(" total_hv: {:10.0f} total_cal: {:10.0f}\n",total[1],total[0]);
   }
 
@@ -338,7 +338,7 @@ namespace trkdaq {
 // bit 2: formattted printout, parallel
 //-----------------------------------------------------------------------------
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-    
+
     Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
     Stream << "  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  | counts rate  |\n";
     Stream << "--------------------------------------------------------------------------------------------\n";
@@ -363,7 +363,7 @@ namespace trkdaq {
     for (int ich=0; ich<96; ich++) {
       int loc               = 6*ich;
       Stream << std::format("{:2d}|",ich);
-      
+
       for (int lnk=0; lnk<6; lnk++) {
         std::vector<uint16_t>* dat = &Rates[lnk];
         int nw = dat->size();
@@ -383,11 +383,11 @@ namespace trkdaq {
           Stream << std::format("     {:8.3f} {:c}",rate_coin,c);
         }
       }
-      
+
       Stream << std::endl;
     }
   }
-  
+
 //-----------------------------------------------------------------------------
 // assume always data from 6 ROCs, some may be disabled
 //-----------------------------------------------------------------------------
@@ -401,7 +401,7 @@ namespace trkdaq {
     Stream << std::endl
            << "--------------------------------------------------------------------------"
            << std::endl;
-    
+
     for (int i=0; i<TrkSpiDataNWords; ++i) {
       Stream << std::format("{:15s}",fgSpiVarName[i]);
       for (int lnk=0; lnk<6; lnk++) {
@@ -411,5 +411,5 @@ namespace trkdaq {
       Stream << std::endl;
     }
   }
-  
+
 };

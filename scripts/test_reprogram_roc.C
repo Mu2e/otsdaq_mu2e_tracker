@@ -10,7 +10,7 @@
 // 0x2010000      : spi#2
 // 0x3010000      : spi#3
 // 0x4010000      : spi#4
-// 
+//
 // 0x5000000      : bin#1 (no bin#0)
 // 0x5040000      : bin#2
 // 0x5080000      : bin#2
@@ -75,7 +75,7 @@ int SPI_WRITE_DIRECTORY   = 9;
       { 1,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV15.spi"             , 9482832 },
       { 1,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV15_stage3init.bin"  ,   86384 }
     },
-                                        // end of data marker 
+                                        // end of data marker
     { "",          -1,
       {-1,         -1, ""                                                          ,      -1 },
       {-1,         -1, ""                                                          ,      -1 }
@@ -89,7 +89,7 @@ int SPI_WRITE_DIRECTORY   = 9;
 const ImageData_t* spi_get_image_data(const std::string& Version, const std::string Spi="spi") {
   FwVersion_t* fw(nullptr);
   //  std::cout << __func__ << " emoe" << std::endl;
-  
+
   for (int i=0; drac_fw[i].name != ""; ++i) {
     // std::cout << __func__ << " i:" << i << std::endl;
     if (drac_fw[i].name == Version) {
@@ -113,7 +113,7 @@ const ImageData_t* spi_get_image_data(const std::string& Version, const std::str
 // void spi_clear(int Link, int Address, int NBytes) {
 int spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NBytes, int DebugMode = 0) { // const ImageData_t* SpiData) {
   int rc(0);
-  
+
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -128,17 +128,17 @@ int spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NByt
   }
 
   input.push_back(SPI_CLEAR);                 // SPI clear
-  input.push_back( Offset         & 0xFFFF);  // 
-  input.push_back((Offset  >> 16) & 0xFFFF);  // 
-  input.push_back( NBytes         & 0xFFFF);  // 
-  input.push_back((NBytes  >> 16) & 0xFFFF);  // 
+  input.push_back( Offset         & 0xFFFF);  //
+  input.push_back((Offset  >> 16) & 0xFFFF);  //
+  input.push_back( NBytes         & 0xFFFF);  //
+  input.push_back((NBytes  >> 16) & 0xFFFF);  //
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
   std::cout << __func__ << ": SPI_CLEAR input written " << std::endl;
-  
-  uint16_t u; 
+
+  uint16_t u;
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
 
   if (u != 0x8000) {
@@ -148,7 +148,7 @@ int spi_clear_memory(trkdaq::DtcInterface* Dtc_i, int Link, int Offset, int NByt
   }
 
   std::this_thread::sleep_for(std::chrono::microseconds(200000));
-  
+
   // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
   std::cout << __func__ << ":END" << std::endl;
   return rc;
@@ -165,9 +165,9 @@ void spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
   std::vector<uint16_t> input;
 
   input.push_back(PROGRAM_IAP_W_INDEX);                 // SPI clear
-  input.push_back( Index        & 0xFFFF);  // 
-  input.push_back((Index >> 16) & 0xFFFF);  // 
-  input.push_back(0);  // 
+  input.push_back( Index        & 0xFFFF);  //
+  input.push_back((Index >> 16) & 0xFFFF);  //
+  input.push_back(0);  //
   input.push_back(0);
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
@@ -176,7 +176,7 @@ void spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link, int Index) {
   sleep(40);
                                         // wait till the command is executed
   uint16_t u;
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
   uint16_t status;
   status = Dtc_i->fDtc->ReadROCRegister(roc,REG_STATUS,1000);
@@ -195,9 +195,9 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
   std::vector<uint16_t> input;
 
   input.push_back(PROGRAM_IAP_W_ADDRESS);                 // SPI clear
-  input.push_back( ImageStartAddr        & 0xFFFF);  // 
-  input.push_back((ImageStartAddr >> 16) & 0xFFFF);  // 
-  input.push_back(0);  // 
+  input.push_back( ImageStartAddr        & 0xFFFF);  //
+  input.push_back((ImageStartAddr >> 16) & 0xFFFF);  //
+  input.push_back(0);  //
   input.push_back(0);
 
   auto roc  = DTCLib::DTC_Link_ID(Link);
@@ -205,7 +205,7 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
 
                                         // wait till the command is executed
   uint16_t u;
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
   uint16_t status;
   status = Dtc_i->fDtc->ReadROCRegister(roc,REG_STATUS,1000);
@@ -221,7 +221,7 @@ void spi_program_iap_w_address(trkdaq::DtcInterface* Dtc_i, int Link, int ImageS
 //-----------------------------------------------------------------------------
 int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t* Res, int DebugMode = 0) {
   int rc(0);
-  
+
   if (DebugMode & 0x1) {
     std::cout << __func__ << " START: reading nwords:" << NWords << " from address:0x" << std::hex << SpiOffset << std::dec << std::endl;
   }
@@ -235,14 +235,14 @@ int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, i
 
   int max_nwr    = max_record_size/2;
   int spi_offset = SpiOffset;
-  
+
   int nreads = (NWords-1)/max_nwr + 1;
   for (int i=0; i<nreads; ++i) {
     int nw      = max_nwr;
     int nw_left = NWords-nw_read;
-    
+
     if (nw_left < nw) nw = nw_left;
-    
+
     bool increment_address(false);
     std::vector<uint16_t> input;
 
@@ -254,7 +254,7 @@ int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, i
 
     Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
-    uint16_t u; 
+    uint16_t u;
     while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
     if (u != 0x8000) {
       std::cout << "ERROR in " << __func__ << " : timeout detected, "
@@ -267,7 +267,7 @@ int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, i
 //-----------------------------------------------------------------------------
 // now actually read the data
 //-----------------------------------------------------------------------------
-    std::vector<uint16_t> buf; 
+    std::vector<uint16_t> buf;
     Dtc_i->RocBlockRead(Link,RREG,buf);
     int nw_read = buf.size();
 
@@ -287,7 +287,7 @@ int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, i
     spi_offset += 2*nw;
     nw_read    += nw;
   }
-  
+
   if (DebugMode & 0x1) {
     std::cout << std::format("{}:{} END: nw_read:{} rc:{}\n",__func__,__LINE__,nw_read,rc);
   }
@@ -303,11 +303,11 @@ int spi_read_record(trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, i
 //-----------------------------------------------------------------------------
 int spi_read_segment(trkdaq::DtcInterface* Dtc_i, int Link, int SpiOffset, int NBytes, std::vector<char>& Res, int DebugMode = 0) {
   int rc(0);
-  
-  //  int record_size(1024);              // future version, not on the station yet 
+
+  //  int record_size(1024);              // future version, not on the station yet
   int  record_size(254);                  // can only read 254 bytes (127 shorts) at a time
-  int  nw         = record_size/2;        // 
-  
+  int  nw         = record_size/2;        //
+
   int  first_addr = SpiOffset;            // initial offset in SPI memory
   bool done      = false;
   int  loc        = 0;                    // offset in readback, same as nbytes read
@@ -341,9 +341,9 @@ int spi_read_segment(trkdaq::DtcInterface* Dtc_i, int Link, int SpiOffset, int N
     if (rc < 0) {
       std::cout << __func__ << " read ERROR: rc:" << rc << " . BAIL OUT" << std::endl;
     }
-    
+
     nb_read += nb;
-      
+
     if (nb_read >= report_mark) {
       std::cout << __func__ << " -- read record nb:" << std::dec << std::setw(4) << nb
                 << " total nb_read:" << std::setw(6) << std::dec << nb_read
@@ -368,7 +368,7 @@ int spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t*
 // open input file and determine its size
 //-----------------------------------------------------------------------------
   std::cout << __func__ << ": fn:" << SpiData->fn << std::endl;
-                         
+
   std::ifstream file(SpiData->fn, std::ios::binary);
   if (not file.is_open()) {
     std::cout << "ERROR in " << __func__ << " failed to open file: " << SpiData->fn << " . BAIL OUT" << std::endl;
@@ -389,8 +389,8 @@ int spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t*
 // have to do everything in 64K blocks - this is the unit in which the SPI memory
 // is getting reset
 //-----------------------------------------------------------------------------
-  int const segment_size(0x10000); // the SPI memory is cleared in 64K segments 
-  
+  int const segment_size(0x10000); // the SPI memory is cleared in 64K segments
+
   std::vector<char> fileData(fsize);
   file.read((char*) &fileData[0], fsize);
 
@@ -398,7 +398,7 @@ int spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t*
 
   int nrecords_tot  = (fsize-1) / 512 + 1; // total number of records to be written
   int first_addr    = SpiData->offset;
-    
+
   for (int ib=0; ib<n64k_segments; ++ib) {
     int segment_offset = segment_size*ib;
     int nb_to_read     = segment_size;
@@ -443,14 +443,14 @@ int spi_validate_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t*
       return rc;
     }
   }
-  
+
   std::cout << __func__ << ":END rc:" << rc << std::endl;
   return rc;
 }
 
 //-----------------------------------------------------------------------------
-// mu2etrk@mu2edaq22:~/test_stand/daquser_001>cat ../monica_008/flash_nmap 
-// 0x10000 
+// mu2etrk@mu2edaq22:~/test_stand/daquser_001>cat ../monica_008/flash_nmap
+// 0x10000
 // 0x1010000
 // 0x5000000
 // works - can read back
@@ -493,8 +493,8 @@ int spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
   // std::cout << __func__ << ": SPI_DIRECTORY_WRITE input written " << std::endl;
-  
-  uint16_t u; 
+
+  uint16_t u;
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
                                         // read return code
@@ -516,10 +516,10 @@ int spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int N
   std::vector<uint16_t> input;
 
   input.push_back(SPI_WRITE_RECORD);            // SPI clear
-  input.push_back( FirstAddr        & 0xFFFF);  // 
-  input.push_back((FirstAddr >> 16) & 0xFFFF);  // 
-  input.push_back( NWords           & 0xFFFF);  // 
-  input.push_back((NWords    >> 16) & 0xFFFF);  // 
+  input.push_back( FirstAddr        & 0xFFFF);  //
+  input.push_back((FirstAddr >> 16) & 0xFFFF);  //
+  input.push_back( NWords           & 0xFFFF);  //
+  input.push_back((NWords    >> 16) & 0xFFFF);  //
 
   for (int i=0; i<NWords; ++i) {
     input.push_back(Data[i  ]);
@@ -529,9 +529,9 @@ int spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int N
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
   // std::cout << " data written, nb:" << NWords*2 << std::endl;
-  
-  uint16_t u; 
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+  uint16_t u;
+  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
   int rc = Dtc_i->fDtc->ReadROCRegister(roc,132,1000);
 
@@ -569,7 +569,7 @@ int spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, const char* Data, i
     int nb      = record_size;         // however, write in 2-byte words
     int nb_left = NBytes-nb_written;   // n bytes left to write within the segment
     if (nb_left < record_size) nb  = nb_left;
-    
+
     if (nb > 0) {
 //-----------------------------------------------------------------------------
 // write next record
@@ -630,7 +630,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 // open input file and determine its size
 //-----------------------------------------------------------------------------
   std::cout << __func__ << ": fn:" << SpiData->fn << std::endl;
-                         
+
   std::ifstream file(SpiData->fn, std::ios::binary);
   if (not file.is_open()) {
     std::cout << "ERROR in " << __func__ << " failed to open file: " << SpiData->fn << " . BAIL OUT" << std::endl;
@@ -644,7 +644,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 // clear the spi memory for image at index *** ###
 //-----------------------------------------------------------------------------
   std::cout << std::format("[{}:{}] -- before spi_clear: fn:{} fsize:{:d}\n",__func__,__LINE__,SpiData->fn,fsize);
- 
+
   rc = spi_clear_memory(Dtc_i, Link, SpiData->offset,fsize,DebugMode);
   if (rc < 0) {
     std::cout << std::format("[{}:{}]: ERROR: rc:{} in spi_clear_memory, BAIL OUT\n",__func__,__LINE__,rc);
@@ -659,8 +659,8 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 // have to do everything in 64K blocks - this is the unit in which the SPI memory
 // is getting reset
 //-----------------------------------------------------------------------------
-  int const segment_size(0x10000); // the SPI memory is cleared in 64K segments 
-  
+  int const segment_size(0x10000); // the SPI memory is cleared in 64K segments
+
   std::vector<char> fileData(fsize);
   file.read((char*) &fileData[0], fsize);
 
@@ -668,7 +668,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 
   int first_addr    = SpiData->offset;
   int nb_written    = 0;
-    
+
   if (DebugMode & 0x1) {
     std::cout << std::format("[{}:{}]: n64k_segments:{} first_addr:0x{:08x}\n",__func__,__LINE__,n64k_segments,first_addr);
   }
@@ -699,7 +699,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
       if (DebugMode & 0x1) {
         std::cout << std::format("{}:{}: attempt {} to write segment {:d}\n",__func__,__LINE__,attempt, ib);
       }
-      
+
       rc = spi_write_segment(Dtc_i,Link,data,nb_to_write,spi_offset,DebugMode);
       if (rc != 0) {
                                         // detected error
@@ -725,7 +725,7 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 //-----------------------------------------------------------------------------
               int ic1 = readback[i] & 0xff;
               int ic2 = fileData[segment_offset+i] &0xff;
-              
+
               std::cout << std::format("[{}:{}] ERROR validating written segment starting from SPI offset:0x{:x}\n",
                                        __func__,__LINE__,spi_offset)
                         << std::format("i:{} readback[i]:0x{:x} fileData[segment_offset+i]:0x{:x}\n",
@@ -770,9 +770,9 @@ int spi_load_image(trkdaq::DtcInterface* Dtc_i, int Link, const ImageData_t* Spi
 int dtc_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const char* Version) {
                                         // find firmware version
   int rc(0);
-  
+
   FwVersion_t* fw(nullptr);
-  
+
   for (int i=0; drac_fw[i].name != ""; ++i) {
     if (drac_fw[i].name == Version) {
       fw = &drac_fw[i];
@@ -798,14 +798,14 @@ int dtc_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const char* Version) 
 
   gSystem->Setenv("DTCLIB_DTC",Form("%i",dtc_i->PcieAddr()));
 //-----------------------------------------------------------------------------
-// 2. spi directory has always to be mapped in full , 
+// 2. spi directory has always to be mapped in full ,
 //    as the directory doesn't need to be rewritten every time, make it a separate step
 //    this is why the next line is commented out
 //-----------------------------------------------------------------------------
 //  spi_write_directory(dtc_i,Link);
 
   int test_mode = 0;                    // load for real
-  
+
                                         // upload the .spi image
 
   rc = spi_load_image(dtc_i,Link,&fw->spi_file,test_mode);
@@ -821,7 +821,7 @@ int dtc_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const char* Version) 
                                         // activate the image as a separate step after validating
                                         // the memory, thus the following is commented out
   // spi_program_iap_w_index(dtc_i,Link,fw->spi_file.index);
-  
+
   return rc;
 }
 
@@ -844,10 +844,10 @@ int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int 
   // memory is organized in 4K (0x1000) sectors,
   // according to ChatGPT, a sector corresponding to the record being written needs to be erased
   // assume that the 'FirstAddr' starts on a 4K boundary and for testing purposes clear just one sector
-  
+
   // spi_clear_memory(Dtc_i, Link, FirstAddr,0x1000);
   // rc = spi_clear_memory(Dtc_i, Link, FirstAddr,0x10000);
-  
+
   if (rc < 0) {
                                         // the diagnostics printed in the function where the error was first detected
     return -1;
@@ -869,7 +869,7 @@ int test_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int FirstAddr, int 
 
   // dat.reserve(NWords);
   // spi_read_record(Dtc_i,Link,FirstAddr,NWords,dat.data(),0x3);
-  
+
   return 0;
 }
 
@@ -888,6 +888,6 @@ int test_spi_read(int Link, int FirstAddr, int NWords, trkdaq::DtcInterface* Dtc
   std::vector<uint16_t> dat(NWords);
 
   spi_read_record(dtc_i,Link,FirstAddr,NWords,dat.data(),0x3);
-  
+
   return 0;
 }

@@ -25,7 +25,7 @@ bool AlignmentIteration::ChannelMask::TestBit(unsigned int i){
     i -= 64;
     rv = this->hi & (1 << i);
   }
-  else{ 
+  else{
     // should never reach here
   }
 

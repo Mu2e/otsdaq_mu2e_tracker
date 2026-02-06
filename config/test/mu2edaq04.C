@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-// mu2edaq04 
+// mu2edaq04
 //
-// init_run_configuration : the name and the call signature are is fixed 
+// init_run_configuration : the name and the call signature are is fixed
 //                          and can't be changed
 ///////////////////////////////////////////////////////////////////////////////
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
@@ -9,17 +9,16 @@
 int init_run_configuration(mu2edaq::DtcInputData_t* dtc) {
   int rc(0);
 
-  printf("[init_run_configuration] : test : %s\n",gSystem->Getenv("HOSTNAME"));
+	printf("[init_run_configuration] : test : %s\n", gSystem->Getenv("HOSTNAME"));
 
   //  DtcGui::DtcInputData_t* dat = (DtcGui::DtcInputData_t*) X->fDtcData;
 
   // X->fNDtcs           = 1;
 
-  dat[0].fName        = "CFO";
-  dat[0].fPcieAddr    = 0;
-  dat[0].fLinkMask    = 0x11;            // link0:CRV, link1:tracker
-  gSystem->Setenv("CFOLIB_CFO","0");
+	dat[0].fName     = "CFO";
+	dat[0].fPcieAddr = 0;
+	dat[0].fLinkMask = 0x11;  // link0:CRV, link1:tracker
+	gSystem->Setenv("CFOLIB_CFO", "0");
 
-  
-  return rc;
+	return rc;
 }

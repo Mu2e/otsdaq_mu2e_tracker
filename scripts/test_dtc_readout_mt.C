@@ -157,7 +157,7 @@ int test_dtc_readout(int Test, int Link1, int Link2, const char* Version, const 
   for (auto& t : threads) {
     t.join();
   }
-    
+
   std::cout << "All threads completed!" << std::endl;
   return 0;
 }

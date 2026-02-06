@@ -59,7 +59,7 @@ namespace mu2edaq {
     txrx_temp = data & 0xff;
 
     Stream << "rx_temp: " << rx_temp << " txrx_temp: " << txrx_temp << endl;
-    
+
     TLOG(TLVL_DEBUG) << "END" << std::endl;
   }
 
@@ -72,7 +72,7 @@ namespace mu2edaq {
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
 
     std::string text = Form("(0x%04x)         : ",FirstReg);
-    
+
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
@@ -84,11 +84,11 @@ namespace mu2edaq {
     text += Form(" %s",Desc);
     Stream << Form("%-s\n",text.data());
   }
-  
+
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintStatus(std::ostream& Stream) {
     TLOG(TLVL_DEBUG) << "-- START";
-    
+
     Stream << Form("-----------------------------------------------------------------\n");
     Stream << Form(" PCIE address: %i link mask: 0x%04x SampleEdgeMode: %i RocReadoutMode: %i\n",
                    fPcieAddr,fLinkMask,fSampleEdgeMode,fRocReadoutMode);
@@ -129,14 +129,14 @@ namespace mu2edaq {
     Stream << std::endl;
     Stream << Form("%-s\n",text1.data());
     Stream << Form("%-s\n",text2.data());
-    
+
     PrintDtcLinkRegisters(0x9630,"TX Data Request Packet Count",Stream);
     PrintDtcLinkRegisters(0x9650,"TX Heartbeat    Packet Count",Stream);
     PrintDtcLinkRegisters(0x9670,"RX Data Header  Packet Count",Stream);
     PrintDtcLinkRegisters(0x9690,"RX Data         Packet Count",Stream);
     PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",Stream);
     PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
-                          
+
     TLOG(TLVL_DEBUG) << "-- END";
   }
 };
@@ -167,7 +167,7 @@ namespace mu2edaq {
       link_mask |= (1 << 4*i);
       text += Form("    ROC%i   ",i);
     }
-                     
+
     if (Format != 0) text += " Description";
     Stream << Form("%s\n",text.data());
     Stream << "-------------to be completed-------------------------------------------\n";

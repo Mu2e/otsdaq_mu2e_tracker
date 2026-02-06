@@ -40,7 +40,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   tb->Connect("Pressed()", "DtcGui", this, "print_roc_status()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// column 1 row 2: ROC write register 
+// column 1 row 2: ROC write register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"write",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -49,12 +49,12 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*1,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "write_roc_register()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// column 1 row 3: ROC read register 
+// column 1 row 3: ROC read register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"read",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -62,7 +62,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*2,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "read_roc_register()");
   tb->ChangeBackground(fValidatedColor);
@@ -91,7 +91,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   valEntry791.fGraphicsExposures = kFALSE;
   TGGC* uGC  = gClient->GetGC(&valEntry791, kTRUE); // will reflect user GC changes
 //-----------------------------------------------------------------------------
-// column 2 row 2 : text entry for write register number 
+// column 2 row 2 : text entry for write register number
 //-----------------------------------------------------------------------------
   TGTextEntry*  wr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                                      ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
@@ -103,7 +103,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   wr->MoveResize(x2,y0+dy+5,dx2,dy);
   RocTel.fRegW = wr;
 //-----------------------------------------------------------------------------
-// column 2 row 3 : text entry for read  register number 
+// column 2 row 3 : text entry for read  register number
 //-----------------------------------------------------------------------------
   TGTextEntry*  rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                                      ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
@@ -118,7 +118,7 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
 //-----------------------------------------------------------------------------
   int x3  = x2+dx2+5;
   int dx3 = dx2;
-  
+
   lab = new TGLabel(group,"value");
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
@@ -147,18 +147,18 @@ void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::R
   lab->MoveResize(x3,y0+2*(dy+5),dx3,dy);
   RocTel.fValR = lab;
 //-----------------------------------------------------------------------------
-// column 4 row 1: reset ROC 
+// column 4 row 1: reset ROC
 //-----------------------------------------------------------------------------
   int x4  = x3+dx3+5;
   int dx4 = dx3;
-  
+
   tb = new TGTextButton(group,"reset",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x4,y0+(dy+5)*0,dx4,dy);
   tb->Connect("Pressed()", "DtcGui", this, "reset_roc()");
   tb->ChangeBackground(fValidatedColor);

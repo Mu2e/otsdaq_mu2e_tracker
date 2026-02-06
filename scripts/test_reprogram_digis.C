@@ -10,7 +10,7 @@
 // 0x2010000      : spi#2
 // 0x3010000      : spi#3
 // 0x4010000      : spi#4
-// 
+//
 // 0x5000000      : bin#1 (no bin#0)
 // 0x5040000      : bin#2
 // 0x5080000      : bin#2
@@ -32,7 +32,7 @@ int ERASE_DIGI          = 2;          // unused
 int PROGRAM_DIGI        = 3;
 
 namespace {
-  
+
 //-----------------------------------------------------------------------------
 // CalHV : 0 = CAL
 //         1 = HV
@@ -41,7 +41,7 @@ namespace {
 //-----------------------------------------------------------------------------
 int read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DebugMode = 0) {
 
-  
+
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -58,11 +58,11 @@ int read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int Debu
   if (DebugMode & 0x1) {
     std::cout << " input:" << "[0]:" << input[0] << " [1]:" << input[1] << std::endl;
   }
-  
-  uint16_t u; 
+
+  uint16_t u;
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {
     std::this_thread::sleep_for(std::chrono::microseconds(2));
-  }; 
+  };
 
   int nw (-1);
   nw = Dtc_i->fDtc->ReadROCRegister(roc,129,1000);  // should return NWords+4
@@ -82,14 +82,14 @@ int read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int Debu
       Dtc_i->PrintBuffer(res.data(),nw);
     }
   }
-  
+
   return nw;
 }
 
 //-----------------------------------------------------------------------------
 int read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs = 0, int DebugMode = 0) {
 
-  
+
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);
@@ -107,7 +107,7 @@ int read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int De
   }
 
   int ntimes(0);
-  uint16_t u; 
+  uint16_t u;
   while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {
     if (DelayUs > 0) {
       std::this_thread::sleep_for(std::chrono::microseconds(DelayUs));
@@ -117,7 +117,7 @@ int read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int De
         return -1;
       }
     }
-  }; 
+  };
 
   ntimes = 0;
   int nw (-1);
@@ -138,7 +138,7 @@ int read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int De
       Dtc_i->PrintBuffer(res.data(),nw);
     }
   }
-  
+
   return nw;
 }
 
@@ -148,13 +148,13 @@ int read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int De
 //-----------------------------------------------------------------------------
 int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, int DebugMode = 0) {
   int rc(0);
-  
+
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 //-----------------------------------------------------------------------------
 // read the input file in memory  -- 10 MBytes is nothing
 //-----------------------------------------------------------------------------
   const std::string spi_directory("/home/mu2etrk/test_stand/spi_files/");
-                                  
+
   uint16_t cal_hv;
 
   std::string ufn = Fn.substr(0,3);
@@ -173,10 +173,10 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
   file.seekg(0, std::ios::end);
   int fsize = file.tellg();
   file.seekg(0, std::ios::beg);
-  
+
   TLOG(TLVL_DEBUG) << std::format("fn:{} fsize:{} cal_hv:{}",Fn,fsize,cal_hv);
 //-----------------------------------------------------------------------------
-// read the input file 
+// read the input file
 //-----------------------------------------------------------------------------
   std::vector<char> fileData(fsize);
   file.read((char*) &fileData[0], fsize);
@@ -201,13 +201,13 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
 // on return :: 3 words + next_offset , next_nbytes ..(each 2 uint16_t's)
 //-----------------------------------------------------------------------------
   bool done(false);
-  
+
   while (not done) {
 //-----------------------------------------------------------------------------
 // check that the previous operation has completed
 // don't remember why sleep's are here
 //-----------------------------------------------------------------------------
-    uint16_t u; 
+    uint16_t u;
     while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {
       std::this_thread::sleep_for(std::chrono::microseconds(2));
     };
@@ -225,7 +225,7 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
       }
     }
     if (rc < 0) break;
-    
+
     TLOG(TLVL_DEBUG) << std::format("reg 129 reports nw:{}",nw);
 //-----------------------------------------------------------------------------
 // reading back the offset and the number of bytes
@@ -236,7 +236,7 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
     Dtc_i->fDtc->ReadROCBlock(res,roc,REG_DIGI,nw,false,100);
     int next_offset = int(res[0]) + (int)(res[1]<<16);
     int next_nbytes = int(res[2]) + (int)(res[3]<<16);
-    
+
     TLOG(TLVL_DEBUG) << std::format("next_offset:0x{:08x} next_nbytes:{}",next_offset, next_nbytes);
 //--------------------------------------------------
 // normal exit in case of success
@@ -246,7 +246,7 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
 // not everything has been written, form input and store it in a vector 'input'
 //-----------------------------------------------------------------------------
     input.clear();
-    
+
     for (int i=0; i<next_nbytes; i+=2) {
       int      loc = next_offset+i;
       uint16_t w16 = (fileData[loc] & 0xff);
@@ -259,14 +259,14 @@ int program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Fn, 
       // std::cout << "(2) w16:" << std::hex << w16 << std::endl;
       input.push_back(w16);
     }
-    
+
     Dtc_i->fDtc->WriteROCBlock(roc,REG_DIGI,input,false,increment_address,100);
 
     if (DebugMode & 0x8) {
       Dtc_i->PrintBuffer(input.data(),input.size())'
     }
   }
-  
+
   return rc;
 }
 

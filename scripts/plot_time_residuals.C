@@ -5,16 +5,16 @@ void plot_time_residuals(int RunNumber) {
 
   TFile* f = TFile::Open(Form("/scratch/mu2e/mu2etrk_pasha_304/digi_ntuples/make_digi_ntuple_%06i.root",RunNumber));
   TTree* t = (TTree*) f->Get("MakeDigiNtuple/digis");
-  
+
   t->SetAlias("dt01"    ,"evt.sd.tdc0-evt.sd.tdc1");
-  
+
   t->SetAlias("ts1"     ,"(evt.sd.sid<400)")    ; // TS1 on DTC0:link2
   t->SetAlias("ts2"     ,"(evt.sd.sid>400)")    ; // TS2 on DTC1:link4
   t->SetAlias("sd0_ts1" ,"(evt.sd[0].sid<400)") ; // TS1
   t->SetAlias("sd0_ts2" ,"(evt.sd[0].sid>400)") ; // TS2 on DTC1:link4
 
-  t->SetAlias("dt12_tdc0","evt.sd[0].tdc0-evt.sd[1].tdc0") ; // 
-  t->SetAlias("dt12_tdc1","evt.sd[0].tdc1-evt.sd[1].tdc1") ; // 
+  t->SetAlias("dt12_tdc0","evt.sd[0].tdc0-evt.sd[1].tdc0") ; //
+  t->SetAlias("dt12_tdc1","evt.sd[0].tdc1-evt.sd[1].tdc1") ; //
 
   TCanvas* c = new TCanvas(Form("c_%06i",RunNumber),Form("c_%06i",RunNumber),1500,800);
   c->Divide(3,2);

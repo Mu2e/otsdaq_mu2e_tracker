@@ -18,11 +18,11 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   DtcTel.fDTC_i->fOnSpill     = DtcData->fOnSpill;
   DtcTel.fDTC_i->fEventMode   = DtcData->fEventMode;
   DtcTel.fDTC_i->fMacAddrByte = DtcData->fMacAddrByte;
-  
+
   DtcTel.fDTC_i->SetRocReadoutMode (DtcData->fRocReadoutMode);
   DtcTel.fDTC_i->SetRocLaneMask    (DtcData->fRocLaneMask);
   DtcTel.fDTC_i->SetRocNHitsPerLane(DtcData->fRocNHitsPerLane);
-  
+
   DtcTel.fDTC_i->SetJAMode(DtcData->fJAMode);
   DtcTel.fDTC_i->SetEmulateCfo(DtcData->fEmulateCfo);
 
@@ -62,7 +62,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 
   DtcTel.fActiveRocTel = &DtcTel.fRocTel[id];
   DtcTel.fRocTabColor  = DtcTel.fActiveRocTel->fTab->GetBackground();
-    
+
   DtcTel.fActiveRocTel->fTab->ChangeBackground(fYellow);
 //------------------------------------------------------------------------------
 // a) graphics context changes
@@ -94,13 +94,13 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins    (0,0,0,0);
   tb->SetWrapLength (-1);
-  
+
   tb->MoveResize(x1,y0,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "print_dtc_status()");
   tb->ChangeBackground(fValidatedColor);
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
-// (column 1 row 2) : button : DTC write register 
+// (column 1 row 2) : button : DTC write register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"writeR",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -109,13 +109,13 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
- 
+
   tb->MoveResize(x1,y0+dy+5,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "write_dtc_register()");
   tb->ChangeBackground(fValidatedColor);
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
-// column 1 raw 3: DTC read register 
+// column 1 raw 3: DTC read register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"readR",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -124,13 +124,13 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*2,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "read_dtc_register()");
   tb->ChangeBackground(fValidatedColor);
   tb->SetUserData(nullptr);
 //-----------------------------------------------------------------------------
-// column 1 raw 4: DTC soft reset 
+// column 1 raw 4: DTC soft reset
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"soft reset",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -139,7 +139,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*3,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
@@ -148,7 +148,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetUserData((void*) &DtcGui::dtc_soft_reset);
 #pragma GCC diagnostic pop
 //-----------------------------------------------------------------------------
-// column 1 raw 5: DTC hard reset 
+// column 1 raw 5: DTC hard reset
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"hard reset",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -157,7 +157,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*4,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
@@ -208,7 +208,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x2,y0+(dy+5)*3,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
@@ -222,11 +222,11 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"init ext CFO",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x2,y0+(dy+5)*4,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "init_external_cfo_readout_mode()");
   tb->ChangeBackground(fValidatedColor);
@@ -237,11 +237,11 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"ROC status",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x2,y0+(dy+5)*4,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
@@ -292,7 +292,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x3,y0+(dy+5)*3,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_reader_thread()");
   tb->ChangeBackground(fValidatedColor);
@@ -307,7 +307,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x3,y0+(dy+5)*4,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_emu_cfo_thread()");
   tb->SetUserData(nullptr);
@@ -324,7 +324,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x4,y0,dx4,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
@@ -370,7 +370,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x4,y0+4*(dy+5),dx4,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
@@ -379,7 +379,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// column 5 row 2: EmulateCFO entry field 
+// column 5 row 2: EmulateCFO entry field
 //-----------------------------------------------------------------------------
   int x5  = x4+dx4+10;
   int dx5 = 80;
@@ -395,7 +395,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   // ne->SetTextJustify(36);
   // ne->SetMargins(0,0,0,0);
   // ne->SetWrapLength(-1);
-  
+
   ne->MoveResize(x5,y0+1*(dy+5),dx5,dy);
 
   ne->Connect("ValueSet(Long_t)", "DtcGui", this, "set_emulate_cfo()");
@@ -403,7 +403,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 
   DtcTel.fEmulateCfo = ne;
 //-----------------------------------------------------------------------------
-// column 5 row 3: RocReadoutMode entry field 
+// column 5 row 3: RocReadoutMode entry field
 //-----------------------------------------------------------------------------
   ne = new TGNumberEntry(group, 0, 0,10,
                          TGNumberFormat::kNESInteger,
@@ -411,7 +411,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
                          TGNumberFormat::kNELLimitMinMax,
                          0, 2);
   group->AddFrame(ne, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   ne->MoveResize(x5,y0+2*(dy+5),dx5,dy);
 
   ne->Connect("ValueSet(Long_t)", "DtcGui", this, "set_roc_readout_mode()");
@@ -419,7 +419,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 
   DtcTel.fRocReadoutMode = ne;
 //-----------------------------------------------------------------------------
-// column 5 row 4: JA Mode entry field 
+// column 5 row 4: JA Mode entry field
 //-----------------------------------------------------------------------------
   rr = new TGTextEntry(group, new TGTextBuffer(14),-1,uGC->GetGC(),
                        ufont->GetFontStruct(),kSunkenFrame | kOwnBackground);
@@ -441,7 +441,7 @@ void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x5,y0+4*(dy+5),dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push

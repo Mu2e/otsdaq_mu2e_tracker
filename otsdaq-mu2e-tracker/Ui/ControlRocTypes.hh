@@ -32,18 +32,18 @@ namespace trkdaq {
   };
 
   struct ControlRoc_Read_Input_t0 {
-    uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2* 
-    uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2* 
-    uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2* 
-    uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63  // *v2* 
+    uint16_t    adc_mode;               // -a 8   (defailt:  0)  [0]                   // *v2*
+    uint16_t    tdc_mode;               // -t 8   (default:  0)  [1]                   // *v2*
+    uint16_t    num_lookback;           // -l 8   (default:  8)  [2]                   // *v2*
+    uint16_t    num_samples;            // -s 1   (default: 16)  [3] if>63, set to 63  // *v2*
 
-    uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]                 // *v2* 
-    uint16_t    ch_mask[6];             // FFFF FFFF FFFF FFFF FFFF FFFF [6:11]        // *v2* 
+    uint16_t    num_triggers[2];        // -T 10  (default:  0)  [4-5]                 // *v2*
+    uint16_t    ch_mask[6];             // FFFF FFFF FFFF FFFF FFFF FFFF [6:11]        // *v2*
 
-    uint16_t    enable_pulser;          // -p 1     (default: 0) [12]                  // *v2* 
+    uint16_t    enable_pulser;          // -p 1     (default: 0) [12]                  // *v2*
 
-    uint16_t    marker_clock;           // -m 3 ??? )default: 0) [13]                  // *v2* 
-    uint16_t    mode;                   // [14] need to set mode=0                     // *v2* 
+    uint16_t    marker_clock;           // -m 3 ??? )default: 0) [13]                  // *v2*
+    uint16_t    mode;                   // [14] need to set mode=0                     // *v2*
     uint16_t    clock;                  // [15] need to set clock=99                   // *v2*
 
     ControlRoc_Read_Input_t0() {
@@ -62,20 +62,20 @@ namespace trkdaq {
   };
 
   struct ControlRoc_Read_Output_t0 {
-    uint16_t    adc_mode;               // [0]                  // *v2* 
-    uint16_t    tdc_mode;               // [1]                  // *v2* 
-    uint16_t    num_lookback;           // [2]                  // *v2* 
-    uint16_t    num_samples;            // [3]                  // *v2* 
-    uint16_t    num_triggers[2];        // [4-5]                // *v2* 
-    uint16_t    ch_mask[6];             // [6--11]              // *v2* 
-    uint16_t    enable_pulser;          // [13]                 // *v2* 
-    uint16_t    marker_clock;           // [12]                 // *v2* 
-    uint16_t    mode;                   // [14] returned 0      // *v2* 
-    uint16_t    clock;                  // [15] returned 99,    // *v2* 
-    uint16_t    digi_read_0xb;          // [16]                 // *v2* 
-    uint16_t    digi_read_0xe;          // [17]                 // *v2* 
-    uint16_t    digi_read_0xd;          // [18]                 // *v2* 
-    uint16_t    digi_read_0xc;          // [19]                 // *v2* 
+    uint16_t    adc_mode;               // [0]                  // *v2*
+    uint16_t    tdc_mode;               // [1]                  // *v2*
+    uint16_t    num_lookback;           // [2]                  // *v2*
+    uint16_t    num_samples;            // [3]                  // *v2*
+    uint16_t    num_triggers[2];        // [4-5]                // *v2*
+    uint16_t    ch_mask[6];             // [6--11]              // *v2*
+    uint16_t    enable_pulser;          // [13]                 // *v2*
+    uint16_t    marker_clock;           // [12]                 // *v2*
+    uint16_t    mode;                   // [14] returned 0      // *v2*
+    uint16_t    clock;                  // [15] returned 99,    // *v2*
+    uint16_t    digi_read_0xb;          // [16]                 // *v2*
+    uint16_t    digi_read_0xe;          // [17]                 // *v2*
+    uint16_t    digi_read_0xd;          // [18]                 // *v2*
+    uint16_t    digi_read_0xc;          // [19]                 // *v2*
   };
 
   struct ControlRoc_DigiRW_Input_t {
@@ -84,23 +84,23 @@ namespace trkdaq {
     uint16_t    address;             // = dtcbuffer[2];                                  // -l
     uint16_t    data[2];             // num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
   };
- 
+
   struct ControlRoc_DigiRW_Output_t {
     uint16_t    rw;                  // = dtcbuffer[0];                                  // -a
     uint16_t    hvcal;               // = dtcbuffer[1];                                  // -t
     uint16_t    address;             // = dtcbuffer[2];                                  // -l
-    uint16_t    data[2];             // 
+    uint16_t    data[2];             //
     uint16_t    adc_num;             //
     uint16_t    adc_mask;
   };
- 
+
   struct ControlRoc_DeviceID_t {
     std::string    BackLevelVer;
     std::string    DesignInfo;
     std::string    DesignVer;
     std::string    DeviceSerial;
   };
- 
+
   struct ControlRoc_Rates_t {
     uint16_t    num_lookback;       // default : 100 = dtcbuffer[0];                                  // -a
     uint16_t    num_samples ;       // default :  10 = dtcbuffer[1];                                  // -t
@@ -110,7 +110,7 @@ namespace trkdaq {
       for (int i=0; i<6; i++) ch_mask[i] = 0xffff;
     }
   };
- 
+
 //-----------------------------------------------------------------------------
 // Tracker ROC raw SPI data (mapping of the array of shorts
 //-----------------------------------------------------------------------------
@@ -135,7 +135,7 @@ namespace trkdaq {
     uint16_t  VCAL5_0;            // 17
     uint16_t  V1_8CAL;            // 18
     uint16_t  V1_0;               // 19
-    uint16_t  ROCPCBTEMP;         // 20  
+    uint16_t  ROCPCBTEMP;         // 20
     uint16_t  HVPCBTEMP;          // 21
     uint16_t  CALPCBTEMP;         // 22
     uint16_t  RTD;                // 23
@@ -153,7 +153,7 @@ namespace trkdaq {
     uint16_t  HV_TEMP;            // 35
   };
 
-  int const TrkSpiDataNWords = sizeof(TrkSpiRawData_t)/sizeof(uint16_t); 
+  int const TrkSpiDataNWords = sizeof(TrkSpiRawData_t)/sizeof(uint16_t);
   int const TrkKeyDataNWords = 4;
   int const TrkIlpDataNWords = 3;
 //-----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ namespace trkdaq {
     float     VCAL5_0;            // 17
     float     V1_8CAL;            // 18
     float     V1_0;               // 19
-    float     ROCPCBTEMP;         // 20  
+    float     ROCPCBTEMP;         // 20
     float     HVPCBTEMP;          // 21
     float     CALPCBTEMP;         // 22
     float     RTD;                // 23

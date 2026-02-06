@@ -87,7 +87,7 @@ namespace mu2edaq {
 
     DTCLib::DTC*         fDtc;
     int                  fEnabled;        // if comes from ODB, could be 0
-    int                  fPcieAddr;       // 
+    int                  fPcieAddr;       //
     int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
                                           // for now assume that all ROCs are doing the same
                                           // fRocReadoutMode: (fixed_length << 4) | readout_mode
@@ -107,8 +107,8 @@ namespace mu2edaq {
 
     int                  fSubsystem;      // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
-    int                  fSleepTimeROCWrite;             // the two are different 
-    int                  fSleepTimeROCReset;             // 
+    int                  fSleepTimeROCWrite;             // the two are different
+    int                  fSleepTimeROCReset;             //
     int                  fCounter;
 //-----------------------------------------------------------------------------
 // functions
@@ -127,7 +127,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // if 'ClockSource' and 'Reset' are set to -1, use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
     int          ConfigureJA(int ClockSource = -1, int Reset = -1);
 
     int          Enabled   () { return fEnabled;    }
@@ -163,7 +163,7 @@ namespace mu2edaq {
     
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
-    
+
     void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
@@ -182,7 +182,7 @@ namespace mu2edaq {
     int          RocReadoutMode         ()  { return fRocReadoutMode; }
     void         SetRocReadoutMode      (int Mode ) { fRocReadoutMode  = Mode ; }
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
-    
+
                                         // 'Value' : 0 or 1
     void         SetBit       (int Register, int Bit, int Value);
 
@@ -192,7 +192,7 @@ namespace mu2edaq {
 // event mode=0 is reserved, last packet of the train
 //-----------------------------------------------------------------------------
     void         SetEventMode (int Mode      ) { fEventMode  = Mode      ; }
-    
+
                                         // just cache the DTC ID for future, to evolve
 
     void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
@@ -203,10 +203,10 @@ namespace mu2edaq {
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
 // bit_5: 0:rising edge 1:falling edge
-//-----------------------------------------------------------------------------    
-    void         SetupCfoInterface(int CFOEmulationMode, 
-                                   int ForceCFOEdge    , 
-                                   int EnableCFORxTx   , 
+//-----------------------------------------------------------------------------
+    void         SetupCfoInterface(int CFOEmulationMode,
+                                   int ForceCFOEdge    ,
+                                   int EnableCFORxTx   ,
                                    int EnableAutogenDRP);
 
 //-----------------------------------------------------------------------------

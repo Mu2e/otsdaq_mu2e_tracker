@@ -14,7 +14,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 // there is only one CFO... so assigning to global only once
 //-----------------------------------------------------------------------------
   fCFO_i = DtcTel.fCFO_i;
-  
+
   const char* device_name = DtcData->fName.Data();
 
   DtcTel.fFrame = Tab->AddTab(Form("%s:%i", DtcData->fName.Data(),DtcData->fPcieAddr));
@@ -33,7 +33,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 // a) graphics context changes
 //-----------------------------------------------------------------------------
 //  TString* cmd;
-  
+
   TGFont *ufont;         // will reflect user font changes
   ufont = gClient->GetFont("-*-helvetica-medium-r-*-*-16-*-*-*-*-*-iso8859-1");
 
@@ -60,7 +60,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins    (0,0,0,0);
   tb->SetWrapLength (-1);
-  
+
   tb->MoveResize(x1,y0,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
 #pragma GCC diagnostic push
@@ -69,7 +69,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 #pragma GCC diagnostic pop
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// write register 
+// write register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"writeR",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -78,12 +78,12 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
- 
+
   tb->MoveResize(x1,y0+dy+5,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "write_dtc_register()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// column 1 raw 3: read register 
+// column 1 raw 3: read register
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"readR",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -92,12 +92,12 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*2,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "read_dtc_register()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// column 1 raw 4: soft reset 
+// column 1 raw 4: soft reset
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"soft reset",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -106,7 +106,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*3,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
@@ -115,7 +115,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetUserData((void*) &DtcGui::cfo_soft_reset);
 #pragma GCC diagnostic pop
 //-----------------------------------------------------------------------------
-// column 1 raw 5: hard reset 
+// column 1 raw 5: hard reset
 //-----------------------------------------------------------------------------
   tb = new TGTextButton(group,"hard reset",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
@@ -124,7 +124,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x1,y0+(dy+5)*4,dx1,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);
@@ -171,11 +171,11 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"EnableBmOff",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x2,y0+(dy+5)*3,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_enable_beam_off()");
   tb->ChangeBackground(fValidatedColor);
@@ -185,11 +185,11 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"DisableBmOff",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x2,y0+(dy+5)*4,dx2,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_disable_beam_off()");
   tb->ChangeBackground(fValidatedColor);
@@ -232,11 +232,11 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"launch",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x3,y0+(dy+5)*3,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "cfo_launch_run_plan()");
   tb->ChangeBackground(fValidatedColor);
@@ -250,12 +250,12 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x3,y0+(dy+5)*4,dx3,dy);
   tb->Connect("Pressed()", "DtcGui", this, "manage_ext_cfo_thread()");
   // tb->ChangeBackground(fValidatedColor);  // not yet
 //-----------------------------------------------------------------------------
-// column 4 row 1: label: CFO timing chain link 
+// column 4 row 1: label: CFO timing chain link
 //-----------------------------------------------------------------------------
   int x4  = x3+dx3+5;
   int dx4 = dx3;
@@ -269,7 +269,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   lab->SetWrapLength(-1);
   lab->MoveResize(x4,y0+0*(dy+5),dx4,dy);
 //-----------------------------------------------------------------------------
-// column 4 row 2: label: N(DTCs) in the timing chain 
+// column 4 row 2: label: N(DTCs) in the timing chain
 //-----------------------------------------------------------------------------
   lab = new TGLabel(group,"DTC mask)");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -278,7 +278,7 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   lab->SetWrapLength(-1);
   lab->MoveResize(x4,y0+1*(dy+5),dx4,dy);
 //-----------------------------------------------------------------------------
-// column 4 row 3: label: JA Mode 
+// column 4 row 3: label: JA Mode
 //-----------------------------------------------------------------------------
   lab = new TGLabel(group,"JA Mode");
   group->AddFrame(lab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -330,11 +330,11 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
   tb = new TGTextButton(group,"init readout",-1,TGTextButton::GetDefaultGC()(),
                         TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
   group->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-  
+
   tb->SetTextJustify(36);
   tb->SetMargins(0,0,0,0);
   tb->SetWrapLength(-1);
-  
+
   tb->MoveResize(x4,y0+3*(dy+5),dx4+10+dx5,dy);
   tb->Connect("Pressed()", "DtcGui", this, "execute_command()");
   tb->ChangeBackground(fValidatedColor);

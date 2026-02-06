@@ -110,7 +110,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   gClient->GetColorByName("yellow", fYellow);
   gClient->GetColorByName("green" , fGreen);
 //-----------------------------------------------------------------------------
-// add tab holder and multiple tabs (tab elements) for two DTCs or a DTC and a CFO) 
+// add tab holder and multiple tabs (tab elements) for two DTCs or a DTC and a CFO)
 //-----------------------------------------------------------------------------
   fDtcTab = new TGTab(fMainFrame,10,10);
   fMainFrame->AddFrame(fDtcTab, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
@@ -160,7 +160,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   tb->Connect("Pressed()", "DtcGui", this, "exit()");
   tb->ChangeBackground(fValidatedColor);
 //-----------------------------------------------------------------------------
-// 3. ... 
+// 3. ...
 //-----------------------------------------------------------------------------
   int x3offset = 10+button_sx*2;
 //   tb = new TGTextButton(fButtonsFrame,"launch",-1,TGTextButton::GetDefaultGC()(),
@@ -207,7 +207,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   lab->MoveResize(x5offset,y0,dx5,button_dy);
-  
+
   fEWLength = new TGNumberEntry(fButtonsFrame, 1000, 9,999,
                                 TGNumberFormat::kNESInteger,
                                 TGNumberFormat::kNEANonNegative,
@@ -226,7 +226,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
   // lab->MoveResize(x4offset,y0+2*(dy+5),dx4,dy);
-  
+
   fFirstTS = new TGNumberEntry(fButtonsFrame, 0, 9,999,
                                TGNumberFormat::kNESInteger,
                                TGNumberFormat::kNEANonNegative,
@@ -244,7 +244,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
-  
+
   fSleepUS = new TGNumberEntry(fButtonsFrame, 2000000, 9,999,
                                TGNumberFormat::kNESInteger,
                                TGNumberFormat::kNEANonNegative,
@@ -263,7 +263,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   lab->SetTextJustify(36);
   lab->SetMargins(0,0,0,0);
   lab->SetWrapLength(-1);
-  
+
   fPrintFreq = new TGNumberEntry(fButtonsFrame,    1, 9,999,
                                  TGNumberFormat::kNESInteger,
                                  TGNumberFormat::kNEANonNegative,
@@ -299,4 +299,3 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   fMainFrame->MapRaised();
 }
-

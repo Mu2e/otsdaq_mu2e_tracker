@@ -134,7 +134,7 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read) {
 
     data_t* p = (data_t*) (((demo::ToyFragment::Header*) buffer) + 1);
     for(size_t i=0; i<nADCChannels_-1; i++) {
-      p[i] = 100;  
+      p[i] = 100;
     }
   }
   else {

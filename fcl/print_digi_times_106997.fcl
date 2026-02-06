@@ -3,7 +3,7 @@
 # run interactively, stop after each event to display waveforms
 #
 # Usage: mu2e -c daqana/fcl/trk_fragment_ana_001.fcl -s <input art file> [-n 10]
-# 
+#
 # hopefully, prolog variables below are not used
 #-----------------------------------------------------------------------------
 # BEGIN_PROLOG
@@ -34,13 +34,13 @@ source : {
 services : @local::Services.Reco
 
 physics : {
-    
+
     producers : {
         @table::DAQ.producers
     }
-    
+
     filters   : {                       }
-    
+
     analyzers : {
         @table::otsdaq_mu2e_tracker.analyzers
     }
@@ -85,4 +85,4 @@ physics.producers.StrawDigisFromArtdaqFragments.saveWaveforms :  1
 
 physics.analyzers.MakeDigiNtuple.debugMode :  1
 physics.analyzers.MakeDigiNtuple.diagLevel :  11         # print long times
-physics.analyzers.MakeDigiNtuple.ewLength  :  400        # in units of 25 ns .. run 106997 : 10us 
+physics.analyzers.MakeDigiNtuple.ewLength  :  400        # in units of 25 ns .. run 106997 : 10us

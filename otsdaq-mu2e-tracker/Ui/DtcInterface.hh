@@ -42,7 +42,7 @@ namespace trkdaq {
       0x90, 0x91, 0x92, 0x93, 0x94, 0x95
   };
 
-  class DtcInterface : public mu2edaq::DtcInterface { 
+  class DtcInterface : public mu2edaq::DtcInterface {
   private:
     DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
@@ -113,7 +113,7 @@ namespace trkdaq {
                                       int PulserDelay      = 1000,
                                       int PrintLevel       = 0x2,
                                       std::ostream& Stream = std::cout);
-    
+
     int          ControlRoc_PulserOff(int Link, int PrintLevel = 0, std::ostream& Stream= std::cout);
 
                                         // always a single link
@@ -141,17 +141,17 @@ namespace trkdaq {
                                           int                Link       = -1 ,
                                           int                PrintLevel = 0  ,
                                           std::ostream&      Stream     = std::cout);
-    
+
     int          ControlRoc_ReadIlp(std::vector<uint16_t>&   RawData         ,
                                     int                      Link       = -1 ,
                                     int                      PrintLevel = 0  ,
                                     std::ostream&            Stream     = std::cout);
-    
+
     int          ControlRoc_GetKey (std::vector<uint16_t>&   RawData         ,
                                     int                      Link       = -1 ,
                                     int                      PrintLevel = 0  ,
                                     std::ostream&            Stream     = std::cout);
-    
+
     int          ControlRoc_ReadSpi(std::vector<uint16_t>&   SpiRawData     ,
                                     int                      Link       = -1,
                                     int                      PrintLevel = 0 ,
@@ -207,7 +207,7 @@ namespace trkdaq {
 // but you should still request that reg=128 read 0x8000 while reg=129 should stay at the default empty value of 0x1000
 //-----------------------------------------------------------------------------
     int          ControlRoc_SetThresholds(int Link, uint16_t* TG, int PrintLevel = 0, std::ostream& Stream = std::cout);
-    
+
     int          ConvertSpiData(const std::vector<uint16_t>& RawData,
                                 TrkSpiData_t*                Data   ,
                                 int                          PrintLevel = 0,
@@ -257,7 +257,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream == nullptr, PrintBuffer uses TRACE's TLOG
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
     void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream* Stream = nullptr);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
@@ -279,7 +279,7 @@ namespace trkdaq {
 
     int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
-    
+
     int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
@@ -300,7 +300,7 @@ namespace trkdaq {
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                     ulong       FirstTS,
                                     int         PrintData,
-                                    int         Validate = 0      , 
+                                    int         Validate = 0      ,
                                     const char* OutputFn = nullptr);
 
     int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);

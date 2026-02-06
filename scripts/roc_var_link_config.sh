@@ -1,4 +1,4 @@
-#!/usr/bin/bash 
+#!/usr/bin/bash
 #------------------------------------------------------------------------------
 # a script, to be executed
 #------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ fi
     LINK=$1
 USE_LANE=$2
 #------------------------------------------------------------------------------
-# USE_LANE is a bit code 
+# USE_LANE is a bit code
 #------------------------------------------------------------------------------
 # disable markers to make DCS commands more robust : my_cntl write 0x91a8 0x0
 # ./ewm_disable.sh
@@ -29,7 +29,7 @@ USE_LANE=$2
 if   [ $USE_LANE -eq  1 ]; then echo "to receive data only from CAL lane 0"
 elif [ $USE_LANE -eq  5 ]; then echo "to receive data from both CAL lanes"
 elif [ $USE_LANE -eq 15 ]; then echo "to receive data from all 4 lanes"
-fi  
+fi
 
 # after adding external clock and evmarker control to the ROC,
 # one needs to write bit(8)=1 and bit(9)=1 on register 8, ie 0x300 (0r 768)

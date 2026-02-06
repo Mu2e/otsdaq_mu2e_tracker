@@ -10,9 +10,7 @@ int test_read_ilp(int Link, int PrintLevel=0, int PcieAddr = -1) {
   int   ilp_id   = dat[0];
   float temp     = float(dat[1])/100.;
   float pressure = float(int(dat[3]) << 16 | int(dat[2]))/524288.;
-  
+
   printf(" ilp_id  :    %5i\n temp    : %8.3f\n pressure: %8.3f\n",ilp_id,temp,pressure);
   return 0;
 }
-
-

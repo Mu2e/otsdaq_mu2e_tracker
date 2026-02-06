@@ -138,9 +138,9 @@
 //-----------------------------------------------------------------------------
 class DtcGui {
   // RQ_OBJECT("DtcGui")
-public: 
+public:
 
-  enum { 
+  enum {
     kIN_PROGRESS = 0,
     kSUBMITTED   = 1,
     kCOMPLETED   = 2
@@ -246,7 +246,7 @@ public:
     int              fPause;
     int              fSleepTimeMs;
   };
-  
+
   ThreadContext_t  fEmuCfoTC;
   ThreadContext_t  fExtCfoTC;
   ThreadContext_t  fReaderTC;
@@ -323,6 +323,6 @@ public:
   void     write_dtc_register  ();
   void     write_roc_register  ();
 
-}; 
+};
 
 #endif
