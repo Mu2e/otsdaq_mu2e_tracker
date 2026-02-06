@@ -49,12 +49,12 @@
 //       { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
 //       { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"    }, //  86384 }
 //     },
-//                                         // end of data marker 
+//                                         // end of data marker
 //     { "ROCV16-1",   2,
 //       { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
 //       { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16-1_stage3init.bin"  }, //  86384 }
 //     },
-//                                         // end of data marker 
+//                                         // end of data marker
 //     { "",          -1,
 //       {-1,         -1, ""                                                          }, //     -1 },
 //       {-1,         -1, ""                                                          }, //     -1 }
@@ -76,7 +76,7 @@ program_drac::program_drac(const char* ConfigFile, bool PrintConfig) {
   }
 
   TLOG(TLVL_INFO) << std::format("using config file {}",fn);
-  
+
   std::ifstream ifs(fn);
   if (ifs.is_open()) {
     nlohmann::json jf = nlohmann::json::parse(ifs);
@@ -100,7 +100,7 @@ program_drac::program_drac(const char* ConfigFile, bool PrintConfig) {
 
       _drac_fw.push_back(fv);
 
-      if (PrintConfig) { 
+      if (PrintConfig) {
         std::cout << std::format("version: {:10} index:{}\n",fv.name,fv.index);
         std::cout << std::format("{:5} spi_file: load_flag:{:2} offset:0x{:08x} fn:{}\n",
                                  "",fv.spi_file.load_flag,fv.spi_file.offset,fv.spi_file.fn);
@@ -975,7 +975,7 @@ int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
     return -1;
   }
-  
+
   TLOG(TLVL_INFO) << std::format("-- START programming version:{}\n",Version);
 //-----------------------------------------------------------------------------
 // firmware to be uploaded found, proceed with the upload.
@@ -1019,7 +1019,7 @@ int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const
 int program_drac::spi_validate_version(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode) {
   // find firmware version
   int rc(0);
-  
+
   const FwVersion_t* fw = get_version(Version);
 
   if (fw == nullptr) {
@@ -1061,7 +1061,7 @@ int program_drac::spi_print_digi_id(const std::vector<uint16_t>& Dat) {
     TLOG(TLVL_ERROR) << std::format("nw:{} not 22. BAIL OUT",nw);
     return -1;
   }
-  
+
   uint32_t fpga_id = ((uint32_t) Dat[3]) || (((uint32_t) Dat[4]) << 16);
 
   std::ostringstream oss;
@@ -1176,7 +1176,7 @@ int program_drac::spi_read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16
 //-----------------------------------------------------------------------------
 int program_drac::spi_read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs, int DebugMode) {
   //  int rc(0);
-  
+
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 
   bool increment_address(false);

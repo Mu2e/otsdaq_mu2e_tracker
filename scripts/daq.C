@@ -238,7 +238,7 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 }
 
 //-----------------------------------------------------------------------------
-// just print the ROC information 
+// just print the ROC information
 //-----------------------------------------------------------------------------
 int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
@@ -254,7 +254,7 @@ int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, i
 }
 
 //-----------------------------------------------------------------------------
-// just print the ROC information 
+// just print the ROC information
 //-----------------------------------------------------------------------------
 int dtc_control_roc_dump_settings(int Link, int Channel, int PrintLevel = 0xf, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
@@ -274,7 +274,7 @@ int dtc_control_roc_read_ddr(int Link, int Block, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   DTC_Link_ID link_id = DTC_Link_ID(Link);
-  
+
   // write block number to reg 33
   dtc_i->fDtc->WriteROCRegister(link_id,33,Block,false,1000);
   // cycle reg 32
@@ -329,7 +329,7 @@ int dtc_control_roc_get_key(int Link, int PcieAddr = -1) {
 //-----------------------------------------------------------------------------
 int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
   trkdaq::ControlRoc_DeviceID_t dt;
-  
+
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
   return 0;
@@ -345,7 +345,7 @@ int dtc_control_roc_read_ilp(int Link, int PrintLevel=0, int PcieAddr = -1) {
   int   ilp_id   = dat[0];
   float temp     = float(dat[1])/100.;
   float pressure = float(int(dat[3]) << 16 | int(dat[2]))/524288.;
-  
+
   printf(" ilp_id  :    %5i\n temp    : %8.3f\n pressure: %8.3f\n",ilp_id,temp,pressure);
   return 0;
 }
@@ -365,7 +365,7 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
     std::string type = o["type"];
 
     int cal_hv(-1);
-    
+
     if      (type == "cal") cal_hv = 0;
     else if (type == "hv" ) cal_hv = 1;
 
@@ -376,7 +376,7 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
     dtc_i->ControlRoc_SetThreshold(Link,ich,cal_hv,thr );
     dtc_i->ControlRoc_SetGain     (Link,ich,cal_hv,gain);
   }
-  
+
   return 0;
 }
 
@@ -385,9 +385,9 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
 //-----------------------------------------------------------------------------
 trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
   mu2edaq::DtcInputData_t dat;
-  
+
   mu2edaq::DtcInterface::InitConfiguration(ConfigName,&dat);
-  
+
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
    if (dtc_i) {
      dtc_i->fPcieAddr    = dat.fPcieAddr;
@@ -397,11 +397,11 @@ trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
      dtc_i->fOnSpill     = dat.fOnSpill;
      dtc_i->fEventMode   = dat.fEventMode;
      dtc_i->fMacAddrByte = dat.fMacAddrByte;
-  
+
      dtc_i->SetRocReadoutMode (dat.fRocReadoutMode);
      dtc_i->SetRocLaneMask    (dat.fRocLaneMask);
      dtc_i->SetRocNHitsPerLane(dat.fRocNHitsPerLane);
-  
+
      dtc_i->SetJAMode(dat.fJAMode);
      dtc_i->SetEmulateCfo(dat.fEmulateCfo);
    }

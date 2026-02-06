@@ -79,7 +79,7 @@ namespace trkdaq {
 
   int           DtcInterface::fgFpga[96];
 
-//-----------------------------------------------------------------------------  
+//-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterface(Dtc) {
     // initialization of the interface data members is done externally
     // nothibg should happen here
@@ -172,7 +172,7 @@ namespace trkdaq {
 //  int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
 //    int rc(0);
 //    TLOG(TLVL_DEBUG) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
-//      
+//
 //    auto roc  = DTC_Link_ID(Link);
 //
 //    if (not LinkEnabled(Link)) {
@@ -185,15 +185,15 @@ namespace trkdaq {
 //      return -2;
 //    }
 ////-----------------------------------------------------------------------------
-//// write parameters into reg ***  (block write) , sleep for some time, 
+//// write parameters into reg ***  (block write) , sleep for some time,
 //// then wait till reg 128 returns 0x8000
 //// chan mask always includes the first channel
 ////-----------------------------------------------------------------------------
 //    fDtc->WriteROCRegister   (roc,279,0x0000,false,100);
 //    std::this_thread::sleep_for(std::chrono::microseconds(1000));
 //
-//    uint16_t u; 
-//    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+//    uint16_t u;
+//    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {};
 //    if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
 ////-----------------------------------------------------------------------------
 //// register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -212,7 +212,7 @@ namespace trkdaq {
 //      printf("------------------------------------------------nw = %i(0x%x)\n",nw,nw);
 //      PrintBuffer(v2.data(),nw);
 //    }
-//  
+//
 //    if (nw != 1) {
 //      printf("ERROR: wrong number of words: %i, BAIL OUT\n",nw);
 //      return -1;
@@ -226,14 +226,14 @@ namespace trkdaq {
 //    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,panel_id);
 //    return panel_id;
 //  }
-  
+
 //-----------------------------------------------------------------------------
 // Rw: 1=write, 0=read
 //-----------------------------------------------------------------------------
   int DtcInterface::PanelID_RW(int Link, int Rw, int& PanelID, int PrintLevel) {
     int rc(0);
     TLOG(TLVL_DEBUG) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
-      
+
     auto roc  = DTC_Link_ID(Link);
 
     if (not LinkEnabled(Link)) {
@@ -246,7 +246,7 @@ namespace trkdaq {
       return -2;
     }
 //-----------------------------------------------------------------------------
-// write parameters into reg ***  (block write) , sleep for some time, 
+// write parameters into reg ***  (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 // chan mask always includes the first channel
 //-----------------------------------------------------------------------------
@@ -259,8 +259,8 @@ namespace trkdaq {
     fDtc->WriteROCBlock(roc,279,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+    uint16_t u;
+    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {};
     if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -279,7 +279,7 @@ namespace trkdaq {
       printf("------------------------------------------------nw = %i(0x%x)\n",nw,nw);
       PrintBuffer(v2.data(),nw);
     }
-  
+
     if (nw != 1) {
       printf("ERROR: wrong number of words: %i, BAIL OUT\n",nw);
       return -1;
@@ -295,7 +295,7 @@ namespace trkdaq {
     TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,PanelID);
     return rc;
   }
-  
+
 //-----------------------------------------------------------------------------
 // on read, PanelID_RW returns the panel ID
 //-----------------------------------------------------------------------------
@@ -304,13 +304,13 @@ namespace trkdaq {
     int panel_id = PanelID_RW(Link,0,dummy,PrintLevel);
     return panel_id;
   }
-  
+
 //-----------------------------------------------------------------------------
   int DtcInterface::WritePanelID(int Link, int PanelID, int PrintLevel) {
     int panel_id(PanelID);
     return PanelID_RW(Link,1,panel_id,PrintLevel);
   }
-  
+
 //-----------------------------------------------------------------------------
   roc_serial_t DtcInterface::ReadSerialNumber(const DTCLib::DTC_Link_ID& Link) {
 
@@ -368,7 +368,7 @@ namespace trkdaq {
         TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
         return rc;
       }
-        
+
       rc = MonicaDigiClear();                          //
       if (rc < 0)  return rc;
     }
@@ -376,7 +376,7 @@ namespace trkdaq {
       TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
       rc = -1;
     }
-    
+
     TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
@@ -457,9 +457,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::RocSetDataVersion(int Version, int LinkMask) {
     int tmo_ms(100), rc(0);
-    
+
     if (LinkMask != 0) fLinkMask = LinkMask;
-    
+
     for (int i=0; i<6; i++) {
       if (not LinkEnabled(i)) continue;
       if (not LinkLocked(i)) {
@@ -552,7 +552,7 @@ namespace trkdaq {
 
     // return
     Res = Alignment(returned);
-    
+
     TLOG(TLVL_DEBUG) << "-- END";
     return rc;
   }
@@ -568,9 +568,9 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::FindAlignments(int Link, int& NBitSlips, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    
+
     NBitSlips = 0;
-    
+
     int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
       lnk1 = 0;
@@ -578,7 +578,7 @@ namespace trkdaq {
     }
 
     TLOG(TLVL_DEBUG) << std::format("-- START: lnk1:{} lnk2:{} PrintLevel:{}",lnk1,lnk2,PrintLevel);
-    
+
     for (int lnk = lnk1 ; lnk<lnk2 ; lnk++){
       if (not LinkEnabled(lnk))                             continue;
       if (not LinkLocked(lnk)) {
@@ -594,7 +594,7 @@ namespace trkdaq {
       Alignment alignment;
       int rcc        = FindAlignment(DTC_Link_ID(lnk),alignment);
       TLOG(TLVL_DEBUG) << std::format("lnk:{} after FindAlignment: rcc:{}",lnk,rcc);
-      
+
       if (rcc < 0) {
                                         // not the best, but want to continue
         rc += rcc;
@@ -630,7 +630,7 @@ namespace trkdaq {
       }
       NBitSlips += n_non_null;
     }
-    
+
     TLOG(TLVL_DEBUG) << std::format("-- END: NBitSlips:{}",NBitSlips);
     return rc;
   }
@@ -959,7 +959,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             // still in trouble
             std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
             if (Stream) (*Stream) << msg << std::endl;
-            TLOG(TLVL_ERROR) << msg; 
+            TLOG(TLVL_ERROR) << msg;
             rc -= 1;
           }
         }
@@ -981,10 +981,10 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
   int DtcInterface::MonicaVarPatternConfig(int LaneMask, int NHitsPerLane) {
     int rc(0);
-    
+
     rc = ResetLinks();                               // use fLinkMask
     if (rc < 0) return rc;
-    
+
     int version = 1;
     RocSetDataVersion(version);                      // Version --> R29
 

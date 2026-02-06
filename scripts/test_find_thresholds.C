@@ -20,17 +20,17 @@ int get_panel_name_from_odb(int PcieAddress, int Link, std::string& PanelName) {
 
   try {
     cm_connect_experiment("mu2e-dl-01-data","tracker","test_get_mnid",nullptr);
-    
+
     OdbInterface* odb_i = OdbInterface::Instance();
     HNDLE         h_arc = odb_i->GetActiveRunConfigHandle();
-  
+
     std::string   subnet = odb_i->GetString(h_arc, "DAQ/PublicSubnet");
-    
+
     std::string   host_label = get_short_host_name(subnet.data());
-    
+
     std::string path = std::format("DAQ/Nodes/{}/DTC{}/Link{}/DetectorElement/Name",
                                    host_label,PcieAddress,Link);
-    
+
     PanelName = odb_i->GetString(h_arc,path.data());
     std::cout << std::format("PanelName:{}\n",PanelName);
   }
@@ -105,12 +105,12 @@ int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, flo
   //  else {
   fn = std::format("{}_dtc_{}_link_{}.json",gSystem->Getenv("HOSTNAME"),dtc_i->PcieAddr(),Link);
   // }
-  
+
   {
     std::lock_guard<std::mutex> lock(mtx);
     std::ofstream of;
     of.open(fn);
- 
+
     // after which one only needs to print the thresholds
     of << "[\n";
     for (int ich=ich1; ich<ich2; ich++) {
@@ -146,7 +146,7 @@ int test_find_thresholds_mt(int Link, float VThreshold = 15, int Channel = -1, f
   for (auto& t : threads) {
     t.join();
   }
-    
+
   std::cout << "All threads completed!" << std::endl;
   return 0;
 }
@@ -156,7 +156,7 @@ int test_find_thresholds_mt(int Link, float VThreshold = 15, int Channel = -1, f
 int find_thresholds(int Link1, int Link2, float VThreshold = 15, int Channel = -1, float VTolerance = 1, int PcieAddr = -1) {
   std::vector<std::thread> threads;
 
-  
+
   for (int lnk=Link1; lnk<Link2; lnk++) {
     find_thresholds_panel(lnk, Channel, VThreshold, VTolerance, PcieAddr);
   }

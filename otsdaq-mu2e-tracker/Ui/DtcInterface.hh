@@ -228,12 +228,12 @@ namespace trkdaq {
                                const int   PreampType,
                                const float threshold_mv,
                                const float tolerance_mv);
-    
+
     float        ProgramAndQueryThreshold(const int Link,
                                           const int ChannelID,
                                           const int PreampType,
                                           const DTCLib::roc_data_t dac);
-    
+
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
     virtual std::vector<float>       GetConvertedRocRegisters (int ilink, bool history = false) override;
@@ -290,14 +290,14 @@ namespace trkdaq {
 
                                         // underlying function common for the next two
     int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
-    
+
                                         // returns the mnID
     int          ReadPanelID       (int Link, int PrintLevel = 0);
-    
-                                        // writes the mnID 
+
+                                        // writes the mnID
     int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
-    
-    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+
+    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev,
                                     ulong       FirstTS,
                                     int         PrintData,
                                     int         Validate = 0      ,
@@ -319,7 +319,7 @@ namespace trkdaq {
     int          ValidateDigiPatterns (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
-    
+
   };
 };
 

@@ -137,7 +137,7 @@ namespace  trkdaq {
       std::vector<uint16_t> settings;
       rc = ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
       if (rc != 0) {
-                                        // return immediately 
+                                        // return immediately
         break;
       }
 //-----------------------------------------------------------------------------
@@ -940,7 +940,7 @@ namespace  trkdaq {
         rc += -10;
         continue;
       }
-      
+
       rc = RocBlockRead(i,REG_READSPI,SpiRawData);
 
       int nw = SpiRawData.size();

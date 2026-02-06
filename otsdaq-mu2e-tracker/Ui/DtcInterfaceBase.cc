@@ -121,7 +121,7 @@ namespace mu2edaq {
 
     TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
                      << " ROC ReadoutMode:" << fRocReadoutMode;
-    
+
     fDtc->SoftReset();  // 2026-01-29 , suggested by Ryan
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
@@ -319,9 +319,9 @@ namespace mu2edaq {
   int DtcInterface::InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData) {
     int           rc(0);
     TInterpreter* cint = gROOT->GetInterpreter();
-    
+
     TInterpreter::EErrorCode irc;
-  
+
     TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
     FILE* f = fopen(macro,"r");
     if (f == nullptr) {
@@ -336,22 +336,22 @@ namespace mu2edaq {
         rc = -1;
       }
     }
-    
+
     if (rc != 0) return rc;
-    
+
     TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
-    
+
     cint->LoadMacro(macro.Data(), &irc);
-    
+
     rc = irc;
     if (rc != 0) return rc;
-    
+
     TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx);",(long int) DtcData);
-    
+
     TLOG(TLVL_DEBUG+1) << Form(" cmd=%s\n",cmd.Data());
-    
+
     gInterpreter->ProcessLine(cmd.Data(),&irc);
-    
+
     return irc;
   }
 

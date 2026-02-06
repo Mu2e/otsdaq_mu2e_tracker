@@ -30,7 +30,7 @@ namespace mu2edaq {
   };
 
   struct RocInputData_t {
-    TString fName;         // 
+    TString fName;         //
     int     fLink;
   };
 
@@ -41,7 +41,7 @@ namespace mu2edaq {
     int        fRocReadoutMode;
     int        fRocLaneMask;
     int        fRocNHitsPerLane;
-    
+
     int        fJAMode;
     int        fOnSpill;
 
@@ -49,7 +49,7 @@ namespace mu2edaq {
     int        fEventMode;
     int        fPartitionID;
     int        fMacAddrByte;
-    
+
     int        fEmulateCfo;
 
     RocInputData_t  fRocData[6];
@@ -81,7 +81,7 @@ namespace mu2edaq {
     int IsCfo() { return fName == "CFO"; }
   };
 
-  class DtcInterface { 
+  class DtcInterface {
   public:
     static DtcInterface* fgInstance[2];
 
@@ -139,8 +139,8 @@ namespace mu2edaq {
     //    int          IsCrv     () { return fIsCrv; }
 
     int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream* Stream = nullptr);
-    virtual int  InitRocReadoutMode(std::ostream* Stream = nullptr); 
-    
+    virtual int  InitRocReadoutMode(std::ostream* Stream = nullptr);
+
     int          InitEmulatedCFOReadoutMode();
                                         // SampleEdgeMode=0: force rising  edge
                                         //                1: force falling edge
@@ -155,12 +155,12 @@ namespace mu2edaq {
 
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side
-    
+
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
     int          LinkLocked (int Link);
-    
+
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
 
