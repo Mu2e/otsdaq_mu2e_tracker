@@ -46,7 +46,9 @@ namespace trkdaq {
   private:
     DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
-  
+
+    DtcInterface(DTCLib::DTC* Dtc);
+
     struct RocData_t {                    // 8 16-bit words in total
       RocDataHeaderPacket_t header;
       uint16_t              data[1];

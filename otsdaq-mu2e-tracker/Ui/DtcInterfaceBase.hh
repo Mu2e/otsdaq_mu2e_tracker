@@ -115,6 +115,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
   protected:
     DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
+    DtcInterface(DTCLib::DTC* Dtc) { fDtc = Dtc; }
   public:
     virtual ~DtcInterface();
 

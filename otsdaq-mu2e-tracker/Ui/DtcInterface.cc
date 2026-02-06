@@ -78,6 +78,13 @@ namespace trkdaq {
   const char*   DtcInterface::fgIlpVarName[TrkIlpDataNWords];
 
   int           DtcInterface::fgFpga[96];
+
+//-----------------------------------------------------------------------------  
+  DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterface(Dtc) {
+    // initialization of the interface data members is done externally
+    // nothibg should happen here
+  }
+
 //-----------------------------------------------------------------------------
 // default ROC readout mode:0
 //-----------------------------------------------------------------------------
