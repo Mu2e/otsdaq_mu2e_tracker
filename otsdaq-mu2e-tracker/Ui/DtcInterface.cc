@@ -301,8 +301,11 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
     int dummy(-1);
-    int panel_id = PanelID_RW(Link,0,dummy,PrintLevel);
-    return panel_id;
+    int rc = PanelID_RW(Link,0,dummy,PrintLevel);
+    if (rc != 0) {
+      return rc;
+    }
+    return dummy;
   }
 
 //-----------------------------------------------------------------------------
