@@ -1,6 +1,9 @@
 //
 #define __CLING__ 1
 
+#ifndef DAQ_C
+#define DAQ_C
+
 #include "iostream"
 
 #include "TH1.h"
@@ -139,9 +142,20 @@ int cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1)
 }
 
 //-----------------------------------------------------------------------------
-int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1)
-{
-	return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock, Reset);
+int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
+  return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+}
+
+
+//-----------------------------------------------------------------------------
+// test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
+//-----------------------------------------------------------------------------
+int dtc_control_roc_find_alignment(int Link = -1, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  int n_bitslips(0);
+  int rc = dtc_i->FindAlignments(Link,n_bitslips,2);
+  return rc;
 }
 
 //-----------------------------------------------------------------------------
@@ -223,6 +237,180 @@ int dtc_control_roc_read(int      LinkMask     = -1,
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
+int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  std::vector<uint16_t> rates;
+  dtc_i->ControlRoc_Rates(Link,&rates,4,Par,&std::cout);
+
+  std::vector<int>      chmask;
+  for (int i=0; i<96; ++i) chmask.emplace_back(1);
+  dtc_i->PrintRatesSingleRoc(&rates,&chmask,std::cout);
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
+int dtc_control_roc_dump_settings(int Link, int Channel, int PrintLevel = 0xf, int PcieAddr = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  int rc = dtc_i->ControlRoc_DumpSettings(Link,Channel,PrintLevel);
+
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+// read a given 1 kByte-long block of the ROC DDR memory
+// last block - in reg 15
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read_ddr(int Link, int Block, int PcieAddr = -1) {
+  int rc(0);
+  // ROC reg 15 - last memory block read
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+
+  DTC_Link_ID link_id = DTC_Link_ID(Link);
+
+  // write block number to reg 33
+  dtc_i->fDtc->WriteROCRegister(link_id,33,Block,false,1000);
+  // cycle reg 32
+  dtc_i->fDtc->WriteROCRegister(link_id,32, 0x01,false,1000);
+  dtc_i->fDtc->WriteROCRegister(link_id,32, 0x00,false,1000);
+  // success: reg 20:0x8080  reg21:nwords to read (512)
+  int reg20 = dtc_i->fDtc->ReadROCRegister (link_id,20,1000);         // ox8080
+  int nw    = dtc_i->fDtc->ReadROCRegister (link_id,21,1000);         // number of 16-bit words in a 1 kByte block (512)
+//-----------------------------------------------------------------------------
+// at this point, if everything was OK (nw=512), can read the data
+//-----------------------------------------------------------------------------
+  std::cout << std::format("reg_21(nwords):{:d}  reg_20:0x{:4x}\n",nw,reg20);
+
+  if (nw == 512) {
+    std::vector<uint16_t> v;
+    dtc_i->fDtc->ReadROCBlock(v,link_id,0x200,nw,false,1000);
+    if (nw != 512) {
+      std::cout << std::format("ERROR:002 read {} instead of 512 words, try again\n",nw);
+      rc = -1;
+    }
+    else {
+      dtc_i->PrintBuffer(v.data(),nw);
+    }
+  }
+  else {
+    std::cout << "ERROR:001 smth went wrong, try again\n";
+    rc = -1;
+  }
+  return rc;
+}
+
+//-----------------------------------------------------------------------------
+int dtc_control_roc_get_key(int Link, int PcieAddr = -1) {
+  std::vector<uint16_t> dat;
+  auto dtc_i = DtcInterface::Instance(PcieAddr);
+
+  int print_level = 0;
+  dtc_i->ControlRoc_GetKey(dat,Link,print_level);
+  float temp     = float(dat[0])/4096.*3300./10;
+  float v2p5     = float(dat[1])/4096*3.355;
+  float v5p1     = float(dat[2])/4096.*3.355*2;
+  float dcdctemp = float(dat[3])/4096*3300/10;
+
+  printf(" temp: %10.3f\n v2p5: %10.3f\n v5p1: %10.3f\n dcdctemp: %7.3f\n",
+         temp,v2p5,v5p1,dcdctemp);
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// just print the ROC information
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read_device_id(int Link, int PcieAddr = -1) {
+  trkdaq::ControlRoc_DeviceID_t dt;
+
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->ControlRoc_ReadDeviceID(Link,dt,1);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int dtc_control_roc_read_ilp(int Link, int PrintLevel=0, int PcieAddr = -1) {
+  std::vector<uint16_t> dat;
+  auto dtc_i = DtcInterface::Instance(PcieAddr);
+
+  dtc_i->ControlRoc_ReadIlp(dat,Link,PrintLevel);
+
+  int   ilp_id   = dat[0];
+  float temp     = float(dat[1])/100.;
+  float pressure = float(int(dat[3]) << 16 | int(dat[2]))/524288.;
+
+  printf(" ilp_id  :    %5i\n temp    : %8.3f\n pressure: %8.3f\n",ilp_id,temp,pressure);
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.json", int PcieAddr = -1, int PrintLevel = 0) {
+  auto dtc_i = trkdaq::DtcInterface::Instance(-1);
+
+  std::ifstream ifs(Fn);
+  nlohmann::json jf = nlohmann::json::parse(ifs);
+
+  for (auto& elm : jf.items()) {
+    nlohmann::json o = elm.value();
+    int ich  = o["channel"];
+    int gain = o["gain"];
+    int thr  = o["threshold"];
+    std::string type = o["type"];
+
+    int cal_hv(-1);
+
+    if      (type == "cal") cal_hv = 0;
+    else if (type == "hv" ) cal_hv = 1;
+
+    if (PrintLevel != 0) {
+      std::cout << ich << " " << gain << " " << std::setw(3) << thr << " " << type << std::endl;
+    }
+
+    dtc_i->ControlRoc_SetThreshold(Link,ich,cal_hv,thr );
+    dtc_i->ControlRoc_SetGain     (Link,ich,cal_hv,gain);
+  }
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+// initialize the DTC interface, don't forget to call InitReadout()
+//-----------------------------------------------------------------------------
+trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
+  mu2edaq::DtcInputData_t dat;
+
+  mu2edaq::DtcInterface::InitConfiguration(ConfigName,&dat);
+
+  trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
+   if (dtc_i) {
+     dtc_i->fPcieAddr    = dat.fPcieAddr;
+     dtc_i->fDtcID       = dat.fDtcID;
+     dtc_i->fLinkMask    = dat.fLinkMask;
+     dtc_i->fPartitionID = dat.fPartitionID;
+     dtc_i->fOnSpill     = dat.fOnSpill;
+     dtc_i->fEventMode   = dat.fEventMode;
+     dtc_i->fMacAddrByte = dat.fMacAddrByte;
+
+     dtc_i->SetRocReadoutMode (dat.fRocReadoutMode);
+     dtc_i->SetRocLaneMask    (dat.fRocLaneMask);
+     dtc_i->SetRocNHitsPerLane(dat.fRocNHitsPerLane);
+
+     dtc_i->SetJAMode(dat.fJAMode);
+     dtc_i->SetEmulateCfo(dat.fEmulateCfo);
+   }
+  return dtc_i;
+}
+
+//-----------------------------------------------------------------------------
+// test of the 'READ' command implementation over the fiber
+// if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
 // EW length         : in units of 25 ns (clock)
 // EWMOde            : 1 for buffer test
@@ -510,3 +698,5 @@ void set_digi_serial_readout(unsigned dtc_pcie, unsigned roc_link)
 }
 
 void daq() {}
+
+#endif

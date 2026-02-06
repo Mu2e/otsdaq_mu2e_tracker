@@ -171,11 +171,34 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 /home/mu2ehwdev/program_both_DTCs_AL9.sh   /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  0 /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # PCIE address
 /home/mu2ehwdev/program_one_FPGA_AL9.sh  N /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # JTAG index N
+
+vivado_lab -mode batch -source /home/mu2ehwdev/ots_spack/srcs/otsdaq-mu2e/tools/program_both_DTCs.tcl \
+           -tclargs /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit
 #+end_src
-* programming DIGIs over the fiber with CLI/ROOT                             
+* programming ROCs and DIGIs over the fiber                                  
+- source code: [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc]]
+- example of the program_drac config file: [[file:../config/spi_directory.json]]
+** programming ROCs:                                                         
+#+begin_src
+auto x = dtc_gui("mu2e-trk-XX-pcieY")                // GUI is used as a convenience to initialize the DTC
+auto dtc_t = trkdaq::DtcInterface::Instance(-1);     // get a pointer
+program_drac t;
+int roc=3;
+t.spi_write_directory(dtc_i,roc);
+t.spi_read_record    (dtc_i,roc,0x0,32,0,0xF);            // a quick check
+t.spi_write_version  (dtc_i,roc,"GoldenV17");             // upload GoldenV17 to SPI memory, takes about 12 min
+t.spi_write_version  (dtc_i,roc,"ROCV16");                // the same, also about 12 min
+t.spi_program_roc    (dtc_i,roc,"ROCV16");                // program the FPGA
+#+end_src
+- SPI files are stored at https://... and in [[file:~/test_stand/spi_files]] locally
+  - local directory is the same in MC2, Lab3, and EC
+- memory layout is coded in [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc::/FwVersion_t drac_fw/]]
+- reading an image back takes about 30 min per large image
+- so far, reading back and validating was not adding anything
+** programming DIGIs                                                         
 #+begin_src
 program_drac t;
-t.spi_program_digis(dtc_i,0,"HVV6.dat")
+t.spi_program_digis(dtc_i,0,"CalV6.dat")
 // cycle the power
 dtc_i->fDtc->SoftReset()
 t.spi_program_digis(dtc_i,0,"HVV6.dat")
@@ -186,6 +209,19 @@ t.spi_read_digi_id(dtc_i,0,1,0xf)
 #+end_src
 - cycle the ROC LV after the programming is completed - need to do that after
   programming each FPGA
+** reprogramming the Minnesota ID                                            
+#+begin_src
+auto dtc_i = dtc_init("mu2e-trk-08-pcie1")
+program_drac t;
+auto image = t.get_image_data("ROCV16-1","bin")
+t.spi_write_image(dtc_i,1,image)
+// cycle the ROC LV
+// it the ROC is running V16+, programming (commented out line) should not be needed
+// t.spi_program_roc(dtc_i,1,"ROCV16-1")  // this should not be needed
+int panel_id=52
+dtc_i->PanelID_RW(1,1,panel_id,0xf)
+dtc_i->ReadPanelID(1) ;                    // should return 52
+#+end_src
 * slow control of DTCs                                                       
 ** DTC_0 FPGA:  4 parameters                                                 
   -- 0x9010 : temperature

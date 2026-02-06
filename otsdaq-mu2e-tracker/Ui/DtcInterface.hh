@@ -12,7 +12,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "iostream"
+#include <iostream>
+
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Packets/DTC_RocDataHeaderPacket.h"
@@ -45,11 +46,18 @@ namespace trkdaq {
   private:
     DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
+
+    DtcInterface(DTCLib::DTC* Dtc);
+
+    struct RocData_t {                    // 8 16-bit words in total
+      RocDataHeaderPacket_t header;
+      uint16_t              data[1];
+    };
 //-----------------------------------------------------------------------------
 // ROC functions : if LinkMask=0, use fLinkMask
 //-----------------------------------------------------------------------------
-    void                       RocConfigurePatternMode();
-    void                       RocSetDataVersion      (int Version, int LinkMask=0);
+    int                        RocConfigurePatternMode();
+    int                        RocSetDataVersion      (int Version, int LinkMask=0);
 
     int                        fRocLaneMask;        // 0xf : all of them
     int                        fRocNHitsPerLane;    // NHits per lane for Mode=2
@@ -58,7 +66,7 @@ namespace trkdaq {
     static const char*         fgKeyVarName[TrkKeyDataNWords]; //
     static const char*         fgIlpVarName[TrkIlpDataNWords]; //
     static       int           fgFpga[96];                     // 0:CAL or 1:HV
-    static RocFwData_t         fgRocFwData;
+    static       RocFwData_t   fgRocFwData;
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
@@ -205,23 +213,26 @@ namespace trkdaq {
                                 int                          PrintLevel = 0,
                                 std::ostream&                Stream     = std::cout);
 // ejc
-    float ProgramAndQueryThreshold(const int Link,
-                                   const int ChannelID,
-                                   const int PreampType,
-                                   const DTCLib::roc_data_t dac);
+    int          FindAlignment (DTCLib::DTC_Link_ID Link, Alignment& Res);
+    int          FindAlignments(int Link, int& NBitSlips, int PrintLevel, std::ostream& Stream = std::cout);
 
-    bool FindThreshold(const int           Link        ,
-                       const int           ChannelID   ,
-                       const int           PreampType  ,
-                       const float         threshold_mv,
-                       const float         tolerance_mv,
-                       DTCLib::roc_data_t& out         );
+    bool         FindThreshold(const int           Link        ,
+                               const int           ChannelID   ,
+                               const int           PreampType  ,
+                               const float         threshold_mv,
+                               const float         tolerance_mv,
+                               DTCLib::roc_data_t& out         );
 
-    bool FindThreshold(const int   Link,
-                       const int   ChannelID,
-                       const int   PreampType,
-                       const float threshold_mv,
-                       const float tolerance_mv);
+    bool         FindThreshold(const int   Link,
+                               const int   ChannelID,
+                               const int   PreampType,
+                               const float threshold_mv,
+                               const float tolerance_mv);
+
+    float        ProgramAndQueryThreshold(const int Link,
+                                          const int ChannelID,
+                                          const int PreampType,
+                                          const DTCLib::roc_data_t dac);
 
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
@@ -230,6 +241,15 @@ namespace trkdaq {
     virtual std::string              GetRocID         (int Link) override;
     virtual std::string              GetRocDesignInfo (int Link) override;
     virtual std::string              GetRocFwGitCommit(int Link) override;
+
+    virtual int                      InitRocReadoutMode(std::ostream* Stream = nullptr)      override;
+//-----------------------------------------------------------------------------
+// reset digitizers .. to be called in the beginning of each event ???
+// ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
+//-----------------------------------------------------------------------------
+    int          MonicaDigiClear       ();
+    int          MonicaVarLinkConfig   (std::ostream* Stream = nullptr);
+    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
 //-----------------------------------------------------------------------------
 // reboot microcontroller unit, Link=-1: all active links
 //-----------------------------------------------------------------------------
@@ -264,6 +284,19 @@ namespace trkdaq {
     int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
 
+    std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
+                                                 int                 PrintLevel = 0,
+                                                 std::ostream&       Stream     = std::cout);
+
+                                        // underlying function common for the next two
+    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
+
+                                        // returns the mnID
+    int          ReadPanelID       (int Link, int PrintLevel = 0);
+
+                                        // writes the mnID
+    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
+
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev,
                                     ulong       FirstTS,
                                     int         PrintData,
@@ -271,53 +304,22 @@ namespace trkdaq {
                                     const char* OutputFn = nullptr);
 
     int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
+    roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
+    virtual int  ResetLink         (int Link) override;
     int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
 
-    Alignment    FindAlignment (DTCLib::DTC_Link_ID Link);
-
-    int          FindAlignments(int PrintLevel=1, int Link=-1, std::ostream& Stream = std::cout);
-
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
-
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
     int          ValidateDigiPatterns (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
-//-----------------------------------------------------------------------------
-// reset digitizers .. to be called in the beginning of each event
-//-----------------------------------------------------------------------------
-    int          MonicaDigiClear();
-//-----------------------------------------------------------------------------
-// ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
-//-----------------------------------------------------------------------------
-    int          MonicaVarLinkConfig   ();
-//-----------------------------------------------------------------------------
-// VarPatternConfig = RocConfigurePatternMode
-//-----------------------------------------------------------------------------
-    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
-//-----------------------------------------------------------------------------
-// overloaded functions of the base class
-//-----------------------------------------------------------------------------
-    virtual int   InitRocReadoutMode() override;
-    virtual int   ResetLink         (int Link) override;
 
-
-    roc_serial_t                    ReadSerialNumber(const DTCLib::DTC_Link_ID& Link);
-    std::vector<DTCLib::roc_data_t> ReadDeviceID    (DTCLib::DTC_Link_ID Link,
-                                                     int                 PrintLevel = 0,
-                                                     std::ostream&       Stream     = std::cout);
-  };
-
-
-  struct RocData_t {                    // 8 16-byte words in total
-    RocDataHeaderPacket_t header;
-    uint16_t              data[1];
   };
 };
 

@@ -9,6 +9,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <thread>
+#include "nlohmann/json.hpp"
 #include "TRACE/tracemf.h"
 #define  TRACE_NAME "program_drac"
 
@@ -39,39 +40,107 @@
 //     }
 //   };
 
-program_drac::FwVersion_t drac_fw[] = {
-    { "GoldenV17",  0,
-      { 1,    0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV17.spi"          }, // 9530672 },
-      {-1,         -1, ""                                                          }, //     -1 }
-    },
-    { "ROCV16",     1,
-      { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"             }, // 9482832 },
-      { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"  }, //  86384 }
-    },
-                                        // end of data marker
-    { "ROCV16_TEST",2,
-      { 1,  0x2010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"             }, // 9482832 },
-      { 1,  0x5040000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"  }, //  86384 }
-    },
-                                        // end of data marker
-    { "",          -1,
-      {-1,         -1, ""                                                          }, //     -1 },
-      {-1,         -1, ""                                                          }, //     -1 }
+// program_drac::FwVersion_t drac_fw[] = {
+//     { "GoldenV17",  0,
+//       { 1,    0x10000, "/home/mu2etrk/test_stand/spi_files/GoldenV17.spi"            }, // 9530672 },
+//       {-1,         -1, ""                                                            }, //     -1 }
+//     },
+//     { "ROCV16",     1,
+//       { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
+//       { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16_stage3init.bin"    }, //  86384 }
+//     },
+//                                         // end of data marker
+//     { "ROCV16-1",   2,
+//       { 1,  0x1010000, "/home/mu2etrk/test_stand/spi_files/ROCV16.spi"               }, // 9482832 },
+//       { 1,  0x5000000, "/home/mu2etrk/test_stand/spi_files/ROCV16-1_stage3init.bin"  }, //  86384 }
+//     },
+//                                         // end of data marker
+//     { "",          -1,
+//       {-1,         -1, ""                                                          }, //     -1 },
+//       {-1,         -1, ""                                                          }, //     -1 }
+//     }
+//  };
+
+//-----------------------------------------------------------------------------
+// default config file: $MU2E_DAQ_DIR/config/tracker/spi_directory.json
+//-----------------------------------------------------------------------------
+program_drac::program_drac(const char* ConfigFile, bool PrintConfig) {
+  kSPI_CLEAR_SLEEP_US = 200000;       // 0.2 sec
+
+  std::string fn = ConfigFile;
+  if (fn == "") {
+    const char* mu2e_daq_dir = getenv("MU2E_DAQ_DIR");
+    if (mu2e_daq_dir) {
+      fn = std::format("{}/config/tracker/spi_directory.json",mu2e_daq_dir);
     }
-  };
+  }
+
+  TLOG(TLVL_INFO) << std::format("using config file {}",fn);
+
+  std::ifstream ifs(fn);
+  if (ifs.is_open()) {
+    nlohmann::json jf = nlohmann::json::parse(ifs);
+    if (PrintConfig) std::cout << std::format("Available versions:\n--------------------\n");
+    for (auto& e : jf.items()) {
+      nlohmann::json o = e.value();
+
+      FwVersion_t fv;
+
+      fv.name               = o["version"];
+      fv.index              = o["index"];
+      fv.spi_file.load_flag = o["fpga_image"]["load_flag"];
+      std::string s         = o["fpga_image"]["offset"];
+      fv.spi_file.offset    = std::stoi(s,nullptr,0);
+      fv.spi_file.fn        = o["fpga_image"]["filename"];
+
+      fv.bin_file.load_flag = o["bin_image"]["load_flag"];
+      s                     = o["bin_image"]["offset"];
+      fv.bin_file.offset    = std::stoi(s,nullptr,0);
+      fv.bin_file.fn        = o["bin_image"]["filename"];
+
+      _drac_fw.push_back(fv);
+
+      if (PrintConfig) {
+        std::cout << std::format("version: {:10} index:{}\n",fv.name,fv.index);
+        std::cout << std::format("{:5} spi_file: load_flag:{:2} offset:0x{:08x} fn:{}\n",
+                                 "",fv.spi_file.load_flag,fv.spi_file.offset,fv.spi_file.fn);
+        std::cout << std::format("{:5} bin_file: load_flag:{:2} offset:0x{:08x} fn:{}\n",
+                                 "",fv.bin_file.load_flag,fv.bin_file.offset,fv.bin_file.fn);
+      }
+      }
+  }
+  else {
+    TLOG(TLVL_ERROR) << std::format("initialization failed");
+  }
+}
+
+//-----------------------------------------------------------------------------
+// if Spi=1, return SPI image, otherwise - bin
+//----------------------------------------------------------------------------
+const program_drac::FwVersion_t* program_drac::get_version(const std::string& Version) {
+
+  FwVersion_t* fw(nullptr);
+
+  int nv = _drac_fw.size();
+  for (int i=0; i<nv; i++) {
+    FwVersion_t* v = &_drac_fw[i];
+    if (v->name == Version) {
+      fw = v;
+      break;
+    }
+  }
+
+  if (fw == nullptr) TLOG(TLVL_ERROR) << "fw version:" << Version << " is not defined, return NULL pointer.";
+
+  return fw;
+}
 
 //-----------------------------------------------------------------------------
 // if Spi=1, return SPI image, otherwise - bin
 //----------------------------------------------------------------------------
 const program_drac::ImageData_t* program_drac::get_image_data(const std::string& Version, const std::string Spi) {
-  FwVersion_t* fw(nullptr);
 
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].name == Version) {
-      fw = &drac_fw[i];
-      break;
-    }
-  }
+  const FwVersion_t* fw = get_version(Version);
 
   if (fw == nullptr) {
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
@@ -80,24 +149,6 @@ const program_drac::ImageData_t* program_drac::get_image_data(const std::string&
 
   if (Spi == "spi") return (const ImageData_t*) &fw->spi_file;
   else              return (const ImageData_t*) &fw->bin_file;
-}
-
-//-----------------------------------------------------------------------------
-// if Spi=1, return SPI image, otherwise - bin
-//----------------------------------------------------------------------------
-const program_drac::FwVersion_t* program_drac::get_version(const std::string& Version) {
-  FwVersion_t* fw(nullptr);
-
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].name == Version) {
-      fw = &drac_fw[i];
-      break;
-    }
-  }
-
-  if (fw == nullptr) TLOG(TLVL_ERROR) << "fw version:" << Version << " is not defined, return NULL pointer.";
-
-  return fw;
 }
 
 //-----------------------------------------------------------------------------
@@ -172,10 +223,11 @@ int program_drac::spi_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const s
   auto roc  = DTCLib::DTC_Link_ID(Link);
   Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 //-----------------------------------------------------------------------------
-// 25 sec was not enough on the tower, 30 sec was OK.
-// may need to increase the sleep time in the future
+// 25 sec was not enough on the tower, 30 sec was OK for the first test.
+// increase the sleep time to 35 sec - there were ROCs looked as they needed
+// more than 30 sec
 //-----------------------------------------------------------------------------
-  sleep(30);
+  sleep(35);
   TLOG(TLVL_INFO) << std::format("after sleep\n");
 
                                         // the fw has been reloaded to FPGA, reset the DTC
@@ -183,13 +235,6 @@ int program_drac::spi_program_roc(trkdaq::DtcInterface* Dtc_i, int Link, const s
   Dtc_i->InitReadout(-1,1);
 
   return rc;
-                                        // no point in testing - just wait long enough
-  // uint16_t u;
-  // while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
-
-  // uint16_t status;
-  // status = Dtc_i->fDtc->ReadROCRegister(roc,REG_STATUS,1000);
-  // TLOG(TLVL_INFO) << "-- END status:" << status << std::endl;
 }
 
 
@@ -577,8 +622,8 @@ int program_drac::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
   if (rc != 0) return rc;
 
   int nimages = 0;
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].spi_file.load_flag >= 0) ++nimages;
+  for (auto fw: _drac_fw) {
+    if (fw.spi_file.load_flag > 0) ++nimages;
   }
 
   TLOG(TLVL_INFO) << std::format("write catalog, nimages:{}\n",nimages);
@@ -594,10 +639,9 @@ int program_drac::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 // to form the record to be written, assume that the image index is incremented monotonically
 // directory catalog only contains offsets of the SPI images
 //-----------------------------------------------------------------------------
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    FwVersion_t* fw = &drac_fw[i];
-    if (fw->spi_file.load_flag >= 0) {
-      int offset = fw->spi_file.offset;
+  for (auto fw: _drac_fw) {
+    if (fw.spi_file.load_flag > 0) {
+      int offset = fw.spi_file.offset;
       input.push_back( offset        & 0xFFFF);                             //
       input.push_back((offset >> 16) & 0xFFFF);                             //
     }
@@ -925,19 +969,13 @@ int program_drac::spi_write_image(trkdaq::DtcInterface* Dtc_i, int Link, const I
 int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, int DebugMode) {
   int rc(0);
                                         // find firmware version
-  FwVersion_t* fw(nullptr);
-
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].name == Version) {
-      fw = &drac_fw[i];
-      break;
-    }
-  }
+  const FwVersion_t* fw = get_version(Version);
 
   if (fw == nullptr) {
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
     return -1;
   }
+
   TLOG(TLVL_INFO) << std::format("-- START programming version:{}\n",Version);
 //-----------------------------------------------------------------------------
 // firmware to be uploaded found, proceed with the upload.
@@ -967,7 +1005,7 @@ int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const
   }
 
                                         // upload the .bin image, if needed
-  if (fw->bin_file.load_flag >= 0) {
+  if (fw->bin_file.load_flag > 0) {
     spi_write_image(dtc_i,Link,&fw->bin_file,DebugMode);
   }
                                         // activate the image as a separate step after validating
@@ -982,14 +1020,7 @@ int program_drac::spi_validate_version(trkdaq::DtcInterface* Dtc_i, int Link, co
   // find firmware version
   int rc(0);
 
-  FwVersion_t* fw(nullptr);
-
-  for (int i=0; drac_fw[i].name != ""; ++i) {
-    if (drac_fw[i].name == Version) {
-      fw = &drac_fw[i];
-      break;
-    }
-  }
+  const FwVersion_t* fw = get_version(Version);
 
   if (fw == nullptr) {
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
@@ -1015,7 +1046,7 @@ int program_drac::spi_validate_version(trkdaq::DtcInterface* Dtc_i, int Link, co
     if (rc < 0) return rc;
   }
                                         // validate the .bin image, if needed
-  if ((Type != "spi") and (fw->bin_file.load_flag >= 0)) {
+  if ((Type != "spi") and (fw->bin_file.load_flag > 0)) {
     spi_validate_image(dtc_i,Link,Version,"bin",DebugMode);
   }
 
@@ -1031,7 +1062,7 @@ int program_drac::spi_print_digi_id(const std::vector<uint16_t>& Dat) {
     return -1;
   }
 
-  uint32_t fpga_id = ((uint32_t) Dat[3]) || (((int32_t) Dat[4]) << 16);
+  uint32_t fpga_id = ((uint32_t) Dat[3]) || (((uint32_t) Dat[4]) << 16);
 
   std::ostringstream oss;
   for (int i=21; i>=6; --i) {
@@ -1082,6 +1113,8 @@ int program_drac::spi_print_digi_info(const std::vector<uint16_t>& Dat) {
   TLOG(TLVL_INFO) << std::format("cal/hv:{} op:{} err_code:0x{:04x}",cal_hv,op,err_code);
   TLOG(TLVL_INFO) << std::format("silicon signature:0x{}",silicon_signature.str());
   TLOG(TLVL_INFO) << std::format("design_name      :0x{}",design_name.str());
+  TLOG(TLVL_INFO) << std::format("design_ver       :  {}",design_ver);
+  TLOG(TLVL_INFO) << std::format("back_level       :  {}",back_level);
   TLOG(TLVL_INFO) << std::format("checksum         :0x{:08x}",checksum);
   TLOG(TLVL_INFO) << std::format("security lock    :0x{}",security_lock.str());
   TLOG(TLVL_INFO) << std::format("serial number    :0x{}",serial_number.str());
@@ -1142,7 +1175,7 @@ int program_drac::spi_read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16
 
 //-----------------------------------------------------------------------------
 int program_drac::spi_read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs, int DebugMode) {
-  int rc(0);
+  //  int rc(0);
 
   if (Dtc_i == nullptr) Dtc_i = trkdaq::DtcInterface::Instance(-1);
 

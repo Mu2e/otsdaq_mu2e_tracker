@@ -18,6 +18,7 @@
 
 class Alignment{
   public:
+    Alignment() {};
     Alignment(words_t);
 
     unsigned int EyeMonitorWidth() const;

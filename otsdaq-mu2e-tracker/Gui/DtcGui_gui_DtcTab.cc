@@ -8,7 +8,7 @@ using namespace trkdaq;
 using namespace std;
 
 //-----------------------------------------------------------------------------
-void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, DtcData_t* DtcData) {
+void DtcGui::BuildDtcTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::DtcInputData_t* DtcData) {
 
   DtcTel.fData = DtcData;
 

@@ -119,7 +119,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream) {
     int rc (0);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " Channel:" << Channel << std::endl;
+    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{} Channel:{}",Link,Channel);
     Stream           << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -136,7 +136,10 @@ namespace  trkdaq {
 
       std::vector<uint16_t> settings;
       rc = ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
-      if (rc != 0) continue;
+      if (rc != 0) {
+                                        // return immediately
+        break;
+      }
 //-----------------------------------------------------------------------------
 // print
 //-----------------------------------------------------------------------------
@@ -158,6 +161,7 @@ namespace  trkdaq {
       }
     }
 
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
   }
 
@@ -916,11 +920,9 @@ namespace  trkdaq {
 
 //-----------------------------------------------------------------------------
 // read SPI, return vector of short's, optionally print
-//-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream) {
-//-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
 
     int l1 = Link;
@@ -933,6 +935,11 @@ namespace  trkdaq {
 
     for (int i=l1; i<l2; ++i) {
       if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        rc += -10;
+        continue;
+      }
 
       rc = RocBlockRead(i,REG_READSPI,SpiRawData);
 
@@ -978,6 +985,12 @@ namespace  trkdaq {
     }
 
     for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        rc += -10;
+        continue;
+      }
       std::vector<uint16_t> data;
       rc = RocBlockRead(i,REG_READSPI,data,TrkSpiDataNWords);
 //-----------------------------------------------------------------------------

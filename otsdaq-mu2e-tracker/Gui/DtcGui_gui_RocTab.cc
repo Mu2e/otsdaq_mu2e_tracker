@@ -6,7 +6,7 @@ using namespace std;
 //-----------------------------------------------------------------------------
 // Tab here is the list of ROC tabs
 //-----------------------------------------------------------------------------
-void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, RocData_t* RocData) {
+void DtcGui::BuildRocTabElement(TGTab*& Tab, RocTabElement_t& RocTel, mu2edaq::RocInputData_t* RocData) {
 
   const char* device_name = RocData->fName.Data();
 

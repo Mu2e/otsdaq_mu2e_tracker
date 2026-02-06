@@ -240,7 +240,7 @@ void DtcGui::print_roc_status() {
 //-----------------------------------------------------------------------------
 // CFO doesn't have ROC's
 //-----------------------------------------------------------------------------
-  try         { dtel->fDTC_i->PrintRocStatus(1,1<<4*roc); }
+  try         { dtel->fDTC_i->PrintRocStatus(1,roc); }
   catch (...) { *fTextView << Form("ERROR : coudn't read ROC %i ... BAIL OUT",roc) << std::endl; }
 
   TDatime x2;
@@ -550,7 +550,7 @@ void DtcGui::set_ew_length() {
 //-----------------------------------------------------------------------------
   int ew_length = 0;
   try         { ew_length = fEWLength->GetIntNumber(); }
-  catch (...) { *fTextView << Form("ERROR : coudn't read EW Length ... BAIL OUT",roc) << std::endl; }
+  catch (...) { *fTextView << std::format("ERROR : coudn''t read EW Length for link:{} ... BAIL OUT\n",roc); }
 
   TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE ew_length = %10i\n",__func__,ew_length);
   fTextView->ShowBottom();
@@ -573,7 +573,7 @@ void DtcGui::set_first_ts() {
 //-----------------------------------------------------------------------------
   int value = 0;
   try         { value = fFirstTS->GetIntNumber(); }
-  catch (...) { *fTextView << Form("ERROR : coudn't read FirstTS ... BAIL OUT",roc) << std::endl; }
+  catch (...) { *fTextView << std::format("ERROR : coudn''t read FirstTS for link:{} ... BAIL OUT\n",roc); }
 
   TDatime x2; *fTextView << x2.AsSQLString() << strCout.str() << Form(" %s DONE first_ts = %10i\n",
                                                                       __func__,value);
