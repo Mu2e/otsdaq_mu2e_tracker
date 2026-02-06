@@ -39,5 +39,19 @@
             "offset"   : "0x5000000",
             "filename" : "/home/mu2etrk/test_stand/spi_files/ROCV16-1_stage3init.bin"
         }
+    },
+    {
+        "version": "ROCV18",
+        "index": 3,
+        "fpga_image" : {
+            "load_flag": 1,
+            "offset"   : "0x1010000",
+            "filename" : "/home/mu2etrk/test_stand/spi_files/ROCV18.spi"
+        },
+        "bin_image" : {
+            "load_flag": 1,
+            "offset"   : "0x5000000",
+            "filename" : "/home/mu2etrk/test_stand/spi_files/ROCV18_stage3init.bin"
+        }
     }
 ]

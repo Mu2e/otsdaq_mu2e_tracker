@@ -117,15 +117,30 @@ program_drac::program_drac(const char* ConfigFile, bool PrintConfig) {
 //-----------------------------------------------------------------------------
 // if Spi=1, return SPI image, otherwise - bin
 //----------------------------------------------------------------------------
-const program_drac::ImageData_t* program_drac::get_image_data(const std::string& Version, const std::string Spi) {
+const program_drac::FwVersion_t* program_drac::get_version(const std::string& Version) {
+
   FwVersion_t* fw(nullptr);
-  
-  for (auto v : _drac_fw) {
-    if (v.name == Version) {
-      fw = &v;
+
+  int nv = _drac_fw.size();
+  for (int i=0; i<nv; i++) {
+    FwVersion_t* v = &_drac_fw[i];
+    if (v->name == Version) {
+      fw = v;
       break;
     }
   }
+
+  if (fw == nullptr) TLOG(TLVL_ERROR) << "fw version:" << Version << " is not defined, return NULL pointer.";
+
+  return fw;
+}
+
+//-----------------------------------------------------------------------------
+// if Spi=1, return SPI image, otherwise - bin
+//----------------------------------------------------------------------------
+const program_drac::ImageData_t* program_drac::get_image_data(const std::string& Version, const std::string Spi) {
+
+  const FwVersion_t* fw = get_version(Version);
 
   if (fw == nullptr) {
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
@@ -134,25 +149,6 @@ const program_drac::ImageData_t* program_drac::get_image_data(const std::string&
 
   if (Spi == "spi") return (const ImageData_t*) &fw->spi_file;
   else              return (const ImageData_t*) &fw->bin_file;
-}
-
-//-----------------------------------------------------------------------------
-// if Spi=1, return SPI image, otherwise - bin
-//----------------------------------------------------------------------------
-const program_drac::FwVersion_t* program_drac::get_version(const std::string& Version) {
-
-  FwVersion_t* fw(nullptr);
-  
-  for (auto v : _drac_fw) {
-    if (v.name == Version) {
-      fw = &v;
-      break;
-    }
-  }
-
-  if (fw == nullptr) TLOG(TLVL_ERROR) << "fw version:" << Version << " is not defined, return NULL pointer.";
-
-  return fw;
 }
 
 //-----------------------------------------------------------------------------

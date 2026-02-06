@@ -211,9 +211,8 @@ namespace trkdaq {
                                 int                          PrintLevel = 0,
                                 std::ostream&                Stream     = std::cout);
 // ejc
-    Alignment    FindAlignment (DTCLib::DTC_Link_ID Link);
-
-    int          FindAlignments(int PrintLevel=1, int Link=-1, std::ostream& Stream = std::cout);
+    int          FindAlignment (DTCLib::DTC_Link_ID Link, Alignment& Res);
+    int          FindAlignments(int Link, int& NBitSlips, int PrintLevel, std::ostream& Stream = std::cout);
 
     bool         FindThreshold(const int           Link        ,
                                const int           ChannelID   ,
@@ -287,9 +286,14 @@ namespace trkdaq {
                                                  int                 PrintLevel = 0,
                                                  std::ostream&       Stream     = std::cout);
 
+                                        // underlying function common for the next two
+    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
+    
+                                        // returns the mnID
     int          ReadPanelID       (int Link, int PrintLevel = 0);
-                                        // a newer read/write version - to be debugged
-    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel);
+    
+                                        // writes the mnID 
+    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
     
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                     ulong       FirstTS,

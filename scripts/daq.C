@@ -143,10 +143,11 @@ int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only
 //-----------------------------------------------------------------------------
-int dtc_control_roc_find_alignment(int LinkMask = -1, int PcieAddr = -1) {
+int dtc_control_roc_find_alignment(int Link = -1, int PcieAddr = -1) {
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->FindAlignments(1,LinkMask);
-  return 0;
+  int n_bitslips(0);
+  int rc = dtc_i->FindAlignments(Link,n_bitslips,2);
+  return rc;
 }
 
 //-----------------------------------------------------------------------------
