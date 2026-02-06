@@ -485,7 +485,7 @@ namespace trkdaq {
 
     int ilink = int(Link);
     if (not LinkEnabled(ilink)) {
-      std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),ilink);
+      std::string msg = std::format("DTC:{} link:{} not enabled",PcieAddr(),ilink);
       Stream << "ERROR: " << msg << std::endl;
       TLOG(TLVL_ERROR) << msg;
       return rv;
