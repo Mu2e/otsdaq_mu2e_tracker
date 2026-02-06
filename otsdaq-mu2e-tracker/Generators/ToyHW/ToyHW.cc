@@ -46,7 +46,7 @@ ToyHW::ToyHW(fhicl::ParameterSet const& ps)
 
   bool planned_disruption = nADCChannels_after_N_seconds_ != nADCChannels_ || exception_after_N_seconds_ ||
     exit_after_N_seconds_ || abort_after_N_seconds_;
-  
+
   if (planned_disruption && change_after_N_seconds_ == std::numeric_limits<size_t>::max())
     {
       throw cet::exception("HardwareInterface") << "A FHiCL parameter designed to create a disruption has been "  // NOLINT(cert-err60-cpp)
@@ -75,12 +75,12 @@ void ToyHW::FillBuffer(char* buffer, size_t* bytes_read) {
   if (taking_data_) {
     TLOG(TLVL_DEBUG + 3) << "FillBuffer: Sleeping for " << throttle_usecs_ << " microseconds";
     usleep(throttle_usecs_);
-    
+
     auto elapsed_secs_since_datataking_start = artdaq::TimeUtils::GetElapsedTime(start_time_);
     if (elapsed_secs_since_datataking_start < 0) elapsed_secs_since_datataking_start = 0;
     //nadccounts are the channels
     if (static_cast<size_t>(elapsed_secs_since_datataking_start) < change_after_N_seconds_ || send_calls_ == 0) {
-      TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to " 
+      TLOG(TLVL_DEBUG + 3) << "FillBuffer: Setting bytes_read to "
                            << sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);
       *bytes_read = sizeof(demo::ToyFragment::Header) + nADCChannels_ * sizeof(data_t);//data size
     }

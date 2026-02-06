@@ -250,7 +250,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
                                TGNumberFormat::kNEANonNegative,
                                TGNumberFormat::kNELLimitMinMax,
                                0, 100000000);
-  
+
   fSleepUS->Connect("ValueSet(Long_t)", "DtcGui", this, "set_sleep_us()");
   (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_sleep_us()");
 
