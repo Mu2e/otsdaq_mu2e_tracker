@@ -23,15 +23,15 @@ int read_panel_id(trkdaq::DtcInterface* Dtc_i, int Link, int PrintLevel=0) {
   DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(-1);
   DTCLib::DTC*  dtc   = dtc_i->Dtc();
 //-----------------------------------------------------------------------------
-// write parameters into reg ***  (block write) , sleep for some time, 
+// write parameters into reg ***  (block write) , sleep for some time,
 // then wait till reg 128 returns 0x8000
 // chan mask always includes the first channel
 //-----------------------------------------------------------------------------
   dtc->WriteROCRegister   (roc,279,0x0000,false,100);
   std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
-  uint16_t u; 
-  while ((u = dtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
+  uint16_t u;
+  while ((u = dtc->ReadROCRegister(roc,128,5000)) != 0x8000) {};
   if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -50,7 +50,7 @@ int read_panel_id(trkdaq::DtcInterface* Dtc_i, int Link, int PrintLevel=0) {
     printf("------------------------------------------------nw = %i(0x%x)\n",nw,nw);
     print_buffer(v2.data(),nw);
   }
-  
+
   if (nw != 1) {
     printf("ERROR: wrong number of words: %i, BAIL OUT\n",nw);
     return -1;

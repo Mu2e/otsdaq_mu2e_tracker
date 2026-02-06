@@ -74,7 +74,7 @@ public:
 // functions
 //-----------------------------------------------------------------------------
   program_drac(const char* ConfigFile = "", bool PrintConfig = false);
-  
+
   const program_drac::ImageData_t* get_image_data(const std::string& Version, const std::string Spi="spi");
   const program_drac::FwVersion_t* get_version   (const std::string& Version);
 

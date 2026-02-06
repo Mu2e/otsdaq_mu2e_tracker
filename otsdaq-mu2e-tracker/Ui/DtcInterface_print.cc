@@ -21,7 +21,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
     TLOG(TLVL_DEBUG) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
-    
+
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
@@ -31,7 +31,7 @@ namespace trkdaq {
         TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
         continue;
       }
-      
+
       DTC_Link_ID link = DTC_Link_ID(i);
       uint32_t dat;
 
@@ -60,7 +60,7 @@ namespace trkdaq {
         TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
         continue;
       }
-      
+
       DTC_Link_ID link = DTC_Link_ID(i);
       uint32_t iw1, iw2, iw;
 
@@ -116,7 +116,7 @@ namespace trkdaq {
       TLOG(TLVL_ERROR) << msg;
       return;
     }
-                     
+
     if (Format != 0) text += " Description";
     Stream << Form("%s\n",text.data());
     Stream << "------------------------------------------------------------------------\n";
@@ -191,9 +191,9 @@ namespace trkdaq {
 
     reg = 41; desc = "Num DATA REQ with null data";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     Stream << Form("\n");
-      
+
     reg = 43; desc = "Last spill tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
@@ -211,9 +211,9 @@ namespace trkdaq {
 
     reg = 57; desc = "OFFSET tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
-      
+
     Stream << std::endl;
-      
+
     reg = 72; desc = "Num HB tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
