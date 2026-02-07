@@ -143,7 +143,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
 /// from https
 /// chan_mask = int(get_key_value(keys,"C"),16)
 /// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
-/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023 
+/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023
 /// obsolete
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i
@@ -570,7 +570,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSettings(int Link, int Cha
 /// from https
 /// chan_mask = int(get_key_value(keys,"C"),16)
 /// channel   = int(get_key_value(keys,"c",-1)) - not used any more !!
-/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023 
+/// fvalue    = float(get_key_value(keys,"v",-1)); dvalue = fvalue/3.3*1023
 /// obsolete
 /// dvalue    = int(get_key_value(keys,"d"))
 /// FirstChanelMask : a bit mask, defines the first pulsed channel, the rest pulsed: first+8*i

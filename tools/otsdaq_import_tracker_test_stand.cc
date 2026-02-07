@@ -1127,6 +1127,9 @@ void ImportTrackerTestStand(int argc, char* argv[])
 
 					if(fileContents[startComment1 + 2] == ' ')  // is a comment line
 					{
+						//remove excess white space (from double comment)
+						while(fileContents[startFunc] == ' ') --startFunc;
+
 						functionComment =
 						    "/" +
 						    fileContents.substr(startComment1,
