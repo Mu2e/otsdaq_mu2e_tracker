@@ -1159,7 +1159,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				outputFile << functionComment;
 				outputFile << headerInstructionsSs.str();
 				outputFile << functionReturnVal << " ROCTrackerInterface"
-				           << "::" << prepend[i] << "_" << 
+				           << "::" << prepend[i] << "_" <<
 						   functionHeader.substr(0,functionHeader.size()-1 /* removing trailing white space */) << "\n";
 				outputFile << modifySource(functionDef);
 				outputFile << " // end " << prepend[i] << "_"
@@ -1361,7 +1361,7 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					outputFeMacroDefineFile << "\n";
 					if(outputNames.size() && functionReturnVal != "void")
 						outputFeMacroDefineFile << "\t" << outputNames[0] << " =\n\t";
-					outputFeMacroDefineFile << "\t" << "trackerDTC_->" 
+					outputFeMacroDefineFile << "\t" << "trackerDTC_->"
 					    // << "\t" << prepend[i] << "_"
 					    << functionHeader.substr(0, functionHeader.find('(')) << "(";
 
