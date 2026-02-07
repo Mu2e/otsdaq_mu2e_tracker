@@ -19,7 +19,6 @@
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 #include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
 
-
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
 namespace ots

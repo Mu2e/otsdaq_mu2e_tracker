@@ -826,8 +826,10 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				       << ". Error: " << errno << " - " << strerror(errno) << __E__;
 				__SS_THROW__;
 			}
-			//modify import file to be consistent by path location (inserted in comments and printouts, which can cause git diffs), starting from otsdaq-mu2e-tracker/
-			size_t tpos = importFile.rfind("otsdaq-mu2e-tracker"); //find last instance
+			// modify import file to be consistent by path location (inserted in comments
+			// and printouts, which can cause git diffs), starting from
+			// otsdaq-mu2e-tracker/
+			size_t tpos = importFile.rfind("otsdaq-mu2e-tracker");  // find last instance
 			if(tpos == std::string::npos)
 				importFile = "otsdaq-mu2e-tracker/" + importFile;
 			else
@@ -1127,8 +1129,9 @@ void ImportTrackerTestStand(int argc, char* argv[])
 
 					if(fileContents[startComment1 + 2] == ' ')  // is a comment line
 					{
-						//remove excess white space (from double comment)
-						while(fileContents[startFunc] == ' ') --startFunc;
+						// remove excess white space (from double comment)
+						while(fileContents[startFunc] == ' ')
+							--startFunc;
 
 						functionComment =
 						    "/" +
@@ -1162,8 +1165,12 @@ void ImportTrackerTestStand(int argc, char* argv[])
 				outputFile << functionComment;
 				outputFile << headerInstructionsSs.str();
 				outputFile << functionReturnVal << " ROCTrackerInterface"
-				           << "::" << prepend[i] << "_" <<
-						   functionHeader.substr(0,functionHeader.size()-1 /* removing trailing white space */) << "\n";
+				           << "::" << prepend[i] << "_"
+				           << functionHeader.substr(
+				                  0,
+				                  functionHeader.size() -
+				                      1 /* removing trailing white space */)
+				           << "\n";
 				outputFile << modifySource(functionDef);
 				outputFile << " // end " << prepend[i] << "_"
 				           << functionHeader.substr(0, functionHeader.find('('))
@@ -1364,7 +1371,9 @@ void ImportTrackerTestStand(int argc, char* argv[])
 					outputFeMacroDefineFile << "\n";
 					if(outputNames.size() && functionReturnVal != "void")
 						outputFeMacroDefineFile << "\t" << outputNames[0] << " =\n\t";
-					outputFeMacroDefineFile << "\t" << "trackerDTC_->"
+					outputFeMacroDefineFile
+					    << "\t"
+					    << "trackerDTC_->"
 					    // << "\t" << prepend[i] << "_"
 					    << functionHeader.substr(0, functionHeader.find('(')) << "(";
 
