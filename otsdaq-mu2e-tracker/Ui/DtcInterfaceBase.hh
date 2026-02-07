@@ -151,7 +151,7 @@ namespace mu2edaq {
     int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
     // read configuration data from a file and store them in 'DtcData'
-    static int   InitConfiguration(const char* ConfigName, DtcInputData_t* DtcData);
+    static int   InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData);
 
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side

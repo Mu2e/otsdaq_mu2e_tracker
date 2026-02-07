@@ -38,11 +38,17 @@ using namespace ots;
 ///
 void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream)
 {
+    TLOG(TLVL_DEBUG) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
 
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
+      // need this if accidentally called directly
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        continue;
+      }
 
       DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t dat;
@@ -54,6 +60,8 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc,
 
     if (Format == 1) text += Form(" %s",Desc.data());
     Stream << Form("%-18s %s\n",sreg.data(),text.data());
+
+    TLOG(TLVL_DEBUG) << std::format("-- END");
   } // end Ui_print_PrintRocRegister()
 
 //==============================================================================
@@ -68,10 +76,17 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister(uint Reg, std::string& Desc,
 void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream)
 {
 
+    TLOG(TLVL_DEBUG) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
+
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
       if (used == 0)                                        continue;
+      // need this if accidentally called directly
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        continue;
+      }
 
       DTCLib::DTC_Link_ID link = DTCLib::DTC_Link_ID(i);
       uint32_t iw1, iw2, iw;
@@ -87,6 +102,8 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc
     std::string sreg = Form("reg(%2i)<<16|reg(%2i)",Reg+1,Reg);
 
     Stream << Form("%-18s%s\n",sreg.data(),text.data());
+
+    TLOG(TLVL_DEBUG) << std::format("-- END");
   } // end Ui_print_PrintRocRegister2()
 
 //==============================================================================
@@ -102,7 +119,7 @@ void ROCTrackerInterface::Ui_print_PrintRocRegister2(uint Reg, std::string& Desc
 ///
 void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream)
 {
-    TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
+    TLOG(TLVL_DBG) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
 
@@ -120,8 +137,19 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
     for (int i=lnk1; i<lnk2; i++) {
       int enabled = LinkEnabled(i);
       if (enabled == 0)                                     continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        continue;
+      }
       link_mask |= (1 << 4*i);
       text += Form("    ROC%i   ",i);
+    }
+
+    if (link_mask == 0) {
+      std::string msg = std::format("dtc:{} link:{} : no locked links.",PcieAddr(),Link);
+      Stream << " ERROR: " << msg << "\n";
+      TLOG(TLVL_ERROR) << msg;
+      return;
     }
 
     if (Format != 0) text += " Description";
@@ -179,7 +207,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
     reg = 33; desc = "Num PREFETCH seen";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    std::cout << Form("\n");
+    Stream << Form("\n");
 
     reg =  9; desc = "Num DATA REQ seen";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
@@ -199,7 +227,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
     reg = 41; desc = "Num DATA REQ with null data";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    std::cout << Form("\n");
+    Stream << Form("\n");
 
     reg = 43; desc = "Last spill tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
@@ -219,7 +247,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
     reg = 57; desc = "OFFSET tag";
     Ui_print_PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    std::cout << std::endl;
+    Stream << std::endl;
 
     reg = 72; desc = "Num HB tag inconsistencies";
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream);
@@ -247,6 +275,7 @@ void ROCTrackerInterface::Ui_print_PrintRocStatus(uint32_t Format, int Link, std
     Ui_print_PrintRocRegister(reg,desc,Format,link_mask,Stream); //
 
     Stream << "------------------------------------------------------------------------\n";
+    TLOG(TLVL_DEBUG) << std::format("-- END");
   } // end Ui_print_PrintRocStatus()
 
 //==============================================================================

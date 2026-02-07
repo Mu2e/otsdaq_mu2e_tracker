@@ -168,65 +168,6 @@ namespace trkdaq {
     return dtc_i;
   }
 
-////-----------------------------------------------------------------------------
-//  int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
-//    int rc(0);
-//    TLOG(TLVL_DEBUG) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
-//
-//    auto roc  = DTC_Link_ID(Link);
-//
-//    if (not LinkEnabled(Link)) {
-//      TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} not enabled",PcieAddr(),Link);
-//      return -1;
-//    }
-//
-//    if (not LinkLocked(Link)) {
-//      TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),Link);
-//      return -2;
-//    }
-////-----------------------------------------------------------------------------
-//// write parameters into reg ***  (block write) , sleep for some time,
-//// then wait till reg 128 returns 0x8000
-//// chan mask always includes the first channel
-////-----------------------------------------------------------------------------
-//    fDtc->WriteROCRegister   (roc,279,0x0000,false,100);
-//    std::this_thread::sleep_for(std::chrono::microseconds(1000));
-//
-//    uint16_t u;
-//    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {};
-//    if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
-////-----------------------------------------------------------------------------
-//// register 129: number of words to read, currently-  (+ 4) (ask Monica)
-////-----------------------------------------------------------------------------
-//    int nw = fDtc->ReadROCRegister(roc,129,100);
-//    if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",129,nw);
-//
-//    nw = nw-4;
-//    vector<uint16_t> v2;
-//    fDtc->ReadROCBlock(v2,roc,279,nw,false,100);
-////-----------------------------------------------------------------------------
-//// print output - in two formats
-//// expect only one word
-////-----------------------------------------------------------------------------
-//    if ((PrintLevel & 0x1) != 0) {
-//      printf("------------------------------------------------nw = %i(0x%x)\n",nw,nw);
-//      PrintBuffer(v2.data(),nw);
-//    }
-//
-//    if (nw != 1) {
-//      printf("ERROR: wrong number of words: %i, BAIL OUT\n",nw);
-//      return -1;
-//    }
-//
-//    int panel_id = v2[0];
-//    if ((PrintLevel & 0x2) != 0) {
-//      printf("panel ID: MN%03d\n",panel_id);
-//    }
-//
-//    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,panel_id);
-//    return panel_id;
-//  }
-
 //-----------------------------------------------------------------------------
 // Rw: 1=write, 0=read
 //-----------------------------------------------------------------------------

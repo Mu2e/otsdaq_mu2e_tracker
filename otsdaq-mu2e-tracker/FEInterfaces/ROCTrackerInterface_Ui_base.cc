@@ -36,7 +36,7 @@ using namespace ots;
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
+int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode, std::ostream* Stream)
 {
     int rc(0);
 
@@ -45,6 +45,8 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 
     TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
                      << " ROC ReadoutMode:" << fRocReadoutMode;
+
+    getDTC()->SoftReset();  // 2026-01-29 , suggested by Ryan
 //-----------------------------------------------------------------------------
 // both emulated and external modes perform soft reset of the DTC
 //-----------------------------------------------------------------------------
@@ -62,8 +64,8 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 // both of Init_XX_CFOReadoutMode disable all links, need to re-enable
 // do we need to reset the ROCs at this point ?
 //-----------------------------------------------------------------------------
-    Ui_base_ResetLinks();
-    // Ui_base_SetLinkMask();
+    rc = Ui_base_ResetLinks();
+    if (rc < 0) return rc;
                                         // this should do for now, later - set the partition ID
                                         // at begin run, for example, as follows
 
@@ -76,7 +78,7 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 // Init*CFOReadoutMode functions disable all links, at this point the links
 // should still be disabled
 //-----------------------------------------------------------------------------
-    rc = Ui_InitRocReadoutMode();
+    rc = Ui_InitRocReadoutMode(Stream);
     getDTC()->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
 
     TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
@@ -93,7 +95,7 @@ int ROCTrackerInterface::Ui_base_InitReadout(int EmulateCfo, int RocReadoutMode)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_base_InitRocReadoutMode()
+int ROCTrackerInterface::Ui_base_InitRocReadoutMode(std::ostream* Stream)
 {
     return 0;
   } // end Ui_base_InitRocReadoutMode()
@@ -182,7 +184,8 @@ int ROCTrackerInterface::Ui_base_InitEmulatedCFOReadoutMode()
     getDTC()->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
 
     getDTC()->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
-
+    int force_cfo_edge = 0x0;                                      // two bits matter
+    getDTC()->SetExternalCFOSampleEdgeMode(force_cfo_edge);            // r_0x9100:bit6 = 0 bit_5=0
     getDTC()->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
 
     // ROC links are disabled here, but re-enabled later, in Ui_InitReadout()
@@ -259,6 +262,60 @@ int ROCTrackerInterface::Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode)
   } // end Ui_base_InitExternalCFOReadoutMode()
 
 //==============================================================================
+///	Ui_base_InitConfiguration()
+/// 1) first check for project name like "pasha/mu2edaq09_pcie0"
+/// if file config/pasha/mu2edaq09_pcie0.C exists , use that
+/// 2) otherwise assume config file name config/$project/$hostname.C
+/// config file should contain function init_run_configuration(DtcGui*)
+/// assumes that MU2E_DAQ_DIR points to the directory from where root is started
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+int ROCTrackerInterface::Ui_base_InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData)
+{
+    int           rc(0);
+    TInterpreter* cint = gROOT->GetInterpreter();
+
+    TInterpreter::EErrorCode irc;
+
+    TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
+    FILE* f = fopen(macro,"r");
+    if (f == nullptr) {
+      char buf[128];
+      gethostname(buf,128);
+      std::string hn = buf;
+      std::string hostname = hn.substr(0,hn.find('.'));
+      macro = std::format("{}/config/dtc_gui/{}/{}.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName,hostname);
+      f     = fopen(macro,"r");
+      if (f == nullptr) {
+        TLOG(TLVL_ERROR) << "failed to find config file for " << ConfigName << " , EXIT" << std::endl;
+        rc = -1;
+      }
+    }
+
+    if (rc != 0) return rc;
+
+    TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
+
+    cint->LoadMacro(macro.Data(), &irc);
+
+    rc = irc;
+    if (rc != 0) return rc;
+
+    TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx);",(long int) DtcData);
+
+    TLOG(TLVL_DEBUG+1) << Form(" cmd=%s\n",cmd.Data());
+
+    gInterpreter->ProcessLine(cmd.Data(),&irc);
+
+    return irc;
+  } // end Ui_base_InitConfiguration()
+
+//==============================================================================
 ///	Ui_base_LaunchRunPlanEmulatedCfo()
 /// run plan already defined in InitEmulatedCFOReadoutMode
 /// this function can be executed in a loop, after InitEmulatedCFOReadoutMode
@@ -317,6 +374,21 @@ uint32_t ROCTrackerInterface::Ui_base_ReadRegister(uint16_t Register)
 
     return data;
   } // end Ui_base_ReadRegister()
+
+//==============================================================================
+///	Ui_base_LinkLocked()
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+int ROCTrackerInterface::Ui_base_LinkLocked(int Link)
+{
+    uint32_t dat = Ui_ReadRegister(0x9140);
+    return (dat >> Link) & 0x1;
+  } // end Ui_base_LinkLocked()
 
 //==============================================================================
 ///	Ui_base_ResetLinks()

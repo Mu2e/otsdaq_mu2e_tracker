@@ -28,6 +28,65 @@ using namespace ots;
 
 
 //==============================================================================
+/// FE Macro to call Ui_ReadPanelID()
+///
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::FEMacro_Ui_ReadPanelID(__ARGS__)
+{
+	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
+	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
+	for(auto& argIn : argsIn)
+		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
+
+	int Link = ROCCoreVInterface::getLinkID();
+	int PrintLevel = __GET_ARG_IN__("PrintLevel (Default = 0)", int, 0);
+
+	int Result;
+
+	Result =
+		trackerDTC_->ReadPanelID(Link, PrintLevel);
+
+	__SET_ARG_OUT__("Result", Result);
+
+} // end FEMacro_Ui_ReadPanelID()
+
+//==============================================================================
+/// FE Macro to call Ui_WritePanelID()
+///
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::FEMacro_Ui_WritePanelID(__ARGS__)
+{
+	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
+	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
+	for(auto& argIn : argsIn)
+		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
+
+	int Link = ROCCoreVInterface::getLinkID();
+	int PanelID = __GET_ARG_IN__("PanelID", int);
+	int PrintLevel = __GET_ARG_IN__("PrintLevel (Default = 0)", int, 0);
+
+	int Result;
+
+	Result =
+		trackerDTC_->WritePanelID(Link, PanelID, PrintLevel);
+
+	__SET_ARG_OUT__("Result", Result);
+
+} // end FEMacro_Ui_WritePanelID()
+
+//==============================================================================
 /// FE Macro to call Ui_ReadSerialNumber()
 ///
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
@@ -49,38 +108,11 @@ void ROCTrackerInterface::FEMacro_Ui_ReadSerialNumber(__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_ReadSerialNumber(Link);
+		trackerDTC_->ReadSerialNumber(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_ReadSerialNumber()
-
-//==============================================================================
-/// FE Macro to call Ui_InitRocReadoutMode()
-///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
-/// Do not modify this file directly.
-///
-/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
-///
-///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
-///
-void ROCTrackerInterface::FEMacro_Ui_InitRocReadoutMode(__ARGS__)
-{
-	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
-	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	for(auto& argIn : argsIn)
-		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
-
-
-	int Result;
-
-	Result =
-		Ui_InitRocReadoutMode();
-
-	__SET_ARG_OUT__("Result", Result);
-
-} // end FEMacro_Ui_InitRocReadoutMode()
 
 //==============================================================================
 /// FE Macro to call Ui_RebootMcu()
@@ -104,7 +136,7 @@ void ROCTrackerInterface::FEMacro_Ui_RebootMcu(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_RebootMcu(Link);
+		trackerDTC_->RebootMcu(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -132,7 +164,7 @@ void ROCTrackerInterface::FEMacro_Ui_ResetLink(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_ResetLink(Link);
+		trackerDTC_->ResetLink(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -156,9 +188,12 @@ void ROCTrackerInterface::FEMacro_Ui_RocConfigurePatternMode(__ARGS__)
 		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
 
 
+	int Result;
 
-	Ui_RocConfigurePatternMode();
+	Result =
+		trackerDTC_->RocConfigurePatternMode();
 
+	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_RocConfigurePatternMode()
 
@@ -182,9 +217,12 @@ void ROCTrackerInterface::FEMacro_Ui_RocSetDataVersion(__ARGS__)
 	int Version = __GET_ARG_IN__("Version", int);
 	int LinkMask = 1 << (ROCCoreVInterface::getLinkID() * 4);
 
+	int Result;
 
-	Ui_RocSetDataVersion(Version, LinkMask);
+	Result =
+		trackerDTC_->RocSetDataVersion(Version, LinkMask);
 
+	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_RocSetDataVersion()
 
@@ -212,45 +250,13 @@ void ROCTrackerInterface::FEMacro_Ui_ReadDeviceID(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ReadDeviceID(Link, PrintLevel, Stream);
+		trackerDTC_->ReadDeviceID(Link, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 	__COUT_MULTI__(2, Stream.str());
 	__SET_ARG_OUT__("Stream", Stream.str());
 
 } // end FEMacro_Ui_ReadDeviceID()
-
-//==============================================================================
-/// FE Macro to call Ui_FindAlignments()
-///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
-/// Do not modify this file directly.
-///
-/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
-///
-///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
-///
-void ROCTrackerInterface::FEMacro_Ui_FindAlignments(__ARGS__)
-{
-	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
-	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	for(auto& argIn : argsIn)
-		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
-
-	int PrintLevel = __GET_ARG_IN__("PrintLevel (Default = 1)", int, 1);
-	int Link = ROCCoreVInterface::getLinkID();
-
-	int Result;
-	std::stringstream Stream;
-
-	Result =
-		Ui_FindAlignments(PrintLevel, Link, Stream);
-
-	__SET_ARG_OUT__("Result", Result);
-	__COUT_MULTI__(2, Stream.str());
-	__SET_ARG_OUT__("Stream", Stream.str());
-
-} // end FEMacro_Ui_FindAlignments()
 
 //==============================================================================
 /// FE Macro to call Ui_MonicaDigiClear()
@@ -273,38 +279,11 @@ void ROCTrackerInterface::FEMacro_Ui_MonicaDigiClear(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_MonicaDigiClear();
+		trackerDTC_->MonicaDigiClear();
 
 	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_MonicaDigiClear()
-
-//==============================================================================
-/// FE Macro to call Ui_MonicaVarLinkConfig()
-///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
-/// Do not modify this file directly.
-///
-/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
-///
-///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
-///
-void ROCTrackerInterface::FEMacro_Ui_MonicaVarLinkConfig(__ARGS__)
-{
-	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
-	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	for(auto& argIn : argsIn)
-		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
-
-
-	int Result;
-
-	Result =
-		Ui_MonicaVarLinkConfig();
-
-	__SET_ARG_OUT__("Result", Result);
-
-} // end FEMacro_Ui_MonicaVarLinkConfig()
 
 //==============================================================================
 /// FE Macro to call Ui_MonicaVarPatternConfig()
@@ -329,7 +308,7 @@ void ROCTrackerInterface::FEMacro_Ui_MonicaVarPatternConfig(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_MonicaVarPatternConfig(LaneMask, NHits);
+		trackerDTC_->MonicaVarPatternConfig(LaneMask, NHits);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -360,7 +339,7 @@ void ROCTrackerInterface::FEMacro_Ui_RocBlockRead(__ARGS__)
 	std::vector<uint16_t> Res;
 
 	Result =
-		Ui_RocBlockRead(Link, Reg, Res, NExpected);
+		trackerDTC_->RocBlockRead(Link, Reg, Res, NExpected);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("Res", StringMacros::vectorToString(Res));
@@ -391,7 +370,7 @@ void ROCTrackerInterface::FEMacro_Ui_ReadRocDDR(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ReadRocDDR(Link, Block, Stream);
+		trackerDTC_->ReadRocDDR(Link, Block, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -422,7 +401,7 @@ void ROCTrackerInterface::FEMacro_Ui_ReadROCBlockEnsured(__ARGS__)
 	std::vector<DTCLib::roc_data_t> Result;
 
 	Result =
-		Ui_ReadROCBlockEnsured(Link, address);
+		trackerDTC_->ReadROCBlockEnsured(Link, address);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -450,7 +429,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetRocRegistersNames(__ARGS__)
 	std::vector<std::string> Result;
 
 	Result =
-		Ui_GetRocRegistersNames(history);
+		trackerDTC_->GetRocRegistersNames(history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -479,7 +458,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetRocRegisters(__ARGS__)
 	std::vector<uint32_t> Result;
 
 	Result =
-		Ui_GetRocRegisters(ilink, history);
+		trackerDTC_->GetRocRegisters(ilink, history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -508,7 +487,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetConvertedRocRegisters(__ARGS__)
 	std::vector<float> Result;
 
 	Result =
-		Ui_GetConvertedRocRegisters(ilink, history);
+		trackerDTC_->GetConvertedRocRegisters(ilink, history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -536,7 +515,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetRocID(__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_GetRocID(Link);
+		trackerDTC_->GetRocID(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -564,7 +543,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetRocDesignInfo(__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_GetRocDesignInfo(Link);
+		trackerDTC_->GetRocDesignInfo(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -592,7 +571,7 @@ void ROCTrackerInterface::FEMacro_Ui_GetRocFwGitCommit(__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_GetRocFwGitCommit(Link);
+		trackerDTC_->GetRocFwGitCommit(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -624,7 +603,7 @@ void ROCTrackerInterface::FEMacro_Ui_FindThreshold(__ARGS__)
 	bool Result;
 
 	Result =
-		Ui_FindThreshold(Link, ChannelID, PreampType, threshold_mv, tolerance_mv);
+		trackerDTC_->FindThreshold(Link, ChannelID, PreampType, threshold_mv, tolerance_mv);
 
 	__SET_ARG_OUT__("Result", Result);
 
