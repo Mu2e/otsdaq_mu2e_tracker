@@ -242,8 +242,11 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
     int dummy(-1);
-    int panel_id = PanelID_RW(Link,0,dummy,PrintLevel);
-    return panel_id;
+    int rc = PanelID_RW(Link,0,dummy,PrintLevel);
+    if (rc != 0) {
+      return rc;
+    }
+    return dummy;
   }
 
 //-----------------------------------------------------------------------------
@@ -423,7 +426,7 @@ namespace trkdaq {
 
     int ilink = int(Link);
     if (not LinkEnabled(ilink)) {
-      std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),ilink);
+      std::string msg = std::format("DTC:{} link:{} not enabled",PcieAddr(),ilink);
       Stream << "ERROR: " << msg << std::endl;
       TLOG(TLVL_ERROR) << msg;
       return rv;
