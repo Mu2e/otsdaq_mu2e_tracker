@@ -54,7 +54,7 @@ void ROCTrackerInterface::FEMacro_Ui_ProgramRoc_SpiReadFlash(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ProgramRoc_SpiReadFlash(Link, Address, NWords, &Res, PrintLevel, Stream);
+		trackerDTC_->SpiReadFlash(Link, Address, NWords, &Res, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("Res", StringMacros::vectorToString(Res));

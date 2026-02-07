@@ -12,13 +12,12 @@
 //------------------------------------------------------------------------
 
 
-void FEMacro_Ui_base_InitReadout(__ARGS__);
-void FEMacro_Ui_base_InitRocReadoutMode(__ARGS__);
 void FEMacro_Ui_base_ConfigureJA(__ARGS__);
 void FEMacro_Ui_base_InitEmulatedCFOReadoutMode(__ARGS__);
 void FEMacro_Ui_base_InitExternalCFOReadoutMode(__ARGS__);
 void FEMacro_Ui_base_LaunchRunPlanEmulatedCfo(__ARGS__);
 void FEMacro_Ui_base_ReadRegister(__ARGS__);
+void FEMacro_Ui_base_LinkLocked(__ARGS__);
 void FEMacro_Ui_base_ResetLinks(__ARGS__);
 void FEMacro_Ui_base_ResetLink(__ARGS__);
 void FEMacro_Ui_base_SetBit(__ARGS__);

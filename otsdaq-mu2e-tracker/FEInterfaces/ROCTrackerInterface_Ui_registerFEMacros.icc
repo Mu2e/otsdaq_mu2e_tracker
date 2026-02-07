@@ -13,16 +13,23 @@
 
 
 
-    registerFEMacroFunction("Ui ReadSerialNumber",
+    registerFEMacroFunction("Ui ReadPanelID",
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_ReadSerialNumber),
-                            std::vector<std::string>{},          // inputs parameters
+                                &ROCTrackerInterface::FEMacro_Ui_ReadPanelID),
+                            std::vector<std::string>{"PrintLevel (Default = 0)"},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
 
-    registerFEMacroFunction("Ui InitRocReadoutMode",
+    registerFEMacroFunction("Ui WritePanelID",
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_InitRocReadoutMode),
+                                &ROCTrackerInterface::FEMacro_Ui_WritePanelID),
+                            std::vector<std::string>{"PanelID", "PrintLevel (Default = 0)"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui ReadSerialNumber",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_ReadSerialNumber),
                             std::vector<std::string>{},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
@@ -45,14 +52,14 @@
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
                                 &ROCTrackerInterface::FEMacro_Ui_RocConfigurePatternMode),
                             std::vector<std::string>{},          // inputs parameters
-                            std::vector<std::string>{},  // output parameters
+                            std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
 
     registerFEMacroFunction("Ui RocSetDataVersion",
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
                                 &ROCTrackerInterface::FEMacro_Ui_RocSetDataVersion),
                             std::vector<std::string>{"Version"},          // inputs parameters
-                            std::vector<std::string>{},  // output parameters
+                            std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
 
     registerFEMacroFunction("Ui ReadDeviceID",
@@ -62,23 +69,9 @@
                             std::vector<std::string>{"Result", "Stream"},  // output parameters
                             1);  // requiredUserPermissions
 
-    registerFEMacroFunction("Ui FindAlignments",
-                            static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_FindAlignments),
-                            std::vector<std::string>{"PrintLevel (Default = 1)"},          // inputs parameters
-                            std::vector<std::string>{"Result", "Stream"},  // output parameters
-                            1);  // requiredUserPermissions
-
     registerFEMacroFunction("Ui MonicaDigiClear",
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
                                 &ROCTrackerInterface::FEMacro_Ui_MonicaDigiClear),
-                            std::vector<std::string>{},          // inputs parameters
-                            std::vector<std::string>{"Result"},  // output parameters
-                            1);  // requiredUserPermissions
-
-    registerFEMacroFunction("Ui MonicaVarLinkConfig",
-                            static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_MonicaVarLinkConfig),
                             std::vector<std::string>{},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions

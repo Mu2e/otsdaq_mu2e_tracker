@@ -49,7 +49,7 @@ void ROCTrackerInterface::FEMacro_Ui_print_PrintRocStatus(__ARGS__)
 
 	std::stringstream Stream;
 
-	Ui_print_PrintRocStatus(Format, Link, Stream);
+	trackerDTC_->PrintRocStatus(Format, Link, Stream);
 
 	__COUT_MULTI__(2, Stream.str());
 	__SET_ARG_OUT__("Stream", Stream.str());

@@ -19,6 +19,8 @@
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 #include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
 
+#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
+
 namespace ots
 {
 class ROCTrackerInterface : public ROCPolarFireCoreInterface
@@ -63,6 +65,8 @@ public:
 
 
 	//------------ for tracker-specific Ui functions
+
+	std::unique_ptr<trkdaq::DtcInterface>			trackerDTC_;
 
 	// from DtcInterface.h :  ------------------
 	int          fEnabled = 1;   // if comes from ODB, could be 0

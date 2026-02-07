@@ -12,16 +12,15 @@
 //------------------------------------------------------------------------
 
 
+void FEMacro_Ui_ReadPanelID(__ARGS__);
+void FEMacro_Ui_WritePanelID(__ARGS__);
 void FEMacro_Ui_ReadSerialNumber(__ARGS__);
-void FEMacro_Ui_InitRocReadoutMode(__ARGS__);
 void FEMacro_Ui_RebootMcu(__ARGS__);
 void FEMacro_Ui_ResetLink(__ARGS__);
 void FEMacro_Ui_RocConfigurePatternMode(__ARGS__);
 void FEMacro_Ui_RocSetDataVersion(__ARGS__);
 void FEMacro_Ui_ReadDeviceID(__ARGS__);
-void FEMacro_Ui_FindAlignments(__ARGS__);
 void FEMacro_Ui_MonicaDigiClear(__ARGS__);
-void FEMacro_Ui_MonicaVarLinkConfig(__ARGS__);
 void FEMacro_Ui_MonicaVarPatternConfig(__ARGS__);
 void FEMacro_Ui_RocBlockRead(__ARGS__);
 void FEMacro_Ui_ReadRocDDR(__ARGS__);

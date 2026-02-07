@@ -13,20 +13,6 @@
 
 
 
-    registerFEMacroFunction("Ui_base InitReadout",
-                            static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_base_InitReadout),
-                            std::vector<std::string>{"EmulateCfo (Default = -1)", "RocReadoutMode (Default = -1)"},          // inputs parameters
-                            std::vector<std::string>{"Result"},  // output parameters
-                            1);  // requiredUserPermissions
-
-    registerFEMacroFunction("Ui_base InitRocReadoutMode",
-                            static_cast<FEVInterface::frontEndMacroFunction_t>(
-                                &ROCTrackerInterface::FEMacro_Ui_base_InitRocReadoutMode),
-                            std::vector<std::string>{},          // inputs parameters
-                            std::vector<std::string>{"Result"},  // output parameters
-                            1);  // requiredUserPermissions
-
     registerFEMacroFunction("Ui_base ConfigureJA",
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
                                 &ROCTrackerInterface::FEMacro_Ui_base_ConfigureJA),
@@ -59,6 +45,13 @@
                             static_cast<FEVInterface::frontEndMacroFunction_t>(
                                 &ROCTrackerInterface::FEMacro_Ui_base_ReadRegister),
                             std::vector<std::string>{"Register"},          // inputs parameters
+                            std::vector<std::string>{"Result"},  // output parameters
+                            1);  // requiredUserPermissions
+
+    registerFEMacroFunction("Ui_base LinkLocked",
+                            static_cast<FEVInterface::frontEndMacroFunction_t>(
+                                &ROCTrackerInterface::FEMacro_Ui_base_LinkLocked),
+                            std::vector<std::string>{},          // inputs parameters
                             std::vector<std::string>{"Result"},  // output parameters
                             1);  // requiredUserPermissions
 

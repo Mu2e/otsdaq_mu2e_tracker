@@ -434,7 +434,6 @@ int ROCTrackerInterface::Ui_ProgramRoc_SpiWriteRecord(int Link, int FirstAddr, i
 
 //==============================================================================
 ///	Ui_ProgramRoc_ProgramRoc()
-///
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ProgramRoc.cc
 /// Do not modify this file directly.
 ///

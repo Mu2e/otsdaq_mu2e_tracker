@@ -52,7 +52,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_DumpSettings(__ARGS__
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_DumpSettings(Link, Channel, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_DumpSettings(Link, Channel, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -87,7 +87,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_PulserOn(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_PulserOn(Link, FirstChannelMask, DutyCycle, PulserDelay, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_PulserOn(Link, FirstChannelMask, DutyCycle, PulserDelay, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -119,7 +119,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_PulserOff(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_PulserOff(Link, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_PulserOff(Link, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -153,7 +153,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadSettings(__ARGS__
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_ReadSettings(Link, Channel, Data, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_ReadSettings(Link, Channel, Data, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("Data", StringMacros::vectorToString(Data));
@@ -188,7 +188,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetCalDac(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_SetCalDac(Link, FirstChannelMask, PulseHeight, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_SetCalDac(Link, FirstChannelMask, PulseHeight, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -222,7 +222,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetGain(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_SetGain(Link, ChannelID, PreampType, Gain, PrintLevel);
+		trackerDTC_->ControlRoc_SetGain(Link, ChannelID, PreampType, Gain, PrintLevel);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -254,7 +254,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_SetThreshold(__ARGS__
 	int Result;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_SetThreshold(Link, ChannelID, PreampType, Threshold, PrintLevel);
+		trackerDTC_->ControlRoc_SetThreshold(Link, ChannelID, PreampType, Threshold, PrintLevel);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -287,7 +287,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_MeasureThresholds(__A
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_MeasureThresholds(Link, MaskC, MaskD, MaskE, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_MeasureThresholds(Link, MaskC, MaskD, MaskE, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__COUT_MULTI__(2, Stream.str());
@@ -320,7 +320,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadSpi(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_ReadSpi(SpiRawData, Link, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_ReadSpi(SpiRawData, Link, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("SpiRawData", StringMacros::vectorToString(SpiRawData));
@@ -354,7 +354,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_ReadIlp(__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_ReadIlp(RawData, Link, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_ReadIlp(RawData, Link, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("RawData", StringMacros::vectorToString(RawData));
@@ -388,7 +388,7 @@ void ROCTrackerInterface::FEMacro_Ui_ControlRoc_ControlRoc_GetKey (__ARGS__)
 	std::stringstream Stream;
 
 	Result =
-		Ui_ControlRoc_ControlRoc_GetKey (RawData, Link, PrintLevel, Stream);
+		trackerDTC_->ControlRoc_GetKey (RawData, Link, PrintLevel, Stream);
 
 	__SET_ARG_OUT__("Result", Result);
 	__SET_ARG_OUT__("RawData", StringMacros::vectorToString(RawData));

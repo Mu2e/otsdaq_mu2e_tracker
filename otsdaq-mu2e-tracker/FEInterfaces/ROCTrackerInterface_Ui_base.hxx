@@ -12,20 +12,22 @@
 //------------------------------------------------------------------------
 
 
-int Ui_base_InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1);
-int Ui_base_InitRocReadoutMode();
+int Ui_base_InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream* Stream = nullptr);
+int Ui_base_InitRocReadoutMode(std::ostream* Stream = nullptr);
 int Ui_base_ConfigureJA(int ClockSource = -1, int Reset = -1);
 int Ui_base_InitEmulatedCFOReadoutMode();
 int Ui_base_InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+int Ui_base_InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData);
 void Ui_base_LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 uint32_t Ui_base_ReadRegister         (uint16_t Register);
+int Ui_base_LinkLocked (int Link);
 int Ui_base_ResetLinks             (int LinkMask = 0, int SetNewMask = 0);
 int Ui_base_ResetLink              (int Link);
 void Ui_base_SetBit       (int Register, int Bit, int Value);
 void Ui_base_SetLinkMask  (int Mask = 0);
-void Ui_base_SetupCfoInterface(int CFOEmulationMode, 
-                                   int ForceCFOEdge    , 
-                                   int EnableCFORxTx   , 
+void Ui_base_SetupCfoInterface(int CFOEmulationMode,
+                                   int ForceCFOEdge    ,
+                                   int EnableCFORxTx   ,
                                    int EnableAutogenDRP);
 std::vector<std::string> Ui_base_GetRocRegistersNames     (           bool history = false);
 std::vector<uint32_t> Ui_base_GetRocRegisters          (int ilink, bool history = false);

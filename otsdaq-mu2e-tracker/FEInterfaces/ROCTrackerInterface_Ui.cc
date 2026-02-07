@@ -27,6 +27,118 @@ using namespace ots;
 
 
 //==============================================================================
+///	Ui_PanelID_RW()
+/// Rw: 1=write, 0=read
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+int ROCTrackerInterface::Ui_PanelID_RW(int Link, int Rw, int& PanelID, int PrintLevel)
+{
+    int rc(0);
+    TLOG(TLVL_DEBUG) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
+
+    auto roc  = DTCLib::DTC_Link_ID(Link);
+
+    if (not LinkEnabled(Link)) {
+      TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} not enabled",PcieAddr(),Link);
+      return -1;
+    }
+
+    if (not LinkLocked(Link)) {
+      TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),Link);
+      return -2;
+    }
+//-----------------------------------------------------------------------------
+// write parameters into reg ***  (block write) , sleep for some time,
+// then wait till reg 128 returns 0x8000
+// chan mask always includes the first channel
+//-----------------------------------------------------------------------------
+    bool                  increment_address(false);
+    std::vector<uint16_t> vec;
+    uint16_t              addr(0x0000), panel_id(PanelID);
+    vec.push_back(Rw);
+    vec.push_back(addr);
+    vec.push_back(panel_id);
+    getDTC()->WriteROCBlock(roc,279,vec,false,increment_address,100);
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+
+    uint16_t u;
+    while ((u = getDTC()->ReadROCRegister(roc,128,5000)) != 0x8000) {};
+    if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
+//-----------------------------------------------------------------------------
+// register 129: number of words to read, currently-  (+ 4) (ask Monica)
+//-----------------------------------------------------------------------------
+    int nw = getDTC()->ReadROCRegister(roc,129,100);
+    if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",129,nw);
+
+    nw = nw-4;
+    std::vector<uint16_t> v2;
+    getDTC()->ReadROCBlock(v2,roc,279,nw,false,100);
+//-----------------------------------------------------------------------------
+// print output - in two formats
+// expect only one word
+//-----------------------------------------------------------------------------
+    if ((PrintLevel & 0x1) != 0) {
+      printf("------------------------------------------------nw = %i(0x%x)\n",nw,nw);
+      Ui_print_PrintBuffer(v2.data(),nw);
+    }
+
+    if (nw != 1) {
+      printf("ERROR: wrong number of words: %i, BAIL OUT\n",nw);
+      return -1;
+    }
+
+    if (Rw == 0) {
+      PanelID = v2[0];
+      if ((PrintLevel & 0x2) != 0) {
+        printf("panel ID: MN%03d\n",PanelID);
+      }
+    }
+
+    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,PanelID);
+    return rc;
+  } // end Ui_PanelID_RW()
+
+//==============================================================================
+///	Ui_ReadPanelID()
+/// on read, PanelID_RW returns the panel ID
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+int ROCTrackerInterface::Ui_ReadPanelID(int Link, int PrintLevel)
+{
+    int dummy(-1);
+    int rc = PanelID_RW(Link,0,dummy,PrintLevel);
+    if (rc != 0) {
+      return rc;
+    }
+    return dummy;
+  } // end Ui_ReadPanelID()
+
+//==============================================================================
+///	Ui_WritePanelID()
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterface.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+int ROCTrackerInterface::Ui_WritePanelID(int Link, int PanelID, int PrintLevel)
+{
+    int panel_id(PanelID);
+    return PanelID_RW(Link,1,panel_id,PrintLevel);
+  } // end Ui_WritePanelID()
+
+//==============================================================================
 ///	Ui_ReadSerialNumber()
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
 /// Do not modify this file directly.
@@ -75,7 +187,7 @@ std::string ROCTrackerInterface::Ui_ReadSerialNumber(const DTCLib::DTC_Link_ID& 
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_InitRocReadoutMode()
+int ROCTrackerInterface::Ui_InitRocReadoutMode(std::ostream* Stream)
 {
     int rc(0);
 
@@ -87,29 +199,24 @@ int ROCTrackerInterface::Ui_InitRocReadoutMode()
 // 2025-01-19 PM    Ui_base_ResetLinks();       // forget it ! ... /*this seems to be necesary*/
 
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
-      rc = Ui_MonicaVarPatternConfig();                  // readout ROC patterns
+      rc = Ui_MonicaVarPatternConfig();    // read ROC patterns
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
-      rc = Ui_MonicaVarLinkConfig();                      // readout ROC digis
+      rc = Ui_MonicaVarLinkConfig(Stream);       // read digis
       if (rc < 0) {
         TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
         return rc;
       }
 
-
-      // ostd::stringstream sout;
-      // PrintRocStatus(1,-1,sout);
-      // TLOG(TLVL_DEBUG) << "after Ui_MonicaVarLinkConfig:\n" << sout.str();
-
       rc = Ui_MonicaDigiClear();                          //
-      if (rc < 0) {
-        return rc;
-      }
+      if (rc < 0)  return rc;
     }
     else {
-      TLOG(TLVL_DEBUG) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
+      TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
+      rc = -1;
     }
-    TLOG(TLVL_DEBUG) << Form("-- END: fRocReadoutMode=%i\n",fRocReadoutMode);
+
+    TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
   } // end Ui_InitRocReadoutMode()
@@ -134,13 +241,19 @@ int ROCTrackerInterface::Ui_RebootMcu(int Link)
       lnk2 = 6;
     }
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      if (not LinkEnabled(lnk))       continue;
+      if (not LinkLocked(lnk)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+        rc += -10;
+        continue;
+      }
       try {
         getDTC()->WriteROCRegister(DTCLib::DTC_Link_ID(lnk),15,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
       catch(...) {
         TLOG(TLVL_ERROR) << "Failed to reboot the MCU:" << lnk;
-        rc = -1;
+        rc += -1;
       }
     }
     return rc;
@@ -167,13 +280,19 @@ int ROCTrackerInterface::Ui_ResetLink(int Link)
       lnk2 = 6;
     }
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      if (not LinkEnabled(lnk))       continue;
+      if (not LinkLocked(lnk)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+        rc += -10;
+        continue;
+      }
       try {
         getDTC()->WriteROCRegister(DTCLib::DTC_Link_ID(lnk),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
-      catch(...) {
+      catch (...) {
         TLOG(TLVL_ERROR) << "Failed to reset link:" << lnk;
-        rc = -1;
+        rc += -1;
       }
     }
     return rc;
@@ -189,15 +308,15 @@ int ROCTrackerInterface::Ui_ResetLink(int Link)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_RocConfigurePatternMode()
+int ROCTrackerInterface::Ui_RocConfigurePatternMode()
 {
-    Ui_MonicaVarPatternConfig();
+    return Ui_MonicaVarPatternConfig();
   } // end Ui_RocConfigurePatternMode()
 
 //==============================================================================
 ///	Ui_RocSetDataVersion()
 /// Version --> R29k
-/// as thre is no point inhaving different ROCs with different data versions, assume
+/// as there is no point in having different ROCs with different data versions, assume
 /// that specifying the mask means that we want it to be redefined
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
 /// Do not modify this file directly.
@@ -206,18 +325,23 @@ void ROCTrackerInterface::Ui_RocConfigurePatternMode()
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-void ROCTrackerInterface::Ui_RocSetDataVersion(int Version, int LinkMask)
+int ROCTrackerInterface::Ui_RocSetDataVersion(int Version, int LinkMask)
 {
+    int tmo_ms(100), rc(0);
+
     if (LinkMask != 0) fLinkMask = LinkMask;
 
-    int tmo_ms(100);
     for (int i=0; i<6; i++) {
-      int enabled = (fLinkMask >> 4*i) & 0x1;
-      if (enabled != 0) {
-        getDTC()->WriteROCRegister(DTCLib::DTC_Link_ID(i),29,Version,false,tmo_ms);
+      if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        rc += -10;
+        continue;
       }
+      getDTC()->WriteROCRegister(DTCLib::DTC_Link_ID(i),29,Version,false,tmo_ms);
     }
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    return rc;
   } // end Ui_RocSetDataVersion()
 
 //==============================================================================
@@ -237,13 +361,12 @@ std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadDeviceID(DTCLib::DTC
 
     int ilink = int(Link);
     if (not LinkEnabled(ilink)) {
-      Stream << "ERROR: Link " << ilink << " is not enabled" << std::endl;
+      std::string msg = std::format("DTC:{} link:{} not enabled",PcieAddr(),ilink);
+      Stream << "ERROR: " << msg << std::endl;
+      TLOG(TLVL_ERROR) << msg;
       return rv;
     }
-                                        // reset only ROC in question
-                                        // 2024-11-14: Monica tells reset is not needed
-    //    this->Ui_ResetRoc(Link,0);
-    // write nothing to trigger query
+                                        // write nothing to trigger query
     std::vector<DTCLib::roc_data_t> empty;
     getDTC()->WriteROCBlock(Link, 260, empty, false, false, 1000);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -269,8 +392,10 @@ std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadDeviceID(DTCLib::DTC
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-Alignment ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link)
+int ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link, Alignment& Res)
 {
+    int rc(0);
+
     // write parameters into roc to initiate routine
     std::vector<DTCLib::roc_data_t> writeable = {
       4,                             // eye-monitor width
@@ -286,7 +411,19 @@ Alignment ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link)
       0xFFFF,                        // bitmask for channels 80 - 95
     };
 
-    // register 264: find alignment routine
+    int lnk = Link;
+
+    TLOG(TLVL_DEBUG) << std::format("-- START: link:{}",lnk);
+
+    if (not LinkLocked(lnk)) {
+      std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+      TLOG(TLVL_ERROR) << msg;
+      std::vector<DTCLib::roc_data_t> x;
+      Res = Alignment(x);
+      return rc;
+    }
+
+      // register 264: find alignment routine
     bool increment_address = false; // read via fifo
     getDTC()->WriteROCBlock(Link, trkdaq::REG_FINDALIGNMENT, writeable, false, increment_address, 100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
@@ -300,18 +437,18 @@ Alignment ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link)
     std::vector<DTCLib::roc_data_t> returned = this->Ui_ReadROCBlockEnsured(Link,trkdaq::REG_FINDALIGNMENT);
 
     // return
-    auto rv = Alignment(returned);
-    return rv;
+    Res = Alignment(returned);
+
+    TLOG(TLVL_DEBUG) << "-- END";
+    return rc;
   } // end Ui_FindAlignment()
 
 //==============================================================================
 ///	Ui_FindAlignments()
 /// align ROC FPGA/ADC signals, and optionally print the summary
-///
 /// if 'Link' = -1, use the DTC link mask
 /// there is no practical need to pass a random link mask,
 /// so 'Link' is either all enabled DTC links, or a specific one
-///
 /// returns the number of channels with non-zero number of bit slip steps
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
 /// Do not modify this file directly.
@@ -320,22 +457,40 @@ Alignment ROCTrackerInterface::Ui_FindAlignment(DTCLib::DTC_Link_ID Link)
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_FindAlignments(int PrintLevel, int Link, std::ostream& Stream)
+int ROCTrackerInterface::Ui_FindAlignments(int Link, int& NBitSlips, int PrintLevel, std::ostream& Stream)
 {
-    int n_slipped(0);
+    int rc(0);
 
-    int link_mask = fLinkMask;
-    if (Link != -1) link_mask = 0x1 << 4*Link;
+    NBitSlips = 0;
 
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
 
-    for (int i = 0 ; i < 6 ; i++){
-      int enabled = (link_mask >> 4*i) & 0x1;
-      if (enabled == 0)                                     continue;
+    TLOG(TLVL_DEBUG) << std::format("-- START: lnk1:{} lnk2:{} PrintLevel:{}",lnk1,lnk2,PrintLevel);
+
+    for (int lnk = lnk1 ; lnk<lnk2 ; lnk++){
+      if (not LinkEnabled(lnk))                             continue;
+      if (not LinkLocked(lnk)) {
+        std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << " ERROR: " << msg << "\n";
+        continue;
+      }
 //-----------------------------------------------------------------------------
 // perform one iteration
 //-----------------------------------------------------------------------------
-      auto link      = DTCLib::DTC_Link_ID(i);
-      auto alignment = Ui_FindAlignment(link);
+      TLOG(TLVL_DEBUG) << std::format("link:{}",lnk);
+      Alignment alignment;
+      int rcc        = Ui_FindAlignment(DTCLib::DTC_Link_ID(lnk),alignment);
+      TLOG(TLVL_DEBUG) << std::format("lnk:{} after Ui_FindAlignment: rcc:{}",lnk,rcc);
+
+      if (rcc < 0) {
+                                        // not the best, but want to continue
+        rc += rcc;
+      }
 
       int n_non_null   =  0;
       int nsteps_tot   =  0;
@@ -360,15 +515,16 @@ int ROCTrackerInterface::Ui_FindAlignments(int PrintLevel, int Link, std::ostrea
       }
 
       if (PrintLevel & 0x1) {
-        Stream << " link:" << i << " n_non_null:" << std::setw(3) << n_non_null
+        Stream << " link:" << lnk << " n_non_null:" << std::setw(3) << n_non_null
                << " nsteps_tot:" << std::setw(3) << nsteps_tot
                << " worst_ch:" << std::setw(3) << worst_ch
                << " max_steps_ch:" << std::setw(3) << max_steps_ch << std::endl;
       }
-      n_slipped += n_non_null;
+      NBitSlips += n_non_null;
     }
 
-    return n_slipped;
+    TLOG(TLVL_DEBUG) << std::format("-- END: NBitSlips:{}",NBitSlips);
+    return rc;
   } // end Ui_FindAlignments()
 
 //==============================================================================
@@ -685,7 +841,7 @@ int ROCTrackerInterface::Ui_MonicaDigiClear()
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
+int ROCTrackerInterface::Ui_MonicaVarLinkConfig(std::ostream* Stream)
 {
     int rc(0);
 
@@ -699,8 +855,12 @@ int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
       if (enabled) {
         getDTC()->WriteROCRegister(DTCLib::DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        TLOG(TLVL_INFO) << "wrote lane_mask:" << std::hex << lane_mask
-                        << " to ROC:" << i <<" reg:8, read back:" << getDTC()->ReadROCRegister(DTCLib::DTC_Link_ID(i), 8,100);
+        std::string msg = std::format("link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",i,lane_mask,getDTC()->ReadROCRegister(DTCLib::DTC_Link_ID(i),8,100));
+        TLOG(TLVL_INFO) << msg;
+        if (Stream) (*Stream) << msg << std::endl;
+      }
+      else {
+        if (Stream) (*Stream) << std::format("link:{} disabled\n",i);
       }
     }
 
@@ -728,8 +888,9 @@ int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
           u = getDTC()->ReadROCRegister(DTCLib::DTC_Link_ID(i),18,100);
           if ((u >> 0x8) != 0xF) {
             // still in trouble
-            TLOG(TLVL_ERROR) << Form("ROC on link %i is not ready to read the DIGIs  link mask is 0x%04x, call Monica and Richie\n",
-                                     i,u);
+            std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
+            if (Stream) (*Stream) << msg << std::endl;
+            TLOG(TLVL_ERROR) << msg;
             rc -= 1;
           }
         }
@@ -742,10 +903,11 @@ int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
 //==============================================================================
 ///	Ui_MonicaVarPatternConfig()
 /// origin: test_stand/monica_002/var_pattern_config.sh from Feb 14 2024
-///  -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
+/// -rwxr-xr-x  1 mu2etrk mu2e      1820 Feb 14 15:00 var_pattern_config.sh
 /// adding 0x2000 prevents ROC from reinitializing the pattern, so two subsequent
 /// buffer test runs would return different results
 /// lane mask default: 0xf
+/// if any of the called functions returns negative code, the diagnostics will show up in the TRACE prontout
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
 /// Do not modify this file directly.
 ///
@@ -755,8 +917,11 @@ int ROCTrackerInterface::Ui_MonicaVarLinkConfig()
 ///
 int ROCTrackerInterface::Ui_MonicaVarPatternConfig(int LaneMask, int NHitsPerLane)
 {
+    int rc(0);
 
-    Ui_base_ResetLinks();                                      // use fLinkMask
+    rc = Ui_base_ResetLinks();                               // use fLinkMask
+    if (rc < 0) return rc;
+
     int version = 1;
     Ui_RocSetDataVersion(version);                      // Version --> R29
 
@@ -1008,8 +1173,17 @@ void ROCTrackerInterface::Ui_ReadSubevents(std::vector<std::unique_ptr<DTCLib::D
 int ROCTrackerInterface::Ui_RocBlockRead(int Link, int Reg, std::vector<uint16_t>& Res, int NExpected)
 {
     int rc(0), nw(0);
+
+    if (not LinkEnabled(Link)) {
+      TLOG(TLVL_WARNING) << std::format("link:{} is not enabled",Link);
+      return rc;
+    }
+    else if (not LinkLocked(Link)) {
+      TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",Link);
+      return -1;
+    }
 //-----------------------------------------------------------------------------
-// convert into enum
+// link is enabled and locked, convert into enum
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("Link:{} Reg:{:03d} NExpected:{}",Link,Reg,NExpected);
     auto link_id  = DTCLib::DTC_Link_ID(Link);
@@ -1054,6 +1228,7 @@ int ROCTrackerInterface::Ui_RocBlockRead(int Link, int Reg, std::vector<uint16_t
 /// read a given block number from ROC DDR memory
 /// block size: 1 kB
 /// ROC reg 15: last memory block read
+/// returns 0 if read was successful, negative number if error
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface.cc
 /// Do not modify this file directly.
 ///
@@ -1064,6 +1239,20 @@ int ROCTrackerInterface::Ui_RocBlockRead(int Link, int Reg, std::vector<uint16_t
 int ROCTrackerInterface::Ui_ReadRocDDR(int Link, int Block, std::ostream& Stream)
 {
     int rc(0);
+    TLOG(TLVL_DEBUG) << std::format("-- START link:{} block:{}",Link,Block);
+
+    if (not LinkEnabled(Link)) {
+      std::string msg = std::format("link:{} is not enabled",Link);
+      TLOG(TLVL_WARNING) << msg;
+      Stream << msg;
+      return rc;
+    }
+    else if (not LinkLocked(Link)) {
+      std::string msg = std::format("link:{} enabled but not locked",Link);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << msg;
+      return -1;
+    }
 
     DTCLib::DTC_Link_ID link_id = DTCLib::DTC_Link_ID(Link);
 
@@ -1098,6 +1287,7 @@ int ROCTrackerInterface::Ui_ReadRocDDR(int Link, int Block, std::ostream& Stream
       Stream << std::endl << "ERROR:001 wrong number of words nw:" << nw << " read (not 512)\n";
       rc = -1;
     }
+    TLOG(TLVL_DEBUG) << std::format("-- END rc:{}",rc);
     return rc;
   } // end Ui_ReadRocDDR()
 
@@ -1111,7 +1301,7 @@ int ROCTrackerInterface::Ui_ReadRocDDR(int Link, int Block, std::ostream& Stream
 ///
 ///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
 ///
-std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link, const DTCLib::roc_address_t& address)
+std::vector<DTCLib::roc_data_t> ROCTrackerInterface::Ui_ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link, const DTCLib::roc_address_t& address
 {
     // register 129: number of words to read
     size_t nwords = static_cast<size_t>(getDTC()->ReadROCRegister(Link, 129, 1000));
@@ -1341,7 +1531,7 @@ std::string ROCTrackerInterface::Ui_GetRocFwGitCommit(int Link)
 float ROCTrackerInterface::Ui_ProgramAndQueryThreshold(const int Link,
                                                const int ChannelID,
                                                const int PreampType,
-                                               const DTCLib::roc_data_t dac)
+                                               const DTCLib::roc_data_t dac
 {
     uint32_t mask_lo = 0x00000000;
     uint32_t mask_md = 0x00000000;
@@ -1378,7 +1568,7 @@ bool ROCTrackerInterface::Ui_FindThreshold(const int Link,
                                    const int PreampType,
                                    const float threshold,
                                    const float tolerance,
-                                   DTCLib::roc_data_t& out)
+                                   DTCLib::roc_data_t& out
 {
     DTCLib::roc_data_t lower = 0;
     DTCLib::roc_data_t upper = 1023;
@@ -1414,7 +1604,7 @@ bool ROCTrackerInterface::Ui_FindThreshold(const int Link,
                                    const int ChannelID,
                                    const int PreampType,
                                    const float threshold,
-                                   const float tolerance)
+                                   const float tolerance
 {
     DTCLib::roc_data_t tmp;
     auto rv = this->Ui_FindThreshold(Link, ChannelID, PreampType,

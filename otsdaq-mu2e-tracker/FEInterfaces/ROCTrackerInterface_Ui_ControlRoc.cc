@@ -158,7 +158,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DigiRW(trkdaq::ControlRoc_Digi
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream)
 {
     int rc (0);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " Channel:" << Channel << std::endl;
+    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{} Channel:{}",Link,Channel);
     Stream           << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -175,7 +175,10 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
 
       std::vector<uint16_t> settings;
       rc = Ui_ControlRoc_ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
-      if (rc != 0) continue;
+      if (rc != 0) {
+                                        // return immediately
+        break;
+      }
 //-----------------------------------------------------------------------------
 // print
 //-----------------------------------------------------------------------------
@@ -197,6 +200,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_DumpSettings(int Link, int Cha
       }
     }
 
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
   } // end Ui_ControlRoc_ControlRoc_DumpSettings()
 
@@ -1053,6 +1057,7 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
 //==============================================================================
 ///	Ui_ControlRoc_ControlRoc_ReadSpi()
 /// read SPI, return vector of short's, optionally print
+/// ReadSPI: reg 258
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterface_ControlRoc.cc
 /// Do not modify this file directly.
 ///
@@ -1062,9 +1067,6 @@ int ROCTrackerInterface::Ui_ControlRoc_ConvertSpiData(const std::vector<uint16_t
 ///
 int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>& SpiRawData, int Link, int PrintLevel, std::ostream& Stream)
 {
-//-----------------------------------------------------------------------------
-// ReadSPI: reg 258
-//-----------------------------------------------------------------------------
     int rc(0);
 
     int l1 = Link;
@@ -1077,6 +1079,11 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi(std::vector<uint16_t>&
 
     for (int i=l1; i<l2; ++i) {
       if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        rc += -10;
+        continue;
+      }
 
       rc = Ui_RocBlockRead(i,trkdaq::REG_READSPI,SpiRawData);
 
@@ -1130,6 +1137,12 @@ int ROCTrackerInterface::Ui_ControlRoc_ControlRoc_ReadSpi_1(trkdaq::TrkSpiData_t
     }
 
     for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i)) continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        rc += -10;
+        continue;
+      }
       std::vector<uint16_t> data;
       rc = Ui_RocBlockRead(i,trkdaq::REG_READSPI,data,trkdaq::TrkSpiDataNWords);
 //-----------------------------------------------------------------------------

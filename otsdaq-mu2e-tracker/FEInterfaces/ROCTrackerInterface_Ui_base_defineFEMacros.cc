@@ -28,62 +28,6 @@ using namespace ots;
 
 
 //==============================================================================
-/// FE Macro to call Ui_base_InitReadout()
-///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
-/// Do not modify this file directly.
-///
-/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
-///
-///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
-///
-void ROCTrackerInterface::FEMacro_Ui_base_InitReadout(__ARGS__)
-{
-	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
-	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	for(auto& argIn : argsIn)
-		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
-
-	int EmulateCfo = __GET_ARG_IN__("EmulateCfo (Default = -1)", int, -1);
-	int RocReadoutMode = __GET_ARG_IN__("RocReadoutMode (Default = -1)", int, -1);
-
-	int Result;
-
-	Result =
-		Ui_base_InitReadout(EmulateCfo, RocReadoutMode);
-
-	__SET_ARG_OUT__("Result", Result);
-
-} // end FEMacro_Ui_base_InitReadout()
-
-//==============================================================================
-/// FE Macro to call Ui_base_InitRocReadoutMode()
-///
-/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
-/// Do not modify this file directly.
-///
-/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
-///
-///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
-///
-void ROCTrackerInterface::FEMacro_Ui_base_InitRocReadoutMode(__ARGS__)
-{
-	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
-	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	for(auto& argIn : argsIn)
-		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
-
-
-	int Result;
-
-	Result =
-		Ui_base_InitRocReadoutMode();
-
-	__SET_ARG_OUT__("Result", Result);
-
-} // end FEMacro_Ui_base_InitRocReadoutMode()
-
-//==============================================================================
 /// FE Macro to call Ui_base_ConfigureJA()
 ///
 /// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
@@ -106,7 +50,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_ConfigureJA(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_base_ConfigureJA(ClockSource, Reset);
+		trackerDTC_->ConfigureJA(ClockSource, Reset);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -133,7 +77,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_InitEmulatedCFOReadoutMode(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_base_InitEmulatedCFOReadoutMode();
+		trackerDTC_->InitEmulatedCFOReadoutMode();
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -161,7 +105,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_InitExternalCFOReadoutMode(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_base_InitExternalCFOReadoutMode(SampleEdgeMode);
+		trackerDTC_->InitExternalCFOReadoutMode(SampleEdgeMode);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -189,7 +133,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_LaunchRunPlanEmulatedCfo(__ARGS__)
 	int FirstEWTag = __GET_ARG_IN__("FirstEWTag", int);
 
 
-	Ui_base_LaunchRunPlanEmulatedCfo(EWLength, NMarkers, FirstEWTag);
+	trackerDTC_->LaunchRunPlanEmulatedCfo(EWLength, NMarkers, FirstEWTag);
 
 
 } // end FEMacro_Ui_base_LaunchRunPlanEmulatedCfo()
@@ -216,11 +160,39 @@ void ROCTrackerInterface::FEMacro_Ui_base_ReadRegister(__ARGS__)
 	uint32_t Result;
 
 	Result =
-		Ui_base_ReadRegister(Register);
+		trackerDTC_->ReadRegister(Register);
 
 	__SET_ARG_OUT__("Result", Result);
 
 } // end FEMacro_Ui_base_ReadRegister()
+
+//==============================================================================
+/// FE Macro to call Ui_base_LinkLocked()
+///
+/// This file was auto-generated from otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc
+/// Do not modify this file directly.
+///
+/// To modify, edit otsdaq-mu2e-tracker/Ui//DtcInterfaceBase.cc and re-run the import tool:
+///
+///   otsdaq_import_tracker_test_stand   otsdaq-mu2e-tracker/Ui/   otsdaq-mu2e-tracker/FEInterfaces/
+///
+void ROCTrackerInterface::FEMacro_Ui_base_LinkLocked(__ARGS__)
+{
+	__FE_COUT__ << "# of input args = " << argsIn.size() << __E__;
+	__FE_COUT__ << "# of output args = " << argsOut.size() << __E__;
+	for(auto& argIn : argsIn)
+		__FE_COUT__ << argIn.first << ": " << argIn.second << __E__;
+
+	int Link = ROCCoreVInterface::getLinkID();
+
+	int Result;
+
+	Result =
+		trackerDTC_->LinkLocked(Link);
+
+	__SET_ARG_OUT__("Result", Result);
+
+} // end FEMacro_Ui_base_LinkLocked()
 
 //==============================================================================
 /// FE Macro to call Ui_base_ResetLinks()
@@ -245,7 +217,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_ResetLinks(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_base_ResetLinks(LinkMask, SetNewMask);
+		trackerDTC_->ResetLinks(LinkMask, SetNewMask);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -273,7 +245,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_ResetLink(__ARGS__)
 	int Result;
 
 	Result =
-		Ui_base_ResetLink(Link);
+		trackerDTC_->ResetLink(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -301,7 +273,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_SetBit(__ARGS__)
 	int Value = __GET_ARG_IN__("Value", int);
 
 
-	Ui_base_SetBit(Register, Bit, Value);
+	trackerDTC_->SetBit(Register, Bit, Value);
 
 
 } // end FEMacro_Ui_base_SetBit()
@@ -326,7 +298,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_SetLinkMask(__ARGS__)
 	int Mask = __GET_ARG_IN__("Mask (Default = 0)", int, 0);
 
 
-	Ui_base_SetLinkMask(Mask);
+	trackerDTC_->SetLinkMask(Mask);
 
 
 } // end FEMacro_Ui_base_SetLinkMask()
@@ -354,7 +326,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_SetupCfoInterface(__ARGS__)
 	int EnableAutogenDRP = __GET_ARG_IN__("EnableAutogenDRP", int);
 
 
-	Ui_base_SetupCfoInterface(CFOEmulationMode, ForceCFOEdge, EnableCFORxTx, EnableAutogenDRP);
+	trackerDTC_->SetupCfoInterface(CFOEmulationMode, ForceCFOEdge, EnableCFORxTx, EnableAutogenDRP);
 
 
 } // end FEMacro_Ui_base_SetupCfoInterface()
@@ -381,7 +353,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetRocRegistersNames(__ARGS__)
 	std::vector<std::string> Result;
 
 	Result =
-		Ui_base_GetRocRegistersNames(history);
+		trackerDTC_->GetRocRegistersNames(history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -410,7 +382,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetRocRegisters(__ARGS__)
 	std::vector<uint32_t> Result;
 
 	Result =
-		Ui_base_GetRocRegisters(ilink, history);
+		trackerDTC_->GetRocRegisters(ilink, history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -439,7 +411,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetConvertedRocRegisters(__ARGS__)
 	std::vector<float> Result;
 
 	Result =
-		Ui_base_GetConvertedRocRegisters(ilink, history);
+		trackerDTC_->GetConvertedRocRegisters(ilink, history);
 
 	__SET_ARG_OUT__("Result", StringMacros::vectorToString(Result));
 
@@ -467,7 +439,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetRocID         (__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_base_GetRocID         (Link);
+		trackerDTC_->GetRocID         (Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -495,7 +467,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetRocDesignInfo (__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_base_GetRocDesignInfo (Link);
+		trackerDTC_->GetRocDesignInfo (Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
@@ -523,7 +495,7 @@ void ROCTrackerInterface::FEMacro_Ui_base_GetRocFwGitCommit(__ARGS__)
 	std::string Result;
 
 	Result =
-		Ui_base_GetRocFwGitCommit(Link);
+		trackerDTC_->GetRocFwGitCommit(Link);
 
 	__SET_ARG_OUT__("Result", Result);
 
