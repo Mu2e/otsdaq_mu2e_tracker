@@ -25,6 +25,7 @@ setupARTDAQOTS
 CMakePresets.json
 build-linux-*
 spack-build-* 
+_codeql*
 #------------------------------------------------------------------------------
 # by default, ROOT builds .so in he same directory with the script itself
 #------------------------------------------------------------------------------
