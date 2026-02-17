@@ -67,7 +67,7 @@ void ToyHW::StartDatataking() {
 
 void ToyHW::StopDatataking() {
   taking_data_ = false;
-  start_time_ = fake_time_;
+  start_time_  = fake_time_;
 }
 
 void ToyHW::FillBuffer(char* buffer, size_t* bytes_read) {
@@ -188,6 +188,9 @@ int ToyHW::NumADCBits() const {
     break;
   case demo::FragmentType::TOY2:
     return 14;
+    break;
+  case demo::FragmentType::TOY21:
+    return 10;
     break;
   default:
     throw cet::exception("ToyHW") << "Unknown board type " << fragment_type_ << " ("  // NOLINT(cert-err60-cpp)

@@ -300,8 +300,8 @@ namespace trkdaq {
 // on read, PanelID_RW returns the panel ID
 //-----------------------------------------------------------------------------
   int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
-    int dummy(-1);
-    int panel_id = PanelID_RW(Link,0,dummy,PrintLevel);
+    int panel_id(-1);
+    int rc = PanelID_RW(Link,0,panel_id,PrintLevel);
     return panel_id;
   }
   
@@ -409,6 +409,18 @@ namespace trkdaq {
         rc += -1;
       }
     }
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// Vadim: to reset digis, write 0, then 1 to ROC register 103 (decimal)
+//-----------------------------------------------------------------------------
+  int DtcInterface::ResetDigis(int Link) {
+    int rc(0);
+    
+    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x0,false,1000);
+    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x1,false,1000);
+    
     return rc;
   }
 
@@ -1362,7 +1374,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return rv;
   }
 
- // This is just an example, needs to be implemented for each subsystem
+//-----------------------------------------------------------------------------
+// This is just an example, needs to be implemented for each subsystem
+//-----------------------------------------------------------------------------
   std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
     std::vector<std::string> roc_var_names;
     char var_name[128];

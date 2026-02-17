@@ -98,7 +98,7 @@ private:
 	size_t sequence_id_scale_;
 	size_t initial_sequence_id_;
 
-	int rollover_subrun_interval_;
+	int max_events_per_subrun_;
 
 	ToyFragment::Metadata metadata_;
 

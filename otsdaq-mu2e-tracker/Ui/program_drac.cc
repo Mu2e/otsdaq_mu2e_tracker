@@ -616,7 +616,7 @@ int program_drac::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 
   bool increment_address(false);
 
-  TLOG(TLVL_INFO) << std::format("-- START: clear SPI memory segment at 0x0000\n");
+  TLOG(TLVL_INFO) << std::format("-- START: DTC:{} Link:{} clear SPI memory segment at 0x0000\n",Dtc_i->PcieAddr(),Link);
 
   rc = spi_clear_memory(Dtc_i,Link,0x0,0x10000);
   if (rc != 0) return rc;
@@ -782,7 +782,8 @@ int program_drac::spi_write_segment(trkdaq::DtcInterface* Dtc_i, int Link, const
   const int record_size (0x400);   // write 1Kbytes blocks
   int rc(0);
 
-  TLOG(TLVL_DEBUG) << std::format("START: writing NBytes:{} starting from offset 0x:{:08x} in SPI memory\n",NBytes,SpiOffset);
+  TLOG(TLVL_DEBUG) << std::format("START: DTC:{} Link:{} writing NBytes:{} starting from offset 0x:{:08x} in SPI memory\n",
+                                  Dtc_i->PcieAddr(),Link,NBytes,SpiOffset);
 //-----------------------------------------------------------------------------
 // can write only 1024 bytes (512 shorts) at a time
 //-----------------------------------------------------------------------------
@@ -847,7 +848,8 @@ int program_drac::spi_write_image(trkdaq::DtcInterface* Dtc_i, int Link, const I
 //-----------------------------------------------------------------------------
 // open input file and determine its size
 //-----------------------------------------------------------------------------
-  TLOG(TLVL_INFO) << std::format("-- START load image from Image->fn:{} offset:0x{:08x}\n",Image->fn,Image->offset);
+  TLOG(TLVL_INFO) << std::format("-- START load image to DTC:{} link:{} from Image->fn:{} offset:0x{:08x}\n",
+                                 Dtc_i->PcieAddr(),Link,Image->fn,Image->offset);
                          
   std::ifstream file(Image->fn, std::ios::binary);
   if (not file.is_open()) {
@@ -976,7 +978,7 @@ int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const
     return -1;
   }
   
-  TLOG(TLVL_INFO) << std::format("-- START programming version:{}\n",Version);
+  TLOG(TLVL_INFO) << std::format("-- START programming DTC{} link:{} with the ROC fw version:{}\n",Dtc_i->PcieAddr(),Link,Version);
 //-----------------------------------------------------------------------------
 // firmware to be uploaded found, proceed with the upload.
 // 1. initialize the DTC

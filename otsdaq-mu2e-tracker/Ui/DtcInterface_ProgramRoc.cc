@@ -398,7 +398,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // 
 //-----------------------------------------------------------------------------
-  int DtcInterface::ProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::SpiProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
     int rc(0);
                                         // offset=-1 flags the end
     int nimages(0);

@@ -251,6 +251,10 @@ namespace trkdaq {
     int          MonicaVarLinkConfig   (std::ostream* Stream = nullptr);
     int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
 //-----------------------------------------------------------------------------
+// internally called by ReadPanelID and WritePanelID
+//-----------------------------------------------------------------------------
+    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
+//-----------------------------------------------------------------------------
 // reboot microcontroller unit, Link=-1: all active links
 //-----------------------------------------------------------------------------
     int          RebootMcu          (int Link);
@@ -271,7 +275,35 @@ namespace trkdaq {
     virtual void PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
 
-    int          ProgramRoc        (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
+    std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
+                                                 int                 PrintLevel = 0,
+                                                 std::ostream&       Stream     = std::cout);
+   
+    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+                                    ulong       FirstTS,
+                                    int         PrintData,
+                                    int         Validate = 0      , 
+                                    const char* OutputFn = nullptr);
+
+                                        // returns the panel mnid
+    int          ReadPanelID       (int Link, int PrintLevel = 0);
+    int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
+    roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
+    virtual int  ResetLink         (int Link) override;
+    
+    int          ResetDigis        (int Link);
+    int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
+
+    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
+                                                        const DTCLib::roc_address_t& address);
+
+    void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
+    void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
+//-----------------------------------------------------------------------------
+// programming ROC over the fiber (I guess, this code is obsolete,
+// in use is the standalone version
+//-----------------------------------------------------------------------------
+    int          SpiProgramRoc     (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
@@ -283,36 +315,6 @@ namespace trkdaq {
     int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
-
-    std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
-                                                 int                 PrintLevel = 0,
-                                                 std::ostream&       Stream     = std::cout);
-
-                                        // underlying function common for the next two
-    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
-    
-                                        // returns the mnID
-    int          ReadPanelID       (int Link, int PrintLevel = 0);
-    
-                                        // writes the mnID 
-    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
-    
-    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
-                                    ulong       FirstTS,
-                                    int         PrintData,
-                                    int         Validate = 0      , 
-                                    const char* OutputFn = nullptr);
-
-    int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
-    roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
-    virtual int  ResetLink         (int Link) override;
-    int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
-
-    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
-                                                        const DTCLib::roc_address_t& address);
-
-    void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
-    void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
@@ -320,6 +322,8 @@ namespace trkdaq {
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     
+                                        // writes the mnID 
+    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
   };
 };
 
