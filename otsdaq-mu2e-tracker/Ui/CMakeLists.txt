@@ -3,10 +3,10 @@
 # link_directories($ENV{ROOTSYS}/lib)
 #
 cet_make_library(
-        SOURCE          
+        SOURCE
         DtcInterfaceBase.cc DtcInterfaceBase_print.cc
         CfoInterface.cc
-        DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc 
+        DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc
         #	PreampChannel.cc PreampThreshold.cc
         program_drac.cc
         LIBRARIES PUBLIC
@@ -19,7 +19,7 @@ cet_make_library(
         mu2e-pcie-utils::DTCInterface
         ROOT::Core
         )
-        
+
 include(ArtDictionary)
 
 art_dictionary(

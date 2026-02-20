@@ -75,13 +75,13 @@ find_package(mu2e-pcie-utils   3.02.00 REQUIRED EXPORT)
 # find_package(ROOT              6.32.08 REQUIRED EXPORT)
 
 # message("---------- otsdaq-mu2e-tracker: PRINT CMAKE VARIABLES " )
-# 
+#
 # get_cmake_property(_variableNames VARIABLES)
 # list (SORT _variableNames)
 # foreach (_variableName ${_variableNames})
 #   message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
-  
+
 # if (DEFINED ENV{MIDASSYS})
 #    message(-- P.Murat: otsdaq-mu2e-tracker: MIDASSYS=.$ENV{MIDASSYS}. )
 #    find_package(Midas REQUIRED)

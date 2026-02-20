@@ -8,6 +8,6 @@ cet_make_library(
         artdaq-core::Data
         artdaq-core-demo::Overlays
         )
-        
+
 install_headers()
 install_source()

@@ -5,7 +5,7 @@ include(CetTest)
 include(otsdaq::FEInterface)
 
 # cet_test(TrkUi_import_t   USE_BOOST_UNIT
-#     LIBRARIES   
+#     LIBRARIES
 #     otsdaq::FEInterface
 # )
 

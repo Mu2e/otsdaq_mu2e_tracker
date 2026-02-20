@@ -1,8 +1,8 @@
 
 include(otsdaq::FEInterface)
 
-cet_build_plugin(ROCTrackerInterface otsdaq::FEInterface 
-    SOURCE ROCTrackerInterface_interface.cc 
+cet_build_plugin(ROCTrackerInterface otsdaq::FEInterface
+    SOURCE ROCTrackerInterface_interface.cc
 
     # ROCTrackerInterface_Ui_base.cc
     ROCTrackerInterface_Ui_base_defineFEMacros.cc
