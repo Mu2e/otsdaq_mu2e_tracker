@@ -19,4 +19,3 @@ if(DictCompileOptions)
 
 	set_target_properties(otsdaq-mu2e-tracker_ui_root_dict PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
 endif()
-

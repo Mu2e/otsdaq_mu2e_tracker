@@ -1,6 +1,6 @@
 
 cet_make_library(
-        SOURCE          
+        SOURCE
         Alignment.cc
         AlignmentChannel.cc
         AlignmentIteration.cc

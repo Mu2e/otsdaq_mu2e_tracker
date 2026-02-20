@@ -6,12 +6,12 @@ set (dict_name "otsdaq-mu2e-tracker_Gui_dict")
 
 #
 cet_make_library(
-  SOURCE    DtcGui_gui.cc  
+  SOURCE    DtcGui_gui.cc
   DtcGui_gui_CfoTab.cc
   DtcGui_gui_DtcTab.cc
   DtcGui_gui_RocTab.cc
-  DtcGui_commands.cc  
-  DtcGui_threads.cc  
+  DtcGui_commands.cc
+  DtcGui_threads.cc
   LIBRARIES PUBLIC
   otsdaq-mu2e-tracker::Ui
   ROOT::Gui

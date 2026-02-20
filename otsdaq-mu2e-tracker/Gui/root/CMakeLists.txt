@@ -21,4 +21,3 @@ if(DictCompileOptions)
 
 	set_target_properties(${dict_name} PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
 endif()
-
