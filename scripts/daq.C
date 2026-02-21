@@ -464,7 +464,7 @@ int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 
 int dtc_reprogram_roc(int Link, const char* Version, int Doit = 1, int PrintLevel = 0, int PcieAddr = -1) {
   DtcInterface*       dtc_i       = DtcInterface::Instance(PcieAddr);
   const RocFwData_t*  roc_fw_data = DtcInterface::RocFwData();
-  dtc_i->ProgramRoc(Link,roc_fw_data,Version,Doit,PrintLevel);
+  dtc_i->SpiProgramRoc(Link,roc_fw_data,Version,Doit,PrintLevel);
   return 0;
 }
 

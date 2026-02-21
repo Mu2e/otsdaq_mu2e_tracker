@@ -181,13 +181,6 @@ namespace trkdaq {
                                               int           PrintLevel = 0x2       ,
                                               std::ostream& Stream     = std::cout );
 
-    int          ControlRoc_PrintThresholds  (int                        Link      ,
-                                              std::vector<float>&        Thr       ,
-                                              uint32_t      MaskC      = 0xFFFFFFFF,
-                                              uint32_t      MaskD      = 0xFFFFFFFF,
-                                              uint32_t      MaskE      = 0xFFFFFFFF,
-                                              int           PrintLevel = 0x2       ,
-                                              std::ostream& Stream     = std::cout );
 //-----------------------------------------------------------------------------
 // supposedly, PulseHeight = V/3.3*1024 or 1024 = 3.3V
 //-----------------------------------------------------------------------------
@@ -272,8 +265,17 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         PrintRocRegister  (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocRegister2 (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    virtual void PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
+    virtual int  PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
+    void         PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream);
+
+    int          PrintThresholds  (int                        Link      ,
+                                   std::vector<float>&        Thr       ,
+                                   uint32_t      MaskC      = 0xFFFFFFFF,
+                                   uint32_t      MaskD      = 0xFFFFFFFF,
+                                   uint32_t      MaskE      = 0xFFFFFFFF,
+                                   int           PrintLevel = 0x2       ,
+                                   std::ostream& Stream     = std::cout );
 
     std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
                                                  int                 PrintLevel = 0,

@@ -145,7 +145,7 @@ namespace mu2edaq {
 // most of the time Link = -1 meaning 'all enabled links'
 // otherwise it is the link to print
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+  int DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;

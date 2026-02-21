@@ -266,7 +266,7 @@ void program_drac::spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link
   std::cout << __func__ << ":END status:" << status << std::endl;
 }
 
-
+pro
 //-----------------------------------------------------------------------------
 // program IAP by address - not really needed
 //-----------------------------------------------------------------------------

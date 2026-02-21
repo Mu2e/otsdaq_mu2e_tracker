@@ -12,39 +12,40 @@
 #include "frontends/utils/OdbInterface.hh"
 #include "frontends/utils/utils.hh"
 
-//-----------------------------------------------------------------------------
-// link is the link number,  -1 is not allowed
-//-----------------------------------------------------------------------------
-int get_panel_name_from_odb(int PcieAddress, int Link, std::string& PanelName) {
-  int rc(0);
+// //-----------------------------------------------------------------------------
+// // link is the link number,  -1 is not allowed
+// //-----------------------------------------------------------------------------
+// int get_panel_name_from_odb(int PcieAddress, int Link, std::string& PanelName) {
+//   int rc(0);
 
-  try {
-    cm_connect_experiment("mu2e-dl-01-data","tracker","test_get_mnid",nullptr);
+//   try {
+//     cm_connect_experiment("mu2e-dl-01-data","tracker","test_get_mnid",nullptr);
     
-    OdbInterface* odb_i = OdbInterface::Instance();
-    HNDLE         h_arc = odb_i->GetActiveRunConfigHandle();
+//     OdbInterface* odb_i = OdbInterface::Instance();
+//     HNDLE         h_arc = odb_i->GetActiveRunConfigHandle();
   
-    std::string   subnet = odb_i->GetString(h_arc, "DAQ/PublicSubnet");
+//     std::string   subnet = odb_i->GetString(h_arc, "DAQ/PublicSubnet");
     
-    std::string   host_label = get_short_host_name(subnet.data());
+//     std::string   host_label = get_short_host_name(subnet.data());
     
-    std::string path = std::format("DAQ/Nodes/{}/DTC{}/Link{}/DetectorElement/Name",
-                                   host_label,PcieAddress,Link);
+//     std::string path = std::format("DAQ/Nodes/{}/DTC{}/Link{}/DetectorElement/Name",
+//                                    host_label,PcieAddress,Link);
     
-    PanelName = odb_i->GetString(h_arc,path.data());
-    std::cout << std::format("PanelName:{}\n",PanelName);
-  }
-  catch (...) {
-    std::cout << "ERROR ... rc=-1\n";
-    rc = -1;
-  }
-  cm_disconnect_experiment();
-  return rc;
-}
+//     PanelName = odb_i->GetString(h_arc,path.data());
+//     std::cout << std::format("PanelName:{}\n",PanelName);
+//   }
+//   catch (...) {
+//     std::cout << "ERROR ... rc=-1\n";
+//     rc = -1;
+//   }
+//   cm_disconnect_experiment();
+//   return rc;
+// }
 
 //-----------------------------------------------------------------------------
-int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, float VTolerance = 1, int PcieAddr = -1) {
-
+int find_thresholds_panel(int Link, int Channel = -1, float VThreshold = 15, float VTolerance = 1, int PcieAddr = -1) {
+  int rc(0);
+  
   std::mutex mtx; // For thread-safe output
 
   uint16_t val[96][2];
@@ -52,9 +53,17 @@ int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, flo
 
   auto dtc_i = DtcInterface::Instance(PcieAddr);
 
+  int mnid = dtc_i->ReadPanelID(Link);
+
+  std::cout << std::format("-- START: making thresholds for mnid:{}\n",mnid);
+
   {
     // std::lock_guard<std::mutex> lock(mtx);
-    dtc_i->FindAlignments(1,Link);
+    int n_bit_slips;
+    rc = dtc_i->FindAlignments(Link,n_bit_slips,0);
+    if (rc < 0) {
+      return rc;
+    }
   }
 
   int ich1(Channel), ich2(Channel+1);
@@ -73,7 +82,7 @@ int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, flo
     for (int k=0; k<2; ++k) {
       nerrors = 0;
       bool ok(false);
-      while ((not ok) and (nerrors < 10)) {
+      while ((not ok) and (nerrors < 3)) {
         {
           // std::lock_guard<std::mutex> lock(mtx);
           ok = dtc_i->FindThreshold(Link,ich,k,VThreshold,VTolerance,val[ich][k]);
@@ -98,13 +107,8 @@ int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, flo
   int pcie_addr = dtc_i->PcieAddr();
   std::string fn, panel_name;
 
-  // int lrc = get_panel_name_from_odb(pcie_addr,Link,panel_name);
-  // if (lrc == 0) {
-  //   fn = std::format("{}.json",panel_name);
-  // }
-  //  else {
-  fn = std::format("{}_dtc_{}_link_{}.json",gSystem->Getenv("HOSTNAME"),dtc_i->PcieAddr(),Link);
-  // }
+  //  int mnid = dtc_i->ReadPanelID(Link);
+  fn = std::format("MN{:03}.json",mnid);
   
   {
     std::lock_guard<std::mutex> lock(mtx);
@@ -129,7 +133,7 @@ int find_thresholds_panel(int Link, float VThreshold = 15, int Channel = -1, flo
 }
 
 //-----------------------------------------------------------------------------
-int test_find_thresholds_mt(int Link, float VThreshold = 15, int Channel = -1, float VTolerance = 1, int PcieAddr = -1) {
+int test_find_thresholds_mt(int Link, int Channel = -1, float VThreshold = 15, float VTolerance = 1, int PcieAddr = -1) {
   std::vector<std::thread> threads;
 
   int lnk1(Link), lnk2(Link+1);

@@ -562,8 +562,14 @@ namespace trkdaq {
 
     vector<roc_data_t> returned = this->ReadROCBlockEnsured(Link,REG_FINDALIGNMENT);
 
-    // return
-    Res = Alignment(returned);
+    // return - Alignment constructor may throw an exception
+    try {
+      Res = Alignment(returned);
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("DTC: link:{} alignment failed",PcieAddr(),lnk);
+      rc = -1;
+    }
     
     TLOG(TLVL_DEBUG) << "-- END";
     return rc;

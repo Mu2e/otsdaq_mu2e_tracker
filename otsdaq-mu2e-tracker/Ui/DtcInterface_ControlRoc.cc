@@ -144,20 +144,20 @@ namespace  trkdaq {
 // print
 //-----------------------------------------------------------------------------
       int first_channel(Channel);
-      if ((Channel >= 0) and (Channel < 96)) first_channel = 0;
+      if ((Channel < 0) or (Channel >= 96)) first_channel = 0;
 
       Stream << " ich gain_cal gain_hv thr_cal thr_hv" << std::endl;
       Stream << "------------------------------------" << std::endl;
       
       int nch = settings.size()/4;
       for (int ich=0; ich < nch; ++ich) {
-        int channel  = first_channel+ich;
+        int loc      = first_channel+4*ich;
         
-        int gain_cal = settings[ich];
-        int gain_hv  = settings[ich+  nch];
-        int thr_cal  = settings[ich+2*nch];
-        int thr_hv   = settings[ich+3*nch];
-        Stream << std::format("{:3d}  {:5d}   {:5d}   {:5d}   {:5d}",channel,gain_cal,gain_hv,thr_cal,thr_hv) << std::endl;
+        int gain_cal = settings[loc  ];
+        int gain_hv  = settings[loc+1];
+        int thr_cal  = settings[loc+2];
+        int thr_hv   = settings[loc+3];
+        Stream << std::format("{:3d}  {:5d}   {:5d}   {:5d}   {:5d}",ich,gain_cal,gain_hv,thr_cal,thr_hv) << std::endl;
       }
     }
 
@@ -706,47 +706,8 @@ namespace  trkdaq {
 
     std::vector<float> thr; // 3*96
     
-    ControlRoc_ReadThresholds (Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
-    ControlRoc_PrintThresholds(Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
-    return 0;
-  }
-  
-//-----------------------------------------------------------------------------
-// Link: link number
-// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
-//-----------------------------------------------------------------------------
-  int DtcInterface::ControlRoc_PrintThresholds(int                 Link,
-                                               std::vector<float>& Thr ,
-                                               uint32_t            MaskC,
-                                               uint32_t            MaskD,
-                                               uint32_t            MaskE,
-                                               int                 PrintLevel,
-                                               std::ostream&       Stream) {
-//-----------------------------------------------------------------------------
-//  print, if requested
-//-----------------------------------------------------------------------------
-    if (PrintLevel & 0x2) {
-      int mask[3];
-      mask[0] = MaskC;
-      mask[1] = MaskD;
-      mask[2] = MaskE;
-//-----------------------------------------------------------------------------
-// to keep the output compact, print thresholds only for the channels defined by the mask
-//-----------------------------------------------------------------------------
-      printf(" chID     thr(CAL)    thr(HV)    sum  \n");
-      printf("--------------------------------------\n");
-      for (int i=0; i<96; i++) {
-        int iw = i/32;
-        int ib = i -iw*32;
-
-        if (((mask[iw] >> ib) & 0x1) == 1) {
-          float hw  = Thr[3*i  ];
-          float cal = Thr[3*i+1];
-          float tot = Thr[3*i+2];
-          Stream << std::format(" {:4d} {:10.3f} {:10.3f} {:10.3f}",i,hw,cal,tot) << std::endl;
-        }
-      }
-    }
+    ControlRoc_ReadThresholds(Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
+    PrintThresholds          (Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
     return 0;
   }
   

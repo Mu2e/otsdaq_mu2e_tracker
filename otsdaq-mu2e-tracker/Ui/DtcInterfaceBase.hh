@@ -168,7 +168,7 @@ namespace mu2edaq {
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
     void         PrintStatus          (std::ostream& Stream = std::cout);
-    virtual void PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
+    virtual int  PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
 
     uint32_t     ReadRegister         (uint16_t Register);
 

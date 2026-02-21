@@ -83,7 +83,9 @@ namespace trkdaq {
 // most of the time Link = -1 meaning 'all enabled links'
 // otherwise it is the link to print
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+  int DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+    int rc(0);
+    
     TLOG(TLVL_DBG) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
@@ -114,7 +116,7 @@ namespace trkdaq {
       std::string msg = std::format("dtc:{} link:{} : no locked links.",PcieAddr(),Link);
       Stream << " ERROR: " << msg << "\n";
       TLOG(TLVL_ERROR) << msg;
-      return;
+      return rc;
     }
                      
     if (Format != 0) text += " Description";
@@ -241,6 +243,7 @@ namespace trkdaq {
 
     Stream << "------------------------------------------------------------------------\n";
     TLOG(TLVL_DEBUG) << std::format("-- END");
+    return rc;
   }
 //-----------------------------------------------------------------------------
 // 'nw' : number of 16-bit words to print.
@@ -410,6 +413,84 @@ namespace trkdaq {
       }
       Stream << std::endl;
     }
+  }
+
+
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream) {
+//-----------------------------------------------------------------------------
+// do the printing
+// bit 2: formattted printout, parallel
+//-----------------------------------------------------------------------------
+//    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+    
+    Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
+    Stream << "  |              |              |              |              |              |              |\n";
+    Stream << "--------------------------------------------------------------------------------------------\n";
+
+    // float total[6];          // [0]:CAL  [1]:HV , as in lanes, an inversion takes place
+
+      // if the size in zero, don't print the link
+    for (int ich=0; ich<96; ich++) {
+      Stream << std::format("{:2d}|",ich);
+      
+      for (int lnk=0; lnk<6; lnk++) {
+        // int loc               = 6*ich;
+      
+        std::vector<float>* dat = &Thresholds[lnk];
+        int nw = dat->size();
+
+        char c = '|';
+        if (nw == 0) {
+          Stream << "             " << c;
+        }
+        else {
+          float sum_thr = dat->at(3*ich+2);
+          Stream << std::format("     {:8.3f} {:c}",sum_thr,c);
+        }
+      }
+      
+      Stream << std::endl;
+    }
+  }
+  
+//-----------------------------------------------------------------------------
+// Link: link number
+// expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
+//-----------------------------------------------------------------------------
+  int DtcInterface::PrintThresholds(int                 Link,
+                                    std::vector<float>& Thr ,
+                                    uint32_t            MaskC,
+                                    uint32_t            MaskD,
+                                    uint32_t            MaskE,
+                                    int                 PrintLevel,
+                                    std::ostream&       Stream) {
+//-----------------------------------------------------------------------------
+//  print, if requested
+//-----------------------------------------------------------------------------
+    if (PrintLevel & 0x2) {
+      int mask[3];
+      mask[0] = MaskC;
+      mask[1] = MaskD;
+      mask[2] = MaskE;
+//-----------------------------------------------------------------------------
+// to keep the output compact, print thresholds only for the channels defined by the mask
+//-----------------------------------------------------------------------------
+      printf(" chID     thr(CAL)    thr(HV)    sum  \n");
+      printf("--------------------------------------\n");
+      for (int i=0; i<96; i++) {
+        int iw = i/32;
+        int ib = i -iw*32;
+
+        if (((mask[iw] >> ib) & 0x1) == 1) {
+          float hw  = Thr[3*i  ];
+          float cal = Thr[3*i+1];
+          float tot = Thr[3*i+2];
+          Stream << std::format(" {:4d} {:10.3f} {:10.3f} {:10.3f}",i,hw,cal,tot) << std::endl;
+        }
+      }
+    }
+    return 0;
   }
   
 };
