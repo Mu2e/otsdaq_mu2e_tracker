@@ -266,7 +266,27 @@ void program_drac::spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link
   std::cout << __func__ << ":END status:" << status << std::endl;
 }
 
-pro
+//-----------------------------------------------------------------------------
+// restricted functionality tool 
+// assumes that the ROC has already been programmed and the directory catalog for
+// indices 0 and 1 has correct image offsets
+// explicitly use versions at indices 0 and 1 for 'GoldenVXX' and 'ROCVXX'
+//-----------------------------------------------------------------------------
+int  program_drac::spi_reprogram_roc(trkdaq::DtcInterface* Dtc_i, int Link) {
+  int rc(0);
+                                        // upload 'GoldenVXX'
+  FwVersion_t* v0 = &_drac_fw[0];
+  rc = spi_write_version(Dtc_i,Link,v0->name);
+  if (rc < 0)                                               return rc;
+                                        // upload 'ROCVXX'
+  FwVersion_t* v1 = &_drac_fw[1];
+  rc = spi_write_version(Dtc_i,Link,v1->name);
+  if (rc < 0)                                               return rc;
+                                        // program 'ROCVXX'
+  rc = spi_program_roc  (Dtc_i,Link,v1->name);
+  return rc;
+}
+
 //-----------------------------------------------------------------------------
 // program IAP by address - not really needed
 //-----------------------------------------------------------------------------
