@@ -51,6 +51,22 @@ public:
 
 	~ROCTrackerInterface(void);
 
+	virtual inline DTCLib::DTC* getDTC(void) override
+	{
+		if(!thisDTC_)
+		{
+			__SS__ << "thisDTC_ pointer has not been initialized! "
+			       << StringMacros::stackTrace();
+			__SS_THROW__;
+		}
+		if(!trackerDTC_)
+		{
+			__FE_COUT__ << "Creating trackerDTC_ interface for Tracker DTC" << __E__;
+			trackerDTC_ = std::make_unique<trkdaq::DtcInterface>(thisDTC_);
+		}
+		return thisDTC_;
+	};
+
 	// state machine
 	//----------------
 	void 									configure				(void) override;
