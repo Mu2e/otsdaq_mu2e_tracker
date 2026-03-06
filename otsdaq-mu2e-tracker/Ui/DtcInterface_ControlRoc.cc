@@ -1151,7 +1151,7 @@ namespace  trkdaq {
   int  DtcInterface::ControlRoc_ReadDeviceID(int                    Link      ,
                                              ControlRoc_DeviceID_t& DevId     ,
                                              int                    PrintLevel,
-                                             std::ostream&          Stream    ) {
+                                             std::ostream*          Stream    ) {
 
     std::vector<uint16_t> dat = ReadDeviceID(DTC_Link_ID(Link));
 
@@ -1184,10 +1184,12 @@ namespace  trkdaq {
 
 
     if (PrintLevel & 0x1) {
-      Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer); 
-      Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo); 
-      Stream << std::format("DesignVer   :{}\n",DevId.DesignVer); 
-      Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial); 
+      if (Stream != nullptr) {
+        (*Stream) << std::format("BackLevelVer:{}\n",DevId.BackLevelVer); 
+        (*Stream) << std::format("DesignInfo  :{}\n",DevId.DesignInfo); 
+        (*Stream) << std::format("DesignVer   :{}\n",DevId.DesignVer); 
+        (*Stream) << std::format("DeviceSerial:{}\n",DevId.DeviceSerial);
+      }
     }
 
     return 0;

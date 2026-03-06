@@ -102,8 +102,10 @@ public:
 // reprogram ROC w/o rewriting the directory (saving NVM write cycles)
 // spi_write_version('goldenxx')+spi_write_version('rocxx')+spi_program_roc('rocxx')
 // uses images at indices 0 and 1
+// 'LinkMask' is in a hex format, so 'all links' = 0x111111
+// don't do anything by default, require the mask to be specified explicitly
 //-----------------------------------------------------------------------------
-  int  spi_reprogram_roc        (trkdaq::DtcInterface* Dtc_i, int Link);
+  int  spi_reprogram_roc        (trkdaq::DtcInterface* Dtc_i, int LinkMask = 0x0);
 
   int  spi_validate_segment     (trkdaq::DtcInterface* Dtc_i, int Link, const program_drac::ImageData_t* SpiData, int Segment, int DebugMode = 0);
   int  spi_validate_image       (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode = 0);

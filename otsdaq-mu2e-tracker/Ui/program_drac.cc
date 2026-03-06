@@ -271,19 +271,34 @@ void program_drac::spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link
 // assumes that the ROC has already been programmed and the directory catalog for
 // indices 0 and 1 has correct image offsets
 // explicitly use versions at indices 0 and 1 for 'GoldenVXX' and 'ROCVXX'
+// 'LinkMask' is in a 'hex' format, so 'all links' = 0x111111
 //-----------------------------------------------------------------------------
-int  program_drac::spi_reprogram_roc(trkdaq::DtcInterface* Dtc_i, int Link) {
+int  program_drac::spi_reprogram_roc(trkdaq::DtcInterface* Dtc_i, int LinkMask) {
   int rc(0);
+
+  for (int lnk=0; lnk<6; lnk++) {
+    int requested = (LinkMask >> 4*lnk) & 0x1;
+    if (requested == 0)                                     continue;
+    if (Dtc_i->LinkEnabled(lnk) == 0) {
+      TLOG(TLVL_WARNING) << std::format("link:{} not enabled, SKIP",lnk);
+      continue;
+    }
+    if (Dtc_i->LinkLocked (lnk) == 0) {
+      TLOG(TLVL_WARNING) << std::format("link:{} enabled but not locked, SKIP",lnk);
+      continue;
+    }
                                         // upload 'GoldenVXX'
-  FwVersion_t* v0 = &_drac_fw[0];
-  rc = spi_write_version(Dtc_i,Link,v0->name);
-  if (rc < 0)                                               return rc;
+    FwVersion_t* v0 = &_drac_fw[0];
+    rc = spi_write_version(Dtc_i,lnk,v0->name);
+    if (rc < 0)                                             return rc;
                                         // upload 'ROCVXX'
-  FwVersion_t* v1 = &_drac_fw[1];
-  rc = spi_write_version(Dtc_i,Link,v1->name);
-  if (rc < 0)                                               return rc;
+    FwVersion_t* v1 = &_drac_fw[1];
+    rc = spi_write_version(Dtc_i,lnk,v1->name);
+    if (rc < 0)                                             return rc;
                                         // program 'ROCVXX'
-  rc = spi_program_roc  (Dtc_i,Link,v1->name);
+    rc = spi_program_roc  (Dtc_i,lnk,v1->name);
+    if (rc < 0)                                             return rc;
+  }
   return rc;
 }
 

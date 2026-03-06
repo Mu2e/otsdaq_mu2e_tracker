@@ -414,13 +414,16 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
 // Vadim: to reset digis, write 0, then 1 to ROC register 103 (decimal)
+// don't need a 'group' action - typically executed on a single ROC
 //-----------------------------------------------------------------------------
   int DtcInterface::ResetDigis(int Link) {
     int rc(0);
+    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{}\n",Link);
     
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x0,false,1000);
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x1,false,1000);
     
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}\n",rc);
     return rc;
   }
 
@@ -431,6 +434,8 @@ namespace trkdaq {
   int DtcInterface::ResetLink(int Link) {
     int tmo_ms(100), rc(0);
 
+    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{}\n",Link);
+
     int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
       lnk1 = 0;
@@ -438,7 +443,7 @@ namespace trkdaq {
     }
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
       if (not LinkEnabled(lnk))       continue;
-      if (not LinkLocked(lnk)) {
+      if (not LinkLocked (lnk)) {
         TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
         rc += -10;
         continue;
@@ -452,6 +457,8 @@ namespace trkdaq {
         rc += -1;
       }
     }
+    
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}\n",rc);
     return rc;
   }
 

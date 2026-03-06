@@ -131,7 +131,7 @@ namespace trkdaq {
     int          ControlRoc_ReadDeviceID(int                    Link,
                                          ControlRoc_DeviceID_t& DevId,
                                          int                    PrintLevel = 0,
-                                         std::ostream&          Stream     = std::cout);
+                                         std::ostream*          Stream     = &std::cout);
 //-----------------------------------------------------------------------------
 // if Line = -1, not interested in the output, only in the printout
 // if OK, the read functions return Nwords
