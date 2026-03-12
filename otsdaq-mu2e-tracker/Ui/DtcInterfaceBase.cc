@@ -45,6 +45,11 @@ namespace mu2edaq {
     fDtcID          = 0;                // needed for multi-DTC DAQ, default:0
     fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
     fMacAddrByte    = 0;                //
+                                        // set initial delays to zero
+    fDtcDelay5ns    = 0;
+    for (int i=0; i<6; i++) {
+      fRocDelay5ns[i]  = 0;
+    }
 
     fOnSpill        = 0;                // together: 0x0100000001
     fEventMode      = 1;

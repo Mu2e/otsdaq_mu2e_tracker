@@ -302,7 +302,8 @@ namespace trkdaq {
   int DtcInterface::ReadPanelID(int Link, int PrintLevel) {
     int panel_id(-1);
     int rc = PanelID_RW(Link,0,panel_id,PrintLevel);
-    return panel_id;
+    if (rc < 0) return rc;
+    else        return panel_id;
   }
   
 //-----------------------------------------------------------------------------
@@ -376,6 +377,13 @@ namespace trkdaq {
       TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
       rc = -1;
     }
+                                        // for now, don't continue in case of any failure
+    if (rc < 0) return rc;
+                                        // set DTC ID for all ROCs
+    rc = SetRocDtcID();
+    if (rc < 0) return rc;
+                                        // set delays - this is smth to exercise
+    rc = SetRocDelay(-1,fDtcDelay5ns,Stream);
     
     TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
@@ -421,6 +429,7 @@ namespace trkdaq {
     TLOG(TLVL_DEBUG) << std::format("-- START: Link:{}\n",Link);
     
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x0,false,1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x1,false,1000);
     
     TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}\n",rc);
@@ -1589,6 +1598,153 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     auto rv = this->FindThreshold(Link, ChannelID, PreampType,
                                   threshold, tolerance, tmp);
     return rv;
+  }
+
+//-----------------------------------------------------------------------------
+// Link = -1: 'all ROCs'
+// returns number of failed links .. delay in units of 5ns
+//-----------------------------------------------------------------------------
+  int DtcInterface::SetRocDelay(int Link, uint16_t Delay5ns,  std::ostream *Stream) {
+    int rc(0);
+    
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
+
+    for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      std::string header = std::format("-- DTC:{} link:{}:",PcieAddr(),lnk);
+      if (not LinkEnabled(lnk)) {
+        std::string msg = std::format(" is not enabled");
+        TLOG(TLVL_WARNING) << header << msg;
+        if (Stream) (*Stream) << header << msg << std::endl;
+      }
+      else if (not LinkLocked(lnk)) {
+        std::string msg = std::format(" enabled but not locked");
+        TLOG(TLVL_ERROR) << header << msg;
+        if (Stream) (*Stream) << header << msg << std::endl;
+      }
+      else {
+//-----------------------------------------------------------------------------
+// link OK, write delay to ROC reg 4
+// sleep for the same time as for the ROC reset (is that the right choice?)
+//-----------------------------------------------------------------------------
+        try {
+          int tmo_ms(100);
+          fDtc->WriteROCRegister(DTC_Link_ID(lnk),4,Delay5ns,false,tmo_ms);
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+        }
+        catch(...) {
+          std::string msg = std::format(" failed to write Delay5ns:{}",Delay5ns);
+          TLOG(TLVL_ERROR) << header << msg;
+          if (Stream) (*Stream) << header << msg << std::endl;
+          rc += -1;
+        }
+      }
+    }
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+  int DtcInterface::SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, std::ostream* Stream) {
+    int rc(0);
+    
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
+
+    ControlRoc_DigiRW_Input_t  pi;
+    ControlRoc_DigiRW_Output_t po;
+    int print_level(1);
+    
+    for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      std::string header = std::format("-- DTC:{} link:{}:",PcieAddr(),lnk);
+      
+      if (not LinkEnabled(lnk)) {
+        std::string msg = std::format(" is not enabled");
+        TLOG(TLVL_WARNING) << header << msg;
+        if (Stream) (*Stream) << header << msg << std::endl;
+        continue;
+      }
+      else if (not LinkLocked(lnk)) {
+        std::string msg = std::format(" enabled but not locked");
+        TLOG(TLVL_ERROR) << header << msg;
+        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        rc = -1;
+        return rc;
+      }
+
+                                        // write TStart to reg 0x81
+      pi.rw      = 1;                   // write
+      pi.hvcal   = 0;                   // both
+      pi.address = 0x81;
+      pi.data[0] = (TStart >>  0) & 0xffff;
+      pi.data[0] = (TStart >> 16) & 0xffff;
+      rc = ControlRoc_DigiRW(&pi,&po,Link,print_level,*Stream);
+      
+      if (rc < 0) {
+        std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
+        TLOG(TLVL_ERROR) << header << msg;
+        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        return rc;
+      }
+  
+      pi.address = 0x82;
+      pi.data[0] = (TStop  >>  0) & 0xffff;
+      pi.data[0] = (TStop  >> 16) & 0xffff;
+      rc = ControlRoc_DigiRW(&pi,&po,Link,print_level,*Stream);
+      
+      if (rc < 0) {
+        std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
+        TLOG(TLVL_ERROR) << header << msg;
+        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        return rc;
+      }
+    }
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// returns number of failed links, DtcID is a byte ..
+// reading from reg 30 has a very different meaning - see ROC register description
+//-----------------------------------------------------------------------------
+  int DtcInterface::SetRocDtcID(int Link) {
+    int rc(0);
+    
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
+
+    for (int lnk=lnk1; lnk<lnk2; ++lnk) {
+      
+      if (not LinkEnabled(lnk)) {
+        TLOG(TLVL_WARNING) << std::format("link:{} is not enabled",lnk);
+      }
+      else if (not LinkLocked(lnk)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",lnk);
+      }
+      else {
+//-----------------------------------------------------------------------------
+// link OK, write to reg 30
+//-----------------------------------------------------------------------------
+        try {
+          int tmo_ms(100);
+          fDtc->WriteROCRegister(DTC_Link_ID(lnk),30,fDtcID,false,tmo_ms);       // 1 --> r14: reset ROC
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+        }
+        catch(...) {
+          TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} failed to write DTC ID:{}",PcieAddr(),lnk,fDtcID);
+          rc += -1;
+        }
+      }
+    }
+    return rc;
   }
 };
 

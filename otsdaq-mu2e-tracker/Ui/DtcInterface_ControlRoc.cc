@@ -20,7 +20,7 @@ namespace  trkdaq {
 
 //-----------------------------------------------------------------------------
 // digi_rw over the fiber: reg 263
-// if Link = -1, use fLinkMask, otherwise operate assuming a single link
+// Link = -1 : 'all enabled links
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_DigiRW(ControlRoc_DigiRW_Input_t*  Input     ,
                                       ControlRoc_DigiRW_Output_t* Output    ,
@@ -1027,14 +1027,14 @@ namespace  trkdaq {
         if (link_enabled) {
           RocBlockRead(i,REG_READILP,Data);
           int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
         }
       }
     }
     else {
       RocBlockRead(Link,REG_READILP,Data);
       int nw = Data.size();
-      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
     }
     
     return rc;

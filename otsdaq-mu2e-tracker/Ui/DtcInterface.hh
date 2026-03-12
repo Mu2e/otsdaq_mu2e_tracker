@@ -299,6 +299,18 @@ namespace trkdaq {
     std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
                                                         const DTCLib::roc_address_t& address);
 
+                                        // -1 = 'all enabled links'
+
+    int          SetRocDtcID       (int Link = -1);
+
+                                        // delay in units of 5n
+
+    int          SetRocDelay       (int Link, uint16_t Delay5ns, std::ostream* Stream = &std::cout);
+
+                                        // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
+    
+    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, std::ostream* Stream = &std::cout);
+    
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
 //-----------------------------------------------------------------------------

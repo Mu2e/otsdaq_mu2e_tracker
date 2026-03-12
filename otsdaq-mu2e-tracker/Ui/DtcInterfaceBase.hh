@@ -102,8 +102,8 @@ namespace mu2edaq {
     int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
     int                  fPartitionID;
     int                  fMacAddrByte;
-
-    //    int                  fIsCrv;          // is CRV DTC
+    int                  fDtcDelay5ns;    // 'per-DTC' delay in units of 5ns, common for all ROCs
+    int                  fRocDelay5ns[6]; // 'per-ROC' delays, to be added to the common one above
 
     int                  fSubsystem;      // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
@@ -160,6 +160,11 @@ namespace mu2edaq {
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
     int          LinkLocked (int Link);
+                                        // this delay is common for all ROCs,
+                                        // on top of that, each separate ROC has its own delay
+    
+    int          GetDtcDelay5ns   ()         { return fDtcDelay5ns; }
+    int          GetRocDelay5ns   (int Link) { return fRocDelay5ns[Link]; }
     
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
@@ -184,9 +189,10 @@ namespace mu2edaq {
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
     
                                         // 'Value' : 0 or 1
-    void         SetBit       (int Register, int Bit, int Value);
+    void         SetBit        (int Register, int Bit, int Value);
 
-    void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+    void         SetDtcDelay5ns(int Delay5ns  ) { fDtcDelay5ns = Delay5ns  ; }
+    void         SetEmulateCfo (int EmulateCfo) { fEmulateCfo  = EmulateCfo; }
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
 // event mode=0 is reserved, last packet of the train
@@ -199,6 +205,11 @@ namespace mu2edaq {
 
     void         SetLinkMask  (int Mask = 0);
 
+                                        // a simple setter, for now, no range check..
+                                        // assume everyone knows that Link in [0,5]
+    void         SetRocDelay5ns(int Link, int Delay5ns) {
+      fRocDelay5ns[Link] = Delay5ns  ;
+    }
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
