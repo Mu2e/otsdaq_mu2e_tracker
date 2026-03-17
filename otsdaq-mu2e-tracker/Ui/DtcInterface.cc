@@ -82,7 +82,22 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterface(Dtc) {
     // initialization of the interface data members is done externally
-    // nothibg should happen here
+    // nothing should happen here
+  }
+
+  void DtcInterface::PostInitialize(const DtcInterface::DtcConfiguration_t& config){
+    fPcieAddr = config.fPcieAddr;
+    fDtcID = config.fDtcID;
+    fLinkMask = config.fLinkMask;
+    fPartitionID = config.fPartitionID;
+    fOnSpill = config.fOnSpill;
+    fEventMode = config.fEventMode;
+    fMacAddrByte = config.fMacAddrByte;
+    SetRocReadoutMode(config.fRocReadoutMode);
+    SetRocLaneMask(config.fRocLaneMask);
+    SetRocNHitsPerLane(config.fRocNHitsPerLane);
+    SetJAMode(config.fJAMode);
+    SetEmulateCfo(config.fEmulateCfo);
   }
 
 //-----------------------------------------------------------------------------

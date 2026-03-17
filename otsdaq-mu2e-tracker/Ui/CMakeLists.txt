@@ -7,6 +7,7 @@ cet_make_library(
         DtcInterfaceBase.cc DtcInterfaceBase_print.cc
         CfoInterface.cc
         DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc
+        SharedDtcInterface.cc
         #	PreampChannel.cc PreampThreshold.cc
         program_drac.cc
         LIBRARIES PUBLIC

@@ -49,6 +49,9 @@ namespace trkdaq {
 
     DtcInterface(DTCLib::DTC* Dtc);
 
+    using DtcConfiguration_t = mu2edaq::DtcInputData_t;
+    void PostInitialize(const DtcConfiguration_t&);
+
     struct RocData_t {                    // 8 16-bit words in total
       RocDataHeaderPacket_t header;
       uint16_t              data[1];
