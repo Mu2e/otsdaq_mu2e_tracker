@@ -53,20 +53,19 @@ public:
 
 	// state machine
 	//----------------
-	void 									configure				(void) override;
-	void 									start					(std::string runNumber) override;
-	void 									stop					(void) override;
-	bool 									running					(void) override;
+	void configure(void) override;
+	void start(std::string runNumber) override;
+	void stop(void) override;
+	bool running(void) override;
 
 	// write and read to registers
-	virtual void 							writeEmulatorRegister	(uint16_t address, uint16_t data_to_write) override;
-	virtual uint16_t						readEmulatorRegister	(uint16_t address) override;
-	virtual void							readEmulatorBlock	(std::vector<uint16_t>& data, uint16_t address, uint16_t wordCount, bool incrementAddress) override;
+	virtual void writeEmulatorRegister(uint16_t address, uint16_t data_to_write) override;
+	virtual uint16_t readEmulatorRegister(uint16_t address) override;
+	virtual void readEmulatorBlock(std::vector<uint16_t>& data, uint16_t address, uint16_t wordCount, bool incrementAddress) override;
 
 
-	//------------ for tracker-specific Ui functions
-
-	std::unique_ptr<trkdaq::DtcInterface>			trackerDTC_;
+	// prepackaged DTC-level interface
+	std::unique_ptr<trkdaq::DtcInterface> dtc_;
 
 	bool emulatorWorkLoop(void) override;
 

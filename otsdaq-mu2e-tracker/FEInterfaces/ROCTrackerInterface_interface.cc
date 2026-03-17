@@ -12,7 +12,7 @@ ROCTrackerInterface::ROCTrackerInterface(
     const ConfigurationTree& theXDAQContextConfigTree,
     const std::string&       theConfigurationPath)
     : ROCPolarFireCoreInterface(rocUID, theXDAQContextConfigTree, theConfigurationPath)
-    , trackerDTC_(std::make_unique<trkdaq::DtcInterface>(getDTC()))
+    , dtc_(std::make_unique<trkdaq::DtcInterface>(getDTC()))
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
@@ -123,8 +123,6 @@ ROCTrackerInterface::~ROCTrackerInterface(void)
 	// NOTE:: be careful not to call __FE_COUT__ decoration because it uses the
 	// tree and it may already be destructed partially
 	__COUT__ << FEVInterface::interfaceUID_ << " Destructor" << __E__;
-
-	// trackerDTC_ is automatically deleted by unique_ptr
 }  // end destructor
 
 //==================================================================================================
