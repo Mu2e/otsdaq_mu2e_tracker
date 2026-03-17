@@ -59,9 +59,13 @@ public:
 	bool running(void) override;
 
 	// write and read to registers
-	virtual void writeEmulatorRegister(uint16_t address, uint16_t data_to_write) override;
+	virtual void writeEmulatorRegister(uint16_t address,
+                                     uint16_t data_to_write) override;
 	virtual uint16_t readEmulatorRegister(uint16_t address) override;
-	virtual void readEmulatorBlock(std::vector<uint16_t>& data, uint16_t address, uint16_t wordCount, bool incrementAddress) override;
+	virtual void readEmulatorBlock(std::vector<uint16_t>& data,
+                                 uint16_t address,
+                                 uint16_t wordCount,
+                                 bool incrementAddress) override;
 
 
 	// prepackaged DTC-level interface
@@ -69,6 +73,16 @@ public:
 
 	bool emulatorWorkLoop(void) override;
 
+  // ejc: are these... part of the interface...? or related to macro exports?
+//void ReadTrackerFIFO(__ARGS__);
+//void ReadROCErrorCounter(__ARGS__);
+//virtual void GetStatus(__ARGS__) override;
+//void SetupForDigiDataTaking(__ARGS__);
+//void FindAlignment(__ARGS__);
+//void GetUIParameter(__ARGS__);
+//void SetUIParameters(__ARGS__);
+
+protected:
 	enum TrackerRegisters
 	{
 
@@ -107,20 +121,11 @@ public:
 
 	};
 
-	private:
-
-  public:
-//void ReadTrackerFIFO(__ARGS__);
-//void ReadROCErrorCounter(__ARGS__);
-//virtual void GetStatus(__ARGS__) override;
-//void SetupForDigiDataTaking(__ARGS__);
-//void FindAlignment(__ARGS__);
-//void GetUIParameter(__ARGS__);
-//void SetUIParameters(__ARGS__);
+private:
+  /**/
 
 	// clang-format on
 };
-
 }  // namespace ots
 
 #endif

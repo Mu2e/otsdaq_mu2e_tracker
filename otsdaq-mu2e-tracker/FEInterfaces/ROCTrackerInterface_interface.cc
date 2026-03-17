@@ -6,13 +6,14 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "FE-ROCTrackerInterface"
 
-//=========================================================================================
 ROCTrackerInterface::ROCTrackerInterface(
-    const std::string&       rocUID,
+    const std::string& rocUID,
     const ConfigurationTree& theXDAQContextConfigTree,
-    const std::string&       theConfigurationPath)
-    : ROCPolarFireCoreInterface(rocUID, theXDAQContextConfigTree, theConfigurationPath)
-    , dtc_(std::make_unique<trkdaq::DtcInterface>(getDTC()))
+    const std::string& theConfigurationPath)
+			: ROCPolarFireCoreInterface(rocUID,
+																	theXDAQContextConfigTree,
+																	theConfigurationPath)
+			, dtc_(std::make_unique<trkdaq::DtcInterface>(getDTC()))
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
@@ -117,7 +118,6 @@ ROCTrackerInterface::ROCTrackerInterface(
 
 }  // end constructor
 
-//==========================================================================================
 ROCTrackerInterface::~ROCTrackerInterface(void)
 {
 	// NOTE:: be careful not to call __FE_COUT__ decoration because it uses the
@@ -125,8 +125,8 @@ ROCTrackerInterface::~ROCTrackerInterface(void)
 	__COUT__ << FEVInterface::interfaceUID_ << " Destructor" << __E__;
 }  // end destructor
 
-//==================================================================================================
-void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
+void ROCTrackerInterface::writeEmulatorRegister(uint16_t address,
+																								uint16_t data_to_write)
 {
 	__FE_COUT__ << "Calling Tracker write ROC Emulator register: link number " << std::dec
 	            << linkID_ << ", address = " << address
@@ -136,7 +136,6 @@ void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_
 
 }  // end writeEmulatorRegister()
 
-//==================================================================================================
 uint16_t ROCTrackerInterface::readEmulatorRegister(uint16_t address)
 {
 	__CFG_COUT__ << "Tracker emulator read" << __E__;
@@ -152,11 +151,10 @@ uint16_t ROCTrackerInterface::readEmulatorRegister(uint16_t address)
 
 }  // end readEmulatorRegister()
 
-//==================================================================================================
 void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
-                                            uint16_t               address,
-                                            uint16_t               wordCount,
-                                            bool                   incrementAddress)
+                                            uint16_t address,
+                                            uint16_t wordCount,
+                                            bool incrementAddress)
 {
 	__CFG_COUT__ << "Tracker emulator block read "
 	             << "wordCount= " << wordCount << __E__;
@@ -174,7 +172,6 @@ void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
 	}
 }  // end readEmulatorBlock()
 
-//==================================================================================================
 void ROCTrackerInterface::configure(void)
 {
 	try
@@ -211,7 +208,6 @@ void ROCTrackerInterface::configure(void)
 	}
 }
 
-//==============================================================================
 void ROCTrackerInterface::start(std::string runNumber)
 {
 
@@ -220,7 +216,6 @@ void ROCTrackerInterface::start(std::string runNumber)
 	return;
 }
 
-//==============================================================================
 bool ROCTrackerInterface::running(void)
 {
 	return true;
@@ -231,7 +226,6 @@ void ROCTrackerInterface::stop()  // runNumber)
 	return;
 }
 
-//==================================================================================================
 // return false to stop workloop thread
 bool ROCTrackerInterface::emulatorWorkLoop(void)
 {
