@@ -4,6 +4,7 @@
 
 #include "otsdaq-mu2e-tracker/Ui/SharedDtcInterface.hh"
 
+namespace trkdaq{
 SharedDtcInterface::SharedDtcInterface(DTCLib::DTC* dtc):
 		_interface(std::make_unique<trkdaq::DtcInterface>(dtc)),
 		_initialized(false){
@@ -187,3 +188,4 @@ std::string SharedDtcInterface::GetRocFwGitCommit(Args... args){
 	std::string rv = _interface->GetRocFwGitCommit(args...);
 	return rv;
 }
+} // namespace trkdaq

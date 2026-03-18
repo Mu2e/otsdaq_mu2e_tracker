@@ -2,6 +2,9 @@
 // Wrap the precious heart in a mutexed singleton to keep it safe
 // March 2026
 
+#ifndef __trkdaq_shared_dtc_interface_hh__
+#define __trkdaq_shared_dtc_interface_hh__
+
 // stl
 #include <map>
 #include <mutex>
@@ -9,6 +12,7 @@
 // otsdaq-mu2e-tracker
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
+namespace trkdaq{
 class SharedDtcInterface{
 	public:
 		// real constructor --- should hide, tbd
@@ -88,3 +92,6 @@ class SharedDtcInterface{
 		// store of preconstructed instances
 		static std::map< void*, std::shared_ptr<SharedDtcInterface> > instances;
 };
+} // namespace trkdaq
+
+#endif
