@@ -3,6 +3,7 @@
 // March 2026
 
 // stl
+#include <map>
 #include <mutex>
 
 // otsdaq-mu2e-tracker
@@ -10,10 +11,16 @@
 
 class SharedDtcInterface{
 	public:
-		SharedDtcInterface(DTCLib::DTC* dtc);
+		// real constructor --- should hide, tbd
+		SharedDtcInterface(DTCLib::DTC*);
+		// lazy constructor
+		std::shared_ptr<SharedDtcInterface>& Get(DTCLib::DTC*);
 
 		bool PostInitialize(const trkdaq::DtcInterface::DtcConfiguration_t&);
 
+		// below are thin forwards automagically completed by variadic templates
+
+		// ControlROC paradigm
 		template<typename... Args>
 		int ReadSettings(Args... args);
 		template<typename... Args>
@@ -43,17 +50,19 @@ class SharedDtcInterface{
 		template<typename... Args>
 		int SetThresholds(Args... args);
 
+		// alignment
 		template<typename... Args>
 		int FindAlignment (Args... args);
 		template<typename... Args>
 		int FindAlignments(Args... args);
 
+		// threshold-finding
 		template<typename... Args>
 		bool FindThreshold(Args... args);
-
 		template<typename... Args>
 		float ProgramAndQueryThreshold(Args... args);
 
+		// ots api?
 		template<typename... Args>
 		std::vector<std::string> GetRocRegistersNames(Args... args);
 		template<typename... Args>
@@ -61,6 +70,7 @@ class SharedDtcInterface{
 		template<typename... Args>
 		std::vector<float> GetConvertedRocRegisters(Args... args);
 
+		// non-conforming return-by-values
 		template<typename... Args>
 		std::string GetRocID(Args... args);
 		template<typename... Args>
@@ -69,10 +79,12 @@ class SharedDtcInterface{
 		std::string GetRocFwGitCommit(Args... args);
 
 	protected:
+		// data members
 		std::unique_ptr<trkdaq::DtcInterface> _interface;
 		std::mutex _mutex;
 		bool _initialized;
 
-  private:
-		/**/
+	private:
+		// store of preconstructed instances
+		static std::map< void*, std::shared_ptr<SharedDtcInterface> > instances;
 };
