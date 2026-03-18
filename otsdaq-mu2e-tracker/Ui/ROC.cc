@@ -25,5 +25,4 @@ namespace trkdaq{
 		auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
 		return rv;
 	}
-
 } // namespace trkdaq

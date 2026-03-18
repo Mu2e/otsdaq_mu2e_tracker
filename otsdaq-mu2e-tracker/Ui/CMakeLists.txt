@@ -7,11 +7,11 @@ cet_make_library(
         DtcInterfaceBase.cc DtcInterfaceBase_print.cc
         CfoInterface.cc
         DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc
-        SharedDtcInterface.cc
-        #	PreampChannel.cc PreampThreshold.cc
+        SharedDtcInterface.cc ROC.cc
+        # PreampChannel.cc PreampThreshold.cc
         program_drac.cc
         LIBRARIES PUBLIC
-	otsdaq-mu2e-tracker::ParseAlignment
+        otsdaq-mu2e-tracker::ParseAlignment
         artdaq::DAQdata
         artdaq-core::Data
         # artdaq-core-demo::Overlays
@@ -34,12 +34,12 @@ art_dictionary(
 get_target_property(DictCompileOptions otsdaq-mu2e-tracker_Ui_dict COMPILE_OPTIONS)
 
 if(DictCompileOptions)
-	string(REPLACE "-fsanitize=thread"  "" DictCompileOptions "${DictCompileOptions}")
-	string(REPLACE "-fsanitize=address" "" DictCompileOptions "${DictCompileOptions}")
-	string(REPLACE "-ltsan"             "" DictCompileOptions "${DictCompileOptions}")
-	string(REPLACE "-lasan"             "" DictCompileOptions "${DictCompileOptions}")
+  string(REPLACE "-fsanitize=thread"  "" DictCompileOptions "${DictCompileOptions}")
+  string(REPLACE "-fsanitize=address" "" DictCompileOptions "${DictCompileOptions}")
+  string(REPLACE "-ltsan"             "" DictCompileOptions "${DictCompileOptions}")
+  string(REPLACE "-lasan"             "" DictCompileOptions "${DictCompileOptions}")
 
-	set_target_properties(otsdaq-mu2e-tracker_Ui_dict PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
+  set_target_properties(otsdaq-mu2e-tracker_Ui_dict PROPERTIES COMPILE_OPTIONS "${DictCompileOptions}")
 endif()
 
 cet_add_compiler_flags(-g -O0)

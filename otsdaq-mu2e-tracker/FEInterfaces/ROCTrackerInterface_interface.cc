@@ -13,7 +13,7 @@ ROCTrackerInterface::ROCTrackerInterface(
 			: ROCPolarFireCoreInterface(rocUID,
 																	theXDAQContextConfigTree,
 																	theConfigurationPath)
-			, dtc_(std::make_unique<trkdaq::DtcInterface>(getDTC()))
+			, _roc(static_cast<trkdaq::ROC::link_t>(linkID_), getDTC())
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 

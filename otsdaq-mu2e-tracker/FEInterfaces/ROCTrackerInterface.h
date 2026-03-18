@@ -19,7 +19,7 @@
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
 #include "otsdaq-mu2e-tracker/Ui/ProgramRoc.hh"
 
-#include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/ROC.hh"
 
 namespace ots
 {
@@ -68,8 +68,8 @@ public:
                                  bool incrementAddress) override;
 
 
-	// prepackaged DTC-level interface
-	std::unique_ptr<trkdaq::DtcInterface> dtc_;
+	// prepackaged ROC interface
+	trkdaq::ROC _roc;
 
 	bool emulatorWorkLoop(void) override;
 

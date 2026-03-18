@@ -10,8 +10,8 @@
 
 namespace trkdaq{
 	class ROC{
-		using link_t = int;
 		public:
+			using link_t = int;
 			ROC(link_t, DTCLib::DTC*);
 
 		int ReadThresholds(std::vector<float>&        Thr       ,
