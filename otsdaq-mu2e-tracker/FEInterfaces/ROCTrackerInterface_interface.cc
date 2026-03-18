@@ -22,6 +22,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 
 	__CFG_COUT__ << "Constructor..." << __E__;
 
+	registerFEMacroFunction("Set Threshold",
+													static_cast<FEVInterface::frontEndMacroFunction_t>(
+														&ROCTrackerInterface::SetThreshold
+													),
+													std::vector<std::string>{"Channel", "Preamp",
+																									 "DAC value", "PrintLevel"},
+													std::vector<std::string>{"Success"},
+													1, "" /* tooltip info here */);
+
 // ejc: block out macros for now
 /*
 	registerFEMacroFunction("ROC Status",
@@ -124,6 +133,16 @@ ROCTrackerInterface::~ROCTrackerInterface(void)
 	// tree and it may already be destructed partially
 	__COUT__ << FEVInterface::interfaceUID_ << " Destructor" << __E__;
 }  // end destructor
+
+void ROCTrackerInterface::SetThreshold(__ARGS__){
+	int channel			= __GET_ARG_IN__("Channel", int, -1);
+	int preamp 			= __GET_ARG_IN__("Preamp", int, -1);
+	int threshold   = __GET_ARG_IN__("DAC value", int, -1);
+	int print_level = __GET_ARG_IN__("PrintLevel", int, 0x2);
+	// TODO throw on -1s
+	auto rv = _roc.SetThreshold(channel, preamp, threshold, print_level);
+	__SET_ARG_OUT__("Success", std::to_string(rv));
+}
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address,
 																								uint16_t data_to_write)

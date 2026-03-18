@@ -51,6 +51,8 @@ public:
 
 	~ROCTrackerInterface(void);
 
+	void SetThreshold(__ARGS__);
+
 	// state machine
 	//----------------
 	void configure(void) override;
