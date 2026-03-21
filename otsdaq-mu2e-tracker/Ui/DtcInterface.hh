@@ -88,11 +88,12 @@ namespace trkdaq {
     int          ControlRoc(const char* Command, void* Parameters);
 
     // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
+    // call with std::ostream(nullptr) to suppress printout
     int          ControlRoc_DigiRW (ControlRoc_DigiRW_Input_t*  Input          ,
                                     ControlRoc_DigiRW_Output_t* Output         ,
                                     int                         LinkMask   = -1,
                                     int                         PrintLevel =  0,
-                                    std::ostream*               Stream     = &std::cout);
+                                    std::ostream&               Stream     = std::cout);
 //-----------------------------------------------------------------------------
 // Channel = 0-95: read settings of a given preamp channel: gain_cal, gain_hv, thr_cal, thr_hv,
 //                 4 words in total
@@ -312,7 +313,7 @@ namespace trkdaq {
 
                                         // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
     
-    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream* Stream = &std::cout);
+    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream& Stream = std::cout);
     
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }

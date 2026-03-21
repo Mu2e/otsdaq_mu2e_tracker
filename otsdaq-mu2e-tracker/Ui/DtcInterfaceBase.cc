@@ -352,13 +352,16 @@ namespace mu2edaq {
     if (not cint->IsLoaded(macro.data())) {
       TLOG(TLVL_DEBUG+1) << std::format(" loading configuration from {}",macro);
       cint->LoadMacro(macro.data(), &irc);
+      rc = irc;
+    }
+    else {
+      TLOG(TLVL_DEBUG+1) << std::format(" configuration from {} is already loaded",macro);
     }
 
-    rc = irc;
     TLOG (TLVL_DEBUG+1) << std::format("rc:{}",rc);
     if (rc != 0) return rc;
     
-    std::string cmd = std::format("init_run_configuration((mu2edaq::DtcInputData_t*) {:p},{:d});",(void*) DtcData,DeviceID);
+    std::string cmd = std::format("init_run_configuration((mu2edaq::DtcInputData_t*) 0x{:08x},{:d});",(long int) DtcData,DeviceID);
     
     TLOG(TLVL_DEBUG+1) << std::format("cmd:{}",cmd);
     

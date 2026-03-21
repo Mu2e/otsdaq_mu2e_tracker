@@ -197,27 +197,29 @@ int dtc_control_roc_digi_rw(int      Address          ,
                             int      Data             ,
                             int      Link         = -1,
                             int      PcieAddr     = -1) {
+  int rc(0);
   
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
-  ControlRoc_DigiRW_Input_t  par;
-  ControlRoc_DigiRW_Output_t output;
+  ControlRoc_DigiRW_Input_t  ip;
+  ControlRoc_DigiRW_Output_t op;
   
-  par.rw        = Rw;        // -a
-  par.hvcal     = HvCal;        // -t 
-  par.address   = Address;        // -t 
-  par.data[0]   = (Data >>  0) & 0xFFFF;
-  par.data[1]   = (Data >> 16) & 0xFFFF;
+  ip.rw        = Rw;                    // -a
+  ip.hvcal     = HvCal;                 // -t 
+  ip.address   = Address;               // -t 
+  ip.data[0]   = (Data >>  0) & 0xFFFF;
+  ip.data[1]   = (Data >> 16) & 0xFFFF;
   
-  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
+  //  printf("dtc_i->fLinkMask: 0x%04x\n",dtc_i->fLinkMask);
+
   int print_level(2);
-  dtc_i->ControlRoc_DigiRW(&par,&output,Link,print_level);
-  if (Rw == 0) { // read
-    return (((int (output.data[1])) << 16) | output.data[0]) ;
-  }
-  else {
-    return 0;
-  }
+  // std::ostream null(nullptr);
+  rc = dtc_i->ControlRoc_DigiRW(&ip,&op,Link,print_level); // ,null);
+  
+  // std::cout << std::format("link:{} rw:{} hvcal:{} address:0x{:04x}",Link,op.rw,op.hvcal,op.address)
+  //           << std::format(" data[0]:0x{:04x} data[1]:0x{:04x} adc_num:0x{:04x} adc_mask:0x{:04x}\n",
+  //                          op.data[0],op.data[1],op.adc_num,op.adc_mask);
+  return rc;
 }
 
 //-----------------------------------------------------------------------------

@@ -69,13 +69,15 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
+// link 6: CFO
+//-----------------------------------------------------------------------------
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
 
     std::string text = Form("(0x%04x)         : ",FirstReg);
     
-    for (int i=0; i<6; i++) {
+    for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
+      if ((i < 6) and (used == 0))                          continue;
       uint32_t reg = FirstReg+4*i;
       uint32_t iw  = ReadRegister(reg);
       text        += Form(" 0x%08x",iw);
@@ -122,14 +124,15 @@ namespace mu2edaq {
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ",Stream);
 
-    std::string text1("                  ");
-    std::string text2(" offset          :");
+    std::string text1("         ");
+    std::string text2(" offset :");
 
-    for (int i=0; i<6; i++) {
+    for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
+      if ((i<6) and (used == 0))                            continue;
+      if (i < 6) text1 += Form("   link %i  ",i);
+      else       text1 += Form("     CFO    ");  // CFO
       int offset = 4*i;
-      text1 += Form("   link %i  ",i);
       text2 += Form("   (0x%02x)  ",offset);
     }
     Stream << std::endl;

@@ -392,7 +392,7 @@ namespace trkdaq {
     
     if (fDigitizationStop5ns > fDigitizationStart5ns) {
       int print_level(2);
-      rc = SetRocDigitizationWindow(-1,fDigitizationStart5ns,fDigitizationStop5ns,print_level,Stream);
+      rc = SetRocDigitizationWindow(-1,fDigitizationStart5ns,fDigitizationStop5ns,print_level,*Stream);
       if (rc < 0) return rc;
     }
     
@@ -1658,7 +1658,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream* Stream) {
+  int DtcInterface::SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream& Stream) {
     int rc(0);
     TLOG(TLVL_DEBUG) << std::format("--START: Link:{} TStart:{} TStop:{}",Link,TStart,TStop);
     
@@ -1680,13 +1680,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (not LinkEnabled(lnk)) {
         std::string msg = std::format(" is not enabled");
         TLOG(TLVL_WARNING) << header << msg;
-        if (Stream) (*Stream) << header << msg << std::endl;
+        Stream << header << msg << std::endl;
         continue;
       }
       else if (not LinkLocked(lnk)) {
         std::string msg = std::format(" enabled but not locked");
         TLOG(TLVL_ERROR) << header << msg;
-        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        Stream << header << " ERROR:" << msg << std::endl;
         rc = -1;
         return rc;
       }
@@ -1702,7 +1702,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (rc < 0) {
         std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
         TLOG(TLVL_ERROR) << header << msg;
-        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        Stream << header << " ERROR:" << msg << std::endl;
         return rc;
       }
   
@@ -1714,7 +1714,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (rc < 0) {
         std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
         TLOG(TLVL_ERROR) << header << msg;
-        if (Stream) (*Stream) << header << " ERROR:" << msg << std::endl;
+        Stream << header << " ERROR:" << msg << std::endl;
         return rc;
       }
     }
