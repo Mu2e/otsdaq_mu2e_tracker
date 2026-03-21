@@ -46,10 +46,13 @@ namespace mu2edaq {
     fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
     fMacAddrByte    = 0;                //
                                         // set initial delays to zero
-    fDtcDelay5ns    = 0;
+    fDtcEwmDelay5ns = 0;
     for (int i=0; i<6; i++) {
-      fRocDelay5ns[i]  = 0;
+      fRocEwmDelay5ns[i]  = 0;
     }
+                                        // forcing that to be set
+    fDigitizationStart5ns = 0;
+    fDigitizationStop5ns  = -1;
 
     fOnSpill        = 0;                // together: 0x0100000001
     fEventMode      = 1;
@@ -330,36 +333,36 @@ namespace mu2edaq {
     
     TInterpreter::EErrorCode irc;
   
-    TString macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
-    FILE* f = fopen(macro,"r");
+    std::string macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
+    FILE* f = fopen(macro.data(),"r");
     if (f == nullptr) {
       char buf[128];
       gethostname(buf,128);
       std::string hn = buf;
       std::string hostname = hn.substr(0,hn.find('.'));
-      macro = std::format("{}/config/dtc_gui/{}/{}.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName,hostname);
-      f     = fopen(macro,"r");
+      macro = std::format("{}/config/dtc_gui/{}.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
+      f     = fopen(macro.data(),"r");
       if (f == nullptr) {
-        TLOG(TLVL_ERROR) << "failed to find config file for " << ConfigName << " , EXIT" << std::endl;
+        TLOG(TLVL_ERROR) << std::format("failed to find config {}, EXIT.",macro);
         rc = -1;
         return rc;
       }
     }
     
-    if (not cint->IsLoaded(macro.Data())) {
-      TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
-      cint->LoadMacro(macro.Data(), &irc);
+    if (not cint->IsLoaded(macro.data())) {
+      TLOG(TLVL_DEBUG+1) << std::format(" loading configuration from {}",macro);
+      cint->LoadMacro(macro.data(), &irc);
     }
 
     rc = irc;
-    TLOG (TLVL_DEBUG+1) << std::format("irc:{}",rc);
+    TLOG (TLVL_DEBUG+1) << std::format("rc:{}",rc);
     if (rc != 0) return rc;
     
-    TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx,%d);",(long int) DtcData,DeviceID);
+    std::string cmd = std::format("init_run_configuration((mu2edaq::DtcInputData_t*) {:p},{:d});",(void*) DtcData,DeviceID);
     
-    TLOG(TLVL_DEBUG+1) << Form(" cmd=%s\n",cmd.Data());
+    TLOG(TLVL_DEBUG+1) << std::format("cmd:{}",cmd);
     
-    gInterpreter->ProcessLine(cmd.Data(),&irc);
+    gInterpreter->ProcessLine(cmd.data(),&irc);
     
     TLOG(TLVL_DEBUG+1) << std::format("-- END irc:{}",(uint32_t) irc);
     return irc;

@@ -382,10 +382,21 @@ namespace trkdaq {
                                         // set DTC ID for all ROCs
     rc = SetRocDtcID();
     if (rc < 0) return rc;
-                                        // set delays - this is smth to exercise
-    rc = SetRocDelay(-1,fDtcDelay5ns,Stream);
+                                        // set delays. seems to work
+    rc = SetRocDelay(-1,fDtcEwmDelay5ns,Stream);
+    if (rc < 0) return rc;
+                                        // set readout window - after reset
+                                        // leave a way to skip the initialization
     
-    TLOG(TLVL_DEBUG+1) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
+    TLOG(TLVL_DEBUG) << std::format("fDigitizationStart5ns:{} fDigitizationStop5ns:{}",fDigitizationStart5ns,fDigitizationStop5ns);
+    
+    if (fDigitizationStop5ns > fDigitizationStart5ns) {
+      int print_level(2);
+      rc = SetRocDigitizationWindow(-1,fDigitizationStart5ns,fDigitizationStop5ns,print_level,Stream);
+      if (rc < 0) return rc;
+    }
+    
+    TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
   }
@@ -1647,8 +1658,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, std::ostream* Stream) {
+  int DtcInterface::SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream* Stream) {
     int rc(0);
+    TLOG(TLVL_DEBUG) << std::format("--START: Link:{} TStart:{} TStop:{}",Link,TStart,TStop);
     
     int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
@@ -1662,6 +1674,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
       std::string header = std::format("-- DTC:{} link:{}:",PcieAddr(),lnk);
+      
+      TLOG(TLVL_DEBUG) << header;
       
       if (not LinkEnabled(lnk)) {
         std::string msg = std::format(" is not enabled");
@@ -1682,8 +1696,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       pi.hvcal   = 0;                   // both
       pi.address = 0x81;
       pi.data[0] = (TStart >>  0) & 0xffff;
-      pi.data[0] = (TStart >> 16) & 0xffff;
-      rc = ControlRoc_DigiRW(&pi,&po,Link,print_level,*Stream);
+      pi.data[1] = (TStart >> 16) & 0xffff;
+      rc = ControlRoc_DigiRW(&pi,&po,lnk,PrintLevel,Stream);
       
       if (rc < 0) {
         std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
@@ -1694,8 +1708,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   
       pi.address = 0x82;
       pi.data[0] = (TStop  >>  0) & 0xffff;
-      pi.data[0] = (TStop  >> 16) & 0xffff;
-      rc = ControlRoc_DigiRW(&pi,&po,Link,print_level,*Stream);
+      pi.data[1] = (TStop  >> 16) & 0xffff;
+      rc = ControlRoc_DigiRW(&pi,&po,lnk,PrintLevel,Stream);
       
       if (rc < 0) {
         std::string msg = std::format(" DigiRW failed, rc:{}. BAIL OUT",rc);
@@ -1705,6 +1719,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       }
     }
 
+    TLOG(TLVL_DEBUG) << std::format("-- END:  rc:{}",rc);
     return rc;
   }
 

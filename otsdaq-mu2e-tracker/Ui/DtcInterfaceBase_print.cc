@@ -113,11 +113,17 @@ namespace mu2edaq {
     PrintRegister(0x91bc,"CFO Emulation Number of Null HB Packets    ",Stream);
     PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ",Stream);
     PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
+    PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
+
+    PrintRegister(0x9218,"bytes received from CFO                    ",Stream);
+    PrintRegister(0x9238,"received CFO packets                       ",Stream);
+    PrintRegister(0x9258,"bytes sent to CFO                          ",Stream);
+    PrintRegister(0x9278,"packets sent to CFO                        ",Stream);
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ",Stream);
 
     std::string text1("                  ");
-    std::string text2(" offset         : ");
+    std::string text2(" offset          :");
 
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;

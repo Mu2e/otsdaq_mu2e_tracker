@@ -3,6 +3,9 @@
 // mixes high- and low-level commands
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
+// TODO : interface change :
+// 1. std::ostream& --> std::ostream* or use std::ostream(nullptr)
+//    to avoid ifs in the functions being called
 //-----------------------------------------------------------------------------
 #ifndef __trkdaq_dtc_interface_hh__
 #define __trkdaq_dtc_interface_hh__
@@ -89,7 +92,7 @@ namespace trkdaq {
                                     ControlRoc_DigiRW_Output_t* Output         ,
                                     int                         LinkMask   = -1,
                                     int                         PrintLevel =  0,
-                                    std::ostream&               Stream     = std::cout);
+                                    std::ostream*               Stream     = &std::cout);
 //-----------------------------------------------------------------------------
 // Channel = 0-95: read settings of a given preamp channel: gain_cal, gain_hv, thr_cal, thr_hv,
 //                 4 words in total
@@ -309,7 +312,7 @@ namespace trkdaq {
 
                                         // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
     
-    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, std::ostream* Stream = &std::cout);
+    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream* Stream = &std::cout);
     
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
