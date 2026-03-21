@@ -119,7 +119,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_DumpSettings(int Link, int Channel, int PrintLevel, std::ostream& Stream) {
     int rc (0);
-    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{} Channel:{}",Link,Channel);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Link:{} Channel:{}",Link,Channel);
     Stream           << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
 // Link = -1 means all links
@@ -132,7 +132,7 @@ namespace  trkdaq {
     
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
-      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
+      TLOG(TLVL_DEBUG+1) << "      -- i:" << i << std::endl;
 
       std::vector<uint16_t> settings;
       rc = ControlRoc_ReadSettings(i,Channel,settings,PrintLevel,Stream);
@@ -161,7 +161,7 @@ namespace  trkdaq {
       }
     }
 
-    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}",rc);
     return rc;
   }
 
@@ -191,7 +191,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
     
-    TLOG(TLVL_DEBUG) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
+    TLOG(TLVL_DEBUG+1) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
 
     int link1(Link), link2(Link+1);
     if (Link == -1) {
@@ -243,12 +243,12 @@ namespace  trkdaq {
                                         // 0x86 = 0x82 + 4
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
       
       nw = nw-4;
       std::vector<uint16_t> vout;
@@ -303,7 +303,7 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_PulserOn(int Link, int FirstChannelMask, int DutyCycle, int PulserDelay,
                                         int PrintLevel, std::ostream& Stream) {
     int rc (0); //, reg(268);
-    TLOG(TLVL_DEBUG) << " -- START: Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+    TLOG(TLVL_DEBUG+1) << " -- START: Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
                      << std::dec << " DutyCycle:" << DutyCycle << " PulserDelay:" << PulserDelay;
 
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
@@ -330,7 +330,7 @@ namespace  trkdaq {
     
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
-      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
+      TLOG(TLVL_DEBUG+1) << "      -- i:" << i << std::endl;
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -347,12 +347,12 @@ namespace  trkdaq {
                                         // 0x86 = 0x82 + 4
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
       if (nw == 4) {
@@ -369,7 +369,7 @@ namespace  trkdaq {
         break;
       }
     }
-    TLOG(TLVL_DEBUG) << " -- END rc:" << rc;
+    TLOG(TLVL_DEBUG+1) << " -- END rc:" << rc;
     return rc;
   }
 
@@ -378,7 +378,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    TLOG(TLVL_DEBUG) << "-- START:" << __func__;
+    TLOG(TLVL_DEBUG+1) << "-- START:" << __func__;
     int l1(Link), l2(Link+1);
     if (Link == -1) {
       l1 = 0;
@@ -395,7 +395,7 @@ namespace  trkdaq {
 
       if (rc == 0) {
         int nw = res.size();
-        TLOG(TLVL_DEBUG) << "link:" << i << " nw:" << nw; 
+        TLOG(TLVL_DEBUG+1) << "link:" << i << " nw:" << nw; 
 
         if (PrintLevel & 0x1) {
           PrintBuffer(res.data(),nw,&Stream);
@@ -405,7 +405,7 @@ namespace  trkdaq {
         Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << REG_PULSEROFF << std::endl; 
       }
     }
-    TLOG(TLVL_DEBUG) << " -- END " << __func__ << " rc:" << rc;
+    TLOG(TLVL_DEBUG+1) << " -- END " << __func__ << " rc:" << rc;
     return rc;
   }
   
@@ -414,7 +414,7 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_ReadSettings(int Link, int Channel, std::vector<uint16_t>& Settings,
                                             int PrintLevel, std::ostream& Stream) {
     int rc (0);
-    TLOG(TLVL_DEBUG) << "-- START: Link:" << Link << " Channel:" << Channel;
+    TLOG(TLVL_DEBUG+1) << "-- START: Link:" << Link << " Channel:" << Channel;
 
     Stream << "Link:" << Link << " Channel:" << Channel << std::endl;
 //-----------------------------------------------------------------------------
@@ -434,7 +434,7 @@ namespace  trkdaq {
     }
     
     if (LinkEnabled(Link)) {
-      TLOG(TLVL_DEBUG) << "      -- Link:" << Link << std::endl;
+      TLOG(TLVL_DEBUG+1) << "      -- Link:" << Link << std::endl;
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -452,7 +452,7 @@ namespace  trkdaq {
       uint16_t u;
       try {
         while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-        TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
       }
       catch(...) {
         TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,128,100)" << std::endl;
@@ -472,7 +472,7 @@ namespace  trkdaq {
         return rc;
       }
 
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
       nw = nw-4;
       Settings.clear();
       try {
@@ -506,7 +506,7 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_SetCalDac(int Link, int FirstChannelMask, int PulseHeight,
                                          int PrintLevel, std::ostream& Stream) {
     int rc (0); //, reg(268);
-    TLOG(TLVL_DEBUG) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
+    TLOG(TLVL_DEBUG+1) << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
                      << std::dec << " PulseHeight:" << PulseHeight;
 
     Stream << "Link:" << Link << " FirstChannelMask:0x" << std::hex << FirstChannelMask
@@ -531,7 +531,7 @@ namespace  trkdaq {
     
     for (int i=l1; i<l2; i++) {
       if (not LinkEnabled(i))   continue;
-      TLOG(TLVL_DEBUG) << "      -- i:" << i << std::endl;
+      TLOG(TLVL_DEBUG+1) << "      -- i:" << i << std::endl;
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -547,12 +547,12 @@ namespace  trkdaq {
 
       uint16_t u; 
       while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",129,nw);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
 
       nw = nw-4;
       std::vector<uint16_t> v2;

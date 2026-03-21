@@ -42,7 +42,7 @@ namespace trkdaq {
 
     int          InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
 
-    void         Halt();
+    int          Halt();
     void         LaunchRunPlan();
     void         SetRunPlan   (const char* Fn);
 

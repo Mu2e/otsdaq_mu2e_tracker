@@ -84,7 +84,7 @@ namespace  trkdaq {
   
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    // TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
     if (PrintLevel != 0) {
       Stream << __func__ << ":END" << std::endl;
     }
@@ -343,7 +343,7 @@ namespace  trkdaq {
     
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+    // TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
   
 
     // int nw (-1);

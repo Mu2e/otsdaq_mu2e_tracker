@@ -69,6 +69,12 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 //-----------------------------------------------------------------------------
 // ROOT CLI
 //-----------------------------------------------------------------------------
+int cfo_halt(int PcieAddress = -1) {
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
+  int rc = cfo_i->Halt();
+  return rc;
+}
+
 void cfo_soft_reset(int PcieAddress = -1) {
   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
   cfo_i->Cfo()->SoftReset();
@@ -81,7 +87,27 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
   std::string fn1(InputFn );
   std::string fn2(OutputFn);
 
-  compiler.processFile(fn1,fn2);
+  std::string ret = compiler.processFile(fn1,fn2);
+  std::cout << std::format("compilation finished with ret:{}",ret);
+}
+
+//-----------------------------------------------------------------------------
+// ROOT CLI: create CFO handle
+//-----------------------------------------------------------------------------
+trkdaq::CfoInterface* cfo_init(const char* ConfigName, int DeviceID=0) {
+  mu2edaq::DtcInputData_t dat;
+  
+  mu2edaq::DtcInterface::InitConfiguration(ConfigName,DeviceID,&dat);
+  
+  trkdaq::CfoInterface* cfo_i = trkdaq::CfoInterface::Instance(dat.fPcieAddr);
+   if (cfo_i) {
+     cfo_i->fPcieAddr    = dat.fPcieAddr;
+     cfo_i->fLinkMask    = dat.fLinkMask;   // link mask here is the time chain mask
+     cfo_i->fEventMode   = dat.fEventMode;
+  
+     cfo_i->SetJAMode(dat.fJAMode);
+   }
+  return cfo_i;
 }
 
 //-----------------------------------------------------------------------------
@@ -387,10 +413,10 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
 //-----------------------------------------------------------------------------
 // initialize the DTC interface, don't forget to call InitReadout()
 //-----------------------------------------------------------------------------
-trkdaq::DtcInterface* dtc_init(const char* ConfigName) {
+trkdaq::DtcInterface* dtc_init(const char* ConfigName, int DeviceID=0) {
   mu2edaq::DtcInputData_t dat;
   
-  mu2edaq::DtcInterface::InitConfiguration(ConfigName,&dat);
+  mu2edaq::DtcInterface::InitConfiguration(ConfigName,DeviceID,&dat);
   
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
    if (dtc_i) {
@@ -642,19 +668,24 @@ int dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
 }
 
 //-----------------------------------------------------------------------------
+// Mode   : (roc_readout_mode<<16) | (validation_level<<8) | print_level
+// DtcMask: a bit mask, each hex digit tells the number of DTCs on a given time chain
+// so, by default, tests reading ROC variable length patterns 
+//-----------------------------------------------------------------------------
 int dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
-                                  int         Mode      = 0x1           ,
-                                  uint        DtcMask   = 0x1           ,
-                                  const char* OutputFn  = nullptr       ) {
-  int pcie_addr = -1; // assume initialized
+                                 int         Mode      = 0x1           ,
+                                 uint        DtcMask   = 0x1           ,
+                                 const char* OutputFn  = nullptr       ) {
   int rc(0);
+  int pcie_addr = -1; // assume initialized
 
   int print_level      = (Mode >>  0) & 0xff;
   int validation_level = (Mode >>  8) & 0xff;
   int roc_readout_mode = (Mode >> 16) & 0xff;
 
-  int emulate_cfo = 0;
-  rc = dtc_init_readout(emulate_cfo,roc_readout_mode,pcie_addr);
+  DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);
+  int emulate_cfo(0);
+  rc = dtc_i->InitReadout(emulate_cfo,roc_readout_mode);
   if (rc < 0) return rc;
 //-----------------------------------------------------------------------------
 // for now, assume only one time chain, but provide for future
@@ -664,18 +695,21 @@ int dtc_buffer_test_external_cfo(const char* RunPlan   = "commands.bin",
 //-----------------------------------------------------------------------------
 // read events
 //-----------------------------------------------------------------------------
-  uint64_t first_ts = 0;
+  uint64_t first_ts(0);
   dtc_read_subevents(first_ts,print_level,validation_level,pcie_addr,OutputFn);
   return rc;
 }
 
 //-----------------------------------------------------------------------------
 // .L dtc_gui.C
-//  x = dtc_gui("test",1)
+//  x = dtc_gui("test",0x1,0)
+// DeviceID: 0x01: DTC@PCIE=0,
+//           0x10: DTC@PCIE=1
+//           0x21: CFO@PCIE=1
 //-----------------------------------------------------------------------------
-DtcGui* dtc_gui(const char* Project = "test", int DebugLevel = 0) {
+DtcGui* dtc_gui(const char* Project = "test", int DeviceID = 0, int DebugLevel = 0) {
   // 950x1000: dimensions of the main frame
-  DtcGui* x = new DtcGui(Project,gClient->GetRoot(),950,1000,DebugLevel);
+  DtcGui* x = new DtcGui(Project,DeviceID,gClient->GetRoot(),950,1000,DebugLevel);
   return x;
 } 
 

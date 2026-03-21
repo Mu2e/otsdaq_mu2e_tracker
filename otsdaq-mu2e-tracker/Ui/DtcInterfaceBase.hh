@@ -46,7 +46,7 @@ namespace mu2edaq {
     int        fOnSpill;
 
     int        fDtcID;                  // 4 pieces to be written to 0x9154
-    int        fEventMode;
+    int        fEventMode;              // for CFO
     int        fPartitionID;
     int        fMacAddrByte;
     
@@ -151,7 +151,7 @@ namespace mu2edaq {
     int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
 
     // read configuration data from a file and store them in 'DtcData'
-    static int   InitConfiguration(const char* ConfigName, DtcInputData_t* DtcData);
+    static int   InitConfiguration(const char* ConfigName, int DeviceID, DtcInputData_t* DtcData);
 
                                         // EWLength - in 25 ns ticks
                                         // to be executed on the emulated CFO side

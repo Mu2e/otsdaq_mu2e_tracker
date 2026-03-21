@@ -1,4 +1,5 @@
 //
+#include <format>
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
 
 #include "TROOT.h"
@@ -11,7 +12,7 @@ using namespace std;
 //-----------------------------------------------------------------------------
 // initialization with the project data - in its rudimentary form
 //-----------------------------------------------------------------------------
-DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel) {
+DtcGui::DtcGui(const char* Project, int DeviceID, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel) {
 
   //
   char buf[100];
@@ -19,7 +20,7 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   fgets(buf,100,pipe); // expect just one line
   gSystem->ClosePipe(pipe);
 
-  TLOG(TLVL_DEBUG+5) << Form("buf = %s\n",buf);
+  TLOG(TLVL_DEBUG+1) << Form("buf = %s\n",buf);
 
   fHostname       = buf;
   fHostname       = fHostname.Strip(TString::kTrailing,'\n');
@@ -28,14 +29,14 @@ DtcGui::DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int D
   fRunningColor   = 0xFF3399; // 16724889;
   fStoppedColor   = 0xcccccc; // perhaps , gray
 
-  TLOG(TLVL_DEBUG+1) << std::format("host:{} project:{}\n",fHostname.Data(),Project);
+  TLOG(TLVL_DEBUG+1) << std::format("host:{} project:{} device_id:{}\n",fHostname.Data(),Project,DeviceID);
 
   fNDtcs          = 1;
-  DtcInterface::InitConfiguration(Project,fDtcData);
+  DtcInterface::InitConfiguration(Project,DeviceID,fDtcData);
 
-  TLOG(TLVL_DEBUG+1) << Form("before BuildGui\n");
+  TLOG(TLVL_DEBUG+1) << Form("before BuildGui");
   BuildGui(p,w,h);
-  TLOG(TLVL_DEBUG+1) << Form("after BuildGui\n");
+  TLOG(TLVL_DEBUG+1) << Form("after BuildGui");
 
 // //-----------------------------------------------------------------------------
 // // two PCIE cards
@@ -98,6 +99,8 @@ DtcGui::~DtcGui() {
 //-----------------------------------------------------------------------------
 void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
+  TLOG(TLVL_DEBUG+1) << std::format("-- START");
+  
   gClient->GetColorByName("#ccffcc",fValidatedColor);  // light green
 //-----------------------------------------------------------------------------
 // main frame
@@ -109,6 +112,8 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   gClient->GetColorByName("yellow", fYellow);
   gClient->GetColorByName("green" , fGreen);
+
+  TLOG(TLVL_DEBUG+1) << std::format("after setcolors");
 //-----------------------------------------------------------------------------
 // add tab holder and multiple tabs (tab elements) for two DTCs or a DTC and a CFO) 
 //-----------------------------------------------------------------------------
@@ -122,6 +127,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   fDtcTab->MoveResize(10,10,920,260);  // this defines the size of the tab below the tabs line
   fDtcTab->Connect("Selected(Int_t)", "DtcGui", this, "DoDtcTab(Int_t)");
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 2");
 //-----------------------------------------------------------------------------
 // common buttons on fMainFrame, they are the same for different DTCs and ROCs
 //-----------------------------------------------------------------------------
@@ -135,6 +141,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   int button_dy = 25;
   int button_sx = 150+10;          // includes 10 pixes between the buttons
   //  int button_sy =  30;
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 3");
 //-----------------------------------------------------------------------------
 // 1. clear
 //-----------------------------------------------------------------------------
@@ -159,6 +166,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   fButtonsFrame->AddFrame(tb, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   tb->Connect("Pressed()", "DtcGui", this, "exit()");
   tb->ChangeBackground(fValidatedColor);
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 4");
 //-----------------------------------------------------------------------------
 // 3. ... 
 //-----------------------------------------------------------------------------
@@ -196,6 +204,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   fButtonsFrame->AddFrame(fNEvents, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
   fNEvents->MoveResize(x4offset+dx4+10,y0,dx4,button_dy);
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 5");
 //-----------------------------------------------------------------------------
 // 5  "EW length" label followed by the entry field
 //-----------------------------------------------------------------------------
@@ -217,6 +226,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   (fEWLength->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_ew_length()");
 
   fButtonsFrame->AddFrame(fEWLength, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 6");
 //-----------------------------------------------------------------------------
 // 6: "First TS" label followed by the entry field
 //-----------------------------------------------------------------------------
@@ -255,6 +265,7 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   (fSleepUS->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_sleep_us()");
 
   fButtonsFrame->AddFrame(fSleepUS, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 7");
 //-----------------------------------------------------------------------------
 // 8: "ReadPrintFreq" label followed by the entry field
 //-----------------------------------------------------------------------------
@@ -273,17 +284,21 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   (fPrintFreq->GetNumberEntry())->Connect("ReturnPressed()","DtcGui", this,"set_print_freq()");
 
   fButtonsFrame->AddFrame(fPrintFreq, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 8");
 //-----------------------------------------------------------------------------
 // set active DTC tab
 //-----------------------------------------------------------------------------
   fActiveDtcID  = 0;
   fActiveDtc    = &fDtcData[0];
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 9.0: fDtcTab:{} fActiveDtc:{}",(void*)fDtcTab,(void*)fActiveDtc);
   fDtcTab->SetTab(fActiveDtcID);
 
   fActiveDtcTab = fDtcTel[fActiveDtcID].fTab; // fDtcTab->GetTabTab(0);
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 9.1: fActiveDtcTab:{}",(void*)fActiveDtcTab);
   fDtcTabColor  = fActiveDtcTab->GetBackground();
 
   fActiveDtcTab->ChangeBackground(fYellow);
+  TLOG(TLVL_DEBUG+1) << std::format("checkpoint 10");
 //-----------------------------------------------------------------------------
 // TextView
 //-----------------------------------------------------------------------------
@@ -298,5 +313,6 @@ void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
   fMainFrame->Resize(fMainFrame->GetDefaultSize());
 
   fMainFrame->MapRaised();
+  TLOG(TLVL_DEBUG+1) << std::format("-- END");
 }
 

@@ -81,33 +81,41 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
 // Source=0: sync to internal clock ; 1: RTF
-// on success, returns 1
+// on success, returns 0
 // CFO JA CSR :0x9500
 //-----------------------------------------------------------------------------
   int CfoInterface::ConfigureJA(int ClockSource, int Reset) {
+    int rc(0);
+    
     fCfo->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
-    int ok(0);
-    for (int i=0; i<3; i++) {
+    bool ok(false);
+    int max_tries(3);
+    for (int i=0; i<max_tries; i++) {
       ok = fCfo->ReadJitterAttenuatorLocked();              // in case of success, returns true
       usleep(100000);
-      if (ok == 1) break;
+      if (ok) break;
     }
     
     // fCfo->FormatJitterAttenuatorCSR();
 
-    if (ok == 0) TLOG(TLVL_ERROR) << "failed to setup CFO JA\n" << std::endl; 
+    if (not ok) {
+      TLOG(TLVL_ERROR) << std::format("failed to configure the CFO JA after {} tries, BAIL OUT",max_tries);
+      rc = -1;
+    }
 
-    return ok;
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
 // really ? 
 //-----------------------------------------------------------------------------
-  void CfoInterface::Halt() {
+  int CfoInterface::Halt() {
+    int rc(0);
     // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+    return rc;
   }
   
 //-----------------------------------------------------------------------------
@@ -128,11 +136,13 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn) {
     CFOLib::CFO_Compiler compiler;
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
 
     std::string fn1(InputFn );
     std::string fn2(OutputFn);
     
     compiler.processFile(fn1,fn2);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: InputFn:{} OutputFn:{}",InputFn,OutputFn);
   }
 
 //-----------------------------------------------------------------------------
@@ -143,7 +153,7 @@ namespace trkdaq {
   int CfoInterface::InitReadout(const char* RunPlan, uint LinkMask) {
     int rc(0);
 
-    TLOG(TLVL_INFO) << Form("runplan: %s  LinkMask:0x%08x\n",RunPlan,LinkMask);
+    TLOG(TLVL_DEBUG+1) << Form("-- START: runplan: %s  LinkMask:0x%08x\n",RunPlan,LinkMask);
     
     fCfo->DisableLinks();                                    // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
@@ -169,7 +179,7 @@ namespace trkdaq {
         TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
       }
     }
-    TLOG(TLVL_INFO) << Form("Done\n");
+    TLOG(TLVL_DEBUG+1) << Form("-- END");
     return rc;
   }
   
@@ -229,7 +239,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void CfoInterface::SetRunPlan(const char* Fn) {
 
-    TLOG(TLVL_INFO) << Form("START, run plan: %s\n",Fn);
+    TLOG(TLVL_DEBUG+1) << Form("-- START, run plan: %s\n",Fn);
     std::ifstream file(Fn, std::ios::binary | std::ios::ate);
 
     if (! file) {
@@ -237,23 +247,25 @@ namespace trkdaq {
       return;
     }
 //-----------------------------------------------------------------------------
-// read binary file
+// read binary file and write 
 //-----------------------------------------------------------------------------
-    mu2e_databuff_t inputData;
-    auto inputSize = file.tellg();
-    uint64_t dmaSize = static_cast<uint64_t>(inputSize) + 8;
-    file.seekg(0, std::ios::beg);
-
-    memcpy(&inputData[0], &dmaSize, sizeof(uint64_t));
-    file.read((char*) (&inputData[8]), inputSize);
+    std::string buf;
+    auto input_size = file.tellg();
+    buf.resize(input_size);
+    file.seekg(0);
+    
+    file.read(buf.data(),input_size);
     file.close();
     // this was the change from previos version
-    mu2edev* dev = fCfo->GetDevice();
-    dev->begin_dcs_transaction();
-    dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
-    dev->end_dcs_transaction(); // 
+    // mu2edev* dev = fCfo->GetDevice();
+    // dev->begin_dcs_transaction();
+    // dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
+    // dev->end_dcs_transaction(); //
 
-    TLOG(TLVL_INFO) << Form("DONE\n");
+                                        // doesn't return anything
+    fCfo->SetRunPlanData(buf,0);
+
+    TLOG(TLVL_DEBUG+1) << Form("-- END\n");
   }
 
 };

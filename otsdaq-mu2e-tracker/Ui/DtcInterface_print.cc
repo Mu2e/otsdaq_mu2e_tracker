@@ -20,7 +20,7 @@ namespace trkdaq {
 // print value of the register Reg, for multiple ROCs
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
-    TLOG(TLVL_DEBUG) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
     
     std::string text;
     for (int i=0; i<6; i++) {
@@ -43,13 +43,13 @@ namespace trkdaq {
     if (Format == 1) text += Form(" %s",Desc.data());
     Stream << Form("%-18s %s\n",sreg.data(),text.data());
 
-    TLOG(TLVL_DEBUG) << std::format("-- END");
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }
 
   //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocRegister2(uint Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream) {
 
-    TLOG(TLVL_DEBUG) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
 
     std::string text;
     for (int i=0; i<6; i++) {
@@ -76,7 +76,7 @@ namespace trkdaq {
 
     Stream << Form("%-18s%s\n",sreg.data(),text.data());
 
-    TLOG(TLVL_DEBUG) << std::format("-- END");
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }
   
 //-----------------------------------------------------------------------------
@@ -242,7 +242,7 @@ namespace trkdaq {
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
 
     Stream << "------------------------------------------------------------------------\n";
-    TLOG(TLVL_DEBUG) << std::format("-- END");
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
     return rc;
   }
 //-----------------------------------------------------------------------------
@@ -256,7 +256,7 @@ namespace trkdaq {
     int          n(0);
     std::string  line;
 
-    // if (Stream == nullptr) { TLOG(TLVL_DEBUG) << Form("-------- nw = %i\n",nw); }
+    // if (Stream == nullptr) { TLOG(TLVL_DEBUG+1) << Form("-------- nw = %i\n",nw); }
     // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
    
     for (int i=0; i<nw; i++) {

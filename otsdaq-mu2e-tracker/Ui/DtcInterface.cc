@@ -134,21 +134,21 @@ namespace trkdaq {
       }
     }
                                     
-    TLOG(TLVL_DEBUG) << "inputs      : TRK PcieAddr: " << PcieAddr
-                     << " pcie_addr:" << pcie_addr 
-                     << " fgInstance[pcie_addr]:0x" << std::hex << fgInstance[pcie_addr] 
-                     << " LinkMask:0x" << std::hex << LinkMask
-                     << std::dec
-                     << " SkipInit:" << SkipInit << std::endl;
+    TLOG(TLVL_DEBUG+1) << "inputs      : TRK PcieAddr: " << PcieAddr
+                       << " pcie_addr:" << pcie_addr 
+                       << " fgInstance[pcie_addr]:0x" << std::hex << fgInstance[pcie_addr] 
+                       << " LinkMask:0x" << std::hex << LinkMask
+                       << std::dec
+                       << " SkipInit:" << SkipInit << std::endl;
     
     trkdaq::DtcInterface* dtc_i (nullptr);
     
     if (fgInstance[pcie_addr] == nullptr) {
       fgInstance[pcie_addr] = new DtcInterface(pcie_addr,LinkMask,SkipInit);
       dtc_i = (trkdaq::DtcInterface*) fgInstance[pcie_addr];
-      TLOG(TLVL_DEBUG) << "instantiated: TRK pcie_addr:" << pcie_addr
-                       << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
-                       << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
+      TLOG(TLVL_DEBUG+1) << "instantiated: TRK pcie_addr:" << pcie_addr
+                         << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
+                         << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
     }
     else {
 //-----------------------------------------------------------------------------
@@ -160,9 +160,9 @@ namespace trkdaq {
       }
       else {
         dtc_i = dynamic_cast<trkdaq::DtcInterface*>(fgInstance[pcie_addr]);
-        TLOG(TLVL_DEBUG) << "instantiated: TRK pcie_addr:" << pcie_addr
-                         << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
-                         << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
+        TLOG(TLVL_DEBUG+1) << "instantiated: TRK pcie_addr:" << pcie_addr
+                           << " fgInstance[pcie_addr]:0x" << std::hex << dtc_i  
+                           << " dtc_i->fLinkMask:0x" << std::hex << dtc_i->fLinkMask; 
       }
     }
     return dtc_i;
@@ -232,7 +232,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::PanelID_RW(int Link, int Rw, int& PanelID, int PrintLevel) {
     int rc(0);
-    TLOG(TLVL_DEBUG) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
       
     auto roc  = DTC_Link_ID(Link);
 
@@ -292,7 +292,7 @@ namespace trkdaq {
       }
     }
 
-    TLOG(TLVL_DEBUG) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,PanelID);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} panel_id:{:03d}",PcieAddr(),Link,PanelID);
     return rc;
   }
   
@@ -353,7 +353,7 @@ namespace trkdaq {
   int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
     int rc(0);
     
-    TLOG(TLVL_DEBUG) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
+    TLOG(TLVL_DEBUG+1) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
 //-----------------------------------------------------------------------------
 // this should be the only place where we reset the ROC
 // ROC readout mode (fixed_length << 4) | readout_mode
@@ -385,7 +385,7 @@ namespace trkdaq {
                                         // set delays - this is smth to exercise
     rc = SetRocDelay(-1,fDtcDelay5ns,Stream);
     
-    TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
   }
@@ -426,13 +426,13 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ResetDigis(int Link) {
     int rc(0);
-    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{}\n",Link);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Link:{}\n",Link);
     
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x0,false,1000);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x1,false,1000);
     
-    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}\n",rc);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}\n",rc);
     return rc;
   }
 
@@ -443,7 +443,7 @@ namespace trkdaq {
   int DtcInterface::ResetLink(int Link) {
     int tmo_ms(100), rc(0);
 
-    TLOG(TLVL_DEBUG) << std::format("-- START: Link:{}\n",Link);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Link:{}\n",Link);
 
     int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
@@ -467,7 +467,7 @@ namespace trkdaq {
       }
     }
     
-    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}\n",rc);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}\n",rc);
     return rc;
   }
 
@@ -555,7 +555,7 @@ namespace trkdaq {
 
     int lnk = Link;
 
-    TLOG(TLVL_DEBUG) << std::format("-- START: link:{}",lnk);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: link:{}",lnk);
 
     if (not LinkLocked(lnk)) {
       std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),lnk);
@@ -587,7 +587,7 @@ namespace trkdaq {
       rc = -1;
     }
     
-    TLOG(TLVL_DEBUG) << "-- END";
+    TLOG(TLVL_DEBUG+1) << "-- END";
     return rc;
   }
 
@@ -611,7 +611,7 @@ namespace trkdaq {
       lnk2 = 6;
     }
 
-    TLOG(TLVL_DEBUG) << std::format("-- START: lnk1:{} lnk2:{} PrintLevel:{}",lnk1,lnk2,PrintLevel);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: lnk1:{} lnk2:{} PrintLevel:{}",lnk1,lnk2,PrintLevel);
     
     for (int lnk = lnk1 ; lnk<lnk2 ; lnk++){
       if (not LinkEnabled(lnk))                             continue;
@@ -624,10 +624,10 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // perform one iteration
 //-----------------------------------------------------------------------------
-      TLOG(TLVL_DEBUG) << std::format("link:{}",lnk);
+      TLOG(TLVL_DEBUG+1) << std::format("link:{}",lnk);
       Alignment alignment;
       int rcc        = FindAlignment(DTC_Link_ID(lnk),alignment);
-      TLOG(TLVL_DEBUG) << std::format("lnk:{} after FindAlignment: rcc:{}",lnk,rcc);
+      TLOG(TLVL_DEBUG+1) << std::format("lnk:{} after FindAlignment: rcc:{}",lnk,rcc);
       
       if (rcc < 0) {
                                         // not the best, but want to continue
@@ -665,7 +665,7 @@ namespace trkdaq {
       NBitSlips += n_non_null;
     }
     
-    TLOG(TLVL_DEBUG) << std::format("-- END: NBitSlips:{}",NBitSlips);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: NBitSlips:{}",NBitSlips);
     return rc;
   }
 
@@ -1066,7 +1066,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           fDtc->WriteROCRegister(DTC_Link_ID(i),15,w15,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
-          TLOG(TLVL_DEBUG) << "var_pattern_length:" << var_pattern_length
+          TLOG(TLVL_DEBUG+1) << "var_pattern_length:" << var_pattern_length
                            << " reg#08:0x" << std::hex << std::setw(4) << std::setfill('0') << mask
                            << " reg#15:0x" << std::hex << std::setw(4) << std::setfill('0') << w15;
         }
@@ -1234,7 +1234,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // print summary
 //-----------------------------------------------------------------------------
     ulong nev = ewt-FirstEWT;
-    TLOG(TLVL_DEBUG) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate)
+    TLOG(TLVL_DEBUG+1) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate)
                      << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
                              nerr_tot,
                              nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
@@ -1313,7 +1313,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
   int DtcInterface::ReadRocDDR(int Link, int Block, std::ostream& Stream) {
     int rc(0);
-    TLOG(TLVL_DEBUG) << std::format("-- START link:{} block:{}",Link,Block);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START link:{} block:{}",Link,Block);
 
     if (not LinkEnabled(Link)) {
       std::string msg = std::format("link:{} is not enabled",Link);
@@ -1361,7 +1361,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       Stream << std::endl << "ERROR:001 wrong number of words nw:" << nw << " read (not 512)\n";
       rc = -1;
     }
-    TLOG(TLVL_DEBUG) << std::format("-- END rc:{}",rc);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
     return rc;
   }
 

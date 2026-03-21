@@ -321,8 +321,11 @@ namespace mu2edaq {
 //
 // assumes that MU2E_DAQ_DIR points to the directory from where root is started
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData) {
+  int DtcInterface::InitConfiguration(const char* ConfigName, int DeviceID, mu2edaq::DtcInputData_t* DtcData) {
     int           rc(0);
+
+    TLOG(TLVL_DEBUG+1) << std::format("-- START");
+
     TInterpreter* cint = gROOT->GetInterpreter();
     
     TInterpreter::EErrorCode irc;
@@ -339,24 +342,26 @@ namespace mu2edaq {
       if (f == nullptr) {
         TLOG(TLVL_ERROR) << "failed to find config file for " << ConfigName << " , EXIT" << std::endl;
         rc = -1;
+        return rc;
       }
     }
     
-    if (rc != 0) return rc;
-    
-    TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
-    
-    cint->LoadMacro(macro.Data(), &irc);
-    
+    if (not cint->IsLoaded(macro.Data())) {
+      TLOG (TLVL_DEBUG+1) << Form(" loading configuration from file=%s\n",macro.Data());
+      cint->LoadMacro(macro.Data(), &irc);
+    }
+
     rc = irc;
+    TLOG (TLVL_DEBUG+1) << std::format("irc:{}",rc);
     if (rc != 0) return rc;
     
-    TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx);",(long int) DtcData);
+    TString cmd = Form("init_run_configuration((mu2edaq::DtcInputData_t*) 0x%0lx,%d);",(long int) DtcData,DeviceID);
     
     TLOG(TLVL_DEBUG+1) << Form(" cmd=%s\n",cmd.Data());
     
     gInterpreter->ProcessLine(cmd.Data(),&irc);
     
+    TLOG(TLVL_DEBUG+1) << std::format("-- END irc:{}",(uint32_t) irc);
     return irc;
   }
 
