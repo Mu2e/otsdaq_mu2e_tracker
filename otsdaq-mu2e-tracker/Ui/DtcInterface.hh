@@ -94,6 +94,10 @@ namespace trkdaq {
                                     int                         LinkMask   = -1,
                                     int                         PrintLevel =  0,
                                     std::ostream&               Stream     = std::cout);
+
+                                        // result as an integer
+    int          DigiRead (int Addr, int HvCal, uint32_t& Res, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
+    int          DigiWrite(int Addr, int HvCal, uint32_t  Dat, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // Channel = 0-95: read settings of a given preamp channel: gain_cal, gain_hv, thr_cal, thr_hv,
 //                 4 words in total

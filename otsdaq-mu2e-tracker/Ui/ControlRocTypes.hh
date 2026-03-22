@@ -84,7 +84,9 @@ namespace trkdaq {
     uint16_t    address;             // = dtcbuffer[2];                                  // -l
     uint16_t    data[2];             // num_triggers = (dtcbuffer[4] << 16) + dtcbuffer[3];         // -T
   };
- 
+//-----------------------------------------------------------------------------
+// output struct maps onto the vector, so ordering is fixed
+//-----------------------------------------------------------------------------
   struct ControlRoc_DigiRW_Output_t {
     uint16_t    rw;                  // = dtcbuffer[0];                                  // -a
     uint16_t    hvcal;               // = dtcbuffer[1];                                  // -t

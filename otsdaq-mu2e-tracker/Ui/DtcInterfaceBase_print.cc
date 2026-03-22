@@ -73,7 +73,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
 
-    std::string text = Form("(0x%04x)         : ",FirstReg);
+    std::string text = Form("(0x%04x) : ",FirstReg);
     
     for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
@@ -124,8 +124,8 @@ namespace mu2edaq {
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ",Stream);
 
-    std::string text1("         ");
-    std::string text2(" offset :");
+    std::string text1("          ");
+    std::string text2(" offset  :");
 
     for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;

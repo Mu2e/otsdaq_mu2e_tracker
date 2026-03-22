@@ -38,6 +38,12 @@ namespace trkdaq {
 
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 
+//-----------------------------------------------------------------------------
+// input file is a .txt file
+// output file is a binary file with precompiled instructions
+//-----------------------------------------------------------------------------
+    void         CompileRunPlan(const char* InputFn, const char* OutputFn, int PrintLevel = 0, std::ostream& = std::cout);
+
     int          ConfigureJA(int ClockSource, int Reset = 1);
 
     int          InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
@@ -50,11 +56,6 @@ namespace trkdaq {
     void         PrintRegister(uint16_t Register, const char* Title = "") ;
     void         PrintStatus  ();
     uint32_t     ReadRegister (uint16_t Register);
-//-----------------------------------------------------------------------------
-// input file is a .txt file
-// output file is a binary file with precompiled instructions
-//-----------------------------------------------------------------------------
-    void         CompileRunPlan(const char* InputFn, const char* OutputFn);
 //-----------------------------------------------------------------------------
 // TODO: need one more function which would 
 // 1. generate off-spill run plan for N evens, 

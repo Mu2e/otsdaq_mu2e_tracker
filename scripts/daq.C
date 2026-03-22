@@ -68,6 +68,8 @@ void cfo_measure_delay(int PcieAddress, CFO_Link_ID xLink) {
 
 //-----------------------------------------------------------------------------
 // ROOT CLI
+// CFO_Interface::halt just resets EnableBeamOnMode (0x9148) and EnableBeamOffMode (0x914c)
+// registers to zero
 //-----------------------------------------------------------------------------
 int cfo_halt(int PcieAddress = -1) {
   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress);
@@ -81,14 +83,16 @@ void cfo_soft_reset(int PcieAddress = -1) {
 }
 
 //-----------------------------------------------------------------------------
+// CFO_Compiler::processFile returns a text string, not a return code
+//-----------------------------------------------------------------------------
 void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
-  CFOLib::CFO_Compiler compiler;
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
 
   std::string fn1(InputFn );
   std::string fn2(OutputFn);
+  int print_level(1);
 
-  std::string ret = compiler.processFile(fn1,fn2);
-  std::cout << std::format("compilation finished with ret:{}",ret);
+  cfo_i->CompileRunPlan(fn1,fn2,print_level);
 }
 
 //-----------------------------------------------------------------------------
@@ -204,9 +208,9 @@ int dtc_control_roc_digi_rw(int      Address          ,
   ControlRoc_DigiRW_Input_t  ip;
   ControlRoc_DigiRW_Output_t op;
   
+  ip.address   = Address;               // -t 
   ip.rw        = Rw;                    // -a
   ip.hvcal     = HvCal;                 // -t 
-  ip.address   = Address;               // -t 
   ip.data[0]   = (Data >>  0) & 0xFFFF;
   ip.data[1]   = (Data >> 16) & 0xFFFF;
   
@@ -220,6 +224,17 @@ int dtc_control_roc_digi_rw(int      Address          ,
   //           << std::format(" data[0]:0x{:04x} data[1]:0x{:04x} adc_num:0x{:04x} adc_mask:0x{:04x}\n",
   //                          op.data[0],op.data[1],op.adc_num,op.adc_mask);
   return rc;
+}
+
+//-----------------------------------------------------------------------------
+int dtc_digi_write(int Address, int HvCal, int Data, int Link = -1, int PcieAddr = -1) {
+  return dtc_control_roc_digi_rw(Address,1,HvCal,Data,Link,PcieAddr);
+}
+
+//-----------------------------------------------------------------------------
+int dtc_digi_read(int Address, int HvCal, int Link = -1, int PcieAddr = -1) {
+  int dt(0);
+  return dtc_control_roc_digi_rw(Address,0,HvCal,dt,Link,PcieAddr);
 }
 
 //-----------------------------------------------------------------------------

@@ -126,7 +126,7 @@ namespace trkdaq {
     reg =  0; desc = "ALWAYS 0x1234";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 18; desc = " ??";
+    reg = 18; desc = "ROC FIFO status";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
     reg =  8; desc = "ROC pattern mode ??"; 

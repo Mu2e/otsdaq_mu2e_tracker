@@ -80,7 +80,7 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-// Source=0: sync to internal clock ; 1: RTF
+// Source = 0:sync to internal clock ; 1:RTF
 // on success, returns 0
 // CFO JA CSR :0x9500
 //-----------------------------------------------------------------------------
@@ -97,8 +97,6 @@ namespace trkdaq {
       if (ok) break;
     }
     
-    // fCfo->FormatJitterAttenuatorCSR();
-
     if (not ok) {
       TLOG(TLVL_ERROR) << std::format("failed to configure the CFO JA after {} tries, BAIL OUT",max_tries);
       rc = -1;
@@ -126,22 +124,27 @@ namespace trkdaq {
     // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-
+    //-----------------------------------------------------------------------------
+// soft reset is commmon for the DTC and CFO - set bit31 of 0x9100 to reset,
+// then set bit31 back to zero
+//-----------------------------------------------------------------------------
     fCfo->SoftReset();
     usleep(10);	
 
-    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
   }
   
 //-----------------------------------------------------------------------------
-  void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn) {
+  void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn, int PrintLevel, std::ostream& Stream) {
     CFOLib::CFO_Compiler compiler;
     TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
 
     std::string fn1(InputFn );
     std::string fn2(OutputFn);
     
-    compiler.processFile(fn1,fn2);
+    std::string res = compiler.processFile(fn1,fn2);
+    if (PrintLevel & 0x1) Stream << res;
+    
     TLOG(TLVL_DEBUG+1) << std::format("-- END: InputFn:{} OutputFn:{}",InputFn,OutputFn);
   }
 
@@ -176,7 +179,7 @@ namespace trkdaq {
       int ndtcs = (fLinkMask >> 4*i) & 0xf;
       if (ndtcs > 0) {
         fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
-        TLOG(TLVL_INFO) << Form("enabled DTC link %i with %i DTCs\n",i,ndtcs);
+        TLOG(TLVL_INFO) << Form("enabled DTC time chain %i with %i DTCs\n",i,ndtcs);
       }
     }
     TLOG(TLVL_DEBUG+1) << Form("-- END");

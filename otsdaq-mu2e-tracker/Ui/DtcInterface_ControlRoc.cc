@@ -77,7 +77,7 @@ namespace  trkdaq {
 
         if (PrintLevel > 0) {
           if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
-          if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0x0,&Stream);
           if (PrintLevel & 0x2) {
             Stream << std::endl;
 
@@ -99,6 +99,50 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
     return 0;
+  }
+
+//-----------------------------------------------------------------------------
+// convenience
+//-----------------------------------------------------------------------------
+  int DtcInterface::DigiRead(int Addr, int HvCal, uint32_t& Res, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Addr:0x{:04x} HvCal:{} Link:{}",Addr,HvCal,Link);
+
+    ControlRoc_DigiRW_Input_t  ip;
+    ControlRoc_DigiRW_Output_t op;
+
+    ip.address = Addr;
+    ip.rw      = 0;                    // -a
+    ip.hvcal   = HvCal;                 // -t 
+    ip.data[0] = 0;
+    ip.data[1] = 0;
+
+    rc = ControlRoc_DigiRW(&ip,&op,Link,PrintLevel,Stream);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// convenience
+//-----------------------------------------------------------------------------
+  int DtcInterface::DigiWrite(int Addr, int HvCal, uint32_t Dat, int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Addr:0x{:04x} HvCal:{} Data:0x{:08x} Link:{}",Addr,HvCal,Dat,Link);
+
+    ControlRoc_DigiRW_Input_t  ip;
+    ControlRoc_DigiRW_Output_t op;
+
+    ip.address = Addr;
+    ip.rw      = 1;                    // -a
+    ip.hvcal   = HvCal;                 // -t 
+    ip.data[0] = Dat & 0xffff;
+    ip.data[1] = (Dat >> 16) & 0xffff;
+
+    rc = ControlRoc_DigiRW(&ip,&op,Link,PrintLevel,Stream);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
+    return rc;
   }
 
   
@@ -254,7 +298,7 @@ namespace  trkdaq {
         
         Stream << "--------------- link :" << i << std::endl;
 
-        if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,0,&Stream);
+        if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,0x0,&Stream);
       
         if (PrintLevel & 0x2) {
           trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
@@ -354,7 +398,7 @@ namespace  trkdaq {
         fDtc->ReadROCBlock(v2,roc,REG_PULSERON,nw,false,100);
 
         if (PrintLevel & 0x1) {
-          PrintBuffer(v2.data(),nw,&Stream);
+          PrintBuffer(v2.data(),nw,0x0,&Stream);
         }
       }
       else {
@@ -392,7 +436,7 @@ namespace  trkdaq {
         TLOG(TLVL_DEBUG+1) << "link:" << i << " nw:" << nw; 
 
         if (PrintLevel & 0x1) {
-          PrintBuffer(res.data(),nw,&Stream);
+          PrintBuffer(res.data(),nw,0x0,&Stream);
         }
       }
       else {
@@ -481,7 +525,7 @@ namespace  trkdaq {
 // everything was OK
 //-----------------------------------------------------------------------------        
       if (PrintLevel & 0x1) {
-        PrintBuffer(Settings.data(),nw,&Stream);
+        PrintBuffer(Settings.data(),nw,0x0,&Stream);
       }
     }
 
@@ -553,7 +597,7 @@ namespace  trkdaq {
       fDtc->ReadROCBlock(v2,roc,REG_SETCALDAC,nw,false,100);
 
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw,&Stream);
+        PrintBuffer(v2.data(),nw,0x0,&Stream);
       }
     }
 
@@ -789,7 +833,7 @@ namespace  trkdaq {
       return -3;
     }
 
-    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,&Stream);
+    if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0x0,&Stream);
 //-----------------------------------------------------------------------------
 // convert to floats
 //-----------------------------------------------------------------------------
@@ -908,7 +952,7 @@ namespace  trkdaq {
 // PrintLevel bit 0: print SPI data in hex 
 //-----------------------------------------------------------------------------
       if ((PrintLevel & 0x1) != 0) {
-        PrintBuffer(SpiRawData.data(),nw,&Stream);
+        PrintBuffer(SpiRawData.data(),nw,0x0,&Stream);
       }
 //-----------------------------------------------------------------------------
 // PrintLevel bit 1: parse SPI data and print them
@@ -953,7 +997,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
       if ((PrintLevel & 0x1) != 0) {
         int nw = data.size();
-        PrintBuffer(data.data(),nw,&Stream);
+        PrintBuffer(data.data(),nw,0x0,&Stream);
       }
 //-----------------------------------------------------------------------------
 // do not perform conversion, if wrong number of words
@@ -993,7 +1037,7 @@ namespace  trkdaq {
         else {
           std::stringstream ss;
           int nw = data.size();
-          if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,0x0,&Stream);
           
           for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
           GitCommit = ss.str();
@@ -1021,14 +1065,14 @@ namespace  trkdaq {
         if (link_enabled) {
           RocBlockRead(i,REG_READILP,Data);
           int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,&Stream);
         }
       }
     }
     else {
       RocBlockRead(Link,REG_READILP,Data);
       int nw = Data.size();
-      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0,&Stream);
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,&Stream);
     }
     
     return rc;
@@ -1048,14 +1092,14 @@ namespace  trkdaq {
         if (link_enabled) {
           RocBlockRead(i,REG_GETKEY,Data);
           int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,&Stream);
         }
       }
     }
     else {
       RocBlockRead(Link,REG_GETKEY,Data);
       int nw = Data.size();
-      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,&Stream);
+      if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,&Stream);
     }
 
     return rc;
@@ -1134,7 +1178,7 @@ namespace  trkdaq {
 // print output - in two formats
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x1) {
-      PrintBuffer(V2->data(),nw,Stream);
+      PrintBuffer(V2->data(),nw,0x0,Stream);
     }
 
     TLOG(TLVL_DEBUG+1) << " -- END";
