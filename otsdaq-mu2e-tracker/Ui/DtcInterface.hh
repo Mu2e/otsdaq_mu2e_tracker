@@ -290,10 +290,11 @@ namespace trkdaq {
                                                  std::ostream&       Stream     = std::cout);
    
     void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
-                                    ulong       FirstTS,
-                                    int         PrintData,
-                                    int         Validate = 0      , 
-                                    const char* OutputFn = nullptr);
+                                    ulong             FirstTS               ,
+                                    int               PrintLevel = 0        ,
+                                    std::ostream&     Stream     = std::cout,
+                                    int               Validate   = 0        , 
+                                    const std::string Fn         = ""       );  // if "", do not write output
 
                                         // returns the panel mnid
     int          ReadPanelID       (int Link, int PrintLevel = 0);

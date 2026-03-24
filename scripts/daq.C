@@ -85,8 +85,8 @@ void cfo_soft_reset(int PcieAddress = -1) {
 //-----------------------------------------------------------------------------
 // CFO_Compiler::processFile returns a text string, not a return code
 //-----------------------------------------------------------------------------
-void cfo_compile_run_plan(const char* InputFn, const char* OutputFn) {
-  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
+void cfo_compile_run_plan(const char* InputFn, const char* OutputFn, int PcieAddr = -1) {
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddr); 
 
   std::string fn1(InputFn );
   std::string fn2(OutputFn);
@@ -492,11 +492,11 @@ int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
 // don't validate
 // a read should always end with releasing  buffers ???
 //-----------------------------------------------------------------------------
-int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 0, int PcieAddr = -1, const char* OutputFn = nullptr) {
+int dtc_read_subevents(uint64_t FirstTS = 0, int PrintLevel = 1, int Validate = 0, int PcieAddr = -1, const std::string& OutputFn = "") {
   std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
-  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintLevel,Validate,OutputFn);
+  dtc_i->ReadSubevents(list_of_subevents,FirstTS,PrintLevel,std::cout,Validate,OutputFn);
   
   return list_of_subevents.size();
 }
@@ -659,10 +659,10 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 //        RR : ROC readout mode : 00 : ROC patterns   01: digis 02: patterns fixed size
 //        XX : reserved
 //-----------------------------------------------------------------------------
-int dtc_buffer_test_emulated_cfo(int         NEvents  = 3      ,
-                                 int         Mode     = 0x01   ,
-                                 uint64_t    FirstTS  = 0      ,
-                                 const char* OutputFn = nullptr) {
+int dtc_buffer_test_emulated_cfo(int                NEvents  = 3      ,
+                                 int                Mode     = 0x01   ,
+                                 uint64_t           FirstTS  = 0      ,
+                                 const std::string& OutputFn = "")    {
   int pcie_addr(-1), rc(0);                                 // assume initialized
   
   DtcInterface* dtc_i = DtcInterface::Instance(pcie_addr);  // assume already initialized

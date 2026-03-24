@@ -315,7 +315,7 @@ void DtcGui::dtc_read_subevents(DtcTabElement_t* Dtel, TGTextViewostream* TextVi
     int         print_level = 1;
     int         validate    = 1;
     const char* output_fn   = nullptr;
-    Dtel->fDTC_i->ReadSubevents(list_of_dtc_blocks,first_ewm,print_level,validate,output_fn);
+    Dtel->fDTC_i->ReadSubevents(list_of_dtc_blocks,first_ewm,print_level,std::cout,validate,output_fn);
   }
   catch (...) { *TextView << Form("ERROR : coudn't read the DTC ... BAIL OUT\n"); }
 }
@@ -468,7 +468,7 @@ void DtcGui::read_subevents() {
   if (dtel->fData->fName == "DTC") {
     try {
       std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>> list_of_subevents;
-      dtel->fDTC_i->ReadSubevents(list_of_subevents,0,1,0);
+      dtel->fDTC_i->ReadSubevents(list_of_subevents,0,1);
     }
     catch (...) {
       *fTextView << Form("ERROR in %s: coudn't read event BAIL OUT",__func__) << std::endl;

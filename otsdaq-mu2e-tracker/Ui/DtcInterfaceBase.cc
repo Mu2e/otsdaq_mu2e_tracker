@@ -46,13 +46,13 @@ namespace mu2edaq {
     fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
     fMacAddrByte    = 0;                //
                                         // set initial delays to zero
-    fDtcEwmDelay5ns = 0;
+    //    fDtcEwmDelay5ns = 0;
     for (int i=0; i<6; i++) {
       fRocEwmDelay5ns[i]  = 0;
     }
-                                        // forcing that to be set
-    fDigitizationStart5ns = 0;
-    fDigitizationStop5ns  = -1;
+    //                                     // forcing that to be set
+    // fDigitizationStart5ns = 0;
+    // fDigitizationStop5ns  = -1;
 
     fOnSpill        = 0;                // together: 0x0100000001
     fEventMode      = 1;

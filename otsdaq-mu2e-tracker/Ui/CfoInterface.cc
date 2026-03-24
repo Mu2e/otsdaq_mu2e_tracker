@@ -86,9 +86,13 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int CfoInterface::ConfigureJA(int ClockSource, int Reset) {
     int rc(0);
-    
-    fCfo->SetJitterAttenuatorSelect(ClockSource,Reset);     // 0:internal clock sync, 1:RTF
+
+    int clock_source = ClockSource;
+    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
+                              
+    fCfo->SetJitterAttenuatorSelect(clock_source,Reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
+    
     bool ok(false);
     int max_tries(3);
     for (int i=0; i<max_tries; i++) {
@@ -135,17 +139,14 @@ namespace trkdaq {
   }
   
 //-----------------------------------------------------------------------------
-  void CfoInterface::CompileRunPlan(const char* InputFn, const char* OutputFn, int PrintLevel, std::ostream& Stream) {
+  void CfoInterface::CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel, std::ostream& Stream) {
     CFOLib::CFO_Compiler compiler;
     TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
 
-    std::string fn1(InputFn );
-    std::string fn2(OutputFn);
-    
-    std::string res = compiler.processFile(fn1,fn2);
+    std::string res = compiler.processFile(InputFn,OutputFn);
     if (PrintLevel & 0x1) Stream << res;
     
-    TLOG(TLVL_DEBUG+1) << std::format("-- END: InputFn:{} OutputFn:{}",InputFn,OutputFn);
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }
 
 //-----------------------------------------------------------------------------
@@ -153,33 +154,32 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  int CfoInterface::InitReadout(const char* RunPlan, uint LinkMask) {
+  int CfoInterface::InitReadout(const std::string& RunPlanFn, int TimeChainMask) {
     int rc(0);
 
-    TLOG(TLVL_DEBUG+1) << Form("-- START: runplan: %s  LinkMask:0x%08x\n",RunPlan,LinkMask);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: runplan_fn:{}  TimeChainMask:0x{:08x}",RunPlanFn,TimeChainMask);
     
-    fCfo->DisableLinks();                                    // Ryan says this is important
+    fCfo->DisableLinks();               // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
-                                        // these functions don't use CFO_Link_ALL
-    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);     //
-    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
+                                        // I guess Haltdisables transmission?
+    Halt();
 
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     ConfigureJA(clock_source, reset);
 
     fCfo->SoftReset();
-    SetRunPlan   (RunPlan);
+    SetRunPlan(RunPlanFn);
     usleep(10);
 //-----------------------------------------------------------------------------
 // in the end, re-initialize the time chains defined by the DTC mask
 //-----------------------------------------------------------------------------
-    if (LinkMask != 0) fLinkMask = LinkMask;
-    for (int i=0; i<8; i++) {
-      int ndtcs = (fLinkMask >> 4*i) & 0xf;
+    if (TimeChainMask != 0) fLinkMask = TimeChainMask;
+    for (int lnk=0; lnk<8; lnk++) {
+      int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
       if (ndtcs > 0) {
-        fCfo->EnableLink (CFO_Link_ID(i),DTC_LinkEnableMode(true,true),ndtcs);
-        TLOG(TLVL_INFO) << Form("enabled DTC time chain %i with %i DTCs\n",i,ndtcs);
+        fCfo->EnableLink (CFO_Link_ID(lnk),DTC_LinkEnableMode(true,true),ndtcs);
+        TLOG(TLVL_INFO) << std::format("enabled DTC time chain {} with {} DTCs\n",lnk,ndtcs);
       }
     }
     TLOG(TLVL_DEBUG+1) << Form("-- END");
@@ -200,39 +200,41 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-  void CfoInterface::PrintRegister(uint16_t Register, const char* Title) {
-    std::cout << Form("(0x%04x): 0x%08x : %s\n",Register,ReadRegister(Register),Title);
+  void CfoInterface::PrintRegister(uint16_t Register, const char* Title, std::ostream& Stream) {
+    Stream << Form("(0x%04x): 0x%08x : %s\n",Register,ReadRegister(Register),Title);
   }
 
 //-----------------------------------------------------------------------------
-  void CfoInterface::PrintStatus() {
+  void CfoInterface::PrintStatus(std::ostream& Stream) {
+    TLOG(TLVL_DEBUG+1) << std::format("-- START");
     std::cout << Form("-----------------------------------------------------------------\n");
-    PrintRegister(0x9004,"CFO version                                ");
-    PrintRegister(0x9030,"Kernel driver version                      ");
-    PrintRegister(0x9100,"CFO control register                       ");
-    PrintRegister(0x9104,"DMA Transfer Length                        ");
-    PrintRegister(0x9108,"SERDES loopback enable                     ");
-    PrintRegister(0x9114,"CFO link enable                            ");
-    PrintRegister(0x9128,"CFO PLL locked                             ");
-    PrintRegister(0x9140,"SERDES RX CDR lock                         ");
-    PrintRegister(0x9144,"Beam On Timer Preset                       ");
-    PrintRegister(0x9148,"Enable Beam On Mode                        ");
-    PrintRegister(0x914c,"Enable Beam Off Mode                       ");
-    PrintRegister(0x918c,"Number of DTCs                             ");
+    PrintRegister(0x9004,"CFO version                                ",Stream);
+    PrintRegister(0x9030,"Kernel driver version                      ",Stream);
+    PrintRegister(0x9100,"CFO control register                       ",Stream);
+    PrintRegister(0x9104,"DMA Transfer Length                        ",Stream);
+    PrintRegister(0x9108,"SERDES loopback enable                     ",Stream);
+    PrintRegister(0x9114,"CFO link enable                            ",Stream);
+    PrintRegister(0x9128,"CFO PLL locked                             ",Stream);
+    PrintRegister(0x9140,"SERDES RX CDR lock                         ",Stream);
+    PrintRegister(0x9144,"Beam On Timer Preset                       ",Stream);
+    PrintRegister(0x9148,"Enable Beam On Mode                        ",Stream);
+    PrintRegister(0x914c,"Enable Beam Off Mode                       ",Stream);
+    PrintRegister(0x918c,"Number of DTCs                             ",Stream);
     
-    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ");
-    PrintRegister(0x9220,"Receive  Packet Count Link 0               ");
-    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ");
-    PrintRegister(0x9260,"Transmit Packet Count Link 0               ");
+    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ",Stream);
+    PrintRegister(0x9220,"Receive  Packet Count Link 0               ",Stream);
+    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ",Stream);
+    PrintRegister(0x9260,"Transmit Packet Count Link 0               ",Stream);
 
-    PrintRegister(0x9500,"CFO Jitter Attenuator CSR                  ");  // CFO_Register_JitterAttenuatorCSR = 0x9500,
+    PrintRegister(0x9500,"CFO Jitter Attenuator CSR                  ",Stream);  // CFO_Register_JitterAttenuatorCSR = 0x9500,
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }
 
 //-----------------------------------------------------------------------------
 // TODO
 //-----------------------------------------------------------------------------
   void CfoInterface::SetOffspillRunPlan(int NEvents, int EWLength) {
-    printf("ERROR: %s not implemented yet",__func__);
+    TLOG(TLVL_ERROR) << std::format("NEvents:{} EWLength:{} ... not implemented yet",NEvents,EWLength);
   }
 
 //-----------------------------------------------------------------------------
@@ -240,13 +242,13 @@ namespace trkdaq {
 // first 8 bytes contain nbytes, but written into the CFO are 0x10000 bytes
 // (sizeof(mu2e_databuff_t)
 //-----------------------------------------------------------------------------
-  void CfoInterface::SetRunPlan(const char* Fn) {
+  void CfoInterface::SetRunPlan(const std::string& RunPlanFn) {
 
-    TLOG(TLVL_DEBUG+1) << Form("-- START, run plan: %s\n",Fn);
-    std::ifstream file(Fn, std::ios::binary | std::ios::ate);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START, run plan fn:{}",RunPlanFn);
+    std::ifstream file(RunPlanFn, std::ios::binary | std::ios::ate);
 
     if (! file) {
-      TLOG(TLVL_ERROR) << "failed to open " << Fn << " , BAIL OU" << std::endl;
+      TLOG(TLVL_ERROR) << std::format("failed to open RunPlanFn:{}, BAIL OUT",RunPlanFn);
       return;
     }
 //-----------------------------------------------------------------------------
@@ -259,12 +261,6 @@ namespace trkdaq {
     
     file.read(buf.data(),input_size);
     file.close();
-    // this was the change from previos version
-    // mu2edev* dev = fCfo->GetDevice();
-    // dev->begin_dcs_transaction();
-    // dev->write_data(DTC_DMA_Engine_DCS, inputData, sizeof(inputData));
-    // dev->end_dcs_transaction(); //
-
                                         // doesn't return anything
     fCfo->SetRunPlanData(buf,0);
 

@@ -382,20 +382,7 @@ namespace trkdaq {
                                         // set DTC ID for all ROCs
     rc = SetRocDtcID();
     if (rc < 0) return rc;
-                                        // set delays. seems to work
-    rc = SetRocDelay(-1,fDtcEwmDelay5ns,Stream);
-    if (rc < 0) return rc;
-                                        // set readout window - after reset
-                                        // leave a way to skip the initialization
-    
-    TLOG(TLVL_DEBUG) << std::format("fDigitizationStart5ns:{} fDigitizationStop5ns:{}",fDigitizationStart5ns,fDigitizationStop5ns);
-    
-    if (fDigitizationStop5ns > fDigitizationStart5ns) {
-      int print_level(2);
-      rc = SetRocDigitizationWindow(-1,fDigitizationStart5ns,fDigitizationStop5ns,print_level,*Stream);
-      if (rc < 0) return rc;
-    }
-    
+
     TLOG(TLVL_DEBUG) << std::format("-- END: fRocReadoutMode:{} rc:{}",fRocReadoutMode,rc);
 
     return rc;
@@ -1089,12 +1076,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
 //-----------------------------------------------------------------------------
 // ROC reset : write 0x1 to register 14
+// if Fn = "", don't write the output file
 //-----------------------------------------------------------------------------
   void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
-                                   ulong       FirstEWT   ,
-                                   int         PrintLevel,
-                                   int         Validate  ,
-                                   const char* Fn        ) {
+                                   ulong             FirstEWT   ,
+                                   int               PrintLevel ,
+                                   std::ostream&     Stream     ,
+                                   int               Validate   ,
+                                   const std::string Fn         ) {
     ulong    ewt      = FirstEWT;
     bool     match_ts = false;
     int      nerr_tot  (0);
@@ -1103,11 +1092,11 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int      nerr_roc[6], nerr_roc_tot[6];
 
     FILE*    file(nullptr);
-    if (Fn != nullptr) {
+    if (Fn != "") {
 //-----------------------------------------------------------------------------
 // check if Fn exists 
 //-----------------------------------------------------------------------------
-      if((file = fopen(Fn,"r")) != NULL) {
+      if((file = fopen(Fn.data(),"r")) != NULL) {
         // file exists
         fclose(file);
         TLOG(TLVL_ERROR) << "file " << Fn << " already exists, BAIL OUT";
@@ -1117,7 +1106,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // Fn doesn't exist, open it 
 //-----------------------------------------------------------------------------
-        file = fopen(Fn,"w");
+        file = fopen(Fn.data(),"w");
         if (file == nullptr) {
           TLOG(TLVL_ERROR) <<  "failed to open " << Fn << " , BAIL OUT";
           return;
@@ -1147,8 +1136,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // for every event
 //-----------------------------------------------------------------------------
           if ((Validate and PrintLevel > 1) or (header_printed == 0)) {
-            cout << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
-            cout << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
+            Stream << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
+            Stream << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
             header_printed = 1;
           }
         }
@@ -1156,7 +1145,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         int sz = VSub.size();
         if (sz == 0) {
           if (PrintLevel > 0) {
-            cout << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
+            Stream << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
           }
           break;
         }
@@ -1193,7 +1182,6 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             else if ((fRocReadoutMode & 0xf) == 2) {
               nerr = ValidateFixedPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
             }
-            
               
             nerr_tot += nerr;
             for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
@@ -1209,13 +1197,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           }
         
           if (PrintLevel > 0) {
-            cout << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
-                         ewt,i,ew_tag,nbytes,nbytes_tot,
-                         rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
-                         nerr,nerr_tot,
-                         nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
+            Stream << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
+                           ewt,i,ew_tag,nbytes,nbytes_tot,
+                           rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
+                           nerr,nerr_tot,
+                           nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
             if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
-              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2);
+              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2,0x0,&Stream);
             }
           }
           
@@ -1235,7 +1223,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         ewt++;                          // event in sequence
       }
       catch (...) {
-        TLOG(TLVL_ERROR) << "ERROR reading event_tag:" << event_tag.GetEventWindowTag(true) << " ewt:" << ewt << std::endl;
+        TLOG(TLVL_ERROR) << std::format("error reading event_tag:{} ewt:{}",event_tag.GetEventWindowTag(true),ewt);
         break;
       }
     }
@@ -1246,10 +1234,10 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
     ulong nev = ewt-FirstEWT;
     TLOG(TLVL_DEBUG+1) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate)
-                     << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
-                             nerr_tot,
-                             nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
-                             nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+                       << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+                               nerr_tot,
+                               nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
+                               nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
 //-----------------------------------------------------------------------------
 // to simplify first steps, assume that in a file writing mode all events 
 // are read at once, so close the file on exit
@@ -1286,10 +1274,23 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     
       fDtc->WriteROCRegister   (link_id,Reg,0x0000,false,100);
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-    
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+2) << std::format("reg:{:03d} val:0x{:04x}\n",128,u);
+
+//-----------------------------------------------------------------------------
+// some versions of ROC FW enter an infinite loop - make sure it is broken
+//-----------------------------------------------------------------------------
+      uint32_t max_wait_us(100000), wait_us(0), sleep_us(1000);
+      uint16_t u;
+      while ((wait_us < max_wait_us) and (u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {
+        usleep(sleep_us);
+        wait_us += sleep_us;
+      };
+      
+      TLOG(TLVL_DEBUG+2) << std::format("reg:{:03d} val:0x{:04x} wait_us:{}",128,u,wait_us);
+      
+      if (wait_us >= max_wait_us) {
+        TLOG(TLVL_ERROR) << std::format("TIMEOUT wait_us:{} reg:{:03d} val:0x{:04x}, BAIL OUT",wait_us,128,u);
+        return -5;
+      }
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
@@ -1670,7 +1671,6 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
     ControlRoc_DigiRW_Input_t  pi;
     ControlRoc_DigiRW_Output_t po;
-    int print_level(1);
     
     for (int lnk=lnk1; lnk<lnk2; ++lnk) {
       std::string header = std::format("-- DTC:{} link:{}:",PcieAddr(),lnk);

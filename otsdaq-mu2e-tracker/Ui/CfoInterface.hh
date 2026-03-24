@@ -42,19 +42,19 @@ namespace trkdaq {
 // input file is a .txt file
 // output file is a binary file with precompiled instructions
 //-----------------------------------------------------------------------------
-    void         CompileRunPlan(const char* InputFn, const char* OutputFn, int PrintLevel = 0, std::ostream& = std::cout);
+    void         CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel = 0, std::ostream& = std::cout);
 
-    int          ConfigureJA(int ClockSource, int Reset = 1);
+    int          ConfigureJA(int ClockSource = -1, int Reset = 0);
 
-    int          InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
+    int          InitReadout(const std::string& RunPlan, int TimingChainMask = 0xffffffff);
 
     int          Halt();
     void         LaunchRunPlan();
-    void         SetRunPlan   (const char* Fn);
+    void         SetRunPlan   (const std::string& Fn);
 
     int          PcieAddr     () { return fPcieAddr; }
-    void         PrintRegister(uint16_t Register, const char* Title = "") ;
-    void         PrintStatus  ();
+    void         PrintRegister(uint16_t Register, const char* Title = "", std::ostream& Stream = std::cout) ;
+    void         PrintStatus  (std::ostream& Stream = std::cout);
     uint32_t     ReadRegister (uint16_t Register);
 //-----------------------------------------------------------------------------
 // TODO: need one more function which would 

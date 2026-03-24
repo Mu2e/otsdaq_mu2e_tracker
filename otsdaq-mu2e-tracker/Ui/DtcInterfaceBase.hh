@@ -102,11 +102,11 @@ namespace mu2edaq {
     int                  fDtcID;             // unique DTC ID used by the DAQ (0x9154)
     int                  fPartitionID;
     int                  fMacAddrByte;
-    int                  fDtcEwmDelay5ns;    // 'per-DTC' delay in units of 5ns, common for all ROCs
+    //    int                  fDtcEwmDelay5ns;    // 'per-DTC' delay in units of 5ns, common for all ROCs
     int                  fRocEwmDelay5ns[6]; // 'per-ROC' delays, to be added to the common one above
 
-    int                  fDigitizationStart5ns;  // digitization window to be set in the DIGIs, in units of 5 ns
-    int                  fDigitizationStop5ns ;
+    // int                  fDigitizationStart5ns;  // digitization window to be set in the DIGIs, in units of 5 ns
+    // int                  fDigitizationStop5ns ;
 
     int                  fSubsystem;         // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
@@ -166,7 +166,7 @@ namespace mu2edaq {
                                         // this EWM delay is common for all ROCs,
                                         // on top of that, each separate ROC has its own delay
     
-    int          GetDtcEwmDelay5ns()         { return fDtcEwmDelay5ns; }
+    //    int          GetDtcEwmDelay5ns()         { return fDtcEwmDelay5ns; }
     int          GetRocEwmDelay5ns(int Link) { return fRocEwmDelay5ns[Link]; }
     
     int          GetLinkMask() { return fLinkMask; }
@@ -194,7 +194,7 @@ namespace mu2edaq {
                                         // 'Value' : 0 or 1
     void         SetBit        (int Register, int Bit, int Value);
 
-    void         SetDtcEwmDelay5ns(int Delay5ns  ) { fDtcEwmDelay5ns = Delay5ns  ; }
+    //    void         SetDtcEwmDelay5ns(int Delay5ns  ) { fDtcEwmDelay5ns = Delay5ns  ; }
     void         SetEmulateCfo    (int EmulateCfo) { fEmulateCfo     = EmulateCfo; }
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
