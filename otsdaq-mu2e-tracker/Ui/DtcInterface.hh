@@ -314,7 +314,7 @@ namespace trkdaq {
 
                                         // delay in units of 5n
 
-    int          SetRocDelay       (int Link, uint16_t Delay5ns, std::ostream* Stream = &std::cout);
+    int          SetRocDelay       (int Link, uint16_t Delay5ns, std::ostream& Stream = std::cout);
 
                                         // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
     

@@ -80,6 +80,17 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
+  void CfoInterface::CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel, std::ostream& Stream) {
+    CFOLib::CFO_Compiler compiler;
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
+
+    std::string res = compiler.processFile(InputFn,OutputFn);
+    if (PrintLevel & 0x1) Stream << res;
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
+  }
+
+//-----------------------------------------------------------------------------
 // Source = 0:sync to internal clock ; 1:RTF
 // on success, returns 0
 // CFO JA CSR :0x9500
@@ -121,35 +132,6 @@ namespace trkdaq {
   }
   
 //-----------------------------------------------------------------------------
-// looks that it is only for the off-spill
-// [at this point] disabling the BeamOn mode may be an overkill, but...
-//-----------------------------------------------------------------------------
-  void CfoInterface::LaunchRunPlan() {
-    // these functions don't use CFO_Link_ALL
-    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
-    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
-    //-----------------------------------------------------------------------------
-// soft reset is commmon for the DTC and CFO - set bit31 of 0x9100 to reset,
-// then set bit31 back to zero
-//-----------------------------------------------------------------------------
-    fCfo->SoftReset();
-    usleep(10);	
-
-    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
-  }
-  
-//-----------------------------------------------------------------------------
-  void CfoInterface::CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel, std::ostream& Stream) {
-    CFOLib::CFO_Compiler compiler;
-    TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
-
-    std::string res = compiler.processFile(InputFn,OutputFn);
-    if (PrintLevel & 0x1) Stream << res;
-    
-    TLOG(TLVL_DEBUG+1) << std::format("-- END");
-  }
-
-//-----------------------------------------------------------------------------
 // launch is a separate step, could be repeated multiple times
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
@@ -185,6 +167,23 @@ namespace trkdaq {
     TLOG(TLVL_DEBUG+1) << Form("-- END");
     return rc;
   }
+
+//-----------------------------------------------------------------------------
+// looks that it is only for the off-spill
+// [at this point] disabling the BeamOn mode may be an overkill, but...
+//-----------------------------------------------------------------------------
+  void CfoInterface::LaunchRunPlan() {
+    Halt();
+//-----------------------------------------------------------------------------
+// soft reset is commmon for the DTC and CFO - set bit31 of 0x9100 to reset,
+// then set bit31 back to zero
+//-----------------------------------------------------------------------------
+    fCfo->SoftReset();
+    usleep(10);	
+
+    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
+    // fCfo->EnableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
+  }  
   
 //-----------------------------------------------------------------------------
   uint32_t CfoInterface::ReadRegister(uint16_t Register) {

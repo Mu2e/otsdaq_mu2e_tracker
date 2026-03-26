@@ -1616,7 +1616,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // Link = -1: 'all ROCs'
 // returns number of failed links .. delay in units of 5ns
 //-----------------------------------------------------------------------------
-  int DtcInterface::SetRocDelay(int Link, uint16_t Delay5ns,  std::ostream *Stream) {
+  int DtcInterface::SetRocDelay(int Link, uint16_t Delay5ns,  std::ostream& Stream) {
     int rc(0);
     
     int lnk1(Link), lnk2(Link+1);
@@ -1630,12 +1630,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if (not LinkEnabled(lnk)) {
         std::string msg = std::format(" is not enabled");
         TLOG(TLVL_WARNING) << header << msg;
-        if (Stream) (*Stream) << header << msg << std::endl;
+        Stream << header << msg << std::endl;
       }
       else if (not LinkLocked(lnk)) {
         std::string msg = std::format(" enabled but not locked");
         TLOG(TLVL_ERROR) << header << msg;
-        if (Stream) (*Stream) << header << msg << std::endl;
+        Stream << header << msg << std::endl;
       }
       else {
 //-----------------------------------------------------------------------------
@@ -1646,11 +1646,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           int tmo_ms(100);
           fDtc->WriteROCRegister(DTC_Link_ID(lnk),4,Delay5ns,false,tmo_ms);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+          Stream << header << std::format(" delay set at {} x 5 ns\n",Delay5ns);
         }
         catch(...) {
           std::string msg = std::format(" failed to write Delay5ns:{}",Delay5ns);
           TLOG(TLVL_ERROR) << header << msg;
-          if (Stream) (*Stream) << header << msg << std::endl;
+          Stream << header << msg << std::endl;
           rc += -1;
         }
       }
@@ -1717,6 +1718,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         Stream << header << " ERROR:" << msg << std::endl;
         return rc;
       }
+      Stream << header << std::format(" digitization start: {:04} ns, stop: {:04} ns\n",TStart*5,TStop*5);
     }
 
     TLOG(TLVL_DEBUG) << std::format("-- END:  rc:{}",rc);
