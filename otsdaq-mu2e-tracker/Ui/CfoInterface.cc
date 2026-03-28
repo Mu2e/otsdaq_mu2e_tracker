@@ -179,7 +179,7 @@ namespace trkdaq {
 // then set bit31 back to zero
 //-----------------------------------------------------------------------------
     fCfo->SoftReset();
-    usleep(10);	
+    usleep(20);	
 
     fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
     // fCfo->EnableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
