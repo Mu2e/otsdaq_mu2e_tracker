@@ -119,6 +119,36 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
+// Source=0: sync to internal clock ; =1: RTF
+// on success, returns 1
+//-----------------------------------------------------------------------------
+  int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
+    int nmax_iter(10);
+    int clock_source(ClockSource), reset(Reset);
+
+    if (reset        == -1) reset        = (fJAMode     ) & 0xf;
+    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
+    
+    fDtc->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
+    usleep(100000);
+    int ok(0);
+    for (int i=0; i<nmax_iter; i++) {
+      ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
+      usleep(100000);
+      if (ok == 1) break;
+    }
+    
+    int rc = 0;
+    if (ok == 0) {
+      TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
+                                      clock_source,reset,nmax_iter);
+      rc = -1;
+    }
+
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
 // InitReadout : in most cases, no parameters
 //-----------------------------------------------------------------------------
   int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode, std::ostream* Stream) {
@@ -175,38 +205,6 @@ namespace mu2edaq {
   int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
     return 0;
   }
-
-//-----------------------------------------------------------------------------
-// Source=0: sync to internal clock ; =1: RTF
-// on success, returns 1
-//-----------------------------------------------------------------------------
-  int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
-    int nmax_iter(10);
-    int clock_source(ClockSource), reset(Reset);
-
-    if (reset        == -1) reset        = (fJAMode     ) & 0xf;
-    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
-    
-    fDtc->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
-    usleep(100000);
-    int ok(0);
-    for (int i=0; i<nmax_iter; i++) {
-      ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
-      usleep(100000);
-      if (ok == 1) break;
-    }
-    
-    int rc = 0;
-    if (ok == 0) {
-      TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
-                                      clock_source,reset,nmax_iter);
-      rc = -1;
-    }
-
-    return rc;
-  }
-
-  
 
 //-----------------------------------------------------------------------------
 // according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers

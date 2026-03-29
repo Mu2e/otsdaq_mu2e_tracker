@@ -125,7 +125,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int CfoInterface::Halt() {
     int rc(0);
-    // these functions don't use CFO_Link_ALL
+  // these functions don't use CFO_Link_ALL
     fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
     fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     return rc;
@@ -145,7 +145,7 @@ namespace trkdaq {
     fCfo->DisableEmbeddedClockMarker();
                                         // I guess Haltdisables transmission?
     Halt();
-
+                                        // for convenience: to pass one parameter instead of two
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     ConfigureJA(clock_source, reset);
