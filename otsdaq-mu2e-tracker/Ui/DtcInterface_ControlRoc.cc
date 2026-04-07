@@ -1,4 +1,7 @@
-//
+///////////////////////////////////////////////////////////////////////////////
+// dafault error handling policy: exit on the first encountered error
+///////////////////////////////////////////////////////////////////////////////
+
 #include <vector>
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
 
@@ -16,7 +19,6 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc(const char* Command, void* Par) {
     return 0;
   }
-
 
 //-----------------------------------------------------------------------------
 // digi_rw over the fiber: reg 263
@@ -113,11 +115,15 @@ namespace  trkdaq {
 
     ip.address = Addr;
     ip.rw      = 0;                    // -a
-    ip.hvcal   = HvCal;                 // -t 
+    ip.hvcal   = HvCal;                // -t 
     ip.data[0] = 0;
     ip.data[1] = 0;
 
     rc = ControlRoc_DigiRW(&ip,&op,Link,PrintLevel,Stream);
+
+                                        // if no error, the result is 16 bit, so -1 never happens
+    if (rc == 0) Res = op.data[0];
+    else         Res = 0xffffffff;
     
     TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
     return rc;
@@ -126,7 +132,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // convenience
 //-----------------------------------------------------------------------------
-  int DtcInterface::DigiWrite(int Addr, int HvCal, uint32_t Dat, int Link, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::DigiWrite(int Addr, int HvCal, uint16_t Dat, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
     TLOG(TLVL_DEBUG+1) << std::format("-- START: Addr:0x{:04x} HvCal:{} Data:0x{:08x} Link:{}",Addr,HvCal,Dat,Link);
 
@@ -136,8 +142,8 @@ namespace  trkdaq {
     ip.address = Addr;
     ip.rw      = 1;                    // -a
     ip.hvcal   = HvCal;                 // -t 
-    ip.data[0] = Dat & 0xffff;
-    ip.data[1] = (Dat >> 16) & 0xffff;
+    ip.data[0] = Dat;
+    ip.data[1] = 0;                     // DIGIs get 16 bits only
 
     rc = ControlRoc_DigiRW(&ip,&op,Link,PrintLevel,Stream);
     
@@ -936,17 +942,20 @@ namespace  trkdaq {
       if (not LinkEnabled(i)) continue;
       if (not LinkLocked(i)) {
         TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
-        rc += -10;
-        continue;
+        return -1;
       }
       
       rc = RocBlockRead(i,REG_READSPI,SpiRawData);
+      if (rc < 0) {
+        TLOG(TLVL_ERROR) << std::format("RocBlockRead returned rc:{}. BAIL OUT",rc);
+        return rc;
+      }
 
       int nw = SpiRawData.size();
 
       if (nw != TrkSpiDataNWords) {
         TLOG(TLVL_ERROR) << "expected N(words)=" << TrkSpiDataNWords << " , reported nw=" << nw;
-        rc = -1;
+        rc = -2;
       }
 //-----------------------------------------------------------------------------
 // PrintLevel bit 0: print SPI data in hex 
