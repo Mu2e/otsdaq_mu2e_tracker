@@ -95,13 +95,16 @@ namespace trkdaq {
 // on success, returns 0
 // CFO JA CSR :0x9500
 //-----------------------------------------------------------------------------
-  int CfoInterface::ConfigureJA(int ClockSource, int Reset) {
+  int CfoInterface::ConfigureJA(std::ostream& Stream) {
     int rc(0);
 
-    int clock_source = ClockSource;
-    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
+    int clock_source = (fJAMode >> 4) & 0xf;
+    int reset        = fJAMode & 0xf;
+
+    TLOG(TLVL_DEBUG) << std::format("-- START: clock_source:{} reset:{}",clock_source,reset);
+
                               
-    fCfo->SetJitterAttenuatorSelect(clock_source,Reset);     // 0:internal clock sync, 1:RTF
+    fCfo->SetJitterAttenuatorSelect(clock_source,reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
     
     bool ok(false);
@@ -109,7 +112,12 @@ namespace trkdaq {
     for (int i=0; i<max_tries; i++) {
       ok = fCfo->ReadJitterAttenuatorLocked();              // in case of success, returns true
       usleep(100000);
-      if (ok) break;
+      if (ok) {
+        std::string msg = std::format("CFO JA configured with clock_source:{} reset:{}",clock_source,reset);
+        Stream << msg << std::endl;
+        TLOG(TLVL_DEBUG) << msg;
+        break;
+      }
     }
     
     if (not ok) {
@@ -117,6 +125,7 @@ namespace trkdaq {
       rc = -1;
     }
 
+    TLOG(TLVL_DEBUG) << std::string("-- END  : rc:{}",rc);
     return rc;
   }
 
@@ -136,19 +145,17 @@ namespace trkdaq {
 // this is a one-time initialization
 // CFO soft reset apparently restarts the execution , so keep the beam modes disabled
 //-----------------------------------------------------------------------------
-  int CfoInterface::InitReadout(const std::string& RunPlanFn, int TimeChainMask) {
+  int CfoInterface::InitReadout(const std::string& RunPlanFn, int TimingChainMask, std::ostream& Stream) {
     int rc(0);
 
-    TLOG(TLVL_DEBUG+1) << std::format("-- START: runplan_fn:{}  TimeChainMask:0x{:08x}",RunPlanFn,TimeChainMask);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: runplan_fn:{} TimeChainMask:0x{:08x}",RunPlanFn,fLinkMask);
     
     fCfo->DisableLinks();               // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
-                                        // I guess Haltdisables transmission?
+                                        // I guess, Halt disables transmission?
     Halt();
                                         // for convenience: to pass one parameter instead of two
-    int clock_source = (fJAMode >> 4) & 0x1;
-    int reset        = fJAMode & 0x1;
-    ConfigureJA(clock_source, reset);
+    ConfigureJA(Stream);
 
     fCfo->SoftReset();
     SetRunPlan(RunPlanFn);
@@ -156,7 +163,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // in the end, re-initialize the time chains defined by the DTC mask
 //-----------------------------------------------------------------------------
-    if (TimeChainMask != 0) fLinkMask = TimeChainMask;
+    if (TimingChainMask > 0) fLinkMask = TimingChainMask;
     for (int lnk=0; lnk<8; lnk++) {
       int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
       if (ndtcs > 0) {

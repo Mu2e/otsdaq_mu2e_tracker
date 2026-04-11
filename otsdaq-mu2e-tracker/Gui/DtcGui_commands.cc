@@ -81,9 +81,11 @@ void DtcGui::cfo_init_readout(DtcTabElement_t* Dtel, TGTextViewostream* TextView
 
     TLOG(TLVL_INFO) << Form("run_plan, dtc_mask: %s 0x%08x\n",run_plan.data(),dtc_mask);
 
-    Dtel->fCFO_i->InitReadout(run_plan.data(),dtc_mask);
+    Dtel->fCFO_i->InitReadout(run_plan.data());
   }
-  catch (...) { *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT\n"); }
+  catch (...) {
+    *fTextView << Form("ERROR : coudn't launch run plan... BAIL OUT\n");
+  }
   TLOG(TLVL_INFO) << "END" << std::endl;
 }
 

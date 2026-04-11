@@ -3,6 +3,10 @@
 // mixes high- and low-level commands
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
+// to get rid of the printout, defined output stream as std::ostream(nullptr)
+//
+// 1. std::ostream& --> std::ostream* or use std::ostream(nullptr)
+//    to avoid ifs in the functions being called
 //-----------------------------------------------------------------------------
 #ifndef __mu2edaq_dtc_interface_hh__
 #define __mu2edaq_dtc_interface_hh__
@@ -102,11 +106,7 @@ namespace mu2edaq {
     int                  fDtcID;             // unique DTC ID used by the DAQ (0x9154)
     int                  fPartitionID;
     int                  fMacAddrByte;
-    //    int                  fDtcEwmDelay5ns;    // 'per-DTC' delay in units of 5ns, common for all ROCs
     int                  fRocEwmDelay5ns[6]; // 'per-ROC' delays, to be added to the common one above
-
-    // int                  fDigitizationStart5ns;  // digitization window to be set in the DIGIs, in units of 5 ns
-    // int                  fDigitizationStop5ns ;
 
     int                  fSubsystem;         // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
@@ -131,7 +131,7 @@ namespace mu2edaq {
 // if 'ClockSource' and 'Reset' are set to -1, use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
 //-----------------------------------------------------------------------------    
-    int          ConfigureJA(int ClockSource = -1, int Reset = -1);
+    int          ConfigureJA(int ClockSource = -1, int Reset = -1, std::ostream& Stream = std::cout);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
@@ -139,26 +139,20 @@ namespace mu2edaq {
     int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fEventMode); }
 
     int          DtcID     () { return fDtcID; }
-    //    int          IsCrv     () { return fIsCrv; }
 
-    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream* Stream = nullptr);
-    virtual int  InitRocReadoutMode(std::ostream* Stream = nullptr); 
+    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream& Stream = std::cout);
+    virtual int  InitRocReadoutMode(std::ostream& Stream = std::cout); 
     
-    int          InitEmulatedCFOReadoutMode();
-                                        // SampleEdgeMode=0: force rising  edge
-                                        //                1: force falling edge
-                                        //                2: auto
-                                        // -1 means use the pre-fetched one
-                                        // success: returns rc=0
-                                        // if rc < 0, can't continue
-    int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+    int          InitEmulatedCFOReadoutMode(std::ostream& Stream = std::cout);
+    
+    int          InitExternalCFOReadoutMode(std::ostream& Stream = std::cout);
 
-    // read configuration data from a file and store them in 'DtcData'
+                                        // read configuration data from a file and store them in 'DtcData'
+
     static int   InitConfiguration(const char* ConfigName, int DeviceID, DtcInputData_t* DtcData);
 
-                                        // EWLength - in 25 ns ticks
-                                        // to be executed on the emulated CFO side
-    
+                                        // EWLength - in 25 ns ticks, to be executed by the emulated CFO
+
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
@@ -166,7 +160,6 @@ namespace mu2edaq {
                                         // this EWM delay is common for all ROCs,
                                         // on top of that, each separate ROC has its own delay
     
-    //    int          GetDtcEwmDelay5ns()         { return fDtcEwmDelay5ns; }
     int          GetRocEwmDelay5ns(int Link) { return fRocEwmDelay5ns[Link]; }
     
     int          GetLinkMask() { return fLinkMask; }
@@ -175,7 +168,7 @@ namespace mu2edaq {
     void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
-    void         PrintStatus          (std::ostream& Stream = std::cout);
+    int          PrintStatus          (std::ostream& Stream = std::cout);
     virtual int  PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
 
     uint32_t     ReadRegister         (uint16_t Register);
@@ -210,6 +203,7 @@ namespace mu2edaq {
 
                                         // a simple setter, for now, no range check..
                                         // assume everyone knows that Link in [0,5]
+
     void         SetRocEwmDelay5ns(int Link, int Delay5ns) {
       fRocEwmDelay5ns[Link] = Delay5ns  ;
     }
@@ -217,6 +211,7 @@ namespace mu2edaq {
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
 // bit_5: 0:rising edge 1:falling edge
+// 2026-04-10 PM: not sure if this one is still being used 
 //-----------------------------------------------------------------------------    
     void         SetupCfoInterface(int CFOEmulationMode, 
                                    int ForceCFOEdge    , 

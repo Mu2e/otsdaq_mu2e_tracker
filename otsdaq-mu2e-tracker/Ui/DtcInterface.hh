@@ -129,7 +129,7 @@ namespace trkdaq {
                                       std::vector<uint16_t>*  Output          ,
                                       int                     PrintLevel = 0x2,
                                       ControlRoc_Rates_t*     Par        = nullptr,
-                                      std::ostream*           Stream     = nullptr);
+                                      std::ostream&           Stream     = std::cout);
 
     int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par        = nullptr,
                                     int                       Link       = 0    ,
@@ -139,7 +139,7 @@ namespace trkdaq {
     int          ControlRoc_ReadDeviceID(int                    Link,
                                          ControlRoc_DeviceID_t& DevId,
                                          int                    PrintLevel = 0,
-                                         std::ostream*          Stream     = &std::cout);
+                                         std::ostream&          Stream     = std::cout);
 //-----------------------------------------------------------------------------
 // if Line = -1, not interested in the output, only in the printout
 // if OK, the read functions return Nwords
@@ -243,14 +243,13 @@ namespace trkdaq {
     virtual std::string              GetRocDesignInfo (int Link) override;
     virtual std::string              GetRocFwGitCommit(int Link) override;
 
-    virtual int                      InitRocReadoutMode(std::ostream* Stream = nullptr)      override;
+    virtual int                      InitRocReadoutMode(std::ostream& Stream = std::cout)      override;
 //-----------------------------------------------------------------------------
-// reset digitizers .. to be called in the beginning of each event ???
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
-    int          MonicaDigiClear       ();
-    int          MonicaVarLinkConfig   (std::ostream* Stream = nullptr);
-    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
+    int          MonicaDigiClear       (std::ostream& Stream = std::cout);
+    int          MonicaVarLinkConfig   (std::ostream& Stream = std::cout);
+    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // internally called by ReadPanelID and WritePanelID
 //-----------------------------------------------------------------------------
@@ -261,9 +260,9 @@ namespace trkdaq {
     int          RebootMcu          (int Link);
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
-// if Stream == nullptr, PrintBuffer uses TRACE's TLOG
+// if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
-    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream* Stream = nullptr);
+    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
@@ -296,7 +295,7 @@ namespace trkdaq {
                                     int               Validate   = 0        , 
                                     const std::string Fn         = ""       );  // if "", do not write output
 
-                                        // returns the panel mnid
+                                        // returns the panel MNID
     int          ReadPanelID       (int Link, int PrintLevel = 0);
     int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
     roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);

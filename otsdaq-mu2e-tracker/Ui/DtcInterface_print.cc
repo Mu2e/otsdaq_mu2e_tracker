@@ -249,7 +249,7 @@ namespace trkdaq {
 // 'nw' : number of 16-bit words to print.
 // if Stream == nullptr , use TLOG, otherwise - *Stream
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream* Stream) {
+  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream& Stream) {
 
     ushort*      p16 = (ushort*) ptr;
 
@@ -266,9 +266,9 @@ namespace trkdaq {
       
       n   += 1;
       if (n == 8) {
-        if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
+        if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
         else {
-          (*Stream)          << line << std::endl;
+          Stream             << line << std::endl;
           TLOG(TLVL_DEBUG+1) << line << std::endl;
         }
         n = 0;
@@ -276,9 +276,9 @@ namespace trkdaq {
     }
     
     if (n != 0) {
-      if (Stream == nullptr) TLOG(TLVL_INFO) << line << std::endl;
+      if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
       else {
-        (*Stream)          << line << std::endl;
+        Stream             << line << std::endl;
         TLOG(TLVL_DEBUG+1) << line << std::endl;
       }
     }
@@ -378,7 +378,7 @@ namespace trkdaq {
            c = '*';
         }
         if ((LinkEnabled(lnk) == 0) or (nw != 580)) {
-          Stream << "             " << c;
+          Stream << "              " << c;
         }
         else {
           int   counts_coin = int((*dat)[loc+4])+(int((*dat)[loc+5]) << 16);

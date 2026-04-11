@@ -120,90 +120,47 @@ namespace mu2edaq {
 
 //-----------------------------------------------------------------------------
 // Source=0: sync to internal clock ; =1: RTF
-// on success, returns 1
+// on success, returns 0
 //-----------------------------------------------------------------------------
-  int DtcInterface::ConfigureJA(int ClockSource, int Reset) {
-    int nmax_iter(10);
-    int clock_source(ClockSource), reset(Reset);
+  int DtcInterface::ConfigureJA(int ClockSource, int Reset, std::ostream& Stream) {
+    int rc(0);
+    
+    int nmax_iter(10), clock_source(ClockSource), reset(Reset);
+
+    TLOG(TLVL_DEBUG) << std::format("-- START: PCIE:{} ClockSource:{} Reset:{}",fPcieAddr,ClockSource,Reset);
 
     if (reset        == -1) reset        = (fJAMode     ) & 0xf;
     if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
     
     fDtc->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
     usleep(100000);
-    int ok(0);
+    bool ok(false);
     for (int i=0; i<nmax_iter; i++) {
-      ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
+      try {
+        ok = fDtc->ReadJitterAttenuatorLocked();              // in case of success, returns true
+        TLOG(TLVL_DEBUG) << std::format("iter:{} ok:{}",i,ok);
+      }
+      catch (...) {
+        rc = -2;
+        std::string msg = std::format("iter:{} failed to >ReadJitterAttenuatorLocked(), rc:{}",i,rc);
+        TLOG(TLVL_ERROR) << msg;
+        
+        Stream << std::format("ERROR: {} rc:{}\n",msg,rc);
+        return rc;
+      }
+      
+      if (ok) {
+        std::string msg = std::format("JA configured with JAMode:0x{:02x}",fJAMode);
+        Stream << std::format("{}\n",msg);
+        TLOG(TLVL_DEBUG) << std::format("-- END  : {} rc:{}",msg,rc);
+        return rc;
+      }
       usleep(100000);
-      if (ok == 1) break;
     }
     
-    int rc = 0;
-    if (ok == 0) {
-      TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
-                                      clock_source,reset,nmax_iter);
-      rc = -1;
-    }
-
-    return rc;
-  }
-
-//-----------------------------------------------------------------------------
-// InitReadout : in most cases, no parameters
-//-----------------------------------------------------------------------------
-  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode, std::ostream* Stream) {
-    int rc(0);
-
-    if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
-    if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
-    
-    TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
-                     << " ROC ReadoutMode:" << fRocReadoutMode;
-    
-    fDtc->SoftReset();  // 2026-01-29 , suggested by Ryan
-//-----------------------------------------------------------------------------
-// both emulated and external modes perform soft reset of the DTC
-//-----------------------------------------------------------------------------
-    if (fEmulateCfo == 0) {
-      rc = InitExternalCFOReadoutMode();
-    }
-    else {
-//-----------------------------------------------------------------------------
-// bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
-//-----------------------------------------------------------------------------
-      rc = InitEmulatedCFOReadoutMode();
-    }
-    if (rc < 0) return rc;
-//-----------------------------------------------------------------------------
-// both of Init_XX_CFOReadoutMode disable all links, need to re-enable
-// do we need to reset the ROCs at this point ?
-//-----------------------------------------------------------------------------
-    rc = ResetLinks();
-    if (rc < 0) return rc;
-                                        // this should do for now, later - set the partition ID
-                                        // at begin run, for example, as follows
-
-    uint8_t id           = fDtcID       & 0xff;
-    uint8_t event_mode   = fEventMode   & 0xff;
-    uint8_t partition_id = fPartitionID & 0xff;
-    uint8_t mac_byte     = fMacAddrByte & 0xff;
-    fDtc->SetEVBInfo(id,event_mode,partition_id,mac_byte);
-//-----------------------------------------------------------------------------
-// Init*CFOReadoutMode functions disable all links, at this point the links
-// should still be disabled
-//-----------------------------------------------------------------------------
-    rc = InitRocReadoutMode(Stream);
-    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-    
-    TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
-    return rc;
-  }
-
-//-----------------------------------------------------------------------------
-// This needs to be implemented specific for the subsystems
-//-----------------------------------------------------------------------------
-  int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
-    return 0;
+    TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
+                                    clock_source,reset,nmax_iter);
+    return -1;
   }
 
 //-----------------------------------------------------------------------------
@@ -214,7 +171,7 @@ namespace mu2edaq {
 // EnableClockMarkers: set to 0
 // EnableAutogenDRP  : set to 1
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitEmulatedCFOReadoutMode() {
+  int DtcInterface::InitEmulatedCFOReadoutMode(std::ostream& Stream) {
     //                                 int EWMode, int EnableClockMarkers, int EnableAutogenDRP) {
     int rc(0);
 
@@ -234,7 +191,7 @@ namespace mu2edaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    rc = ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset, Stream);
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
                                                                    // this one is OK...
     int EnableClockMarkers = 0;
@@ -248,7 +205,7 @@ namespace mu2edaq {
     fDtc->SetExternalCFOSampleEdgeMode(force_cfo_edge);            // r_0x9100:bit6 = 0 bit_5=0
     fDtc->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
 
-    // ROC links are disabled here, but re-enabled later, in InitReadout()
+    // ROC links are disabled at this point, re-enabled later, in InitReadout()
     
     TLOG(TLVL_DEBUG) << "-- END, rc:" << rc;
     return rc;
@@ -260,25 +217,28 @@ namespace mu2edaq {
 // write value 0x00004141 to register 0x9114 - set link mask
 // DTC doesn' know about an external CFO, so it should only prepare itself to receive 
 // EVMs/HBs from the outside
+// SampleEdgeMode=0: force rising  edge
+//                1: force falling edge
+//                2: auto
+// -1 means use the pre-fetched one
+// success: returns rc=0
+// if rc < 0, can't continue
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitExternalCFOReadoutMode(int SampleEdgeMode) {
+  int DtcInterface::InitExternalCFOReadoutMode(std::ostream& Stream) {
     int rc(0);
 
-    if (SampleEdgeMode != -1) fSampleEdgeMode = SampleEdgeMode;
+    TLOG(TLVL_DEBUG) << "-- START: .. PCIE addr:" << fPcieAddr << " SampleEdgeMode:" << fSampleEdgeMode;
 
-    TLOG(TLVL_DEBUG) << "START .. PCIE addr:" << fPcieAddr << " SampleEdgeMode:" << fSampleEdgeMode;
-
-    // this one doesn't take DTC_Link_ALL gently
+                                        // this one doesn't take DTC_Link_ALL gently
     for (int i=0; i<6; i++) {
       fDtc->DisableLink(DTC_Link_ID(i),DTC_LinkEnableMode(true,true));
     }
 
-    // fDtc->HardReset();                  // write 0x9100:bit_00=1
-    fDtc->SoftReset();                 // write 0x9100:bit_31=1   
+    fDtc->SoftReset();                  // write 0x9100:bit_31=1   
 
-    fDtc->DisableCFOEmulation  ();         // r_0x9100:bit_30 = 0
-    fDtc->DisableCFOEmulatorDRP();         // r_0x9100:bit_24 = 0
-    fDtc->DisableAutogenDRP    ();         // r_0x9100:bit_23 = 0
+    fDtc->DisableCFOEmulation  ();      // r_0x9100:bit_30 = 0
+    fDtc->DisableCFOEmulatorDRP();      // r_0x9100:bit_24 = 0
+    fDtc->DisableAutogenDRP    ();      // r_0x9100:bit_23 = 0
 
     // do it only when the bit is set ? 
     fDtc->ClearCFOEmulationMode();         // r_0x9100:bit_15 = 0
@@ -286,7 +246,7 @@ namespace mu2edaq {
     int clock_source = (fJAMode >> 4) & 0x1;
     int reset        = fJAMode & 0x1;
     
-    rc = ConfigureJA(clock_source,reset);
+    rc = ConfigureJA(clock_source,reset,Stream);
     if (rc < 0) {
       TLOG(TLVL_ERROR) << "failed to configure the JA for PCIE:" << fPcieAddr;
       return rc;
@@ -305,11 +265,11 @@ namespace mu2edaq {
     // dtc->EnableCFOEmulation();       // r_0x9100:bit_30 = 1 
 
     fDtc->EnableReceiveCFOLink ();      // r_0x9114:bit_14 = 1
-    //    fDtc->EnableTransmitCFOLink();      // r_0x9114:bit_06 = 1 (if the dTC is in the middle of the chain)
+    fDtc->EnableTransmitCFOLink();      // r_0x9114:bit_06 = 1 (if the dTC is in the middle of the chain)
 
     // ROC links are disabled here, but re-enabled later, in InitReadout()
 
-    TLOG(TLVL_DEBUG) << "END PCIE addr:" << fPcieAddr;
+    TLOG(TLVL_DEBUG) << std::format("-- END  : PCIE addr:{} rc:{}",fPcieAddr,rc);
     return rc;
   }
 
@@ -369,7 +329,62 @@ namespace mu2edaq {
     return irc;
   }
 
+//-----------------------------------------------------------------------------
+// InitReadout : in most cases, no parameters
+//-----------------------------------------------------------------------------
+  int DtcInterface::InitReadout(int EmulateCfo, int RocReadoutMode, std::ostream& Stream) {
+    int rc(0);
+
+    if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
+    if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
     
+    TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
+                     << " ROC ReadoutMode:" << fRocReadoutMode;
+    
+    fDtc->SoftReset();  // 2026-01-29 , suggested by Ryan
+//-----------------------------------------------------------------------------
+// both emulated and external modes perform soft reset of the DTC
+//-----------------------------------------------------------------------------
+    if (fEmulateCfo == 0) {
+      rc = InitExternalCFOReadoutMode(Stream);
+    }
+    else {
+//-----------------------------------------------------------------------------
+// bit_30 will be restored on the 'emulated CFO side", in the call to InitEmulatedCFOReadoutMode
+//-----------------------------------------------------------------------------
+      rc = InitEmulatedCFOReadoutMode(Stream);
+    }
+    if (rc < 0) return rc;
+//-----------------------------------------------------------------------------
+// set the partition ID etc bytes
+//-----------------------------------------------------------------------------
+    uint8_t id           = fDtcID       & 0xff;
+    uint8_t event_mode   = fEventMode   & 0xff;
+    uint8_t partition_id = fPartitionID & 0xff;
+    uint8_t mac_byte     = fMacAddrByte & 0xff;
+    fDtc->SetEVBInfo(id,event_mode,partition_id,mac_byte);
+//-----------------------------------------------------------------------------
+// both Init*CFOReadoutMode functions disable all links
+// at this point the links should still be disabled, re-enable and reset the ROCs
+//-----------------------------------------------------------------------------
+    rc = ResetLinks();
+    if (rc < 0) return rc;
+
+    rc = InitRocReadoutMode(Stream);
+    if (rc < 0) return rc;
+    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+    
+    TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// This needs to be implemented specific for the subsystems
+//-----------------------------------------------------------------------------
+  int DtcInterface::InitRocReadoutMode(std::ostream& Stream) {
+    return 0;
+  }
+
 //-----------------------------------------------------------------------------
 // run plan already defined in InitEmulatedCFOReadoutMode
 // this function can be executed in a loop, after InitEmulatedCFOReadoutMode
@@ -387,8 +402,6 @@ namespace mu2edaq {
 
     uint64_t ew_mode = EventMode();     // this really is the event mode
 
-    TLOG(TLVL_DEBUG+1) << " checkpoint 001";
-    
     fDtc->SetCFOEmulationEventMode          (ew_mode  );
 
     fDtc->SetCFOEmulationTimestamp          (DTC_EventWindowTag((uint64_t) FirstEWTag));
@@ -421,20 +434,22 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
-// generic function, should be used after HardReset()
+// update the link mask, then reset the enabled ROC's
 //-----------------------------------------------------------------------------
   int DtcInterface::ResetLinks(int LinkMask, int SetNewMask) {
     int rc(0);
+    TLOG(TLVL_DEBUG+1) << "-- START:";
     if ((LinkMask != 0) and (SetNewMask != 0)) fLinkMask = LinkMask;
 
     SetLinkMask();
     
     for (int i=0; i<6; i++) {
       if (LinkEnabled(i)) {
-        int ret = ResetLink(i);   // this function is virtual
+        int ret = ResetLink(i);   // actually reset the ROC, this function is virtual
         rc += ret;
       }
     }
+    TLOG(TLVL_DEBUG+1) << std::format("-- END  : rc:{}",rc);
     return rc;
   }
 

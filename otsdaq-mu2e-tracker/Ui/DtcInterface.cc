@@ -344,13 +344,13 @@ namespace trkdaq {
 
 //-----------------------------------------------------------------------------
 // fRocReadoutMode is supposed to be already set, don't reinitialize
-// fRocReadoutMode = 0: read ROC-renerated patterns
+// fRocReadoutMode = 0: read ROC-renerated patterns, variable length
 //                 = 1: read digis
-
-//-----------------------------------------------------------------------------
+//                 = 2: read ROC-generated patterns, fixed length
+//
 // this is fully tracker-specific
 //-----------------------------------------------------------------------------
-  int DtcInterface::InitRocReadoutMode(std::ostream* Stream) {
+  int DtcInterface::InitRocReadoutMode(std::ostream& Stream) {
     int rc(0);
     
     TLOG(TLVL_DEBUG+1) << Form("-- START: fRocReadoutMode=%i\n",fRocReadoutMode);
@@ -358,20 +358,25 @@ namespace trkdaq {
 // this should be the only place where we reset the ROC
 // ROC readout mode (fixed_length << 4) | readout_mode
 //-----------------------------------------------------------------------------
-// 2025-01-19 PM    ResetLinks();       // forget it ! ... /*this seems to be necesary*/
-    
     if (((fRocReadoutMode & 0xf) == 0) || ((fRocReadoutMode & 0xf) == 2)) {
-      rc = MonicaVarPatternConfig();    // read ROC patterns
+      rc = MonicaVarPatternConfig(-1,-1,Stream);    // read ROC patterns
+      if (rc < 0) {
+        TLOG(TLVL_ERROR) << std::format("failed to congigure pattern readout mode:{}, BAIL OUT",fRocReadoutMode);
+        return rc;
+      }
     }
     else if ((fRocReadoutMode & 0xf) == 1) {
       rc = MonicaVarLinkConfig(Stream);       // read digis
       if (rc < 0) {
-        TLOG(TLVL_ERROR) << "failed to configure the links, rc:" << rc;
+        TLOG(TLVL_ERROR) << std::format("failed to configure links, rc:{}",rc);
         return rc;
       }
         
-      rc = MonicaDigiClear();                          //
-      if (rc < 0)  return rc;
+      rc = MonicaDigiClear(Stream);                          //
+      if (rc < 0)  {
+        TLOG(TLVL_ERROR) << std::format("failed to clear DIGIs, rc:{}",rc);
+        return rc;
+      }
     }
     else {
       TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
@@ -522,7 +527,7 @@ namespace trkdaq {
     rv = this->ReadROCBlockEnsured(Link, 260);
 
     if (PrintLevel & 0x1) {
-      PrintBuffer(rv.data(),rv.size(),0,&Stream);
+      PrintBuffer(rv.data(),rv.size(),0,Stream);
     }
 
     return rv;
@@ -878,54 +883,71 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 }
 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaDigiClear() {
-
+  int DtcInterface::MonicaDigiClear(std::ostream& Stream) {
+    int rc(0);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START:");
+    
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (not used)                                           continue;
+      if (not LinkEnabled(i))                               continue;
+      if (not LinkLocked(i)) {
+        std::string msg = std::format("DTC:{} link:{} enabled, NOT LOCKED",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << std::format("ERROR: {}\n",msg);
+        rc -= 1;
+                                                            continue;
+      }
 //-----------------------------------------------------------------------------
-// link is active
+// link is enabled and locked, reset the DIGI's
 //-----------------------------------------------------------------------------
       auto link = DTCLib::DTC_Link_ID(i);
+      try {
+        // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
+        fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
 
-      // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
-      fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
+        // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
+        // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
+        // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
+        // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+        fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
+        fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+        
 
-      // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
-      // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
-      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
-      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
-      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+        // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
+        // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
+        // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
+        fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+        
+        // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
+        // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
+        fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
     
-
-      // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
-      // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
-    
-      // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
-      // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
-      fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
-    
-      // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
-      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
-
-      // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
-      // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
-      // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-      fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-      fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+        // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
+        // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+        // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+        fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+        
+        // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
+        // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
+        // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
+        fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+      }
+      catch (...) {
+        std::string msg = std::format("failed to reset DIGIs for DTC:{} link:{}",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << std::format("ERROR: {}\n",msg);
+        rc -= 1;
+      }
     }
-    return 0;
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- END  : rc:{}",rc);
+    return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -943,12 +965,11 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // to be added 
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarLinkConfig(std::ostream* Stream) {
+  int DtcInterface::MonicaVarLinkConfig(std::ostream& Stream) {
     int rc(0);
     
-    fRocReadoutMode = 1;                            // 1: read digis
-                                        // bit 13 - disable reset of the counters by the HB next to the null HB
-    // int lane_mask = 0x0300 | LaneMask;
+    fRocReadoutMode = 1;                   // 1: read digis
+                                           // bit 13 - disable reset of the counters by the HB next to the null HB
     int lane_mask = 0x2300 | fRocLaneMask; // assumed to be the same for all ROCs
     
     for (int i=0; i<6; i++) {
@@ -958,19 +979,19 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
         std::string msg = std::format("link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",i,lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
         TLOG(TLVL_INFO) << msg;
-        if (Stream) (*Stream) << msg << std::endl;
+        Stream << msg << std::endl;
       }
       else {
-        if (Stream) (*Stream) << std::format("link:{} disabled\n",i);
+        Stream << std::format("link:{} disabled\n",i);
       }
     }
     
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     int data_version = 1;
-    RocSetDataVersion(data_version);    // Version --> R29
+    RocSetDataVersion(data_version);    // data version: ROC R29
 
-    ResetLinks();                         // use fLinkMask
+    ResetLinks();                       // use fLinkMask
 //-----------------------------------------------------------------------------
 // according to Monica, this is the place for find_alignment and control_roc_read
 // check if all lanes are ready to be read
@@ -990,14 +1011,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           if ((u >> 0x8) != 0xF) {
             // still in trouble
             std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
-            if (Stream) (*Stream) << msg << std::endl;
+            Stream << msg << std::endl;
             TLOG(TLVL_ERROR) << msg; 
             rc -= 1;
           }
         }
       }
     }
-//-----------------------------------------------------------------------------
+    
     return rc;
   }
 
@@ -1011,7 +1032,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // lane mask default: 0xf
 // if any of the called functions returns negative code, the diagnostics will show up in the TRACE prontout
 //-----------------------------------------------------------------------------
-  int DtcInterface::MonicaVarPatternConfig(int LaneMask, int NHitsPerLane) {
+  int DtcInterface::MonicaVarPatternConfig(int LaneMask, int NHitsPerLane, std::ostream& Stream) {
     int rc(0);
     
     rc = ResetLinks();                               // use fLinkMask
@@ -1024,50 +1045,66 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int var_pattern_length = (fRocReadoutMode >> 4) & 0xf;
     
     if ((ro_mode != 0) and (ro_mode != 2)) {
-      TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << " BAIL OUT";
-      return -1;
+      rc = -1;
+      std::string msg = std::format("unknown readout mode:{} rc:{}. BAIL OUT",fRocReadoutMode,rc);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << "ERROR: " << msg << std::endl;
+      return rc;
     }
-
+//-----------------------------------------------------------------------------
+// no need to compain about disabled links
+//-----------------------------------------------------------------------------
     for (int i=0; i<6; i++) {
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
-        if (ro_mode == 0) {
+      if (not LinkEnabled(i)) {
+        TLOG(TLVL_DEBUG+1) << std::format("DTC:{} link:{} disabled. CONTINUE",PcieAddr(),i);
+        continue;
+      }
+      if (not LinkLocked (i)) {
+        rc = -2;
+        std::string msg = std::format("DTC:{} link:{} enabled, but not locked. rc:{}, BAIL OUT",PcieAddr(),i,rc);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << "ERROR: " << msg << std::endl;
+        return rc;
+      }
+
+      if (ro_mode == 0) {
 //-----------------------------------------------------------------------------
 // mask bit#04=1: variable length
 // mask bit#12=0: 'ROC counter;
 //-----------------------------------------------------------------------------
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000); // configure ROC to send variable length patterns
-          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        }
-        else {
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000); // configure ROC to send variable length patterns
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      }
+      else {
 //-----------------------------------------------------------------------------
-// can only be Mode == 2
+// Mode == 2 , can't be anything else
 // set number of simulated hits per lane - where that number is coming from?
 // have only 10 bits for the number  of hits
 // mask bit#04=1: variable length
-// mask bit#13=1: don't reset the conters when receiving a null HB
+// mask bit#13=1: don't reset the conters when receiving null HB
 // mask bit#12=1: 'ROC checkerboard'
 // mask bit#11=1: fixed length patters
-// NHits : 10 LS bits in reg@15
+// NHits        : 10 LS bits in reg@15
 //-----------------------------------------------------------------------------
-          int lane_mask = LaneMask;
-          if (lane_mask < 0) lane_mask = fRocLaneMask;
-          uint16_t mask = 0x3800 | lane_mask;
-          if (var_pattern_length == 1) mask = mask | 0x00000010;
-          else                         mask = mask & 0xffffffef;
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 8,mask,false,1000);   // configure ROC to send fixed length patterns
-          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        int lane_mask = LaneMask;
+        if (lane_mask < 0) lane_mask = fRocLaneMask;
+        uint16_t mask = 0x3800 | lane_mask;
+        
+        if (var_pattern_length == 1) mask = mask | 0x00000010;
+        else                         mask = mask & 0xffffffef;
+        
+        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,mask,false,1000);   // configure ROC to send fixed length patterns
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
-          int nhits = NHitsPerLane;
-          if (nhits < 0) nhits = fRocNHitsPerLane;
-          uint16_t w15 = (nhits & 0x3ff);
-          fDtc->WriteROCRegister(DTC_Link_ID(i),15,w15,false,1000);
-          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-          TLOG(TLVL_DEBUG+1) << "var_pattern_length:" << var_pattern_length
+        int nhits = NHitsPerLane;
+        if (nhits < 0) nhits = fRocNHitsPerLane;
+        uint16_t w15 = (nhits & 0x3ff);
+        fDtc->WriteROCRegister(DTC_Link_ID(i),15,w15,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        
+        TLOG(TLVL_DEBUG+1) << "var_pattern_length:" << var_pattern_length
                            << " reg#08:0x" << std::hex << std::setw(4) << std::setfill('0') << mask
                            << " reg#15:0x" << std::hex << std::setw(4) << std::setfill('0') << w15;
-        }
       }
     }
 
@@ -1203,7 +1240,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
                            nerr,nerr_tot,
                            nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
             if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
-              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2,0x0,&Stream);
+              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2,0x0,Stream);
             }
           }
           
@@ -1366,7 +1403,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       else {
         ULong64_t ewt = ULong64_t(v[0]) | (ULong64_t(v[1]) << 16) | (ULong64_t(v[2]) << 32);
         Stream << "  ewt:" << ewt << " len:" << v[3] << std::endl;
-        PrintBuffer(v.data(),nw,0,&Stream);
+        PrintBuffer(v.data(),nw,0,Stream);
       }
     }
     else {
@@ -1411,7 +1448,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // This is just an example, needs to be implemented for each subsystem
 //-----------------------------------------------------------------------------
-  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history = false) {
+  std::vector<std::string> DtcInterface::GetRocRegistersNames(bool history) {
     std::vector<std::string> roc_var_names;
     char var_name[128];
     // Basic ROC registers

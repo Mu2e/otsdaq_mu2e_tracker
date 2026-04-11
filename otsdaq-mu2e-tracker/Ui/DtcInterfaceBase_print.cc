@@ -88,7 +88,8 @@ namespace mu2edaq {
   }
   
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintStatus(std::ostream& Stream) {
+  int DtcInterface::PrintStatus(std::ostream& Stream) {
+    int rc(0);
     TLOG(TLVL_DEBUG) << "-- START";
     
     Stream << Form("-----------------------------------------------------------------\n");
@@ -146,7 +147,8 @@ namespace mu2edaq {
     PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",Stream);
     PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
                           
-    TLOG(TLVL_DEBUG) << "-- END";
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
+    return rc;
   }
 };
 

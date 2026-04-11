@@ -291,7 +291,7 @@ int dtc_control_roc_rates(int Link, trkdaq::ControlRoc_Rates_t* Par = nullptr, i
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
 
   std::vector<uint16_t> rates;
-  dtc_i->ControlRoc_Rates(Link,&rates,4,Par,&std::cout);
+  dtc_i->ControlRoc_Rates(Link,&rates,4,Par,std::cout);
 
   std::vector<int>      chmask;
   for (int i=0; i<96; ++i) chmask.emplace_back(1);
