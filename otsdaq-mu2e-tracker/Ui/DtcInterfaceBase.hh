@@ -98,7 +98,7 @@ namespace mu2edaq {
     int                  fRocReadoutMode;    // 0: 'counter patterns' 1:digis 2:checkerboard patterns
     int                  fSampleEdgeMode;    // 0:force raising 1:force falling 2:auto
     int                  fEmulateCfo;        // 1: this DTC operated in the emulated CFO mode
-    int                  fJAMode;            // clock_source << 4 | reset
+    int                  fJAMode;            // (clock_source << 4) | reset
 
     int                  fOnSpill;           // 1:on-spill, 0:off-spill
     int                  fEventMode;         // whatever it is, hopefully, together they make 5 bytes
@@ -128,10 +128,10 @@ namespace mu2edaq {
 
     DTCLib::DTC* Dtc() { return fDtc; }
 //-----------------------------------------------------------------------------
-// if 'ClockSource' and 'Reset' are set to -1, use fJAMode
+// to avoid ambiguities, always use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
 //-----------------------------------------------------------------------------    
-    int          ConfigureJA(int ClockSource = -1, int Reset = -1, std::ostream& Stream = std::cout);
+    int          ConfigureJA(std::ostream& Stream = std::cout);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
