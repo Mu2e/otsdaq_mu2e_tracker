@@ -16,8 +16,8 @@ namespace trkdaq{
 		return rv;
 	}
 
-	int ROC::FindAlignment(Alignment& out){
-		auto rv = _dtc->FindAlignment(DTCLib::DTC_Link_ID(_link), out);
+	int ROC::FindAlignment(){
+		auto rv = _dtc->FindAlignment(DTCLib::DTC_Link_ID(_link), _alignment);
 		return rv;
 	}
 
@@ -34,5 +34,9 @@ namespace trkdaq{
 	int ROC::SetThreshold(int channel, int preamp, int dac, int print_level){
 		auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
 		return rv;
+	}
+
+	const Alignment& LatestAlignment(){
+		return _alignment;
 	}
 } // namespace trkdaq

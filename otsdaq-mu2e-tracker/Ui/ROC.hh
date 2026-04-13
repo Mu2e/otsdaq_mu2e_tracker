@@ -31,9 +31,12 @@ namespace trkdaq{
 											 int Threshold,
 											 int PrintLevel = 0);
 
+			const Alignment& LatestAlignment();
+
     protected:
 			link_t _link;
 			std::shared_ptr<SharedDtcInterface> _dtc;
+			Alignment _alignment;
 
 		private:
 			/**/

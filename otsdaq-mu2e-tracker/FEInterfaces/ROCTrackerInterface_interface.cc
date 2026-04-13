@@ -78,6 +78,7 @@ void ROCTrackerInterface::FindAlignment(__ARGS__){
 	auto rv = _roc->FindAlignment(alignment);
 
 	std::stringstream stream;
+	const auto& alignment = _roc->LatestAlignment();
 	print_legacy_table(alignment, stream);
 
 	__SET_ARG_OUT__("Success", std::to_string(rv));
