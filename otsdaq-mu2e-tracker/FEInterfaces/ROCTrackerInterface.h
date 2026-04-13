@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "otsdaq-mu2e/FEInterfaces/ROCPolarFireCoreInterface.h"
@@ -51,7 +52,13 @@ public:
 
 	~ROCTrackerInterface(void);
 
+	virtual void onDTCReady();
+
+	using address_t = trkdaq::ROC::address_t;
+	void ReadRegister(__ARGS__);
+	void FindAlignment(__ARGS__);
 	void SetThreshold(__ARGS__);
+	void MeasureThreshold(__ARGS__);
 
 	// state machine
 	//----------------
@@ -69,9 +76,9 @@ public:
                                  uint16_t wordCount,
                                  bool incrementAddress) override;
 
-
 	// prepackaged ROC interface
-	trkdaq::ROC _roc;
+	// must be an indirection to support deferred initialization
+	std::shared_ptr<trkdaq::ROC> _roc;
 
 	bool emulatorWorkLoop(void) override;
 

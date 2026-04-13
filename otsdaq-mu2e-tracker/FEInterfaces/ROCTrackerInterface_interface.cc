@@ -13,7 +13,6 @@ ROCTrackerInterface::ROCTrackerInterface(
 			: ROCPolarFireCoreInterface(rocUID,
 																	theXDAQContextConfigTree,
 																	theConfigurationPath)
-			, _roc(static_cast<trkdaq::ROC::link_t>(linkID_), getDTC())
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
@@ -21,6 +20,22 @@ ROCTrackerInterface::ROCTrackerInterface(
 	              << " and EventWindowDelayOffset = " << delay_ << __E__;
 
 	__CFG_COUT__ << "Constructor..." << __E__;
+
+	registerFEMacroFunction("Read Register",
+													static_cast<FEVInterface::frontEndMacroFunction_t>(
+														&ROCTrackerInterface::ReadRegister
+													),
+													std::vector<std::string>{"Address"},
+													std::vector<std::string>{"Value"},
+													1, "" /* tooltip info here */);
+
+	registerFEMacroFunction("Find Alignment",
+													static_cast<FEVInterface::frontEndMacroFunction_t>(
+														&ROCTrackerInterface::FindAlignment
+													),
+													std::vector<std::string>{},
+													std::vector<std::string>{"Success", "Summary"},
+													1, "" /* tooltip info here */);
 
 	registerFEMacroFunction("Set Threshold",
 													static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -31,100 +46,13 @@ ROCTrackerInterface::ROCTrackerInterface(
 													std::vector<std::string>{"Success"},
 													1, "" /* tooltip info here */);
 
-// ejc: block out macros for now
-/*
-	registerFEMacroFunction("ROC Status",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::GetStatus),
-	                        std::vector<std::string>{},          // inputs parameters
-	                        std::vector<std::string>{"Status"},  // output parameters
-	                        1);  // requiredUserPermissions
-
-	registerFEMacroFunction(
-	    "Read ROC Error Counter",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::ReadROCErrorCounter),
-	    std::vector<std::string>{"Address to read, Default := 0]"},  // inputs parameters
-	    std::vector<std::string>{"Status"},                          // output parameters
-	    1);  // requiredUserPermissions
-
-	registerFEMacroFunction("Setup for Digi Data Taking",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::SetupForDigiDataTaking),
-	                        std::vector<std::string>{},          // inputs parameters
-	                        std::vector<std::string>{"Result"},  // output parameters
-	                        1);  // requiredUserPermissions
-
-	registerFEMacroFunction("Find Alignment",
-	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::FindAlignment),
-	                        std::vector<std::string>{},          // inputs parameters
-	                        std::vector<std::string>{"Result"},  // output parameters
-	                        1);  // requiredUserPermissions
-
-	registerFEMacroFunction(
-	    "Get UI Parameters",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::GetUIParameters),
-	    std::vector<std::string>{},  // inputs parameters
-	    std::vector<std::string>{"fEnabled",
-	                             "fPcieAddr",
-	                             "fLinkMask",
-	                             "fRocReadoutMode",
-	                             "fRocLaneMask",
-	                             "fRocNHitsPerLane",
-	                             "fSampleEdgeMode",
-	                             "fEmulateCfo",
-	                             "fJAMode",
-	                             "fOnSpill",
-	                             "fEventMode",
-	                             "fDtcID",
-	                             "fPartitionID",
-	                             "fMacAddrByte",
-	                             "fSleepTimeROCWrite",
-	                             "fSleepTimeROCReset"},  // output parameters
-	    1);                                              // requiredUserPermissions
-
-	registerFEMacroFunction(
-	    "Set UI Parameters",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::SetUIParameters),
-	    std::vector<std::string>{
-	        "fEnabled (Default := unchanged)",
-	        "fPcieAddr (Default := unchanged)",
-	        "fLinkMask (Default := unchanged)",
-	        "fRocReadoutMode (Default := unchanged)",
-	        "fRocLaneMask (Default := unchanged)",
-	        "fRocNHitsPerLane (Default := unchanged)",
-	        "fSampleEdgeMode (Default := unchanged)",
-	        "fEmulateCfo (Default := unchanged)",
-	        "fJAMode (Default := unchanged)",
-	        "fOnSpill (Default := unchanged)",
-	        "fEventMode (Default := unchanged)",
-	        "fDtcID (Default := unchanged)",
-	        "fPartitionID (Default := unchanged)",
-	        "fMacAddrByte (Default := unchanged)",
-	        "fSleepTimeROCWrite (Default := unchanged)",
-	        "fSleepTimeROCReset (Default := unchanged)"},  // inputs parameters
-	    std::vector<std::string>{"fEnabled",
-	                             "fPcieAddr",
-	                             "fLinkMask",
-	                             "fRocReadoutMode",
-	                             "fRocLaneMask",
-	                             "fRocNHitsPerLane",
-	                             "fSampleEdgeMode",
-	                             "fEmulateCfo",
-	                             "fJAMode",
-	                             "fOnSpill",
-	                             "fEventMode",
-	                             "fDtcID",
-	                             "fPartitionID",
-	                             "fMacAddrByte",
-	                             "fSleepTimeROCWrite",
-	                             "fSleepTimeROCReset"},  // output parameters
-	    1);                                              // requiredUserPermissions
-*/
-
+	registerFEMacroFunction("Measure Threshold",
+													static_cast<FEVInterface::frontEndMacroFunction_t>(
+														&ROCTrackerInterface::MeasureThreshold
+													),
+													std::vector<std::string>{"Channel"},
+													std::vector<std::string>{"Readback count", "Cal", "HV", "Total"},
+													1, "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -134,14 +62,70 @@ ROCTrackerInterface::~ROCTrackerInterface(void)
 	__COUT__ << FEVInterface::interfaceUID_ << " Destructor" << __E__;
 }  // end destructor
 
+void ROCTrackerInterface::onDTCReady(){
+	auto dtc = getDTC();
+	_roc = std::make_shared<trkdaq::ROC>(linkID_, dtc);
+}
+
+void ROCTrackerInterface::ReadRegister(__ARGS__){
+	address_t address = __GET_ARG_IN__("Address", address_t, 0x0);
+	uint32_t rv = _roc->ReadRegister(address);
+	__SET_ARG_OUT__("Value", std::to_string(rv));
+}
+
+void ROCTrackerInterface::FindAlignment(__ARGS__){
+	Alignment alignment;
+	auto rv = _roc->FindAlignment(alignment);
+
+	std::stringstream stream;
+	print_legacy_table(alignment, stream);
+
+	__SET_ARG_OUT__("Success", std::to_string(rv));
+	__SET_ARG_OUT__("Summary", stream.str());
+}
+
 void ROCTrackerInterface::SetThreshold(__ARGS__){
 	int channel			= __GET_ARG_IN__("Channel", int, -1);
 	int preamp 			= __GET_ARG_IN__("Preamp", int, -1);
 	int threshold   = __GET_ARG_IN__("DAC value", int, -1);
 	int print_level = __GET_ARG_IN__("PrintLevel", int, 0x2);
 	// TODO throw on -1s
-	auto rv = _roc.SetThreshold(channel, preamp, threshold, print_level);
+	__FE_COUT__ << "ejc: ROCTrackerInterface::SetThreshold" << __E__;
+	auto rv = _roc->SetThreshold(channel, preamp, threshold, print_level);
 	__SET_ARG_OUT__("Success", std::to_string(rv));
+}
+
+void ROCTrackerInterface::MeasureThreshold(__ARGS__){
+	int channel			= __GET_ARG_IN__("Channel", int, -1);
+
+	std::vector<float> rvs;
+	uint32_t mask_lo = 0xFFFFFFFF;
+	uint32_t mask_md = 0xFFFFFFFF;
+	uint32_t mask_hi = 0xFFFFFFFF;
+	trkdaq::NullStream null;
+	auto stream = std::ostream(&null);
+	_roc->ReadThresholds(rvs, mask_lo, mask_md, mask_hi, 0, stream);
+
+	size_t idx;
+
+	idx = 3*channel;
+	auto rvh = rvs[idx + 0];
+	auto rvc = rvs[idx + 1];
+	auto rvt = rvs[idx + 2];
+
+	std::string msg = "ejc: channel "
+								  + std::to_string(channel)
+									+ " thresholds = "
+	                + std::to_string(rvh)
+									+ ", "
+	                + std::to_string(rvc)
+									+ ", "
+	                + std::to_string(rvt);
+	__FE_COUT__ << msg << __E__;
+	__SET_ARG_OUT__("Readback count", std::to_string(rvs.size()));
+	__SET_ARG_OUT__("HV", std::to_string(rvh));
+	__SET_ARG_OUT__("Cal", std::to_string(rvc));
+	__SET_ARG_OUT__("Total", std::to_string(rvt));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address,

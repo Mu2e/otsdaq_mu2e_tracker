@@ -11,6 +11,16 @@ namespace trkdaq{
 		/**/
 	}
 
+	uint32_t ROC::ReadRegister(address_t address){
+		auto rv = _dtc->ReadROCRegister(_link, address);
+		return rv;
+	}
+
+	int ROC::FindAlignment(Alignment& out){
+		auto rv = _dtc->FindAlignment(DTCLib::DTC_Link_ID(_link), out);
+		return rv;
+	}
+
 	int ROC::ReadThresholds(std::vector<float>& out,
 													uint32_t mask_lo,
 													uint32_t mask_md,

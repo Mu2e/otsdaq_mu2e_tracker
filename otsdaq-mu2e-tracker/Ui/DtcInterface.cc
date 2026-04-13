@@ -83,6 +83,7 @@ namespace trkdaq {
   DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterface(Dtc) {
     // initialization of the interface data members is done externally
     // nothing should happen here
+    // ejc: TODO need to call base constructor
   }
 
   void DtcInterface::PostInitialize(const DtcInterface::DtcConfiguration_t& config){
@@ -98,6 +99,10 @@ namespace trkdaq {
     SetRocNHitsPerLane(config.fRocNHitsPerLane);
     SetJAMode(config.fJAMode);
     SetEmulateCfo(config.fEmulateCfo);
+
+    // important !
+    fSleepTimeROCWrite =  2000;
+    fSleepTimeROCReset =  10000; // 4000
   }
 
 //-----------------------------------------------------------------------------
@@ -1520,6 +1525,15 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     DTCLib::roc_data_t tmp;
     auto rv = this->FindThreshold(Link, ChannelID, PreampType,
                                   threshold, tolerance, tmp);
+    return rv;
+  }
+
+//-----------------------------------------------------------------------------
+  uint16_t DtcInterface::ReadROCRegister(const int link,
+                                         const uint16_t address){
+    int timeout = 200;
+    auto dtclink = DTCLib::DTC_Link_ID(link);
+    auto rv = this->fDtc->ReadROCRegister(dtclink, address, timeout);
     return rv;
   }
 };

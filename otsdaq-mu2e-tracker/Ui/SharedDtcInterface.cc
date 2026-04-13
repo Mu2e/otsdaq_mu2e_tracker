@@ -8,7 +8,9 @@ namespace trkdaq{
 	SharedDtcInterface::SharedDtcInterface(DTCLib::DTC* dtc):
 			_interface(std::make_unique<trkdaq::DtcInterface>(dtc)),
 			_initialized(false){
-		/**/
+		trkdaq::DtcInterface::DtcConfiguration_t dummy;
+		dummy.fLinkMask = 0x111111;
+		this->PostInitialize(dummy);
 	}
 
 	// initialize store of preconstructed instances

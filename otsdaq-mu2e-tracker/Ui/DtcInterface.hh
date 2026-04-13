@@ -64,7 +64,6 @@ namespace trkdaq {
 
     int                        fRocLaneMask;        // 0xf : all of them
     int                        fRocNHitsPerLane;    // NHits per lane for Mode=2
-
     static const char*         fgSpiVarName[TrkSpiDataNWords]; //
     static const char*         fgKeyVarName[TrkKeyDataNWords]; //
     static const char*         fgIlpVarName[TrkIlpDataNWords]; //
@@ -236,6 +235,8 @@ namespace trkdaq {
                                           const int ChannelID,
                                           const int PreampType,
                                           const DTCLib::roc_data_t dac);
+
+		uint16_t ReadROCRegister(int link, uint16_t address);
 
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;

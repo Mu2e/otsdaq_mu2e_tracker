@@ -24,6 +24,10 @@ namespace trkdaq{
 
 			// below are thin forwards automagically completed by variadic templates
 
+			// basics
+			template<typename... Args>
+			uint16_t ReadROCRegister(Args&&... args);
+
 			// ControlROC paradigm
 			template<typename... Args>
 			int ReadSettings(Args&&... args);
@@ -92,6 +96,13 @@ namespace trkdaq{
 			// store of preconstructed instances
 			static std::map< void*, std::shared_ptr<SharedDtcInterface> > instances;
 	};
+
+	template<typename... Args>
+	uint16_t SharedDtcInterface::ReadROCRegister(Args&&... args){
+		std::lock_guard lock(_mutex);
+		uint16_t rv = _interface->ReadROCRegister(std::forward<Args>(args)...);
+		return rv;
+	}
 
 	template<typename... Args>
 	int SharedDtcInterface::ReadSettings(Args&&... args){
@@ -188,6 +199,20 @@ namespace trkdaq{
 	int SharedDtcInterface::SetThreshold(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->ControlRoc_SetThreshold(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::FindAlignment (Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->FindAlignment(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::FindAlignments(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->FindAlignments(std::forward<Args>(args)...);
 		return rv;
 	}
 
