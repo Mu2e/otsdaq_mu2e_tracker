@@ -16,6 +16,11 @@ namespace trkdaq{
 		return rv;
 	}
 
+	int ROC::Reset(){
+		auto rv = _dtc->ResetLink(_link);
+		return rv;
+	}
+
 	int ROC::FindAlignment(){
 		auto rv = _dtc->FindAlignment(DTCLib::DTC_Link_ID(_link), _alignment);
 		return rv;

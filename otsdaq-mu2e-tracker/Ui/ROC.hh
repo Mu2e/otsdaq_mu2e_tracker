@@ -19,6 +19,7 @@ namespace trkdaq{
 			ROC(link_t, DTCLib::DTC*);
 
 			uint32_t ReadRegister(address_t address);
+			int Reset();
 			int FindAlignment();
 			int ReadThresholds(std::vector<float>&        Thr       ,
 												 uint32_t      MaskC      = 0xFFFFFFFF,

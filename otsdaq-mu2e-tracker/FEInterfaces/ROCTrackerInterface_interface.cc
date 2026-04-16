@@ -29,6 +29,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 													std::vector<std::string>{"Value"},
 													1, "" /* tooltip info here */);
 
+	registerFEMacroFunction("Reset Counters",
+													static_cast<FEVInterface::frontEndMacroFunction_t>(
+														&ROCTrackerInterface::ResetCounters
+													),
+													std::vector<std::string>{},
+													std::vector<std::string>{"Return Code"},
+													1, "" /* tooltip info here */);
+
 	registerFEMacroFunction("Find Alignment",
 													static_cast<FEVInterface::frontEndMacroFunction_t>(
 														&ROCTrackerInterface::FindAlignment
@@ -71,6 +79,11 @@ void ROCTrackerInterface::ReadRegister(__ARGS__){
 	address_t address = __GET_ARG_IN__("Address", address_t, 0x0);
 	uint32_t rv = _roc->ReadRegister(address);
 	__SET_ARG_OUT__("Value", std::to_string(rv));
+}
+
+void ROCTrackerInterface::ResetCounters(__ARGS__){
+	int rv = _roc->Reset();
+	__SET_ARG_OUT__("Return code", std::to_string(rv));
 }
 
 void ROCTrackerInterface::FindAlignment(__ARGS__){

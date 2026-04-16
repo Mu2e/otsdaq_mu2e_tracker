@@ -56,6 +56,7 @@ public:
 
 	using address_t = trkdaq::ROC::address_t;
 	void ReadRegister(__ARGS__);
+	void ResetCounters(__ARGS__);
 	void FindAlignment(__ARGS__);
 	void SetThreshold(__ARGS__);
 	void MeasureThreshold(__ARGS__);

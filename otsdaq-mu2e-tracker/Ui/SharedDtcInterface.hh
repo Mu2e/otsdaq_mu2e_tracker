@@ -27,6 +27,8 @@ namespace trkdaq{
 			// basics
 			template<typename... Args>
 			uint16_t ReadROCRegister(Args&&... args);
+			template<typename... Args>
+			int ResetLink(Args&&... args);
 
 			// ControlROC paradigm
 			template<typename... Args>
@@ -101,6 +103,13 @@ namespace trkdaq{
 	uint16_t SharedDtcInterface::ReadROCRegister(Args&&... args){
 		std::lock_guard lock(_mutex);
 		uint16_t rv = _interface->ReadROCRegister(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::ResetLink(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->ResetLink(std::forward<Args>(args)...);
 		return rv;
 	}
 
