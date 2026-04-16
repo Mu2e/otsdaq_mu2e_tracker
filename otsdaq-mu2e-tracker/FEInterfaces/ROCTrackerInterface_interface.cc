@@ -74,8 +74,7 @@ void ROCTrackerInterface::ReadRegister(__ARGS__){
 }
 
 void ROCTrackerInterface::FindAlignment(__ARGS__){
-	Alignment alignment;
-	auto rv = _roc->FindAlignment(alignment);
+	auto rv = _roc->FindAlignment();
 
 	std::stringstream stream;
 	const auto& alignment = _roc->LatestAlignment();

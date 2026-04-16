@@ -36,7 +36,7 @@ namespace trkdaq{
 		return rv;
 	}
 
-	const Alignment& LatestAlignment(){
+	const Alignment& ROC::LatestAlignment(){
 		return _alignment;
 	}
 } // namespace trkdaq
