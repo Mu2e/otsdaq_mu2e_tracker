@@ -95,11 +95,12 @@ namespace trkdaq {
 // on success, returns 0
 // CFO JA CSR :0x9500
 //-----------------------------------------------------------------------------
-  int CfoInterface::ConfigureJA(std::ostream& Stream) {
-    int rc(0);
+  int CfoInterface::ConfigureJA(int ClockSource, int Reset, std::ostream& Stream) {
 
-    int clock_source = (fJAMode >> 4) & 0xf;
-    int reset        = fJAMode & 0xf;
+    int rc(0), clock_source(ClockSource), reset(Reset);
+
+    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
+    if (reset        == -1) reset        = (fJAMode & 0xf);
 
     TLOG(TLVL_DEBUG) << std::format("-- START: clock_source:{} reset:{}",clock_source,reset);
 
@@ -155,7 +156,7 @@ namespace trkdaq {
                                         // I guess, Halt disables transmission?
     Halt();
                                         // for convenience: to pass one parameter instead of two
-    ConfigureJA(Stream);
+    ConfigureJA(-1,-1,Stream);
 
     fCfo->SoftReset();
     SetRunPlan(RunPlanFn);

@@ -997,8 +997,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // check if all lanes are ready to be read
 //-----------------------------------------------------------------------------
     for (int i=0; i<6; i++) {
+      if (fLinkStatus[i] != 0)                              continue;
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used != 0) {
+      if (used == 1) {
         uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
         if ((u >> 0x8) != 0xF) {
           // try to recover - write 1, then - 0 to reg 13
@@ -1012,8 +1013,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             // still in trouble
             std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
             Stream << msg << std::endl;
-            TLOG(TLVL_ERROR) << msg; 
-            rc -= 1;
+            TLOG(TLVL_WARNING) << msg;
+            // SetLinkStatus(i,-1);
           }
         }
       }
@@ -1683,7 +1684,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           int tmo_ms(100);
           fDtc->WriteROCRegister(DTC_Link_ID(lnk),4,Delay5ns,false,tmo_ms);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
-          Stream << header << std::format(" delay set at {} x 5 ns\n",Delay5ns);
+          Stream << header << std::format(" delay set at {} x 5 ns",Delay5ns);
         }
         catch(...) {
           std::string msg = std::format(" failed to write Delay5ns:{}",Delay5ns);
@@ -1755,7 +1756,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         Stream << header << " ERROR:" << msg << std::endl;
         return rc;
       }
-      Stream << header << std::format(" digitization start: {:04} ns, stop: {:04} ns\n",TStart*5,TStop*5);
+      Stream << header << std::format(" digitization start: {:04} ns, stop: {:04} ns",TStart*5,TStop*5) << std::endl;
     }
 
     TLOG(TLVL_DEBUG) << std::format("-- END:  rc:{}",rc);

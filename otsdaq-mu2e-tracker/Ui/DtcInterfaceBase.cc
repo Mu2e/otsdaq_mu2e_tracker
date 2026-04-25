@@ -46,7 +46,6 @@ namespace mu2edaq {
     fPartitionID    = 0;                // use reasonable defaults, which would work for one DTC
     fMacAddrByte    = 0;                //
                                         // set initial delays to zero
-    //    fDtcEwmDelay5ns = 0;
     for (int i=0; i<6; i++) {
       fRocEwmDelay5ns[i]  = 0;
     }
@@ -74,6 +73,7 @@ namespace mu2edaq {
         if ((link_mask >> i) & 0x1) {
           fLinkMask |= (0x1 << 4*i);
         }
+        fLinkStatus[i] = 0;             // initially
       }
     }
     else {
@@ -119,16 +119,32 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
+// clear status words of all links
+//-----------------------------------------------------------------------------
+  int DtcInterface::ClearLinkStatus(int Link) {
+    int rc(0), lnk1(Link), lnk2(Link+1);
+
+    if (Link == -1) { lnk1 = 0; lnk2 = 6; }
+    
+    for (int lnk=lnk1; lnk<lnk2; lnk++) {
+      fLinkStatus[lnk] = 0;
+    }
+    return rc;
+  }
+  
+//-----------------------------------------------------------------------------
 // Source=0: sync to internal clock ; =1: RTF
+// ClockSource and Reset do no need to be cached
 // on success, returns 0
 //-----------------------------------------------------------------------------
-  int DtcInterface::ConfigureJA(std::ostream& Stream) {
+  int DtcInterface::ConfigureJA(int ClockSource, int Reset, std::ostream& Stream) {
     int rc(0);
     
     int nmax_iter(10);
-
-    int reset        = (fJAMode     ) & 0xf;
-    int clock_source = (fJAMode >> 4) & 0xf;
+    int clock_source(ClockSource), reset(Reset);
+    
+    if (reset        == -1) reset        = (fJAMode     ) & 0xf;
+    if (clock_source == -1) clock_source = (fJAMode >> 4) & 0xf;
     
     TLOG(TLVL_DEBUG) << std::format("-- START: PCIE:{} clock_source:{} reset:{}",fPcieAddr,clock_source,reset);
     
@@ -148,11 +164,13 @@ namespace mu2edaq {
         Stream << std::format("ERROR: {} rc:{}\n",msg,rc);
         return rc;
       }
+
+      TLOG(TLVL_DEBUG) << std::format("ok:{}",ok);
       
       if (ok) {
         std::string msg = std::format("JA configured with JAMode:0x{:02x}",fJAMode);
-        Stream << std::format("{}\n",msg);
-        TLOG(TLVL_DEBUG) << std::format("-- END  : {} rc:{}",msg,rc);
+        // Stream << std::format("{}\n",msg);
+        TLOG(TLVL_DEBUG) << std::format("-- END  : commented out streaming {} rc:{}",msg,rc);
         return rc;
       }
       usleep(100000);
@@ -323,7 +341,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // if requested, configure the jitter attenuator, then do soft reset
 //-----------------------------------------------------------------------------
-    rc = ConfigureJA(Stream);
+    rc = ConfigureJA(-1,-1,Stream);
     if (rc < 0) {
       TLOG(TLVL_ERROR) << std::format("PCIE:{} failed to configure the JA, rc:{}. BAIL OUT",fPcieAddr,rc);
       return rc;

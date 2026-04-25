@@ -44,8 +44,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel = 0, std::ostream& = std::cout);
 
-                                        // always use fJAMode and avoid ambiguities
-    int          ConfigureJA(std::ostream& Stream = std::cout);
+    int          ConfigureJA(int ClockSource = -1, int Reset = -1, std::ostream& Stream = std::cout);
 
                                         // if 
     int          InitReadout(const std::string& RunPlan, int TimingChainMask = 0xffffffff, std::ostream& Stream = std::cout);

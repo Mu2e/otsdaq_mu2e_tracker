@@ -159,13 +159,16 @@ void cfo_reset_run_plan(int PcieAddress = -1) {
 //-----------------------------------------------------------------------------
 // for convenience (CLI)
 //-----------------------------------------------------------------------------
-int cfo_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  return CfoInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int cfo_configure_ja(int ClockSource, int Reset, int PcieAddress = -1) {
+  auto cfo_i = CfoInterface::Instance(PcieAddress);
+  return cfo_i->ConfigureJA(ClockSource,Reset);
 }
 
 //-----------------------------------------------------------------------------
-int dtc_configure_ja(int Clock, int Reset, int PcieAddress = -1) {
-  return DtcInterface::Instance(PcieAddress)->ConfigureJA(Clock,Reset);
+int dtc_configure_ja(int ClockSource, int Reset, int PcieAddress = -1) {
+  auto dtc_i = CfoInterface::Instance(PcieAddress);
+  // dtc_i->fJAMode = (Clock << 4) + Reset;
+  return dtc_i->ConfigureJA(ClockSource,Reset);
 }
 
 

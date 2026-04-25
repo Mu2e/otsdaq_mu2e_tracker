@@ -93,6 +93,7 @@ namespace mu2edaq {
     int                  fEnabled;           // if comes from ODB, could be 0
     int                  fPcieAddr;          // 
     int                  fLinkMask;          // int is OK, bit 31 is never used for arithmetics
+    int                  fLinkStatus[6];     // in addition to the mask, each link has a status
                                              // for now assume that all ROCs are doing the same
                                              // fRocReadoutMode: (fixed_length << 4) | readout_mode
     int                  fRocReadoutMode;    // 0: 'counter patterns' 1:digis 2:checkerboard patterns
@@ -130,8 +131,11 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // to avoid ambiguities, always use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
+// Reset: 0 or 1 (do it)
+// -1: use fJAMode
 //-----------------------------------------------------------------------------    
-    int          ConfigureJA(std::ostream& Stream = std::cout);
+    int          ConfigureJA(int ClockSource = -1, int Reset = -1, std::ostream& Stream = std::cout);
+    int          ClearLinkStatus(int Link = -1);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
@@ -157,6 +161,8 @@ namespace mu2edaq {
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
     int          LinkLocked (int Link);
+    int          LinkStatus (int I) { return fLinkStatus[I]; }
+    
                                         // this EWM delay is common for all ROCs,
                                         // on top of that, each separate ROC has its own delay
     
@@ -200,6 +206,7 @@ namespace mu2edaq {
     void         SetJAMode    (int Mode      ) { fJAMode     = Mode;       }
 
     void         SetLinkMask  (int Mask = 0);
+    void         SetLinkStatus(int I, int Status) { fLinkStatus[I] = Status; }
 
                                         // a simple setter, for now, no range check..
                                         // assume everyone knows that Link in [0,5]
