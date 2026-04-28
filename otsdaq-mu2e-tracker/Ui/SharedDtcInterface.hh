@@ -97,6 +97,7 @@ namespace trkdaq{
 		private:
 			// store of preconstructed instances
 			static std::map< void*, std::shared_ptr<SharedDtcInterface> > instances;
+			static std::mutex _get_mutex;
 	};
 
 	template<typename... Args>

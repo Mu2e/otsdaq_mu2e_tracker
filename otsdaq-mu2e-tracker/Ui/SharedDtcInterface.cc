@@ -15,13 +15,16 @@ namespace trkdaq{
 
 	// initialize store of preconstructed instances
 	std::map< void*, std::shared_ptr<SharedDtcInterface> > SharedDtcInterface::instances;
+	std::mutex SharedDtcInterface::_get_mutex;
 
 	std::shared_ptr<SharedDtcInterface>& SharedDtcInterface::Get(DTCLib::DTC* dtc){
 		auto& instances = SharedDtcInterface::instances;
 		void* address = static_cast<void*>(dtc);
+		_get_mutex.lock();
 		if (instances.count(address) < 1){
 			instances[address] = std::make_shared<SharedDtcInterface>(dtc);
 		}
+		_get_mutex.unlock();
 		auto& rv = instances[address];
 		return rv;
 	}
