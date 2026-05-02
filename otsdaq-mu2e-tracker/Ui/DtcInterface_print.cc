@@ -441,7 +441,7 @@ namespace trkdaq {
         int nw = dat->size();
 
         char c = '|';
-        if (nw == 0) {
+        if ((nw == 0) or (nw < 3*ich)) {
           Stream << "             " << c;
         }
         else {

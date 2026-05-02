@@ -12,36 +12,6 @@
 #include "frontends/utils/OdbInterface.hh"
 #include "frontends/utils/utils.hh"
 
-// //-----------------------------------------------------------------------------
-// // link is the link number,  -1 is not allowed
-// //-----------------------------------------------------------------------------
-// int get_panel_name_from_odb(int PcieAddress, int Link, std::string& PanelName) {
-//   int rc(0);
-
-//   try {
-//     cm_connect_experiment("mu2e-dl-01-data","tracker","test_get_mnid",nullptr);
-    
-//     OdbInterface* odb_i = OdbInterface::Instance();
-//     HNDLE         h_arc = odb_i->GetActiveRunConfigHandle();
-  
-//     std::string   subnet = odb_i->GetString(h_arc, "DAQ/PublicSubnet");
-    
-//     std::string   host_label = get_short_host_name(subnet.data());
-    
-//     std::string path = std::format("DAQ/Nodes/{}/DTC{}/Link{}/DetectorElement/Name",
-//                                    host_label,PcieAddress,Link);
-    
-//     PanelName = odb_i->GetString(h_arc,path.data());
-//     std::cout << std::format("PanelName:{}\n",PanelName);
-//   }
-//   catch (...) {
-//     std::cout << "ERROR ... rc=-1\n";
-//     rc = -1;
-//   }
-//   cm_disconnect_experiment();
-//   return rc;
-// }
-
 //-----------------------------------------------------------------------------
 int find_thresholds_panel(int Link, int Channel = -1, float VThreshold = 15, float VTolerance = 1, int PcieAddr = -1) {
   int rc(0);
@@ -160,8 +130,9 @@ int test_find_thresholds_mt(int Link, int Channel = -1, float VThreshold = 15, f
 int find_thresholds(int Link1, int Link2, float VThreshold = 15, int Channel = -1, float VTolerance = 1, int PcieAddr = -1) {
   std::vector<std::thread> threads;
 
+  auto dtc_i = DtcInterface::Instance(-1);
   
-  for (int lnk=Link1; lnk<Link2; lnk++) {
+  for (int lnk=Link1; lnk<Link2+1; lnk++) {
     find_thresholds_panel(lnk, Channel, VThreshold, VTolerance, PcieAddr);
   }
 

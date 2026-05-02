@@ -769,6 +769,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
+    TLOG(TLVL_DEBUG) << std::format("-- START:");
     auto roc  = DTC_Link_ID(Link);
     Thr.clear();
 //-----------------------------------------------------------------------------
@@ -816,8 +817,9 @@ namespace  trkdaq {
       nw = fDtc->ReadROCRegister(roc,129,100);
     }
     catch (...) {
-      TLOG(TLVL_ERROR) << "failure to read R129";
-      Stream << "failed to read ROC R129, nw:" << nw << std::endl;
+      std::string msg = std::format("failed to read ROC register:{}",129);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << msg << nw << std::endl;
       return -2;
     }
 //-----------------------------------------------------------------------------
@@ -834,8 +836,9 @@ namespace  trkdaq {
       fDtc->ReadROCBlock(v2,roc,REG_MEAS_THR,nw,false,100);
     }
     catch (...) {
-      TLOG(TLVL_ERROR) << "failure to read R" << REG_MEAS_THR;
-      Stream << "failed to read ROC R" << REG_MEAS_THR << ", nw:" << nw << std::endl;
+      std::string msg = std::format("failed to read ROC register:{}",(int) REG_MEAS_THR);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << msg << " nw:" << nw << std::endl;
       return -3;
     }
 
@@ -857,6 +860,7 @@ namespace  trkdaq {
       Thr.push_back(cal);
       Thr.push_back(tot);
     }
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc=0");
     return 0;
   }
 

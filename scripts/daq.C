@@ -166,7 +166,7 @@ int cfo_configure_ja(int ClockSource, int Reset, int PcieAddress = -1) {
 
 //-----------------------------------------------------------------------------
 int dtc_configure_ja(int ClockSource, int Reset, int PcieAddress = -1) {
-  auto dtc_i = CfoInterface::Instance(PcieAddress);
+  auto dtc_i = DtcInterface::Instance(PcieAddress);
   // dtc_i->fJAMode = (Clock << 4) + Reset;
   return dtc_i->ConfigureJA(ClockSource,Reset);
 }

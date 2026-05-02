@@ -973,16 +973,29 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int lane_mask = 0x2300 | fRocLaneMask; // assumed to be the same for all ROCs
     
     for (int i=0; i<6; i++) {
-      int enabled = (fLinkMask >> 4*i) & 0x1;
-      if (enabled) {
+      if ((LinkStatus(i) != 0) or (not LinkEnabled(i))) {
+        // not an error, but want to know
+        Stream << std::format("link:{} status:{} enabled:{}n",i,LinkStatus(i),LinkEnabled(i));
+        continue;
+      }
+
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked. Set link status to -1",i);
+        SetLinkStatus(i,-1);
+        continue;
+      }
+
+      try {
         fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
         std::string msg = std::format("link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",i,lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
         TLOG(TLVL_INFO) << msg;
         Stream << msg << std::endl;
       }
-      else {
-        Stream << std::format("link:{} disabled\n",i);
+      catch (...) {
+        std::string msg = std::format("DTC:{} link:{} failed to write ROC register 8",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << std::format("ERROR: {}\n",msg);
       }
     }
     
@@ -997,12 +1010,12 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // check if all lanes are ready to be read
 //-----------------------------------------------------------------------------
     for (int i=0; i<6; i++) {
-      if (fLinkStatus[i] != 0)                              continue;
-      int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 1) {
-        uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
-        if ((u >> 0x8) != 0xF) {
-          // try to recover - write 1, then - 0 to reg 13
+      
+      if ((fLinkStatus[i] != 0) or (not LinkEnabled(i)))    continue;
+      uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+      if ((u >> 0x8) != 0xF) {
+        // try to recover - write 1, then - 0 to reg 13
+        try {
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
           fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
@@ -1014,8 +1027,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
             Stream << msg << std::endl;
             TLOG(TLVL_WARNING) << msg;
+            // for now, leave status untouched
             // SetLinkStatus(i,-1);
           }
+        }
+        catch (...) {
+          std::string msg = std::format("DTC:{} link:{} failed to re-enable the DIGI lanes",PcieAddr(),i);
+          TLOG(TLVL_ERROR) << msg;
+          Stream << std::format("ERROR: {}\n",msg);
         }
       }
     }
@@ -1056,7 +1075,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // no need to compain about disabled links
 //-----------------------------------------------------------------------------
     for (int i=0; i<6; i++) {
-      if (not LinkEnabled(i)) {
+      if (not LinkEnabled(i) or (LinkStatus(i) != 0)) {
         TLOG(TLVL_DEBUG+1) << std::format("DTC:{} link:{} disabled. CONTINUE",PcieAddr(),i);
         continue;
       }
@@ -1620,7 +1639,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     roc_data_t lower = 0;
     roc_data_t upper = 1023;
     auto f = [this, Link, ChannelID, PreampType] (roc_data_t dac){
-      this->ControlRoc_SetThreshold(Link, ChannelID, PreampType, dac);
+      // this->ControlRoc_SetThreshold(Link, ChannelID, PreampType, dac);
       auto rv = this->ProgramAndQueryThreshold(Link, ChannelID, PreampType, dac);
       return rv;
     };
