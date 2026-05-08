@@ -81,10 +81,10 @@ namespace  trkdaq {
     if (PrintLevel != 0) {
       Stream << __func__ << ": SPI_CLEAR input written " << std::endl;
     }
-
-    uint16_t u;
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
-    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
+  
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    // TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
     if (PrintLevel != 0) {
       Stream << __func__ << ":END" << std::endl;
     }
@@ -340,11 +340,11 @@ namespace  trkdaq {
     fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
 
     std::cout << __func__ << ": SPI_WRITE_DIRECTORY input written " << std::endl;
-
-    uint16_t u;
-    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
-    // TLOG(TLVL_DEBUG) << Form("reg:%03i val:0x%04x\n",128,u);
-
+    
+    uint16_t u; 
+    while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+    // TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+  
 
     // int nw (-1);
     // nw = dtc_i->fDtc->ReadROCRegister(roc,129,1000);
@@ -398,7 +398,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
-  int DtcInterface::ProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
+  int DtcInterface::SpiProgramRoc(int Link, const RocFwData_t* Fw, const char* Version, int Doit, int PrintLevel, std::ostream& Stream) {
     int rc(0);
                                         // offset=-1 flags the end
     int nimages(0);

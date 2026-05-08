@@ -3,6 +3,10 @@
 // mixes high- and low-level commands
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
+// to get rid of the printout, defined output stream as std::ostream(nullptr)
+//
+// 1. std::ostream& --> std::ostream* or use std::ostream(nullptr)
+//    to avoid ifs in the functions being called
 //-----------------------------------------------------------------------------
 #ifndef __mu2edaq_dtc_interface_hh__
 #define __mu2edaq_dtc_interface_hh__
@@ -46,7 +50,7 @@ namespace mu2edaq {
     int        fOnSpill;
 
     int        fDtcID;                  // 4 pieces to be written to 0x9154
-    int        fEventMode;
+    int        fEventMode;              // for CFO
     int        fPartitionID;
     int        fMacAddrByte;
 
@@ -86,29 +90,28 @@ namespace mu2edaq {
     static DtcInterface* fgInstance[2];
 
     DTCLib::DTC*         fDtc;
-    int                  fEnabled;        // if comes from ODB, could be 0
-    int                  fPcieAddr;       //
-    int                  fLinkMask;       // int is OK, bit 31 is never used for arithmetics
-                                          // for now assume that all ROCs are doing the same
-                                          // fRocReadoutMode: (fixed_length << 4) | readout_mode
-    int                  fRocReadoutMode; // 0: 'counter patterns' 1:digis 2:checkerboard patterns
-    int                  fSampleEdgeMode; // 0:force raising 1:force falling 2:auto
-    int                  fEmulateCfo;     // 1: this DTC operated in the emulated CFO mode
-    int                  fJAMode;         // clock_source << 4 | reset
+    int                  fEnabled;           // if comes from ODB, could be 0
+    int                  fPcieAddr;          // 
+    int                  fLinkMask;          // int is OK, bit 31 is never used for arithmetics
+                                             // for now assume that all ROCs are doing the same
+                                             // fRocReadoutMode: (fixed_length << 4) | readout_mode
+    int                  fRocReadoutMode;    // 0: 'counter patterns' 1:digis 2:checkerboard patterns
+    int                  fSampleEdgeMode;    // 0:force raising 1:force falling 2:auto
+    int                  fEmulateCfo;        // 1: this DTC operated in the emulated CFO mode
+    int                  fJAMode;            // (clock_source << 4) | reset
 
-    int                  fOnSpill;        // 1:on-spill, 0:off-spill
-    int                  fEventMode;      // whatever it is, hopefully, together they make 5 bytes
+    int                  fOnSpill;           // 1:on-spill, 0:off-spill
+    int                  fEventMode;         // whatever it is, hopefully, together they make 5 bytes
 
-    int                  fDtcID;          // unique DTC ID used by the DAQ (0x9154)
+    int                  fDtcID;             // unique DTC ID used by the DAQ (0x9154)
     int                  fPartitionID;
     int                  fMacAddrByte;
+    int                  fRocEwmDelay5ns[6]; // 'per-ROC' delays, to be added to the common one above
 
-    //    int                  fIsCrv;          // is CRV DTC
+    int                  fSubsystem;         // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
-    int                  fSubsystem;      // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
-
-    int                  fSleepTimeROCWrite;             // the two are different
-    int                  fSleepTimeROCReset;             //
+    int                  fSleepTimeROCWrite; // the two are different 
+    int                  fSleepTimeROCReset; // 
     int                  fCounter;
 //-----------------------------------------------------------------------------
 // functions
@@ -125,10 +128,10 @@ namespace mu2edaq {
 
     DTCLib::DTC* Dtc() { return fDtc; }
 //-----------------------------------------------------------------------------
-// if 'ClockSource' and 'Reset' are set to -1, use fJAMode
+// to avoid ambiguities, always use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
-//-----------------------------------------------------------------------------
-    int          ConfigureJA(int ClockSource = -1, int Reset = -1);
+//-----------------------------------------------------------------------------    
+    int          ConfigureJA(std::ostream& Stream = std::cout);
 
     int          Enabled   () { return fEnabled;    }
     int          EmulateCfo() { return fEmulateCfo; }
@@ -136,39 +139,37 @@ namespace mu2edaq {
     int64_t      EventMode () { return (((int64_t) fOnSpill) << 32) | ((int64_t) fEventMode); }
 
     int          DtcID     () { return fDtcID; }
-    //    int          IsCrv     () { return fIsCrv; }
 
-    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream* Stream = nullptr);
-    virtual int  InitRocReadoutMode(std::ostream* Stream = nullptr);
+    int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream& Stream = std::cout);
+    virtual int  InitRocReadoutMode(std::ostream& Stream = std::cout); 
+    
+    int          InitEmulatedCFOReadoutMode(std::ostream& Stream = std::cout);
+    
+    int          InitExternalCFOReadoutMode(std::ostream& Stream = std::cout);
 
-    int          InitEmulatedCFOReadoutMode();
-                                        // SampleEdgeMode=0: force rising  edge
-                                        //                1: force falling edge
-                                        //                2: auto
-                                        // -1 means use the pre-fetched one
-                                        // success: returns rc=0
-                                        // if rc < 0, can't continue
-    int          InitExternalCFOReadoutMode(int SampleEdgeMode = -1);
+                                        // read configuration data from a file and store them in 'DtcData'
 
-    // read configuration data from a file and store them in 'DtcData'
-    static int   InitConfiguration(const char* ConfigName, mu2edaq::DtcInputData_t* DtcData);
+    static int   InitConfiguration(const char* ConfigName, int DeviceID, DtcInputData_t* DtcData);
 
-                                        // EWLength - in 25 ns ticks
-                                        // to be executed on the emulated CFO side
+                                        // EWLength - in 25 ns ticks, to be executed by the emulated CFO
 
     void         LaunchRunPlanEmulatedCfo  (int EWLength, int NMarkers, int FirstEWTag);
 
     int          LinkEnabled(int Link) { return (fLinkMask >> 4*Link) & 0x1 ; }
     int          LinkLocked (int Link);
-
+                                        // this EWM delay is common for all ROCs,
+                                        // on top of that, each separate ROC has its own delay
+    
+    int          GetRocEwmDelay5ns(int Link) { return fRocEwmDelay5ns[Link]; }
+    
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
 
     void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
-    void         PrintStatus          (std::ostream& Stream = std::cout);
-    virtual void PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
+    int          PrintStatus          (std::ostream& Stream = std::cout);
+    virtual int  PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
 
     uint32_t     ReadRegister         (uint16_t Register);
 
@@ -184,9 +185,10 @@ namespace mu2edaq {
     void         SetOnSpill             (int OnSpill) { fOnSpill        = OnSpill; }
 
                                         // 'Value' : 0 or 1
-    void         SetBit       (int Register, int Bit, int Value);
+    void         SetBit        (int Register, int Bit, int Value);
 
-    void         SetEmulateCfo(int EmulateCfo) { fEmulateCfo = EmulateCfo; }
+    //    void         SetDtcEwmDelay5ns(int Delay5ns  ) { fDtcEwmDelay5ns = Delay5ns  ; }
+    void         SetEmulateCfo    (int EmulateCfo) { fEmulateCfo     = EmulateCfo; }
 //-----------------------------------------------------------------------------
 // event mode is specified in the heartbeat packet, non-zero
 // event mode=0 is reserved, last packet of the train
@@ -199,14 +201,21 @@ namespace mu2edaq {
 
     void         SetLinkMask  (int Mask = 0);
 
+                                        // a simple setter, for now, no range check..
+                                        // assume everyone knows that Link in [0,5]
+
+    void         SetRocEwmDelay5ns(int Link, int Delay5ns) {
+      fRocEwmDelay5ns[Link] = Delay5ns  ;
+    }
 //-----------------------------------------------------------------------------
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
 // bit_5: 0:rising edge 1:falling edge
-//-----------------------------------------------------------------------------
-    void         SetupCfoInterface(int CFOEmulationMode,
-                                   int ForceCFOEdge    ,
-                                   int EnableCFORxTx   ,
+// 2026-04-10 PM: not sure if this one is still being used 
+//-----------------------------------------------------------------------------    
+    void         SetupCfoInterface(int CFOEmulationMode, 
+                                   int ForceCFOEdge    , 
+                                   int EnableCFORxTx   , 
                                    int EnableAutogenDRP);
 
 //-----------------------------------------------------------------------------

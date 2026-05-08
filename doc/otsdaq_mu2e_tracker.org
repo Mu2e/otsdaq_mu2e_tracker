@@ -166,29 +166,22 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 * [[file:control_roc.org][control_ROC.py and its commands]]
 * [[file:./dtc_gui.org][DtcGui interface]]
 * LV/HV monitoring: [[file:lvhv_monitoring.org]]
-* programming DTCs (command line)                                            
-#+begin_src
-/home/mu2ehwdev/program_both_DTCs_AL9.sh   /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit
-/home/mu2ehwdev/program_one_FPGA_AL9.sh  0 /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # PCIE address
-/home/mu2ehwdev/program_one_FPGA_AL9.sh  N /home/mu2ehwdev/DTC_Firmware/DTC2025Oct24_13_22.1_6ROC/DTC.bit # JTAG index N
-
-vivado_lab -mode batch -source /home/mu2ehwdev/ots_spack/srcs/otsdaq-mu2e/tools/program_both_DTCs.tcl \
-           -tclargs /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit /home/mu2ehwdev/DTC_Firmware/DTC2026Jan16_17_22.1_6ROC/DTC.bit
-#+end_src
 * programming ROCs and DIGIs over the fiber                                  
 - source code: [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc]]
 - example of the program_drac config file: [[file:../config/spi_directory.json]]
 ** programming ROCs:                                                         
+- this is an expert-only operation
+- make sure that the directory contains only two entries - "Golden" and the latest one
 #+begin_src
 auto x = dtc_gui("mu2e-trk-XX-pcieY")                // GUI is used as a convenience to initialize the DTC
 auto dtc_t = trkdaq::DtcInterface::Instance(-1);     // get a pointer
-program_drac t;
+program_drac t("",true);
 int roc=3;
 t.spi_write_directory(dtc_i,roc);
 t.spi_read_record    (dtc_i,roc,0x0,32,0,0xF);            // a quick check
 t.spi_write_version  (dtc_i,roc,"GoldenV17");             // upload GoldenV17 to SPI memory, takes about 12 min
-t.spi_write_version  (dtc_i,roc,"ROCV16");                // the same, also about 12 min
-t.spi_program_roc    (dtc_i,roc,"ROCV16");                // program the FPGA
+t.spi_write_version  (dtc_i,roc,"ROCV18");                // the same, also about 12 min
+t.spi_program_roc    (dtc_i,roc,"ROCV18");                // program the FPGA, should be at index=1
 #+end_src
 - SPI files are stored at https://... and in [[file:~/test_stand/spi_files]] locally
   - local directory is the same in MC2, Lab3, and EC

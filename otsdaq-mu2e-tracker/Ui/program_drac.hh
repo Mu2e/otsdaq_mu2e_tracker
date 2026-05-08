@@ -97,6 +97,15 @@ public:
   int  spi_read_digi_info       (trkdaq::DtcInterface* Dtc_i, int Link, uint16_t CalHV, int DelayUs = 0, int DebugMode = 0);
   int  spi_read_record          (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t*          Res, int DebugMode = 0);
   int  spi_read_segment         (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NBytes, std::vector<char>& Res, int DebugMode = 0);
+//-----------------------------------------------------------------------------
+// restricted functionality tool 
+// reprogram ROC w/o rewriting the directory (saving NVM write cycles)
+// spi_write_version('goldenxx')+spi_write_version('rocxx')+spi_program_roc('rocxx')
+// uses images at indices 0 and 1
+// 'LinkMask' is in a hex format, so 'all links' = 0x111111
+// don't do anything by default, require the mask to be specified explicitly
+//-----------------------------------------------------------------------------
+  int  spi_reprogram_roc        (trkdaq::DtcInterface* Dtc_i, int LinkMask = 0x0);
 
   int  spi_validate_segment     (trkdaq::DtcInterface* Dtc_i, int Link, const program_drac::ImageData_t* SpiData, int Segment, int DebugMode = 0);
   int  spi_validate_image       (trkdaq::DtcInterface* Dtc_i, int Link, const std::string& Version, const std::string& Type, int DebugMode = 0);
