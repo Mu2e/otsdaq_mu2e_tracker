@@ -20,17 +20,17 @@
 
 //   try {
 //     cm_connect_experiment("mu2e-dl-01-data","tracker","test_get_mnid",nullptr);
-    
+
 //     OdbInterface* odb_i = OdbInterface::Instance();
 //     HNDLE         h_arc = odb_i->GetActiveRunConfigHandle();
-  
+
 //     std::string   subnet = odb_i->GetString(h_arc, "DAQ/PublicSubnet");
-    
+
 //     std::string   host_label = get_short_host_name(subnet.data());
-    
+
 //     std::string path = std::format("DAQ/Nodes/{}/DTC{}/Link{}/DetectorElement/Name",
 //                                    host_label,PcieAddress,Link);
-    
+
 //     PanelName = odb_i->GetString(h_arc,path.data());
 //     std::cout << std::format("PanelName:{}\n",PanelName);
 //   }
@@ -45,7 +45,7 @@
 //-----------------------------------------------------------------------------
 int find_thresholds_panel(int Link, int Channel = -1, float VThreshold = 15, float VTolerance = 1, int PcieAddr = -1) {
   int rc(0);
-  
+
   std::mutex mtx; // For thread-safe output
 
   uint16_t val[96][2];
@@ -109,7 +109,7 @@ int find_thresholds_panel(int Link, int Channel = -1, float VThreshold = 15, flo
 
   //  int mnid = dtc_i->ReadPanelID(Link);
   fn = std::format("MN{:03}.json",mnid);
-  
+
   {
     std::lock_guard<std::mutex> lock(mtx);
     std::ofstream of;

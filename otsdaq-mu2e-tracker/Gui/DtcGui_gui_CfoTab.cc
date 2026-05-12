@@ -350,6 +350,6 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 //-----------------------------------------------------------------------------
   DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
   group->MoveResize(10,10,910,250);
-  
+
   TLOG(TLVL_DEBUG+1) << std::format("-- END");
 }

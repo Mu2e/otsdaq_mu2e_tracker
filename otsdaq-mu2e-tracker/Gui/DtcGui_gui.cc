@@ -100,7 +100,7 @@ DtcGui::~DtcGui() {
 void DtcGui::BuildGui(const TGWindow *Parent, UInt_t Width, UInt_t Height) {
 
   TLOG(TLVL_DEBUG+1) << std::format("-- START");
-  
+
   gClient->GetColorByName("#ccffcc",fValidatedColor);  // light green
 //-----------------------------------------------------------------------------
 // main frame

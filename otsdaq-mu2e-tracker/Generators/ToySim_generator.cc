@@ -58,7 +58,7 @@ demo::ToySim::ToySim(fhicl::ParameterSet const& ps)
     TLOG(TLVL_ERROR) << "This is an engineered process death, set by the dies_on_config FHiCL variable";
     std::exit(1);
   }
-  
+
   metadata_.board_serial_number = hardware_interface_->SerialNumber() & 0xFFFF;
   metadata_.num_adc_bits = hardware_interface_->NumADCBits();
   TLOG(TLVL_INFO) << "Constructor: metadata_.unused = 0x" << std::hex << metadata_.unused
@@ -136,10 +136,10 @@ bool demo::ToySim::getNext_(artdaq::FragmentPtrs& frags) {
       artdaq::FragmentPtr endOfSubrunFrag(new artdaq::Fragment(static_cast<size_t>(
                                                                                    ceil(sizeof(my_rank) / static_cast<double>(sizeof(artdaq::Fragment::value_type))))));
       endOfSubrunFrag->setSystemType(artdaq::Fragment::EndOfSubrunFragmentType);
-      
+
       endOfSubrunFrag->setSequenceID(ev_counter() + 1);
       endOfSubrunFrag->setTimestamp(1 + (ev_counter() / max_events_per_subrun_));
-      
+
       *endOfSubrunFrag->dataBegin() = my_rank;
       frags.emplace_back(std::move(endOfSubrunFrag));
     }
@@ -147,7 +147,7 @@ bool demo::ToySim::getNext_(artdaq::FragmentPtrs& frags) {
 
   ev_counter_inc(sequence_id_scale_);
   timestamp_ += timestampScale_;
-  
+
   TLOG(TLVL_DEBUG + 3) << "getNext_: DONE";
   return true;
 }
