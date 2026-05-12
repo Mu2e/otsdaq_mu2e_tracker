@@ -98,7 +98,7 @@ public:
   int  spi_read_record          (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NWords, uint16_t*          Res, int DebugMode = 0);
   int  spi_read_segment         (trkdaq::DtcInterface* Dtc_i, int Link, uint32_t SpiOffset, int NBytes, std::vector<char>& Res, int DebugMode = 0);
 //-----------------------------------------------------------------------------
-// restricted functionality tool 
+// restricted functionality tool
 // reprogram ROC w/o rewriting the directory (saving NVM write cycles)
 // spi_write_version('goldenxx')+spi_write_version('rocxx')+spi_program_roc('rocxx')
 // uses images at indices 0 and 1

@@ -261,7 +261,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
     void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
@@ -287,12 +287,12 @@ namespace trkdaq {
     std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
                                                  int                 PrintLevel = 0,
                                                  std::ostream&       Stream     = std::cout);
-   
-    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+
+    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev,
                                     ulong             FirstTS               ,
                                     int               PrintLevel = 0        ,
                                     std::ostream&     Stream     = std::cout,
-                                    int               Validate   = 0        , 
+                                    int               Validate   = 0        ,
                                     const std::string Fn         = ""       );  // if "", do not write output
 
                                         // returns the panel MNID
@@ -300,7 +300,7 @@ namespace trkdaq {
     int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
     roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
     virtual int  ResetLink         (int Link) override;
-    
+
     int          ResetDigis        (int Link);
     int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
 
@@ -316,9 +316,9 @@ namespace trkdaq {
     int          SetRocDelay       (int Link, uint16_t Delay5ns, std::ostream& Stream = std::cout);
 
                                         // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
-    
+
     int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream& Stream = std::cout);
-    
+
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
 //-----------------------------------------------------------------------------
@@ -343,8 +343,8 @@ namespace trkdaq {
     int          ValidateDigiPatterns (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
-    
-                                        // writes the mnID 
+
+                                        // writes the mnID
     int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
   };
 };

@@ -31,7 +31,7 @@ namespace  trkdaq {
                                       std::ostream&               Stream    ) {
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("-- START:");
-    
+
     std::vector<uint16_t> vec;
 
     vec.push_back(Input->rw     );
@@ -115,7 +115,7 @@ namespace  trkdaq {
 
     ip.address = Addr;
     ip.rw      = 0;                    // -a
-    ip.hvcal   = HvCal;                // -t 
+    ip.hvcal   = HvCal;                // -t
     ip.data[0] = 0;
     ip.data[1] = 0;
 
@@ -124,7 +124,7 @@ namespace  trkdaq {
                                         // if no error, the result is 16 bit, so -1 never happens
     if (rc == 0) Res = op.data[0];
     else         Res = 0xffffffff;
-    
+
     TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
     return rc;
   }
@@ -141,17 +141,17 @@ namespace  trkdaq {
 
     ip.address = Addr;
     ip.rw      = 1;                    // -a
-    ip.hvcal   = HvCal;                 // -t 
+    ip.hvcal   = HvCal;                 // -t
     ip.data[0] = Dat;
     ip.data[1] = 0;                     // DIGIs get 16 bits only
 
     rc = ControlRoc_DigiRW(&ip,&op,Link,PrintLevel,Stream);
-    
+
     TLOG(TLVL_DEBUG+1) << std::format("-- END rc:{}",rc);
     return rc;
   }
 
-  
+
 //-----------------------------------------------------------------------------
 // from https://github.com/bonventre/trackerScripts/blob/master/control_ROC.py
 // chan_mask = int(get_key_value(keys,"C"),16)
@@ -196,7 +196,7 @@ namespace  trkdaq {
       int nch = settings.size()/4;
       for (int ich=0; ich < nch; ++ich) {
         int loc      = first_channel+4*ich;
-        
+
         int gain_cal = settings[loc  ];
         int gain_hv  = settings[loc+1];
         int thr_cal  = settings[loc+2];
@@ -231,10 +231,10 @@ namespace  trkdaq {
             enable_pulser   = (uint8_t) dtcbuffer[12];              // -p
             max_total_delay = dtcbuffer[13];                        // -d (def 1)
             marker_clock    = (uint8_t) dtcbuffer[14];              // -m
-*/    
+*/
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
-    
+
     TLOG(TLVL_DEBUG+1) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
 
     int link1(Link), link2(Link+1);
@@ -285,15 +285,15 @@ namespace  trkdaq {
       std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
                                         // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
       TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
       int nw = fDtc->ReadROCRegister(roc,129,100);
       TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
-      
+
       nw = nw-4;
       std::vector<uint16_t> vout;
       fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
@@ -305,7 +305,7 @@ namespace  trkdaq {
         Stream << "--------------- link :" << i << std::endl;
 
         if (PrintLevel & 0x1) PrintBuffer(vout.data(),nw,0x0,Stream);
-      
+
         if (PrintLevel & 0x2) {
           trkdaq::ControlRoc_Read_Output_t0* o = (trkdaq::ControlRoc_Read_Output_t0*) vout.data();
           Stream << Form("adc_mode      : %i\n",o->adc_mode);
@@ -389,8 +389,8 @@ namespace  trkdaq {
       }
 
                                         // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
       TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -439,7 +439,7 @@ namespace  trkdaq {
 
       if (rc == 0) {
         int nw = res.size();
-        TLOG(TLVL_DEBUG+1) << "link:" << i << " nw:" << nw; 
+        TLOG(TLVL_DEBUG+1) << "link:" << i << " nw:" << nw;
 
         if (PrintLevel & 0x1) {
           PrintBuffer(res.data(),nw,0x0,Stream);
@@ -495,7 +495,7 @@ namespace  trkdaq {
 
       uint16_t u;
       try {
-        while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
+        while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {};
         TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
       }
       catch(...) {
@@ -589,8 +589,8 @@ namespace  trkdaq {
         continue;
       }
 
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
+      uint16_t u;
+      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
       TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
@@ -749,7 +749,7 @@ namespace  trkdaq {
     if (PrintLevel & 0x8) Stream << std::format("--------- link:{:d} thresholds ----------------",Link) << std::endl;
 
     std::vector<float> thr; // 3*96
-    
+
     ControlRoc_ReadThresholds(Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
     PrintThresholds          (Link,thr,MaskC,MaskD,MaskE,PrintLevel,Stream);
     return 0;
@@ -1047,7 +1047,7 @@ namespace  trkdaq {
           std::stringstream ss;
           int nw = data.size();
           if (PrintLevel & 0x1) PrintBuffer(data.data(),nw,0x0,Stream);
-          
+
           for (int iw=0; iw<nw; iw++) ss << std::format("{:c}",data[iw]);
           GitCommit = ss.str();
         }
@@ -1231,9 +1231,9 @@ namespace  trkdaq {
 
 
     if (PrintLevel & 0x1) {
-        Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer); 
-        Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo); 
-        Stream << std::format("DesignVer   :{}\n",DevId.DesignVer); 
+        Stream << std::format("BackLevelVer:{}\n",DevId.BackLevelVer);
+        Stream << std::format("DesignInfo  :{}\n",DevId.DesignInfo);
+        Stream << std::format("DesignVer   :{}\n",DevId.DesignVer);
         Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial);
     }
 

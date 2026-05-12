@@ -86,7 +86,7 @@ namespace trkdaq {
 
     std::string res = compiler.processFile(InputFn,OutputFn);
     if (PrintLevel & 0x1) Stream << res;
-    
+
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }
 
@@ -103,10 +103,10 @@ namespace trkdaq {
 
     TLOG(TLVL_DEBUG) << std::format("-- START: clock_source:{} reset:{}",clock_source,reset);
 
-                              
+
     fCfo->SetJitterAttenuatorSelect(clock_source,reset);     // 0:internal clock sync, 1:RTF
     usleep(100000);
-    
+
     bool ok(false);
     int max_tries(3);
     for (int i=0; i<max_tries; i++) {
@@ -119,7 +119,7 @@ namespace trkdaq {
         break;
       }
     }
-    
+
     if (not ok) {
       TLOG(TLVL_ERROR) << std::format("failed to configure the CFO JA after {} tries, BAIL OUT",max_tries);
       rc = -1;
@@ -149,7 +149,7 @@ namespace trkdaq {
     int rc(0);
 
     TLOG(TLVL_DEBUG+1) << std::format("-- START: runplan_fn:{} TimeChainMask:0x{:08x}",RunPlanFn,fLinkMask);
-    
+
     fCfo->DisableLinks();               // Ryan says this is important
     fCfo->DisableEmbeddedClockMarker();
                                         // I guess, Halt disables transmission?
@@ -190,8 +190,8 @@ namespace trkdaq {
 
     fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
     // fCfo->EnableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
-  }  
-  
+  }
+
 //-----------------------------------------------------------------------------
   uint32_t CfoInterface::ReadRegister(uint16_t Register) {
 
@@ -226,7 +226,7 @@ namespace trkdaq {
     PrintRegister(0x9148,"Enable Beam On Mode                        ",Stream);
     PrintRegister(0x914c,"Enable Beam Off Mode                       ",Stream);
     PrintRegister(0x918c,"Number of DTCs                             ",Stream);
-    
+
     PrintRegister(0x9200,"Receive  Byte   Count Link 0               ",Stream);
     PrintRegister(0x9220,"Receive  Packet Count Link 0               ",Stream);
     PrintRegister(0x9240,"Transmit Byte   Count Link 0               ",Stream);
@@ -258,13 +258,13 @@ namespace trkdaq {
       return;
     }
 //-----------------------------------------------------------------------------
-// read binary file and write 
+// read binary file and write
 //-----------------------------------------------------------------------------
     std::string buf;
     auto input_size = file.tellg();
     buf.resize(input_size);
     file.seekg(0);
-    
+
     file.read(buf.data(),input_size);
     file.close();
                                         // doesn't return anything

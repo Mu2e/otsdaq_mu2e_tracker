@@ -267,7 +267,7 @@ void program_drac::spi_program_iap_w_index(trkdaq::DtcInterface* Dtc_i, int Link
 }
 
 //-----------------------------------------------------------------------------
-// restricted functionality tool 
+// restricted functionality tool
 // assumes that the ROC has already been programmed and the directory catalog for
 // indices 0 and 1 has correct image offsets
 // explicitly use versions at indices 0 and 1 for 'GoldenVXX' and 'ROCVXX'
@@ -885,7 +885,7 @@ int program_drac::spi_write_image(trkdaq::DtcInterface* Dtc_i, int Link, const I
 //-----------------------------------------------------------------------------
   TLOG(TLVL_INFO) << std::format("-- START load image to DTC:{} link:{} from Image->fn:{} offset:0x{:08x}\n",
                                  Dtc_i->PcieAddr(),Link,Image->fn,Image->offset);
-                         
+
   std::ifstream file(Image->fn, std::ios::binary);
   if (not file.is_open()) {
     TLOG(TLVL_ERROR) << std::format("failed to open file:{} . BAIL OUT\n",Image->fn);
@@ -1012,7 +1012,7 @@ int program_drac::spi_write_version(trkdaq::DtcInterface* Dtc_i, int Link, const
     TLOG(TLVL_ERROR) << std::format("fw version:{} is not defined, BAIL OUT.\n",Version);
     return -1;
   }
-  
+
   TLOG(TLVL_INFO) << std::format("-- START programming DTC{} link:{} with the ROC fw version:{}\n",Dtc_i->PcieAddr(),Link,Version);
 //-----------------------------------------------------------------------------
 // firmware to be uploaded found, proceed with the upload.

@@ -91,7 +91,7 @@ namespace mu2edaq {
 
     DTCLib::DTC*         fDtc;
     int                  fEnabled;           // if comes from ODB, could be 0
-    int                  fPcieAddr;          // 
+    int                  fPcieAddr;          //
     int                  fLinkMask;          // int is OK, bit 31 is never used for arithmetics
                                              // for now assume that all ROCs are doing the same
                                              // fRocReadoutMode: (fixed_length << 4) | readout_mode
@@ -110,8 +110,8 @@ namespace mu2edaq {
 
     int                  fSubsystem;         // 1:tracker 2:calorimeter 3:CRV 4:STM (better than IsCrv)
 
-    int                  fSleepTimeROCWrite; // the two are different 
-    int                  fSleepTimeROCReset; // 
+    int                  fSleepTimeROCWrite; // the two are different
+    int                  fSleepTimeROCReset; //
     int                  fCounter;
 //-----------------------------------------------------------------------------
 // functions
@@ -130,7 +130,7 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // to avoid ambiguities, always use fJAMode
 // clock source= 0:internal, 1:RTF (RJ45)
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
     int          ConfigureJA(std::ostream& Stream = std::cout);
 
     int          Enabled   () { return fEnabled;    }
@@ -141,10 +141,10 @@ namespace mu2edaq {
     int          DtcID     () { return fDtcID; }
 
     int          InitReadout        (int EmulateCfo = -1, int RocReadoutMode = -1, std::ostream& Stream = std::cout);
-    virtual int  InitRocReadoutMode(std::ostream& Stream = std::cout); 
-    
+    virtual int  InitRocReadoutMode(std::ostream& Stream = std::cout);
+
     int          InitEmulatedCFOReadoutMode(std::ostream& Stream = std::cout);
-    
+
     int          InitExternalCFOReadoutMode(std::ostream& Stream = std::cout);
 
                                         // read configuration data from a file and store them in 'DtcData'
@@ -159,9 +159,9 @@ namespace mu2edaq {
     int          LinkLocked (int Link);
                                         // this EWM delay is common for all ROCs,
                                         // on top of that, each separate ROC has its own delay
-    
+
     int          GetRocEwmDelay5ns(int Link) { return fRocEwmDelay5ns[Link]; }
-    
+
     int          GetLinkMask() { return fLinkMask; }
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
 
@@ -211,11 +211,11 @@ namespace mu2edaq {
 // ForceCFOEdge: bit_6 and bit_5 of the control register 0x9100
 // bit_6: 1:force       0:auto
 // bit_5: 0:rising edge 1:falling edge
-// 2026-04-10 PM: not sure if this one is still being used 
-//-----------------------------------------------------------------------------    
-    void         SetupCfoInterface(int CFOEmulationMode, 
-                                   int ForceCFOEdge    , 
-                                   int EnableCFORxTx   , 
+// 2026-04-10 PM: not sure if this one is still being used
+//-----------------------------------------------------------------------------
+    void         SetupCfoInterface(int CFOEmulationMode,
+                                   int ForceCFOEdge    ,
+                                   int EnableCFORxTx   ,
                                    int EnableAutogenDRP);
 
 //-----------------------------------------------------------------------------

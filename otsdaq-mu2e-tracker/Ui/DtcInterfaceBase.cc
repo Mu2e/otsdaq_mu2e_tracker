@@ -124,14 +124,14 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ConfigureJA(std::ostream& Stream) {
     int rc(0);
-    
+
     int nmax_iter(10);
 
     int reset        = (fJAMode     ) & 0xf;
     int clock_source = (fJAMode >> 4) & 0xf;
-    
+
     TLOG(TLVL_DEBUG) << std::format("-- START: PCIE:{} clock_source:{} reset:{}",fPcieAddr,clock_source,reset);
-    
+
     fDtc->SetJitterAttenuatorSelect(clock_source,reset);    // 0:internal clock sync, 1:RTF
     usleep(100000);
     bool ok(false);
@@ -144,11 +144,11 @@ namespace mu2edaq {
         rc = -2;
         std::string msg = std::format("iter:{} failed to >ReadJitterAttenuatorLocked(), rc:{}",i,rc);
         TLOG(TLVL_ERROR) << msg;
-        
+
         Stream << std::format("ERROR: {} rc:{}\n",msg,rc);
         return rc;
       }
-      
+
       if (ok) {
         std::string msg = std::format("JA configured with JAMode:0x{:02x}",fJAMode);
         Stream << std::format("{}\n",msg);
@@ -157,7 +157,7 @@ namespace mu2edaq {
       }
       usleep(100000);
     }
-    
+
     TLOG(TLVL_ERROR) << std::format("failed to configure JA for clock_source={} and reset={} in {} attempts",
                                     clock_source,reset,nmax_iter);
     return -1;
@@ -177,9 +177,9 @@ namespace mu2edaq {
     TLOG(TLVL_DEBUG+1) << std::format("-- START");
 
     TInterpreter* cint = gROOT->GetInterpreter();
-    
+
     TInterpreter::EErrorCode irc;
-  
+
     std::string macro = Form("%s/config/dtc_gui/%s.C",gSystem->Getenv("MU2E_DAQ_DIR"),ConfigName);
     FILE* f = fopen(macro.data(),"r");
     if (f == nullptr) {
@@ -195,7 +195,7 @@ namespace mu2edaq {
         return rc;
       }
     }
-    
+
     if (not cint->IsLoaded(macro.data())) {
       TLOG(TLVL_DEBUG+1) << std::format(" loading configuration from {}",macro);
       cint->LoadMacro(macro.data(), &irc);
@@ -207,13 +207,13 @@ namespace mu2edaq {
 
     TLOG (TLVL_DEBUG+1) << std::format("rc:{}",rc);
     if (rc != 0) return rc;
-    
+
     std::string cmd = std::format("init_run_configuration((mu2edaq::DtcInputData_t*) 0x{:08x},{:d});",(long int) DtcData,DeviceID);
-    
+
     TLOG(TLVL_DEBUG+1) << std::format("cmd:{}",cmd);
-    
+
     gInterpreter->ProcessLine(cmd.data(),&irc);
-    
+
     TLOG(TLVL_DEBUG+1) << std::format("-- END irc:{}",(uint32_t) irc);
     return irc;
   }
@@ -236,7 +236,7 @@ namespace mu2edaq {
 
     fDtc->DisableCFOEmulation();                                   // r_0x9100:bit_30 = 0
     fDtc->DisableAutogenDRP();
-    
+
     fDtc->EnableReceiveCFOLink();                                  // r_0x9114:bit_14 = 1
                                                                    // this one is OK...
     int enable_clock_markers = 0;
@@ -246,7 +246,7 @@ namespace mu2edaq {
     fDtc->EnableAutogenDRP();                                      // r_0x9100:bit_23 = 1
 
     fDtc->SetCFOEmulationMode();                                   // r_0x9100:bit_15 = 1
-    
+
     int force_cfo_edge = 0x0;                                      // two bits matter
     fDtc->SetExternalCFOSampleEdgeMode(force_cfo_edge);            // r_0x9100:bit6 = 0 bit_5=0
     fDtc->EnableTransmitCFOLink();                                 // r_0x9114:bit_06 = 1
@@ -256,7 +256,7 @@ namespace mu2edaq {
 // and is set in LaunchRunPlanEmulatedCfo
 // ROC links are still disabled at this point, re-enabled later, in InitReadout()
 //-----------------------------------------------------------------------------
-    
+
     TLOG(TLVL_DEBUG) << "-- END, rc:" << rc;
     return rc;
   }
@@ -279,13 +279,13 @@ namespace mu2edaq {
 
     TLOG(TLVL_DEBUG) << "-- START: .. PCIE addr:" << fPcieAddr << " SampleEdgeMode:" << fSampleEdgeMode;
 
-    fDtc->SoftReset();                  // write 0x9100:bit_31=1   
+    fDtc->SoftReset();                  // write 0x9100:bit_31=1
 
     fDtc->DisableCFOEmulation  ();      // r_0x9100:bit_30 = 0
     fDtc->DisableCFOEmulatorDRP();      // r_0x9100:bit_24 = 0
     fDtc->DisableAutogenDRP    ();      // r_0x9100:bit_23 = 0
 
-                                        // do that only when the bit is set ? 
+                                        // do that only when the bit is set ?
     fDtc->ClearCFOEmulationMode();      // r_0x9100:bit_15 = 0
 
                                         // which ROC links should be enabled ? - all active ?
@@ -318,7 +318,7 @@ namespace mu2edaq {
 
     if (EmulateCfo     != -1) fEmulateCfo     = EmulateCfo;
     if (RocReadoutMode != -1) fRocReadoutMode = RocReadoutMode;
-    
+
     TLOG(TLVL_DEBUG) << "-- START : PCIE addr:" << fPcieAddr << " EmulateCFO=" << fEmulateCfo
                      << " ROC ReadoutMode:" << fRocReadoutMode;
 //-----------------------------------------------------------------------------
@@ -383,7 +383,7 @@ namespace mu2edaq {
       rc = -10;
       TLOG(TLVL_ERROR) << std::format("failed to release bufferse, rc:{}. BAIL OUT",rc);
     }
-    
+
     TLOG(TLVL_DEBUG) << "-- END rc:" << rc;
     return rc;
   }

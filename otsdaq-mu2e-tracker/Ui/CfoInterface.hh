@@ -47,7 +47,7 @@ namespace trkdaq {
                                         // always use fJAMode and avoid ambiguities
     int          ConfigureJA(std::ostream& Stream = std::cout);
 
-                                        // if 
+                                        // if
     int          InitReadout(const std::string& RunPlan, int TimingChainMask = 0xffffffff, std::ostream& Stream = std::cout);
 
     int          Halt();

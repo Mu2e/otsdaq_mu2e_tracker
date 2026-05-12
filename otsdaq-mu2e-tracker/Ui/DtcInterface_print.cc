@@ -21,7 +21,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
     TLOG(TLVL_DEBUG+1) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
-    
+
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
@@ -85,7 +85,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
     int rc(0);
-    
+
     TLOG(TLVL_DBG) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
@@ -125,7 +125,7 @@ namespace trkdaq {
 
     reg =  0; desc = "ALWAYS 0x1234";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
-    
+
     reg = 18; desc = "ROC FIFO status";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
@@ -423,7 +423,7 @@ namespace trkdaq {
 // bit 2: formattted printout, parallel
 //-----------------------------------------------------------------------------
 //    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
-    
+
     Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
     Stream << "  |              |              |              |              |              |              |\n";
     Stream << "--------------------------------------------------------------------------------------------\n";
@@ -433,10 +433,10 @@ namespace trkdaq {
       // if the size in zero, don't print the link
     for (int ich=0; ich<96; ich++) {
       Stream << std::format("{:2d}|",ich);
-      
+
       for (int lnk=0; lnk<6; lnk++) {
         // int loc               = 6*ich;
-      
+
         std::vector<float>* dat = &Thresholds[lnk];
         int nw = dat->size();
 
@@ -449,11 +449,11 @@ namespace trkdaq {
           Stream << std::format("     {:8.3f} {:c}",sum_thr,c);
         }
       }
-      
+
       Stream << std::endl;
     }
   }
-  
+
 //-----------------------------------------------------------------------------
 // Link: link number
 // expect that in most cases read all channels : all masks are set to 0xFFFFFFFF
@@ -492,5 +492,5 @@ namespace trkdaq {
     }
     return 0;
   }
-  
+
 };

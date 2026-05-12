@@ -74,7 +74,7 @@ namespace mu2edaq {
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
 
     std::string text = Form("(0x%04x) : ",FirstReg);
-    
+
     for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if ((i < 6) and (used == 0))                          continue;
@@ -146,7 +146,7 @@ namespace mu2edaq {
     PrintDtcLinkRegisters(0x9690,"RX Data         Packet Count",Stream);
     PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",Stream);
     PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
-                          
+
     TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
   }
