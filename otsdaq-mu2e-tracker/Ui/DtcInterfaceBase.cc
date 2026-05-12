@@ -217,7 +217,6 @@ namespace mu2edaq {
     TLOG(TLVL_DEBUG+1) << std::format("-- END irc:{}",(uint32_t) irc);
     return irc;
   }
->>>>>>> 2025
 
 //-----------------------------------------------------------------------------
 // according to Ryan, disabling the CFO emulation is critical, otherwise NMarkers
