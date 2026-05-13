@@ -490,8 +490,8 @@ The "rocUtil block_read -a 270 -c 288" will return 288 thresholds
 * setting the pulser frequency (Richie)                                      
 -  60 kHz: digi_rw -h 0 -a 85 -d 1 -w 1   # 31.29 MHz / (2**9+1) = 60.9941520468 kHz)
 - 250 kHz: digi_rw -h 0 -a 85 -d 0 -w 1   # 31.29 MHz / (2**7+1) = 242.558139535 kHz)
-- from the ROOT prompt:
-root [2] dtc_control_roc_digi_rw(0x85,1,0,1) 
+- from the ROOT prompt, setting link 0:
+root [2] dtc_control_roc_digi_rw(0x85/*reg*/,1/*write*/,0/*CAL+HV*/,1/*data*/,0/*link*/)
 
 * setting up preamps to generate pulses [by Vadim]                           
 ** 1) run control_ROC, find_alignment, exit                                  
@@ -754,7 +754,7 @@ uint8_t channel_map[96] = {
 - bit 91 = 32+32+27
 - in control_ROC: -C0 -D0 -E08000000
 
-* programming over the fiber
+* programming over the fiber                                                 
 - directory catalog:
 #+begin_src
  Root > spi_flash_read(dtc_i,3,0x000000,32,&dat,0x2)
@@ -805,7 +805,16 @@ nw read:32
 11-06 18:26:42.598745       DtcInterface_print:236    DEBUG PrintBuffer(...): 0x00000030: 0x3c81 0x0003 0x1c05 0x0001 0x9823 0x0002 0x70b7 0x0000
 #+end_src
 
-
+* known DIGI registers                                                       
+- 0x0B : can read and write to test
+- 0x81 : start of the digitization window, units 5 ns
+- 0x82 : end   of the digitization window, units 5 ns
+- 0x85 : channel mask for the pulse injection
+- 0xA4 : tells you whether one of the digi state machines will be locked up
+- 0xD0 : the number of markers (low 15 bits, reset by null marker)
+- 0xE0 : write the expected EW length in 5ns ticks to there (read that from 0xE2)
+- 0xE1 : gets incremented every time the marker doesn't show up on that tick
+- 0xE2 : distance between the two last EW markers in 5ns ticks
 * ------------------------------------------------------------------------------
 * back to [[file:otsdaq_mu2e_tracker.org]]
 * ------------------------------------------------------------------------------

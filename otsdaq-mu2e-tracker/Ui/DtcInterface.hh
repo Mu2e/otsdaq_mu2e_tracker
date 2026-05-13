@@ -3,6 +3,9 @@
 // mixes high- and low-level commands
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
+// TODO : interface change :
+// 1. std::ostream& --> std::ostream* or use std::ostream(nullptr)
+//    to avoid ifs in the functions being called
 //-----------------------------------------------------------------------------
 #ifndef __trkdaq_dtc_interface_hh__
 #define __trkdaq_dtc_interface_hh__
@@ -85,11 +88,16 @@ namespace trkdaq {
     int          ControlRoc(const char* Command, void* Parameters);
 
     // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
+    // call with std::ostream(nullptr) to suppress printout
     int          ControlRoc_DigiRW (ControlRoc_DigiRW_Input_t*  Input          ,
                                     ControlRoc_DigiRW_Output_t* Output         ,
                                     int                         LinkMask   = -1,
                                     int                         PrintLevel =  0,
                                     std::ostream&               Stream     = std::cout);
+
+                                        // result as an integer
+    int          DigiRead (int Addr, int HvCal, uint32_t& Res, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
+    int          DigiWrite(int Addr, int HvCal, uint16_t  Dat, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // Channel = 0-95: read settings of a given preamp channel: gain_cal, gain_hv, thr_cal, thr_hv,
 //                 4 words in total
@@ -121,7 +129,7 @@ namespace trkdaq {
                                       std::vector<uint16_t>*  Output          ,
                                       int                     PrintLevel = 0x2,
                                       ControlRoc_Rates_t*     Par        = nullptr,
-                                      std::ostream*           Stream     = nullptr);
+                                      std::ostream&           Stream     = std::cout);
 
     int          ControlRoc_Read   (ControlRoc_Read_Input_t0* Par        = nullptr,
                                     int                       Link       = 0    ,
@@ -181,13 +189,6 @@ namespace trkdaq {
                                               int           PrintLevel = 0x2       ,
                                               std::ostream& Stream     = std::cout );
 
-    int          ControlRoc_PrintThresholds  (int                        Link      ,
-                                              std::vector<float>&        Thr       ,
-                                              uint32_t      MaskC      = 0xFFFFFFFF,
-                                              uint32_t      MaskD      = 0xFFFFFFFF,
-                                              uint32_t      MaskE      = 0xFFFFFFFF,
-                                              int           PrintLevel = 0x2       ,
-                                              std::ostream& Stream     = std::cout );
 //-----------------------------------------------------------------------------
 // supposedly, PulseHeight = V/3.3*1024 or 1024 = 3.3V
 //-----------------------------------------------------------------------------
@@ -242,23 +243,26 @@ namespace trkdaq {
     virtual std::string              GetRocDesignInfo (int Link) override;
     virtual std::string              GetRocFwGitCommit(int Link) override;
 
-    virtual int                      InitRocReadoutMode(std::ostream* Stream = nullptr)      override;
+    virtual int                      InitRocReadoutMode(std::ostream& Stream = std::cout)      override;
 //-----------------------------------------------------------------------------
-// reset digitizers .. to be called in the beginning of each event ???
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------
-    int          MonicaDigiClear       ();
-    int          MonicaVarLinkConfig   (std::ostream* Stream = nullptr);
-    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1);
+    int          MonicaDigiClear       (std::ostream& Stream = std::cout);
+    int          MonicaVarLinkConfig   (std::ostream& Stream = std::cout);
+    int          MonicaVarPatternConfig(int LaneMask = -1, int NHits = -1, std::ostream& Stream = std::cout);
+//-----------------------------------------------------------------------------
+// internally called by ReadPanelID and WritePanelID
+//-----------------------------------------------------------------------------
+    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
 //-----------------------------------------------------------------------------
 // reboot microcontroller unit, Link=-1: all active links
 //-----------------------------------------------------------------------------
     int          RebootMcu          (int Link);
 //-----------------------------------------------------------------------------
 // assume that to be printed are 'nw' uint16_t words , in hex
-// if Stream == nullptr, PrintBuffer uses TRACE's TLOG
+// if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------
-    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream* Stream = nullptr);
+    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
@@ -268,10 +272,60 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
     void         PrintRocRegister  (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     void         PrintRocRegister2 (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    virtual void PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
+    virtual int  PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
+    void         PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream);
 
-    int          ProgramRoc        (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
+    int          PrintThresholds  (int                        Link      ,
+                                   std::vector<float>&        Thr       ,
+                                   uint32_t      MaskC      = 0xFFFFFFFF,
+                                   uint32_t      MaskD      = 0xFFFFFFFF,
+                                   uint32_t      MaskE      = 0xFFFFFFFF,
+                                   int           PrintLevel = 0x2       ,
+                                   std::ostream& Stream     = std::cout );
+
+    std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
+                                                 int                 PrintLevel = 0,
+                                                 std::ostream&       Stream     = std::cout);
+
+    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev,
+                                    ulong             FirstTS               ,
+                                    int               PrintLevel = 0        ,
+                                    std::ostream&     Stream     = std::cout,
+                                    int               Validate   = 0        ,
+                                    const std::string Fn         = ""       );  // if "", do not write output
+
+                                        // returns the panel MNID
+    int          ReadPanelID       (int Link, int PrintLevel = 0);
+    int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
+    roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
+    virtual int  ResetLink         (int Link) override;
+
+    int          ResetDigis        (int Link);
+    int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
+
+    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
+                                                        const DTCLib::roc_address_t& address);
+
+                                        // -1 = 'all enabled links'
+
+    int          SetRocDtcID       (int Link = -1);
+
+                                        // delay in units of 5n
+
+    int          SetRocDelay       (int Link, uint16_t Delay5ns, std::ostream& Stream = std::cout);
+
+                                        // TStart and  TStop in units of 5ns, no printout if Stream = nullptr
+
+    int          SetRocDigitizationWindow(int Link, uint16_t TStart, uint16_t TStop, int PrintLevel, std::ostream& Stream = std::cout);
+
+    void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
+    void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
+//-----------------------------------------------------------------------------
+// programming ROC over the fiber (I guess, this code is obsolete,
+// in use is the standalone version
+//-----------------------------------------------------------------------------
+    int          SpiProgramRoc     (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
@@ -283,36 +337,6 @@ namespace trkdaq {
     int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
     int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
                                     int PrintLevel=0, std::ostream& Stream = std::cout);
-
-    std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
-                                                 int                 PrintLevel = 0,
-                                                 std::ostream&       Stream     = std::cout);
-
-                                        // underlying function common for the next two
-    int          PanelID_RW        (int Link, int Rw, int& PanelID, int PrintLevel = 0);
-
-                                        // returns the mnID
-    int          ReadPanelID       (int Link, int PrintLevel = 0);
-
-                                        // writes the mnID
-    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
-
-    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev,
-                                    ulong       FirstTS,
-                                    int         PrintData,
-                                    int         Validate = 0      ,
-                                    const char* OutputFn = nullptr);
-
-    int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
-    roc_serial_t ReadSerialNumber  (const DTCLib::DTC_Link_ID& Link);
-    virtual int  ResetLink         (int Link) override;
-    int          RocBlockRead      (int Link, int Reg, std::vector<uint16_t>& Res, int NExpected = -1);
-
-    std::vector<DTCLib::roc_data_t> ReadROCBlockEnsured(const DTCLib::DTC_Link_ID& Link,
-                                                        const DTCLib::roc_address_t& address);
-
-    void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
-    void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
@@ -320,6 +344,8 @@ namespace trkdaq {
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
 
+                                        // writes the mnID
+    int          WritePanelID      (int Link, int PanelID, int PrintLevel = 0);
   };
 };
 

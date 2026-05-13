@@ -69,13 +69,15 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
+// link 6: CFO
+//-----------------------------------------------------------------------------
   void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
 
-    std::string text = Form("(0x%04x)         : ",FirstReg);
+    std::string text = Form("(0x%04x) : ",FirstReg);
 
-    for (int i=0; i<6; i++) {
+    for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
+      if ((i < 6) and (used == 0))                          continue;
       uint32_t reg = FirstReg+4*i;
       uint32_t iw  = ReadRegister(reg);
       text        += Form(" 0x%08x",iw);
@@ -86,7 +88,8 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintStatus(std::ostream& Stream) {
+  int DtcInterface::PrintStatus(std::ostream& Stream) {
+    int rc(0);
     TLOG(TLVL_DEBUG) << "-- START";
 
     Stream << Form("-----------------------------------------------------------------\n");
@@ -113,17 +116,24 @@ namespace mu2edaq {
     PrintRegister(0x91bc,"CFO Emulation Number of Null HB Packets    ",Stream);
     PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ",Stream);
     PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
+    PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
+
+    PrintRegister(0x9218,"bytes received from CFO                    ",Stream);
+    PrintRegister(0x9238,"received CFO packets                       ",Stream);
+    PrintRegister(0x9258,"bytes sent to CFO                          ",Stream);
+    PrintRegister(0x9278,"packets sent to CFO                        ",Stream);
 
     PrintRegister(0x9308,"Jitter Attenuator CSR                      ",Stream);
 
-    std::string text1("                  ");
-    std::string text2(" offset         : ");
+    std::string text1("          ");
+    std::string text2(" offset  :");
 
-    for (int i=0; i<6; i++) {
+    for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
-      if (used == 0)                                        continue;
+      if ((i<6) and (used == 0))                            continue;
+      if (i < 6) text1 += Form("   link %i  ",i);
+      else       text1 += Form("     CFO    ");  // CFO
       int offset = 4*i;
-      text1 += Form("   link %i  ",i);
       text2 += Form("   (0x%02x)  ",offset);
     }
     Stream << std::endl;
@@ -137,7 +147,8 @@ namespace mu2edaq {
     PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",Stream);
     PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
 
-    TLOG(TLVL_DEBUG) << "-- END";
+    TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
+    return rc;
   }
 };
 
@@ -145,7 +156,7 @@ namespace mu2edaq {
 // most of the time Link = -1 meaning 'all enabled links'
 // otherwise it is the link to print
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+  int DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
