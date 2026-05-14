@@ -38,23 +38,26 @@ namespace trkdaq {
 
     CFOLib::CFO* Cfo     () { return fCfo     ; }
 
-    int          ConfigureJA(int ClockSource, int Reset = 1);
-
-    int          InitReadout(const char* RunPlan, uint DtcMask = 0xffffffff);
-
-    void         Halt();
-    void         LaunchRunPlan();
-    void         SetRunPlan   (const char* Fn);
-
-    int          PcieAddr     () { return fPcieAddr; }
-    void         PrintRegister(uint16_t Register, const char* Title = "") ;
-    void         PrintStatus  ();
-    uint32_t     ReadRegister (uint16_t Register);
 //-----------------------------------------------------------------------------
 // input file is a .txt file
 // output file is a binary file with precompiled instructions
 //-----------------------------------------------------------------------------
-    void         CompileRunPlan(const char* InputFn, const char* OutputFn);
+    void         CompileRunPlan(const std::string& InputFn, const std::string& OutputFn, int PrintLevel = 0, std::ostream& = std::cout);
+
+                                        // always use fJAMode and avoid ambiguities
+    int          ConfigureJA(std::ostream& Stream = std::cout);
+
+                                        // if
+    int          InitReadout(const std::string& RunPlan, int TimingChainMask = 0xffffffff, std::ostream& Stream = std::cout);
+
+    int          Halt();
+    void         LaunchRunPlan();
+    void         SetRunPlan   (const std::string& Fn);
+
+    int          PcieAddr     () { return fPcieAddr; }
+    void         PrintRegister(uint16_t Register, const char* Title = "", std::ostream& Stream = std::cout) ;
+    void         PrintStatus  (std::ostream& Stream = std::cout);
+    uint32_t     ReadRegister (uint16_t Register);
 //-----------------------------------------------------------------------------
 // TODO: need one more function which would
 // 1. generate off-spill run plan for N evens,

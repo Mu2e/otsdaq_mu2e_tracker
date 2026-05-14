@@ -8,7 +8,7 @@
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 find_package(cetmodules)
 
-project(otsdaq-mu2e-tracker VERSION 8.00.00)
+project(otsdaq-mu2e-tracker VERSION 8.02.00)
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -88,13 +88,6 @@ find_package(mu2e-pcie-utils   3.02.00 REQUIRED EXPORT)
 # else()
 #    message("-- P.Murat: no MIDASSYS")
 # endif()
-
-# XDAQ Extra setup
-include_directories($ENV{XDAQ_ROOT}/include)
-
-find_package(Offline           10.00.00 REQUIRED)
-include_directories($ENV{BTRK_INC} $ENV{KINKAL_INC})
-link_directories($ENV{BTRK_LIB} $ENV{KINKAL_LIB})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC )
 #if( ${BTYPE_UC} MATCHES "DEBUG" )

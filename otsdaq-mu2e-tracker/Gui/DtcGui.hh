@@ -253,7 +253,7 @@ public:
 //-----------------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------------
-  DtcGui(const char* Project, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
+  DtcGui(const char* Project, int DeviceID, const TGWindow *p, UInt_t w, UInt_t h, int DebugLevel = 0);
   virtual ~DtcGui();
 
   void     DoDtcTab          (Int_t id);
