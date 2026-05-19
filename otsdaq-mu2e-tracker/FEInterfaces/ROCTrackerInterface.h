@@ -65,8 +65,8 @@ public:
   void DisableChargeInjection(__ARGS__);
 
 	void ResetDigis(__ARGS__);
-	void RebootMcu(__ARGS__);
-	void SetDelay(__ARGS__);
+	void RebootMCU(__ARGS__);
+	void SetEventWindowDelay(__ARGS__);
 	void SetDigitizationWindow(__ARGS__);
 	void DigiRead(__ARGS__);
 	void DigiWrite(__ARGS__);

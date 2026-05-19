@@ -27,7 +27,7 @@ namespace trkdaq{
 	}
 
 	int ROC::RebootMCU(){
-		auto rv = _dtc->RebootMCU(_link);
+		auto rv = _dtc->RebootMcu(_link);
 		return rv;
 	}
 
@@ -44,7 +44,7 @@ namespace trkdaq{
 		_dtc->SetRocNHitsPerLane(nhits);
 	}
 
-	int ROC::SeEventWindowDelay(uint16_t delay_5ns, std::ostream& stream){
+	int ROC::SetEventWindowDelay(uint16_t delay_5ns, std::ostream& stream){
 		auto rv = _dtc->SetRocDelay(_link, delay_5ns, stream);
 		return rv;
 	}

@@ -262,7 +262,7 @@ void ROCTrackerInterface::RebootMCU(__ARGS__)
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 }
 
-void ROCTrackerInterface::SetDelay(__ARGS__)
+void ROCTrackerInterface::SetEventWindowDelay(__ARGS__)
 {
 	int delay_5ns = __GET_ARG_IN__("Delay (5 ns units)", int, 0);
 	if (delay_5ns < 0 || delay_5ns > 0xFFFF)
