@@ -603,7 +603,7 @@ namespace  trkdaq {
       fDtc->ReadROCBlock(v2,roc,REG_SETCALDAC,nw,false,100);
 
       if (PrintLevel & 0x1) {
-        PrintBuffer(v2.data(),nw,0,&Stream);
+        PrintBuffer(v2.data(),nw,0,Stream);
       }
     }
 

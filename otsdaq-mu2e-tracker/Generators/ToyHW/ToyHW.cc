@@ -189,9 +189,6 @@ int ToyHW::NumADCBits() const {
   case demo::FragmentType::TOY2:
     return 14;
     break;
-  case demo::FragmentType::TOY21:
-    return 10;
-    break;
   default:
     throw cet::exception("ToyHW") << "Unknown board type " << fragment_type_ << " ("  // NOLINT(cert-err60-cpp)
                                   << demo::fragmentTypeToString(fragment_type_) << ").\n";

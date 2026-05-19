@@ -183,6 +183,7 @@ namespace mu2edaq {
     Stream << Form("%s\n",text.data());
     Stream << "-------------to be completed-------------------------------------------\n";
 
+    return 0;
   }
 };
 #endif
