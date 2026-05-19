@@ -41,6 +41,20 @@ namespace trkdaq{
 		return rv;
 	}
 
+  int ROC::EnableChargeInjection(int first_channel_mask,
+                                 int duty_cycle,
+                                 int delay,
+                                 int print_level,
+                                 std::ostream& stream){
+    auto rv = _dtc->PulserOn(_link, first_channel_mask, duty_cycle, delay, print_level, stream);
+    return rv;
+  }
+
+  int ROC::DisableChargeInjection(int print_level, std::ostream& stream){
+    auto rv = _dtc->PulserOff(_link, print_level, stream);
+    return rv;
+  }
+
 	const Alignment& ROC::LatestAlignment(){
 		return _alignment;
 	}

@@ -61,6 +61,9 @@ public:
 	void SetThreshold(__ARGS__);
 	void MeasureThreshold(__ARGS__);
 
+  void EnableChargeInjection(__ARGS__);
+  void DisableChargeInjection(__ARGS__);
+
 	// state machine
 	//----------------
 	void configure(void) override;

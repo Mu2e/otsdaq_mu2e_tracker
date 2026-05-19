@@ -60,6 +60,24 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    std::vector<std::string>{"Readback count", "Cal", "HV", "Total"},
 	    1,
 	    "" /* tooltip info here */);
+
+  registerFEMacroFunction(
+        "Enable charge injection",
+        static_cast<FEVInterface::frontEndMacroFunction_t>(
+            &ROCTrackerInterface::EnableChargeInjection),
+        std::vector<std::string>{"First channel mask", "Duty cycle", "Delay"},
+        std::vector<std::string>{"Success"},
+      1,
+      "" /* tooltip info here */);
+
+  registerFEMacroFunction(
+        "Disable charge injection",
+        static_cast<FEVInterface::frontEndMacroFunction_t>(
+            &ROCTrackerInterface::EnableChargeInjection),
+        std::vector<std::string>{},
+        std::vector<std::string>{"Success"},
+      1,
+      "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -139,6 +157,29 @@ void ROCTrackerInterface::MeasureThreshold(__ARGS__)
 	__SET_ARG_OUT__("HV", std::to_string(rvh));
 	__SET_ARG_OUT__("Cal", std::to_string(rvc));
 	__SET_ARG_OUT__("Total", std::to_string(rvt));
+}
+
+void ROCTrackerInterface::EnableChargeInjection(__ARGS__){
+  int first_channel_mask = __GET_ARG_IN__("First channel mask", int, 0x10);
+  int duty_cycle = __GET_ARG_IN__("Duty cycle", int, 10);
+  int delay = __GET_ARG_IN__("Delay", int, 1000);
+  int print_level = 0;
+  trkdaq::NullStream null;
+  auto stream = std::ostream(&null);
+
+  __FE_COUT__ << "ejc: ROCTrackerInterface::EnableChargeInjection" << __E__;
+  auto rv = _roc->EnableChargeInjection(first_channel_mask, duty_cycle, delay, print_level, stream);
+  __SET_ARG_OUT__("Success", std::to_string(rv));
+}
+
+void ROCTrackerInterface::DisableChargeInjection(__ARGS__){
+  int print_level = 0;
+  trkdaq::NullStream null;
+  auto stream = std::ostream(&null);
+
+  __FE_COUT__ << "ejc: ROCTrackerInterface::DisableChargeInjection" << __E__;
+  auto rv = _roc->DisableChargeInjection(print_level, stream);
+  __SET_ARG_OUT__("Success", std::to_string(rv));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)

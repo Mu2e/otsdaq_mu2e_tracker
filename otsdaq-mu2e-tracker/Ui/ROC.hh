@@ -32,6 +32,14 @@ namespace trkdaq{
 											 int Threshold,
 											 int PrintLevel = 0);
 
+      int EnableChargeInjection(int FirstChannelMask = 0x10,
+                                int DutyCycle        = 10  ,
+                                int PulserDelay      = 1000,
+                                int PrintLevel       = 0x2,
+                                std::ostream& Stream = std::cout);
+      int DisableChargeInjection(int PrintLevel = 0,
+                                 std::ostream& Stream = std::cout);
+
 			const Alignment& LatestAlignment();
 
     protected:
