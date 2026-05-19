@@ -61,23 +61,22 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    1,
 	    "" /* tooltip info here */);
 
-  registerFEMacroFunction(
-        "Enable charge injection",
-        static_cast<FEVInterface::frontEndMacroFunction_t>(
-            &ROCTrackerInterface::EnableChargeInjection),
-        std::vector<std::string>{"First channel mask", "Duty cycle", "Delay"},
-        std::vector<std::string>{"Success"},
-      1,
-      "" /* tooltip info here */);
+	registerFEMacroFunction(
+	    "Enable charge injection",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::EnableChargeInjection),
+	    std::vector<std::string>{"First channel mask", "Duty cycle", "Delay"},
+	    std::vector<std::string>{"Success"},
+	    1,
+	    "" /* tooltip info here */);
 
-  registerFEMacroFunction(
-        "Disable charge injection",
-        static_cast<FEVInterface::frontEndMacroFunction_t>(
-            &ROCTrackerInterface::EnableChargeInjection),
-        std::vector<std::string>{},
-        std::vector<std::string>{"Success"},
-      1,
-      "" /* tooltip info here */);
+	registerFEMacroFunction("Disable charge injection",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::EnableChargeInjection),
+	                        std::vector<std::string>{},
+	                        std::vector<std::string>{"Success"},
+	                        1,
+	                        "" /* tooltip info here */);
 
 	registerFEMacroFunction("Reset Digis",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -120,14 +119,13 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        1,
 	                        "" /* tooltip info here */);
 
-	registerFEMacroFunction(
-	    "Digi Write",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::DigiWrite),
-	    std::vector<std::string>{"Address", "HvCal", "Data"},
-	    std::vector<std::string>{"Return code"},
-	    1,
-	    "" /* tooltip info here */);
+	registerFEMacroFunction("Digi Write",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::DigiWrite),
+	                        std::vector<std::string>{"Address", "HvCal", "Data"},
+	                        std::vector<std::string>{"Return code"},
+	                        1,
+	                        "" /* tooltip info here */);
 
 	registerFEMacroFunction("Read Panel ID",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -225,27 +223,30 @@ void ROCTrackerInterface::MeasureThreshold(__ARGS__)
 	__SET_ARG_OUT__("Total", std::to_string(rvt));
 }
 
-void ROCTrackerInterface::EnableChargeInjection(__ARGS__){
-  int first_channel_mask = __GET_ARG_IN__("First channel mask", int, 0x10);
-  int duty_cycle = __GET_ARG_IN__("Duty cycle", int, 10);
-  int delay = __GET_ARG_IN__("Delay", int, 1000);
-  int print_level = 0;
-  trkdaq::NullStream null;
-  auto stream = std::ostream(&null);
+void ROCTrackerInterface::EnableChargeInjection(__ARGS__)
+{
+	int first_channel_mask = __GET_ARG_IN__("First channel mask", int, 0x10);
+	int duty_cycle         = __GET_ARG_IN__("Duty cycle", int, 10);
+	int delay              = __GET_ARG_IN__("Delay", int, 1000);
+	int print_level        = 0;
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
 
-  __FE_COUT__ << "ejc: ROCTrackerInterface::EnableChargeInjection" << __E__;
-  auto rv = _roc->EnableChargeInjection(first_channel_mask, duty_cycle, delay, print_level, stream);
-  __SET_ARG_OUT__("Success", std::to_string(rv));
+	__FE_COUT__ << "ejc: ROCTrackerInterface::EnableChargeInjection" << __E__;
+	auto rv = _roc->EnableChargeInjection(
+	    first_channel_mask, duty_cycle, delay, print_level, stream);
+	__SET_ARG_OUT__("Success", std::to_string(rv));
 }
 
-void ROCTrackerInterface::DisableChargeInjection(__ARGS__){
-  int print_level = 0;
-  trkdaq::NullStream null;
-  auto stream = std::ostream(&null);
+void ROCTrackerInterface::DisableChargeInjection(__ARGS__)
+{
+	int                print_level = 0;
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
 
-  __FE_COUT__ << "ejc: ROCTrackerInterface::DisableChargeInjection" << __E__;
-  auto rv = _roc->DisableChargeInjection(print_level, stream);
-  __SET_ARG_OUT__("Success", std::to_string(rv));
+	__FE_COUT__ << "ejc: ROCTrackerInterface::DisableChargeInjection" << __E__;
+	auto rv = _roc->DisableChargeInjection(print_level, stream);
+	__SET_ARG_OUT__("Success", std::to_string(rv));
 }
 
 void ROCTrackerInterface::ResetDigis(__ARGS__)
@@ -265,17 +266,17 @@ void ROCTrackerInterface::RebootMCU(__ARGS__)
 void ROCTrackerInterface::SetEventWindowDelay(__ARGS__)
 {
 	int delay_5ns = __GET_ARG_IN__("Delay (5 ns units)", int, 0);
-	if (delay_5ns < 0 || delay_5ns > 0xFFFF)
+	if(delay_5ns < 0 || delay_5ns > 0xFFFF)
 	{
-		__FE_SS__ << "Delay (5 ns units) out of range [0, 65535]: "
-		          << delay_5ns << __E__;
+		__FE_SS__ << "Delay (5 ns units) out of range [0, 65535]: " << delay_5ns << __E__;
 		__FE_SS_THROW__;
 	}
 
 	trkdaq::NullStream null;
 	auto               stream = std::ostream(&null);
 
-	__FE_COUT__ << "ROCTrackerInterface::SetEventWindowDelay delay_5ns=" << delay_5ns << __E__;
+	__FE_COUT__ << "ROCTrackerInterface::SetEventWindowDelay delay_5ns=" << delay_5ns
+	            << __E__;
 	auto rv = _roc->SetEventWindowDelay(static_cast<uint16_t>(delay_5ns), stream);
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 }
@@ -286,30 +287,28 @@ void ROCTrackerInterface::SetDigitizationWindow(__ARGS__)
 	int t_stop      = __GET_ARG_IN__("TStop (5 ns units)", int, -1);
 	int print_level = 0;
 
-	if (t_start < 0 || t_start > 0xFFFF)
+	if(t_start < 0 || t_start > 0xFFFF)
 	{
-		__FE_SS__ << "TStart (5 ns units) out of range [0, 65535]: "
-		          << t_start << __E__;
+		__FE_SS__ << "TStart (5 ns units) out of range [0, 65535]: " << t_start << __E__;
 		__FE_SS_THROW__;
 	}
-	if (t_stop < 0 || t_stop > 0xFFFF)
+	if(t_stop < 0 || t_stop > 0xFFFF)
 	{
-		__FE_SS__ << "TStop (5 ns units) out of range [0, 65535]: "
-		          << t_stop << __E__;
+		__FE_SS__ << "TStop (5 ns units) out of range [0, 65535]: " << t_stop << __E__;
 		__FE_SS_THROW__;
 	}
-	if (t_stop <= t_start)
+	if(t_stop <= t_start)
 	{
-		__FE_SS__ << "TStop must exceed TStart: TStart=" << t_start
-		          << " TStop=" << t_stop << __E__;
+		__FE_SS__ << "TStop must exceed TStart: TStart=" << t_start << " TStop=" << t_stop
+		          << __E__;
 		__FE_SS_THROW__;
 	}
 
 	trkdaq::NullStream null;
 	auto               stream = std::ostream(&null);
 
-	__FE_COUT__ << "ROCTrackerInterface::SetDigitizationWindow TStart="
-	            << t_start << " TStop=" << t_stop << __E__;
+	__FE_COUT__ << "ROCTrackerInterface::SetDigitizationWindow TStart=" << t_start
+	            << " TStop=" << t_stop << __E__;
 	auto rv = _roc->SetDigitizationWindow(static_cast<uint16_t>(t_start),
 	                                      static_cast<uint16_t>(t_stop),
 	                                      print_level,
@@ -323,12 +322,12 @@ void ROCTrackerInterface::DigiRead(__ARGS__)
 	int hv_cal      = __GET_ARG_IN__("HvCal", int, -1);
 	int print_level = 0;
 
-	if (addr < 0)
+	if(addr < 0)
 	{
 		__FE_SS__ << "Address must be non-negative: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if (hv_cal != 0 && hv_cal != 1)
+	if(hv_cal != 0 && hv_cal != 1)
 	{
 		__FE_SS__ << "HvCal must be 0 or 1: " << hv_cal << __E__;
 		__FE_SS_THROW__;
@@ -338,8 +337,8 @@ void ROCTrackerInterface::DigiRead(__ARGS__)
 	auto               stream = std::ostream(&null);
 
 	uint32_t value = 0;
-	__FE_COUT__ << "ROCTrackerInterface::DigiRead addr=" << addr
-	            << " hv_cal=" << hv_cal << __E__;
+	__FE_COUT__ << "ROCTrackerInterface::DigiRead addr=" << addr << " hv_cal=" << hv_cal
+	            << __E__;
 	auto rv = _roc->DigiRead(addr, hv_cal, value, print_level, stream);
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 	__SET_ARG_OUT__("Value", std::to_string(value));
@@ -352,17 +351,17 @@ void ROCTrackerInterface::DigiWrite(__ARGS__)
 	int data        = __GET_ARG_IN__("Data", int, -1);
 	int print_level = 0;
 
-	if (addr < 0)
+	if(addr < 0)
 	{
 		__FE_SS__ << "Address must be non-negative: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if (hv_cal != 0 && hv_cal != 1)
+	if(hv_cal != 0 && hv_cal != 1)
 	{
 		__FE_SS__ << "HvCal must be 0 or 1: " << hv_cal << __E__;
 		__FE_SS_THROW__;
 	}
-	if (data < 0 || data > 0xFFFF)
+	if(data < 0 || data > 0xFFFF)
 	{
 		__FE_SS__ << "Data out of range [0, 65535]: " << data << __E__;
 		__FE_SS_THROW__;
@@ -371,13 +370,10 @@ void ROCTrackerInterface::DigiWrite(__ARGS__)
 	trkdaq::NullStream null;
 	auto               stream = std::ostream(&null);
 
-	__FE_COUT__ << "ROCTrackerInterface::DigiWrite addr=" << addr
-	            << " hv_cal=" << hv_cal << " data=" << data << __E__;
-	auto rv = _roc->DigiWrite(addr,
-	                          hv_cal,
-	                          static_cast<uint16_t>(data),
-	                          print_level,
-	                          stream);
+	__FE_COUT__ << "ROCTrackerInterface::DigiWrite addr=" << addr << " hv_cal=" << hv_cal
+	            << " data=" << data << __E__;
+	auto rv =
+	    _roc->DigiWrite(addr, hv_cal, static_cast<uint16_t>(data), print_level, stream);
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 }
 
@@ -389,7 +385,7 @@ void ROCTrackerInterface::ReadPanelID(__ARGS__)
 	auto rv = _roc->ReadPanelID(print_level);
 
 	// ReadPanelID returns the panel ID on success, negative error code on failure
-	if (rv < 0)
+	if(rv < 0)
 	{
 		__SET_ARG_OUT__("Panel ID", std::string(""));
 		__SET_ARG_OUT__("Success", std::to_string(rv));
