@@ -64,6 +64,15 @@ public:
   void EnableChargeInjection(__ARGS__);
   void DisableChargeInjection(__ARGS__);
 
+	void ResetDigis(__ARGS__);
+	void RebootMcu(__ARGS__);
+	void SetDelay(__ARGS__);
+	void SetDigitizationWindow(__ARGS__);
+	void DigiRead(__ARGS__);
+	void DigiWrite(__ARGS__);
+	void ReadPanelID(__ARGS__);
+	void ReadSerialNumber(__ARGS__);
+
 	// state machine
 	//----------------
 	void configure(void) override;
