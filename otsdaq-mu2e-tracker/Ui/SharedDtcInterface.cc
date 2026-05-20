@@ -1,0 +1,42 @@
+// Ed Callaghan
+// Wrap the precious heart in a mutexed singleton to keep it safe
+// March 2026
+
+#include "otsdaq-mu2e-tracker/Ui/SharedDtcInterface.hh"
+
+namespace trkdaq{
+	SharedDtcInterface::SharedDtcInterface(DTCLib::DTC* dtc):
+			_interface(std::make_unique<trkdaq::DtcInterface>(dtc)),
+			_initialized(false){
+		trkdaq::DtcInterface::DtcConfiguration_t dummy;
+		dummy.fLinkMask = 0x111111;
+		this->PostInitialize(dummy);
+	}
+
+	// initialize store of preconstructed instances
+	std::map< void*, std::shared_ptr<SharedDtcInterface> > SharedDtcInterface::instances;
+	std::mutex SharedDtcInterface::_get_mutex;
+
+	std::shared_ptr<SharedDtcInterface>& SharedDtcInterface::Get(DTCLib::DTC* dtc){
+		auto& instances = SharedDtcInterface::instances;
+		void* address = static_cast<void*>(dtc);
+		_get_mutex.lock();
+		if (instances.count(address) < 1){
+			instances[address] = std::make_shared<SharedDtcInterface>(dtc);
+		}
+		_get_mutex.unlock();
+		auto& rv = instances[address];
+		return rv;
+	}
+
+	bool SharedDtcInterface::PostInitialize(const trkdaq::DtcInterface::DtcConfiguration_t& config){
+		bool rv = false;
+		std::lock_guard lock(_mutex);
+		if (!_initialized){
+			_interface->PostInitialize(config);
+			_initialized = true;
+			rv = true;
+		}
+		return rv;
+	}
+} // namespace trkdaq

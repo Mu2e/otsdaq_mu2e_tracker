@@ -1,5 +1,7 @@
 
 #include "otsdaq-mu2e-tracker/Gui/DtcGui.hh"
+#include "trace.h"
+#define TRACE_NAME "DtcGui"
 
 using namespace trkdaq;
 using namespace std;
@@ -7,6 +9,7 @@ using namespace std;
 //-----------------------------------------------------------------------------
 void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::DtcInputData_t* DtcData) {
 
+  TLOG(TLVL_DEBUG+1) << std::format("-- START: PCIE:{} LinkMask:0x{:08x}",DtcData->fPcieAddr,DtcData->fLinkMask);
   DtcTel.fData = DtcData;
 
   DtcTel.fCFO_i = CfoInterface::Instance(DtcData->fPcieAddr,DtcData->fLinkMask);
@@ -347,4 +350,6 @@ void DtcGui::BuildCfoTabElement(TGTab*& Tab, DtcTabElement_t& DtcTel, mu2edaq::D
 //-----------------------------------------------------------------------------
   DtcTel.fFrame->AddFrame(group, new TGLayoutHints(kLHintsNormal));
   group->MoveResize(10,10,910,250);
+
+  TLOG(TLVL_DEBUG+1) << std::format("-- END");
 }

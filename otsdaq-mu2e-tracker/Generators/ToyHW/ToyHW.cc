@@ -67,7 +67,7 @@ void ToyHW::StartDatataking() {
 
 void ToyHW::StopDatataking() {
   taking_data_ = false;
-  start_time_ = fake_time_;
+  start_time_  = fake_time_;
 }
 
 void ToyHW::FillBuffer(char* buffer, size_t* bytes_read) {
