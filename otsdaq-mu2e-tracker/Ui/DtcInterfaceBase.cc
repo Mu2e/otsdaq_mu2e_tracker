@@ -38,7 +38,7 @@ namespace mu2edaq {
                           << " SkipInit:"   << std::dec << SkipInit;
     fEnabled         = 1;                // default: enabled
     fPcieAddr        = PcieAddr;
-    fSampleEdgeMode  = 1;
+    fSampleEdgeMode  = 0;               // change from 1 
     fEmulateCfo      = 0;
     fJAMode          = 0x11;             // by default, assume RTF clock and reset upon setting
     

@@ -85,6 +85,8 @@ namespace trkdaq {
 // generic interface to control_ROC.py commands.
 // When/if we figure how to do it better, we'll implement a better solution
 //-----------------------------------------------------------------------------
+    int          CheckFifos(int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
+    
     int          ControlRoc(const char* Command, void* Parameters);
 
     // need: digi_rw -h 0 -w 1 -a 0x82 -d 0x1388
@@ -108,6 +110,10 @@ namespace trkdaq {
                                          int                   Channel    = -1,
                                          int                   PrintLevel =  0,
                                          std::ostream&         Stream     = std::cout);
+
+    int          ControlRoc_InitByFiber (int                   Link            ,
+                                         int                   PrintLevel =   0,
+                                         std::ostream&          Stream    = std::cout);
 
     int          ControlRoc_ReadSettings(int                    Link           ,
                                          int                    Channel        ,
@@ -229,7 +235,7 @@ namespace trkdaq {
                                const int   PreampType,
                                const float threshold_mv,
                                const float tolerance_mv);
-    
+   
     float        ProgramAndQueryThreshold(const int Link,
                                           const int ChannelID,
                                           const int PreampType,
@@ -263,6 +269,10 @@ namespace trkdaq {
 // if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
     void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
+
+    void         PrintDigiRegister  (uint32_t Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream = std::cout);
+    int          PrintDigis         (uint32_t Format, int Link, std::ostream& Stream = std::cout);
+    
     void         PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask = nullptr, std::ostream& Stream = std::cout);
     void         PrintRatesAllRocs  (std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
@@ -270,8 +280,8 @@ namespace trkdaq {
 // Format = 1 : add short description of each register
 // if Link = -1, print a line per register for each ROC
 //-----------------------------------------------------------------------------
-    void         PrintRocRegister  (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
-    void         PrintRocRegister2 (uint Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocRegister  (uint32_t Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
+    void         PrintRocRegister2 (uint32_t Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     virtual int  PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
     void         PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream);

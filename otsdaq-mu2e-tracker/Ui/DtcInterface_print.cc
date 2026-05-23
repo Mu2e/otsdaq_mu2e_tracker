@@ -17,9 +17,130 @@ using namespace std;
 namespace trkdaq {
 
 //-----------------------------------------------------------------------------
+// print value of the DIGI register Reg, for multiple ROCs and both CAL and HV sides
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintDigiRegister(uint32_t Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream) {
+    int rc(0);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
+    
+    int print_level(0);
+    
+    trkdaq::ControlRoc_DigiRW_Input_t  par;
+    trkdaq::ControlRoc_DigiRW_Output_t pcal;
+    trkdaq::ControlRoc_DigiRW_Output_t phv;
+
+    par.rw           = 0;                  // read
+    par.address      = Reg;
+    par.data[0]      = 0;
+    par.data[1]      = 0;
+
+    std::string text;
+    for (int i=0; i<6; i++) {
+      int used = (LinkMask >> 4*i) & 0x1;
+      if (used == 0)                                        continue;
+      // need this if accidentally called directly
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        continue;
+      }
+//-----------------------------------------------------------------------------
+// read the register
+//-----------------------------------------------------------------------------
+      DTC_Link_ID link = DTC_Link_ID(i);
+
+      par.hvcal        = 1;
+      rc               = ControlRoc_DigiRW(&par,&pcal,link,print_level,Stream);
+      if (rc < 0) {
+        TLOG(TLVL_ERROR) << std::format("failed to read CAL side");
+      }
+      text            += std::format("  0x{:04x}",pcal.data[0]);
+      par.hvcal        = 2;
+      rc               = ControlRoc_DigiRW(&par,&phv,link,print_level,Stream);
+      text            += std::format(" 0x{:04x}",phv.data[0]);
+    }
+
+    std::string sreg   = std::format("reg 0x{:04x}",Reg);
+
+    if (Format == 1) text += Form("  %s",Desc.data());
+    Stream << Form("%-12s %s\n",sreg.data(),text.data());
+
+    TLOG(TLVL_DEBUG+1) << std::format("-- END");
+  }
+
+//-----------------------------------------------------------------------------
+// most of the time Link = -1 meaning 'all enabled links'
+// otherwise it is the link to print
+//-----------------------------------------------------------------------------
+  int DtcInterface::PrintDigis(uint32_t Format, int Link, std::ostream& Stream) {
+    int rc(0);
+    int link_mask(0);
+    
+    TLOG(TLVL_DBG) << Form("Format=%i Link:%i \n",Format,Link);
+
+    int lnk1(Link), lnk2(Link+1);
+    if (Link == -1) {
+      lnk1 = 0;
+      lnk2 = 6;
+    }
+
+    std::string text(" Register      ");
+    for (int i=lnk1; i<lnk2; i++) {
+      int enabled = LinkEnabled(i);
+      if (enabled == 0)                                     continue;
+      if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("link:{} enabled but not locked",i);
+        continue;
+      }
+      link_mask |= (1 << 4*i);
+      text += Form("     ROC%i      ",i);
+    }
+
+    TLOG(TLVL_INFO) << std::format("link_mask:0x{:04x}",link_mask);
+    
+    if (link_mask == 0) {
+      std::string msg = std::format("dtc:{} link:{} : no locked links.",PcieAddr(),Link);
+      Stream << " ERROR: " << msg << "\n";
+      TLOG(TLVL_ERROR) << msg;
+      return rc;
+    }
+                     
+    if (Format != 0) text += " Description";
+    Stream << Form("%s\n",text.data());
+    Stream << "-----------------------------------------------------------------------------";
+    Stream << "---------------------\n";
+
+    std::string desc;
+    uint32_t    reg;
+    
+    reg =  0xA4; desc = "0xA4";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+    
+    reg =  0xA5; desc = "0xA5";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    reg =  0xA6; desc = "0xA6";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    reg =  0xC0; desc = "0xC0";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    reg =  0xD0; desc = "0xD0";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+    
+    reg =  0xD1; desc = "0xD1";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+    
+    reg =  0xD2; desc = "0xD2";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    return 0;
+    
+  }
+//-----------------------------------------------------------------------------
 // print value of the register Reg, for multiple ROCs
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRocRegister(uint Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
+  void DtcInterface::PrintRocRegister(uint32_t Reg, std::string& Desc, int Format, int LinkMask,std::ostream& Stream) {
     TLOG(TLVL_DEBUG+1) << std::format("-- START: Reg:{} Format:{} LinkMask:0x{:08x}",Reg,Format,LinkMask);
     
     std::string text;

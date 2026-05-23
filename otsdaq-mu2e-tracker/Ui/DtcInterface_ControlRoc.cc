@@ -58,6 +58,7 @@ namespace  trkdaq {
 // loop over the links and execute
 //-----------------------------------------------------------------------------
     for (int i=link1; i<link2; i++) {
+      TLOG(TLVL_DEBUG+1) << std::format("link:{} enabled:{}",i,LinkEnabled(i));
       if (not LinkEnabled(i))                                 continue;
       auto roc  = DTC_Link_ID(i);
       try {
@@ -73,29 +74,34 @@ namespace  trkdaq {
         int nw = fDtc->ReadROCRegister(roc,129,100);
         if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",129,nw);
 
+        TLOG(TLVL_DEBUG+1) << std::format("read nw:{}",nw);
         nw = nw-4;
         std::vector<uint16_t> v2;
         fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
+        trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
+        *Output = *o;
+        
         if (PrintLevel > 0) {
           if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
           if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0x0,Stream);
           if (PrintLevel & 0x2) {
             Stream << std::endl;
 
-            trkdaq::ControlRoc_DigiRW_Output_t* o = (trkdaq::ControlRoc_DigiRW_Output_t*) v2.data();
+
             Stream << std::format("output: link:{} output: rw:{} hvcal:{} address:0x{:04x}",i,o->rw,o->hvcal,o->address)
                    << std::format(" data[0]:0x{:04x} data[1]:0x{:04x} adc_num:0x{:04x} adc_mask:0x{:04x}\n",
                                   o->data[0],o->data[1],o->adc_num,o->adc_mask);
           }
         }
+        TLOG(TLVL_DEBUG+1) << std::format("done reading");
       }
       catch (...) {
         TLOG(TLVL_ERROR) << "ERROR reading link:" << i;
         Stream << std::format("ERROR reading link:{}",i) << std::endl;
       }
     }
-    Stream << std::endl;
+    if (PrintLevel > 0) Stream << std::endl;
 //-----------------------------------------------------------------------------
 // no need to reset the ROCs
 //-----------------------------------------------------------------------------
@@ -235,7 +241,8 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
     
-    TLOG(TLVL_DEBUG+1) << "Link: 0x" << std::hex << Link << std::dec << " PrintLevel:" << PrintLevel;
+    TLOG(TLVL_DEBUG+1) << std::format("-- START Link: 0x{:04x} Par->enable_pulser:{} PrintLevel:{}",
+                                      Link,Par->enable_pulser,PrintLevel);
 
     int link1(Link), link2(Link+1);
     if (Link == -1) {
@@ -275,7 +282,15 @@ namespace  trkdaq {
     vec.push_back(par->marker_clock );
     vec.push_back(par->mode  );
     vec.push_back(par->clock );
-      
+
+    int nw = vec.size();
+
+    TLOG(TLVL_DEBUG) << std::format("par->enable_pulser:{} link1:{} link2:{}",par->enable_pulser,link1,link2);
+
+    for (int i=0; i<nw; i++) {
+      TLOG(TLVL_DEBUG) << std::format("vec[{}]: 0x{:04x}",i,vec[i]);
+    }
+    
     bool increment_address(false);
     
     for (int i=link1; i<link2; ++i) {
@@ -331,6 +346,7 @@ namespace  trkdaq {
 //  is it really needed to reser the ROC in the end ? - no
 //-----------------------------------------------------------------------------
     // ResetLinks();
+    TLOG(TLVL_DEBUG) << std::format("--END:");
     return 0;
   }
   
@@ -450,6 +466,43 @@ namespace  trkdaq {
       }
     }
     TLOG(TLVL_DEBUG+1) << " -- END " << __func__ << " rc:" << rc;
+    return rc;
+  }
+  
+
+//-----------------------------------------------------------------------------
+// Link=-1: all enabled links
+//-----------------------------------------------------------------------------
+  int DtcInterface::ControlRoc_InitByFiber(int Link, int PrintLevel, std::ostream& Stream) {
+    int rc(0);
+    TLOG(TLVL_DEBUG+1) << "-- START:" << __func__;
+    int l1(Link), l2(Link+1);
+    if (Link == -1) {
+      l1 = 0;
+      l2 = 6;
+    }
+    
+    for (int i=l1; i<l2; i++) {
+      if (not LinkEnabled(i)) continue;
+//-----------------------------------------------------------------------------
+// PULSER_OFF: reg 269
+//-----------------------------------------------------------------------------
+      std::vector<uint16_t> res;
+      int rc = RocBlockRead(i,REG_INITBYFIBER,res);
+
+      if (rc == 0) {
+        int nw = res.size();
+        TLOG(TLVL_DEBUG+1) << "link:" << i << " nw:" << nw; 
+
+        if (PrintLevel & 0x1) {
+          PrintBuffer(res.data(),nw,0x0,Stream);
+        }
+      }
+      else {
+        Stream << std::format("ERROR: DTC:{} link:{} register:{} rc:{}\n", PcieAddr(),i,(int) REG_INITBYFIBER,rc);
+      }
+    }
+    TLOG(TLVL_DEBUG+1) << std::format(" -- END: rc:{}",rc);
     return rc;
   }
   
@@ -769,7 +822,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
-    TLOG(TLVL_DEBUG) << std::format("-- START:");
+    TLOG(TLVL_DEBUG+1) << std::format("-- START:");
     auto roc  = DTC_Link_ID(Link);
     Thr.clear();
 //-----------------------------------------------------------------------------
@@ -860,7 +913,7 @@ namespace  trkdaq {
       Thr.push_back(cal);
       Thr.push_back(tot);
     }
-    TLOG(TLVL_DEBUG) << std::format("-- END: rc=0");
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc=0");
     return 0;
   }
 

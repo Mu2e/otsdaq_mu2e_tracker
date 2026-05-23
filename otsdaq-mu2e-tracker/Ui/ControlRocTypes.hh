@@ -29,6 +29,7 @@ namespace trkdaq {
     REG_SETGAINTHR    = 275,
     REG_SETCALDAC     = 276,
     REG_DUMPSETTINGS  = 277,
+    REG_INITBYFIBER   = 278,
   };
 
   struct ControlRoc_Read_Input_t0 {

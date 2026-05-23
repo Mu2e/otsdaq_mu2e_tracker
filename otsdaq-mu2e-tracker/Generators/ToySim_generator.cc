@@ -41,6 +41,7 @@ demo::ToySim::ToySim(fhicl::ParameterSet const& ps)
   , lazy_mode_(ps.get<bool>("lazy_mode", false))
 
 {
+  TLOG(TLVL_INFO) << std::format(" -- START");
   hardware_interface_->AllocateReadoutBuffer(&readout_buffer_);
 
   auto ts = ps.get<int>("starting_timestamp", 0);
@@ -61,8 +62,7 @@ demo::ToySim::ToySim(fhicl::ParameterSet const& ps)
   
   metadata_.board_serial_number = hardware_interface_->SerialNumber() & 0xFFFF;
   metadata_.num_adc_bits = hardware_interface_->NumADCBits();
-  TLOG(TLVL_INFO) << "Constructor: metadata_.unused = 0x" << std::hex << metadata_.unused
-                  << " sizeof(metadata_) = " << std::dec << sizeof(metadata_);
+  TLOG(TLVL_INFO) << "Constructor: metadata_.unused = 0x" << std::hex << metadata_.unused << " sizeof(metadata_) = " << std::dec << sizeof(metadata_);
 
   switch (hardware_interface_->BoardType()) {
   case 1002:
@@ -77,6 +77,8 @@ demo::ToySim::ToySim(fhicl::ParameterSet const& ps)
   default:
     throw cet::exception("ToySim") << "Unable to determine board type supplied by hardware";  // NOLINT(cert-err60-cpp)
   }
+
+  TLOG(TLVL_INFO) << std::format(" -- END: fragment_type_:{}",(int) fragment_type_);
 }
 
 demo::ToySim::~ToySim() { hardware_interface_->FreeReadoutBuffer(readout_buffer_); }
