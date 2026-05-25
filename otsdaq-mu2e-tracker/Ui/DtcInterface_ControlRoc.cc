@@ -845,10 +845,14 @@ namespace  trkdaq {
     vec.push_back((MaskE      ) & 0xffff);
     vec.push_back((MaskE >> 16) & 0xffff);
 
+    TLOG(TLVL_DEBUG+1) << std::format("-- before WriteRocBlock");
+
     bool increment_address(false);
     fDtc->WriteROCBlock   (roc,REG_MEAS_THR,vec,false,increment_address,100);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
+    TLOG(TLVL_DEBUG+1) << std::format("-- after WriteRocBlock");
+    
     // 0x86 = 0x82 + 4
     uint16_t u;
     try {
@@ -862,6 +866,7 @@ namespace  trkdaq {
       Stream << "failed to read ROC R128" << std::endl;
       return -1;
     }
+    TLOG(TLVL_DEBUG+1) << std::format("-- R128 done");
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
@@ -875,6 +880,7 @@ namespace  trkdaq {
       Stream << msg << nw << std::endl;
       return -2;
     }
+    TLOG(TLVL_DEBUG+1) << std::format("-- R129 done");
 //-----------------------------------------------------------------------------
 // get here only if all reads didn't lead to exceptions
 //-----------------------------------------------------------------------------
@@ -895,6 +901,8 @@ namespace  trkdaq {
       return -3;
     }
 
+    TLOG(TLVL_DEBUG+1) << std::format("-- REG_MEAS_THR done");
+    
     if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0x0,Stream);
 //-----------------------------------------------------------------------------
 // convert to floats

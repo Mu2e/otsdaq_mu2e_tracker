@@ -538,12 +538,17 @@ namespace trkdaq {
 
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream) {
+  void DtcInterface::PrintSumThresholds(std::vector<float>* Thresholds, uint32_t MaskC, uint32_t MaskD, uint32_t MaskE, int PrintLevel, std::ostream& Stream) {
 //-----------------------------------------------------------------------------
 // do the printing
 // bit 2: formattted printout, parallel
 //-----------------------------------------------------------------------------
 //    float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
+    
+    int mask[3];
+    mask[0] = MaskC;
+    mask[1] = MaskD;
+    mask[2] = MaskE;
     
     Stream << "ch|   link 0     |   link 1     |   link 2     |   link 3     |   link 4     |   link 5     |\n";
     Stream << "  |              |              |              |              |              |              |\n";
@@ -553,6 +558,11 @@ namespace trkdaq {
 
       // if the size in zero, don't print the link
     for (int ich=0; ich<96; ich++) {
+      int iw = ich/32;
+      int ib = ich -iw*32;
+
+      if (((mask[iw] >> ib) & 0x1) == 0)                    continue;
+        
       Stream << std::format("{:2d}|",ich);
       
       for (int lnk=0; lnk<6; lnk++) {
@@ -563,11 +573,11 @@ namespace trkdaq {
 
         char c = '|';
         if ((nw == 0) or (nw < 3*ich)) {
-          Stream << "             " << c;
+          Stream << "              " << c;
         }
         else {
           float sum_thr = dat->at(3*ich+2);
-          Stream << std::format("     {:8.3f} {:c}",sum_thr,c);
+          Stream << std::format("     {:8.3f}  {:c}",sum_thr,c);
         }
       }
       
@@ -590,7 +600,7 @@ namespace trkdaq {
 //  print, if requested
 //-----------------------------------------------------------------------------
     if (PrintLevel & 0x2) {
-      int mask[3];
+      uint32_t mask[3];
       mask[0] = MaskC;
       mask[1] = MaskD;
       mask[2] = MaskE;

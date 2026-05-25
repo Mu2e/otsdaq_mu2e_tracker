@@ -284,21 +284,27 @@ namespace trkdaq {
     void         PrintRocRegister2 (uint32_t Reg, std::string& Desc, int Format = 1, int LinkMask = -1, std::ostream& Stream = std::cout);
     virtual int  PrintRocStatus    (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout) override;
     void         PrintSpiAll       (trkdaq::TrkSpiData_t* Spi, std::ostream& Stream = std::cout);
-    void         PrintSumThresholds(std::vector<float>* Thresholds, std::ostream& Stream);
+    
+    void         PrintSumThresholds(std::vector<float>*        Thresholds,
+                                    uint32_t      MaskC      = 0xFFFFFFFF,
+                                    uint32_t      MaskD      = 0xFFFFFFFF,
+                                    uint32_t      MaskE      = 0xFFFFFFFF,
+                                    int           PrintLevel = 0x4,
+                                    std::ostream& Stream     = std::cout);
 
-    int          PrintThresholds  (int                        Link      ,
-                                   std::vector<float>&        Thr       ,
-                                   uint32_t      MaskC      = 0xFFFFFFFF,
-                                   uint32_t      MaskD      = 0xFFFFFFFF,
-                                   uint32_t      MaskE      = 0xFFFFFFFF,
-                                   int           PrintLevel = 0x2       ,
-                                   std::ostream& Stream     = std::cout );
+    int          PrintThresholds   (int                        Link      ,
+                                    std::vector<float>&        Thr       ,
+                                    uint32_t      MaskC      = 0xFFFFFFFF,
+                                    uint32_t      MaskD      = 0xFFFFFFFF,
+                                    uint32_t      MaskE      = 0xFFFFFFFF,
+                                    int           PrintLevel = 0x2       ,
+                                    std::ostream& Stream     = std::cout);
 
     std::vector<DTCLib::roc_data_t> ReadDeviceID(DTCLib::DTC_Link_ID Link,
                                                  int                 PrintLevel = 0,
                                                  std::ostream&       Stream     = std::cout);
    
-    void         ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+    int          ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
                                     ulong             FirstTS               ,
                                     int               PrintLevel = 0        ,
                                     std::ostream&     Stream     = std::cout,

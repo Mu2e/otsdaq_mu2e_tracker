@@ -1137,12 +1137,15 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // ROC reset : write 0x1 to register 14
 // if Fn = "", don't write the output file
 //-----------------------------------------------------------------------------
-  void DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
+  int DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
                                    ulong             FirstEWT   ,
                                    int               PrintLevel ,
                                    std::ostream&     Stream     ,
                                    int               Validate   ,
                                    const std::string Fn         ) {
+    int rc(0);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- START");
     ulong    ewt      = FirstEWT;
     bool     match_ts = false;
     int      nerr_tot  (0);
@@ -1151,6 +1154,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int      nerr_roc[6], nerr_roc_tot[6];
 
     FILE*    file(nullptr);
+    
     if (Fn != "") {
 //-----------------------------------------------------------------------------
 // check if Fn exists 
@@ -1159,16 +1163,17 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         // file exists
         fclose(file);
         TLOG(TLVL_ERROR) << "file " << Fn << " already exists, BAIL OUT";
-        return;
+        return -1;
       }
       else {
 //-----------------------------------------------------------------------------
 // Fn doesn't exist, open it 
 //-----------------------------------------------------------------------------
+        TLOG(TLVL_DEBUG+1) << std::format("opening output binary file {}",Fn);
         file = fopen(Fn.data(),"w");
         if (file == nullptr) {
           TLOG(TLVL_ERROR) <<  "failed to open " << Fn << " , BAIL OUT";
-          return;
+          return -2;
         }
       }
     }
@@ -1274,7 +1279,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             if (nbb == 0) {
               TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
               fclose(file);
-              return;
+              return -3;
             }
           }
         }
@@ -1304,6 +1309,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     if (file) {
       fclose(file);
     }
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}",rc);
+    return rc;
   }
 
   
