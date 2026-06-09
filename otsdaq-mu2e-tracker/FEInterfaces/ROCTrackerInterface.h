@@ -74,6 +74,7 @@ public:
 	void ReadSerialNumber(__ARGS__);
 	void MeasureThresholds(__ARGS__);
 	void FindThreshold(__ARGS__);
+	void FindThresholds(__ARGS__);
 
 	// state machine
 	//----------------
@@ -152,6 +153,10 @@ private:
 	// returned by trkdaq::ROC::ReadThresholds
 	// (layout: [3*ch+0]=HV, [3*ch+1]=CAL, [3*ch+2]=sum)
 	static std::string FormatThresholdTable(const std::vector<float>& Thresholds);
+
+	// format a per-channel DAC table from the flat 2*96 vector returned by
+	// trkdaq::ROC::FindThresholds (layout: [2*ch+0]=CAL, [2*ch+1]=HV)
+	static std::string FormatDacTable(const std::vector<DTCLib::roc_data_t>& Dacs);
 
 	// clang-format on
 };

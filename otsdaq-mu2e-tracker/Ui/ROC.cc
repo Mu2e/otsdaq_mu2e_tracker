@@ -100,33 +100,60 @@ namespace trkdaq{
         return rv;
     }
 
-	int ROC::SetThreshold(int channel, int preamp, int dac, int print_level){
-		auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
-		return rv;
-	}
+    int ROC::SetThreshold(int channel, int preamp, int dac, int print_level){
+        auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
+        return rv;
+    }
 
-	bool ROC::FindThreshold(int                 channel,
-	                        int                 preamp,
-	                        float               threshold_mv,
-	                        float               tolerance_mv,
-	                        DTCLib::roc_data_t& out){
-		auto rv = _dtc->FindThreshold(_link, channel, preamp, threshold_mv, tolerance_mv, out);
-		return rv;
-	}
+    bool ROC::FindThreshold(int channel,
+                            int preamp,
+                            float threshold_mv,
+                            float tolerance_mv,
+                            DTCLib::roc_data_t& out){
+        auto rv = _dtc->FindThreshold(_link, channel, preamp, threshold_mv, tolerance_mv, out);
+        return rv;
+    }
 
-  int ROC::EnableChargeInjection(int first_channel_mask,
-                                 int duty_cycle,
-                                 int delay,
-                                 int print_level,
-                                 std::ostream& stream){
-    auto rv = _dtc->PulserOn(_link, first_channel_mask, duty_cycle, delay, print_level, stream);
-    return rv;
-  }
+    int ROC::FindThresholds(int channel,
+                            float threshold_mv,
+                            float tolerance_mv,
+                            DTCLib::roc_data_t& cal_out,
+                            DTCLib::roc_data_t& hv_out){
+        // preamp 0 = CAL, preamp 1 = HV
+        int n_failed = 0;
+        if (not this->FindThreshold(channel, 0, threshold_mv, tolerance_mv, cal_out)) n_failed++;
+        if (not this->FindThreshold(channel, 1, threshold_mv, tolerance_mv, hv_out )) n_failed++;
+        return n_failed;
+    }
 
-  int ROC::DisableChargeInjection(int print_level, std::ostream& stream){
-    auto rv = _dtc->PulserOff(_link, print_level, stream);
-    return rv;
-  }
+    int ROC::FindThresholds(float threshold_mv,
+                            float tolerance_mv,
+                            std::vector<DTCLib::roc_data_t>& out){
+        out.assign(2 * 96, 0);
+        int n_failed = 0;
+        for (int channel = 0; channel < 96; channel++){
+            DTCLib::roc_data_t cal_dac = 0;
+            DTCLib::roc_data_t hv_dac  = 0;
+            n_failed += this->FindThresholds(channel, threshold_mv, tolerance_mv, cal_dac, hv_dac);
+            out[2*channel + 0] = cal_dac;  // CAL
+            out[2*channel + 1] = hv_dac;   // HV
+        }
+        return n_failed;
+    }
+
+    int ROC::EnableChargeInjection(int first_channel_mask,
+                                   int duty_cycle,
+                                   int delay,
+                                   int print_level,
+                                   std::ostream& stream){
+        auto rv = _dtc->PulserOn(_link, first_channel_mask, duty_cycle, delay, print_level, stream);
+        return rv;
+    }
+    
+    int ROC::DisableChargeInjection(int print_level, std::ostream& stream){
+        auto rv = _dtc->PulserOff(_link, print_level, stream);
+        return rv;
+    }
 
     const Alignment& ROC::LatestAlignment(){
         return _alignment;

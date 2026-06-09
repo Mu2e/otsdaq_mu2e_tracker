@@ -61,15 +61,31 @@ namespace trkdaq{
                                uint32_t MaskE = 0xFFFFFFFF,
                                int PrintLevel = 0x2,
                                std::ostream& Stream = std::cout );
-			int SetThreshold(int ChannelID,
-											 int PreampType,
-											 int Threshold,
-											 int PrintLevel = 0);
-			bool FindThreshold(int                 ChannelID,
-											   int                 PreampType,
-											   float               ThresholdMv,
-											   float               ToleranceMv,
-											   DTCLib::roc_data_t& Out);
+            int SetThreshold(int ChannelID,
+                             int PreampType,
+                             int Threshold,
+                             int PrintLevel = 0);
+            bool FindThreshold(int ChannelID,
+                               int PreampType,
+                               float ThresholdMv,
+                               float ToleranceMv,
+                               DTCLib::roc_data_t& Out);
+
+            // find thresholds for both preamps (CAL then HV) of a single channel.
+            // returns the number of searches which failed to converge.
+            int FindThresholds(int ChannelID,
+                               float ThresholdMv,
+                               float ToleranceMv,
+                               DTCLib::roc_data_t& CalOut,
+                               DTCLib::roc_data_t& HvOut);
+
+            // find thresholds for all 96 channels, both preamps.
+            // Out is filled with 192 DAC values, sorted by channel then preamp
+            // (CAL before HV): Out[2*ch+0] = CAL, Out[2*ch+1] = HV.
+            // returns the number of searches which failed to converge.
+            int FindThresholds(float ThresholdMv,
+                               float ToleranceMv,
+                               std::vector<DTCLib::roc_data_t>& Out);
 
             int EnableChargeInjection(int FirstChannelMask = 0x10,
                                       int DutyCycle        = 10  ,

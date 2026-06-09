@@ -161,6 +161,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    std::vector<std::string>{"Success", "DAC value"},
 	    1,
 	    "" /* tooltip info here */);
+
+	registerFEMacroFunction(
+	    "Find Thresholds",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::FindThresholds),
+	    std::vector<std::string>{"Threshold (mV)", "Tolerance (mV)"},
+	    std::vector<std::string>{"Failed count", "DAC values"},
+	    1,
+	    "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -496,6 +505,43 @@ void ROCTrackerInterface::FindThreshold(__ARGS__)
 
 	__SET_ARG_OUT__("Success", std::to_string(success));
 	__SET_ARG_OUT__("DAC value", std::to_string(dac));
+}
+
+std::string ROCTrackerInterface::FormatDacTable(
+    const std::vector<DTCLib::roc_data_t>& dacs)
+{
+	std::stringstream table;
+	table << std::endl;
+	table << std::format(" {:>7} {:>11} {:>11}\n", "Channel", "Cal", "HV");
+	table << "--------------------------------\n";
+	for(int channel = 0; channel < 96; ++channel)
+	{
+		size_t idx = 2 * static_cast<size_t>(channel);
+		auto   cal = dacs.at(idx + 0);
+		auto   hv  = dacs.at(idx + 1);
+		table << std::format(" {:7d} {:11d} {:11d}\n", channel, cal, hv);
+	}
+	return table.str();
+}
+
+void ROCTrackerInterface::FindThresholds(__ARGS__)
+{
+	float threshold_mv = __GET_ARG_IN__("Threshold (mV)", float, 0.0f);
+	float tolerance_mv = __GET_ARG_IN__("Tolerance (mV)", float, 0.0f);
+
+	if (tolerance_mv <= 0.0f)
+	{
+		__FE_SS__ << "Tolerance (mV) must be positive: " << tolerance_mv << __E__;
+		__FE_SS_THROW__;
+	}
+
+	std::vector<DTCLib::roc_data_t> dacs;
+	__FE_COUT__ << "ROCTrackerInterface::FindThresholds threshold_mv="
+	            << threshold_mv << " tolerance_mv=" << tolerance_mv << __E__;
+	auto n_failed = _roc->FindThresholds(threshold_mv, tolerance_mv, dacs);
+
+	__SET_ARG_OUT__("Failed count", std::to_string(n_failed));
+	__SET_ARG_OUT__("DAC values", FormatDacTable(dacs));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
