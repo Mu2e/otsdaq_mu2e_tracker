@@ -22,6 +22,9 @@
 
 #include "otsdaq-mu2e-tracker/Ui/ROC.hh"
 
+#include <mutex>
+#include <nlohmann/json.hpp>
+
 namespace ots
 {
 class ROCTrackerInterface : public ROCPolarFireCoreInterface
@@ -75,6 +78,9 @@ public:
 	void MeasureThresholds(__ARGS__);
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
+
+	void FindAndSerializeThresholds(__ARGS__);
+	void TestJSON(__ARGS__);
 
 	// state machine
 	//----------------
@@ -157,6 +163,13 @@ private:
 	// format a per-channel DAC table from the flat 2*96 vector returned by
 	// trkdaq::ROC::FindThresholds (layout: [2*ch+0]=CAL, [2*ch+1]=HV)
 	static std::string FormatDacTable(const std::vector<DTCLib::roc_data_t>& Dacs);
+
+
+	static bool SafeSerialize(std::string path,
+														std::string key,
+														nlohmann::json value);
+
+	static std::mutex _json_filesystem_mutex;
 
 	// clang-format on
 };

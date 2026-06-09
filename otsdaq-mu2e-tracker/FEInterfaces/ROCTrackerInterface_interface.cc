@@ -8,6 +8,8 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "FE-ROCTrackerInterface"
 
+std::mutex ROCTrackerInterface::_json_filesystem_mutex;
+
 ROCTrackerInterface::ROCTrackerInterface(
     const std::string&       rocUID,
     const ConfigurationTree& theXDAQContextConfigTree,
@@ -167,6 +169,22 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                            &ROCTrackerInterface::FindThresholds),
 	                        std::vector<std::string>{"Threshold (mV)", "Tolerance (mV)"},
 	                        std::vector<std::string>{"Failed count", "DAC values"},
+	                        1,
+	                        "" /* tooltip info here */);
+
+  registerFEMacroFunction("Find and serialize thresholds",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::FindAndSerializeThresholds),
+	                        std::vector<std::string>{"Threshold (mV)", "Tolerance (mV)", "Filesystem path"},
+	                        std::vector<std::string>{"Failed count", "DAC values", "Serialization successful"},
+	                        1,
+	                        "" /* tooltip info here */);
+
+  registerFEMacroFunction("Test JSON write",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::TestJSON),
+	                        std::vector<std::string>{"Key", "Value", "Path"},
+	                        std::vector<std::string>{"Serialization successful"},
 	                        1,
 	                        "" /* tooltip info here */);
 }  // end constructor
@@ -587,6 +605,7 @@ void ROCTrackerInterface::readEmulatorBlock(std::vector<uint16_t>& data,
 
 void ROCTrackerInterface::configure(void)
 {
+  auto config = nlohmann::basic_json(NULL);
 	try
 	{
 		__CFG_COUT__
@@ -642,5 +661,83 @@ bool ROCTrackerInterface::emulatorWorkLoop(void)
 	//__CFG_COUT__ << "emulator working..." << __E__;
 	return true;  // true to keep workloop going
 }  // end emulatorWorkLoop()
+
+
+void ROCTrackerInterface::FindAndSerializeThresholds(__ARGS__)
+{
+	float threshold_mv = __GET_ARG_IN__("Threshold (mV)", float, 0.0f);
+	float tolerance_mv = __GET_ARG_IN__("Tolerance (mV)", float, 0.0f);
+  std::string path   = __GET_ARG_IN__("Filesystem path", std::string, "");
+
+	if(tolerance_mv <= 0.0f)
+	{
+		__FE_SS__ << "Tolerance (mV) must be positive: " << tolerance_mv << __E__;
+		__FE_SS_THROW__;
+	}
+
+	std::vector<DTCLib::roc_data_t> dacs;
+	__FE_COUT__ << "ROCTrackerInterface::FindThresholds threshold_mv=" << threshold_mv
+	            << " tolerance_mv=" << tolerance_mv << __E__;
+	auto n_failed = _roc->FindThresholds(threshold_mv, tolerance_mv, dacs);
+
+  // build key from minnesota id
+  auto minnesota = _roc->ReadPanelID();
+  std::ostringstream ss;
+  ss << std::setw(3) << std::setfill('0') << minnesota;
+  auto key = "MN" + ss.str();
+  // cast into json
+  nlohmann::json value;
+  for (size_t i = 0 ; i < 96 ; i++){
+    value[std::to_string(i)] = {
+      {"Cal", dacs[2*i + 0]},
+      {"HV",  dacs[2*i + 1]}
+    };
+  }
+  // write to disk
+  auto written = ROCTrackerInterface::SafeSerialize(path, key, value);
+
+	__SET_ARG_OUT__("Failed count", std::to_string(n_failed));
+	__SET_ARG_OUT__("DAC values", FormatDacTable(dacs));
+  __SET_ARG_OUT__("Serialization successful", std::to_string(written));
+}
+
+void ROCTrackerInterface::TestJSON(__ARGS__){
+  std::string key   = __GET_ARG_IN__("Key", std::string, "");
+  std::string value = __GET_ARG_IN__("Value", std::string, "");
+  std::string path  = __GET_ARG_IN__("Path", std::string, "");
+
+  auto written = ROCTrackerInterface::SafeSerialize(path, key, value);
+
+  __SET_ARG_OUT__("Serialization successful", std::to_string(written));
+}
+
+bool ROCTrackerInterface::SafeSerialize(std::string path,
+                                        std::string key,
+                                        nlohmann::json value){
+  // lock on filesystem access read/write
+  std::lock_guard lock(ROCTrackerInterface::_json_filesystem_mutex);
+  nlohmann::json json;
+
+  // read preexisting mappings from disk
+  std::ifstream fi(path.c_str());
+  if (!fi){
+    return false;
+  }
+  fi >> json;
+  fi.close();
+
+  // add new mapping
+  json[key] = value;
+
+  // write back to disk
+  std::ofstream fo(path.c_str());
+  if (!fo){
+    return false;
+  }
+  fo << json << std::endl;
+  fo.close();
+
+  return true;
+}
 
 DEFINE_OTS_INTERFACE(ROCTrackerInterface)
