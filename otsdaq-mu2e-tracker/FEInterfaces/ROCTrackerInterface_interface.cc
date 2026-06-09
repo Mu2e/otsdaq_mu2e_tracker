@@ -419,7 +419,8 @@ std::string ROCTrackerInterface::FormatThresholdTable(
 {
 	std::stringstream table;
   table << std::endl;
-	table << " chID    thr(CAL)     thr(HV)         sum\n";
+	table << std::format(" {:>7} {:>11} {:>11} {:>11}\n",
+	                     "Channel", "Cal", "HV", "Sum");
 	table << "--------------------------------------------\n";
 	for(int channel = 0; channel < 96; ++channel)
 	{
