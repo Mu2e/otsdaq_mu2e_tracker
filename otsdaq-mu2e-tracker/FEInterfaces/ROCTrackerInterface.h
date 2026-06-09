@@ -61,8 +61,8 @@ public:
 	void SetThreshold(__ARGS__);
 	void MeasureThreshold(__ARGS__);
 
-  void EnableChargeInjection(__ARGS__);
-  void DisableChargeInjection(__ARGS__);
+	void EnableChargeInjection(__ARGS__);
+	void DisableChargeInjection(__ARGS__);
 
 	void ResetDigis(__ARGS__);
 	void RebootMCU(__ARGS__);
