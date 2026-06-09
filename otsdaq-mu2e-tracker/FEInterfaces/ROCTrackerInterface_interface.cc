@@ -162,14 +162,13 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    1,
 	    "" /* tooltip info here */);
 
-	registerFEMacroFunction(
-	    "Find Thresholds",
-	    static_cast<FEVInterface::frontEndMacroFunction_t>(
-	        &ROCTrackerInterface::FindThresholds),
-	    std::vector<std::string>{"Threshold (mV)", "Tolerance (mV)"},
-	    std::vector<std::string>{"Failed count", "DAC values"},
-	    1,
-	    "" /* tooltip info here */);
+	registerFEMacroFunction("Find Thresholds",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::FindThresholds),
+	                        std::vector<std::string>{"Threshold (mV)", "Tolerance (mV)"},
+	                        std::vector<std::string>{"Failed count", "DAC values"},
+	                        1,
+	                        "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -436,9 +435,8 @@ std::string ROCTrackerInterface::FormatThresholdTable(
     const std::vector<float>& thresholds)
 {
 	std::stringstream table;
-  table << std::endl;
-	table << std::format(" {:>7} {:>11} {:>11} {:>11}\n",
-	                     "Channel", "Cal", "HV", "Sum");
+	table << std::endl;
+	table << std::format(" {:>7} {:>11} {:>11} {:>11}\n", "Channel", "Cal", "HV", "Sum");
 	table << "--------------------------------------------\n";
 	for(int channel = 0; channel < 96; ++channel)
 	{
@@ -446,11 +444,8 @@ std::string ROCTrackerInterface::FormatThresholdTable(
 		float  hv  = thresholds.at(idx + 0);
 		float  cal = thresholds.at(idx + 1);
 		float  tot = thresholds.at(idx + 2);
-		table << std::format(" {:4d} {:11.3f} {:11.3f} {:11.3f}\n",
-		                     channel,
-		                     cal,
-		                     hv,
-		                     tot);
+		table << std::format(
+		    " {:4d} {:11.3f} {:11.3f} {:11.3f}\n", channel, cal, hv, tot);
 	}
 	return table.str();
 }
@@ -458,17 +453,17 @@ std::string ROCTrackerInterface::FormatThresholdTable(
 void ROCTrackerInterface::MeasureThresholds(__ARGS__)
 {
 	// measure thresholds for all channels (all masks fully enabled)
-	uint32_t           mask_lo = 0xFFFFFFFF;
-	uint32_t           mask_md = 0xFFFFFFFF;
-	uint32_t           mask_hi = 0xFFFFFFFF;
+	uint32_t           mask_lo     = 0xFFFFFFFF;
+	uint32_t           mask_md     = 0xFFFFFFFF;
+	uint32_t           mask_hi     = 0xFFFFFFFF;
 	int                print_level = 0;
 	trkdaq::NullStream null;
 	auto               stream = std::ostream(&null);
 
 	std::vector<float> thresholds;
 	__FE_COUT__ << "ROCTrackerInterface::MeasureThresholds" << __E__;
-	auto rv = _roc->ReadThresholds(
-	    thresholds, mask_lo, mask_md, mask_hi, print_level, stream);
+	auto rv =
+	    _roc->ReadThresholds(thresholds, mask_lo, mask_md, mask_hi, print_level, stream);
 
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 	__SET_ARG_OUT__("Thresholds", FormatThresholdTable(thresholds));
@@ -481,17 +476,17 @@ void ROCTrackerInterface::FindThreshold(__ARGS__)
 	float threshold_mv = __GET_ARG_IN__("Threshold (mV)", float, 0.0f);
 	float tolerance_mv = __GET_ARG_IN__("Tolerance (mV)", float, 0.0f);
 
-	if (channel < 0 || channel > 95)
+	if(channel < 0 || channel > 95)
 	{
 		__FE_SS__ << "Channel out of range [0, 95]: " << channel << __E__;
 		__FE_SS_THROW__;
 	}
-	if (preamp != 0 && preamp != 1)
+	if(preamp != 0 && preamp != 1)
 	{
 		__FE_SS__ << "Preamp must be 0 or 1: " << preamp << __E__;
 		__FE_SS_THROW__;
 	}
-	if (tolerance_mv <= 0.0f)
+	if(tolerance_mv <= 0.0f)
 	{
 		__FE_SS__ << "Tolerance (mV) must be positive: " << tolerance_mv << __E__;
 		__FE_SS_THROW__;
@@ -529,15 +524,15 @@ void ROCTrackerInterface::FindThresholds(__ARGS__)
 	float threshold_mv = __GET_ARG_IN__("Threshold (mV)", float, 0.0f);
 	float tolerance_mv = __GET_ARG_IN__("Tolerance (mV)", float, 0.0f);
 
-	if (tolerance_mv <= 0.0f)
+	if(tolerance_mv <= 0.0f)
 	{
 		__FE_SS__ << "Tolerance (mV) must be positive: " << tolerance_mv << __E__;
 		__FE_SS_THROW__;
 	}
 
 	std::vector<DTCLib::roc_data_t> dacs;
-	__FE_COUT__ << "ROCTrackerInterface::FindThresholds threshold_mv="
-	            << threshold_mv << " tolerance_mv=" << tolerance_mv << __E__;
+	__FE_COUT__ << "ROCTrackerInterface::FindThresholds threshold_mv=" << threshold_mv
+	            << " tolerance_mv=" << tolerance_mv << __E__;
 	auto n_failed = _roc->FindThresholds(threshold_mv, tolerance_mv, dacs);
 
 	__SET_ARG_OUT__("Failed count", std::to_string(n_failed));
