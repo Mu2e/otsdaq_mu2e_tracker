@@ -152,6 +152,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Return code", "Thresholds"},
 	                        1,
 	                        "" /* tooltip info here */);
+
+	registerFEMacroFunction(
+	    "Find Threshold",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::FindThreshold),
+	    std::vector<std::string>{"Channel", "Preamp", "Threshold (mV)", "Tolerance (mV)"},
+	    std::vector<std::string>{"Success", "DAC value"},
+	    1,
+	    "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -454,6 +463,39 @@ void ROCTrackerInterface::MeasureThresholds(__ARGS__)
 
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
 	__SET_ARG_OUT__("Thresholds", FormatThresholdTable(thresholds));
+}
+
+void ROCTrackerInterface::FindThreshold(__ARGS__)
+{
+	int   channel      = __GET_ARG_IN__("Channel", int, -1);
+	int   preamp       = __GET_ARG_IN__("Preamp", int, -1);
+	float threshold_mv = __GET_ARG_IN__("Threshold (mV)", float, 0.0f);
+	float tolerance_mv = __GET_ARG_IN__("Tolerance (mV)", float, 0.0f);
+
+	if (channel < 0 || channel > 95)
+	{
+		__FE_SS__ << "Channel out of range [0, 95]: " << channel << __E__;
+		__FE_SS_THROW__;
+	}
+	if (preamp != 0 && preamp != 1)
+	{
+		__FE_SS__ << "Preamp must be 0 or 1: " << preamp << __E__;
+		__FE_SS_THROW__;
+	}
+	if (tolerance_mv <= 0.0f)
+	{
+		__FE_SS__ << "Tolerance (mV) must be positive: " << tolerance_mv << __E__;
+		__FE_SS_THROW__;
+	}
+
+	DTCLib::roc_data_t dac = 0;
+	__FE_COUT__ << "ROCTrackerInterface::FindThreshold channel=" << channel
+	            << " preamp=" << preamp << " threshold_mv=" << threshold_mv
+	            << " tolerance_mv=" << tolerance_mv << __E__;
+	auto success = _roc->FindThreshold(channel, preamp, threshold_mv, tolerance_mv, dac);
+
+	__SET_ARG_OUT__("Success", std::to_string(success));
+	__SET_ARG_OUT__("DAC value", std::to_string(dac));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)

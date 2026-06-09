@@ -61,10 +61,15 @@ namespace trkdaq{
                                uint32_t MaskE = 0xFFFFFFFF,
                                int PrintLevel = 0x2,
                                std::ostream& Stream = std::cout );
-            int SetThreshold(int ChannelID,
-                             int PreampType,
-                             int Threshold,
-                             int PrintLevel = 0);
+			int SetThreshold(int ChannelID,
+											 int PreampType,
+											 int Threshold,
+											 int PrintLevel = 0);
+			bool FindThreshold(int                 ChannelID,
+											   int                 PreampType,
+											   float               ThresholdMv,
+											   float               ToleranceMv,
+											   DTCLib::roc_data_t& Out);
 
             int EnableChargeInjection(int FirstChannelMask = 0x10,
                                       int DutyCycle        = 10  ,

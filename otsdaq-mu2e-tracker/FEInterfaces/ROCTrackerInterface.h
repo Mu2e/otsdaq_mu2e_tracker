@@ -73,6 +73,7 @@ public:
 	void ReadPanelID(__ARGS__);
 	void ReadSerialNumber(__ARGS__);
 	void MeasureThresholds(__ARGS__);
+	void FindThreshold(__ARGS__);
 
 	// state machine
 	//----------------

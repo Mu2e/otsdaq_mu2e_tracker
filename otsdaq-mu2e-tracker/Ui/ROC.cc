@@ -100,10 +100,19 @@ namespace trkdaq{
         return rv;
     }
 
-    int ROC::SetThreshold(int channel, int preamp, int dac, int print_level){
-        auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
-        return rv;
-    }
+	int ROC::SetThreshold(int channel, int preamp, int dac, int print_level){
+		auto rv = _dtc->SetThreshold(_link, channel, preamp, dac, print_level);
+		return rv;
+	}
+
+	bool ROC::FindThreshold(int                 channel,
+	                        int                 preamp,
+	                        float               threshold_mv,
+	                        float               tolerance_mv,
+	                        DTCLib::roc_data_t& out){
+		auto rv = _dtc->FindThreshold(_link, channel, preamp, threshold_mv, tolerance_mv, out);
+		return rv;
+	}
 
   int ROC::EnableChargeInjection(int first_channel_mask,
                                  int duty_cycle,
