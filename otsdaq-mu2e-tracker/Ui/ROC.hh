@@ -12,85 +12,85 @@
 #include "otsdaq-mu2e-tracker/Ui/SharedDtcInterface.hh"
 
 namespace trkdaq{
-	class ROC{
-		public:
-			using link_t = int;
-			using address_t = DTCLib::roc_address_t;
-			ROC(link_t, DTCLib::DTC*);
+    class ROC{
+        public:
+            using link_t = int;
+            using address_t = DTCLib::roc_address_t;
+            ROC(link_t, DTCLib::DTC*);
 
-			uint32_t ReadRegister(address_t address);
-			int Reset();
-			int ResetDigis();
-			int RebootMCU();
-			int FindAlignment();
+            uint32_t ReadRegister(address_t address);
+            int Reset();
+            int ResetDigis();
+            int RebootMCU();
+            int FindAlignment();
 
-			// readout / lane configuration
+            // readout / lane configuration
             // ejc: TODO the following are intrinsically scoped at dtc-level:
             //      - InitRaedoutMode
             //      - SetLaneMask
             //      - SetNHitsPerLane
             // need to increase granularity of low-level interface
-			int InitReadoutMode(std::ostream& Stream = std::cout);
-			void SetLaneMask(int Mask);
-			void SetNHitsPerLane(int NHits);
-			int SetEventWindowDelay(uint16_t Delay5ns,
-			                        std::ostream& Stream = std::cout);
-			int SetDigitizationWindow(uint16_t TStart,
-			                          uint16_t TStop,
-			                          int PrintLevel = 0,
-			                          std::ostream& Stream = std::cout);
+            int InitReadoutMode(std::ostream& Stream = std::cout);
+            void SetLaneMask(int Mask);
+            void SetNHitsPerLane(int NHits);
+            int SetEventWindowDelay(uint16_t Delay5ns,
+                                    std::ostream& Stream = std::cout);
+            int SetDigitizationWindow(uint16_t TStart,
+                                      uint16_t TStop,
+                                      int PrintLevel = 0,
+                                      std::ostream& Stream = std::cout);
 
-			// digi register access
-			int DigiRead (int Addr,
-			              int HvCal,
-			              uint32_t& Res,
-			              int PrintLevel = 0,
-			              std::ostream& Stream = std::cout);
-			int DigiWrite(int Addr,
-			              int HvCal,
-			              uint16_t Dat,
-			              int PrintLevel = 0,
-			              std::ostream& Stream = std::cout);
+            // digi register access
+            int DigiRead (int Addr,
+                          int HvCal,
+                          uint32_t& Res,
+                          int PrintLevel = 0,
+                          std::ostream& Stream = std::cout);
+            int DigiWrite(int Addr,
+                          int HvCal,
+                          uint16_t Dat,
+                          int PrintLevel = 0,
+                          std::ostream& Stream = std::cout);
 
-			// identity
-			int ReadPanelID(int PrintLevel = 0);
-			roc_serial_t ReadSerialNumber();
-			int ReadThresholds(std::vector<float>&        Thr       ,
-												 uint32_t      MaskC      = 0xFFFFFFFF,
-												 uint32_t      MaskD      = 0xFFFFFFFF,
-												 uint32_t      MaskE      = 0xFFFFFFFF,
-												 int           PrintLevel = 0x2       ,
-												 std::ostream& Stream     = std::cout );
-			int SetThreshold(int ChannelID,
-											 int PreampType,
-											 int Threshold,
-											 int PrintLevel = 0);
+            // identity
+            int ReadPanelID(int PrintLevel = 0);
+            roc_serial_t ReadSerialNumber();
+            int ReadThresholds(std::vector<float>& Thr,
+                               uint32_t MaskC = 0xFFFFFFFF,
+                               uint32_t MaskD = 0xFFFFFFFF,
+                               uint32_t MaskE = 0xFFFFFFFF,
+                               int PrintLevel = 0x2,
+                               std::ostream& Stream = std::cout );
+            int SetThreshold(int ChannelID,
+                             int PreampType,
+                             int Threshold,
+                             int PrintLevel = 0);
 
-      int EnableChargeInjection(int FirstChannelMask = 0x10,
-                                int DutyCycle        = 10  ,
-                                int PulserDelay      = 1000,
-                                int PrintLevel       = 0x2,
-                                std::ostream& Stream = std::cout);
-      int DisableChargeInjection(int PrintLevel = 0,
-                                 std::ostream& Stream = std::cout);
+            int EnableChargeInjection(int FirstChannelMask = 0x10,
+                                      int DutyCycle        = 10  ,
+                                      int PulserDelay      = 1000,
+                                      int PrintLevel       = 0x2,
+                                      std::ostream& Stream = std::cout);
+            int DisableChargeInjection(int PrintLevel = 0,
+                                       std::ostream& Stream = std::cout);
 
-			const Alignment& LatestAlignment();
+            const Alignment& LatestAlignment();
 
     protected:
-			link_t _link;
-			std::shared_ptr<SharedDtcInterface> _dtc;
-			Alignment _alignment;
+            link_t _link;
+            std::shared_ptr<SharedDtcInterface> _dtc;
+            Alignment _alignment;
 
-		private:
-			/**/
-	};
+        private:
+            /**/
+    };
 
-	class NullStream: public std::streambuf{
-		public:
-			int overflow(int c){
-				return 0;
-			}
-	};
+    class NullStream: public std::streambuf{
+        public:
+            int overflow(int c){
+                return 0;
+            }
+    };
 } // namespace trkdaq
 
 #endif
