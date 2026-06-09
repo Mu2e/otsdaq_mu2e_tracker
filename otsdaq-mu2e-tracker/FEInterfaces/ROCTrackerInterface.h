@@ -65,13 +65,14 @@ public:
 	void DisableChargeInjection(__ARGS__);
 
 	void ResetDigis(__ARGS__);
-	void RebootMCU(__ARGS__);
-	void SetEventWindowDelay(__ARGS__);
+	void RebootMcu(__ARGS__);
+	void SetDelay(__ARGS__);
 	void SetDigitizationWindow(__ARGS__);
 	void DigiRead(__ARGS__);
 	void DigiWrite(__ARGS__);
 	void ReadPanelID(__ARGS__);
 	void ReadSerialNumber(__ARGS__);
+	void MeasureThresholds(__ARGS__);
 
 	// state machine
 	//----------------
@@ -145,6 +146,11 @@ protected:
 
 private:
   /**/
+
+	// format a per-channel threshold table from the flat 3*96 vector
+	// returned by trkdaq::ROC::ReadThresholds
+	// (layout: [3*ch+0]=HV, [3*ch+1]=CAL, [3*ch+2]=sum)
+	static std::string FormatThresholdTable(const std::vector<float>& Thresholds);
 
 	// clang-format on
 };

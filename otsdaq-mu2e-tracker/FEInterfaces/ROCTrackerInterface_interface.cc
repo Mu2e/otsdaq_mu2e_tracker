@@ -1,3 +1,5 @@
+#include <format>
+
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
 #include "otsdaq/Macros/InterfacePluginMacros.h"
 
@@ -140,6 +142,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                            &ROCTrackerInterface::ReadSerialNumber),
 	                        std::vector<std::string>{},
 	                        std::vector<std::string>{"Serial Number"},
+	                        1,
+	                        "" /* tooltip info here */);
+
+	registerFEMacroFunction("Measure Thresholds",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::MeasureThresholds),
+	                        std::vector<std::string>{},
+	                        std::vector<std::string>{"Return code", "Thresholds"},
 	                        1,
 	                        "" /* tooltip info here */);
 }  // end constructor
@@ -402,6 +412,46 @@ void ROCTrackerInterface::ReadSerialNumber(__ARGS__)
 	__FE_COUT__ << "ROCTrackerInterface::ReadSerialNumber" << __E__;
 	auto rv = _roc->ReadSerialNumber();
 	__SET_ARG_OUT__("Serial Number", rv);
+}
+
+std::string ROCTrackerInterface::FormatThresholdTable(
+    const std::vector<float>& thresholds)
+{
+	std::stringstream table;
+	table << " chID    thr(CAL)     thr(HV)         sum\n";
+	table << "--------------------------------------------\n";
+	for(int channel = 0; channel < 96; ++channel)
+	{
+		size_t idx = 3 * static_cast<size_t>(channel);
+		float  hv  = thresholds.at(idx + 0);
+		float  cal = thresholds.at(idx + 1);
+		float  tot = thresholds.at(idx + 2);
+		table << std::format(" {:4d} {:11.3f} {:11.3f} {:11.3f}\n",
+		                     channel,
+		                     cal,
+		                     hv,
+		                     tot);
+	}
+	return table.str();
+}
+
+void ROCTrackerInterface::MeasureThresholds(__ARGS__)
+{
+	// measure thresholds for all channels (all masks fully enabled)
+	uint32_t           mask_lo = 0xFFFFFFFF;
+	uint32_t           mask_md = 0xFFFFFFFF;
+	uint32_t           mask_hi = 0xFFFFFFFF;
+	int                print_level = 0;
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
+
+	std::vector<float> thresholds;
+	__FE_COUT__ << "ROCTrackerInterface::MeasureThresholds" << __E__;
+	auto rv = _roc->ReadThresholds(
+	    thresholds, mask_lo, mask_md, mask_hi, print_level, stream);
+
+	__SET_ARG_OUT__("Return code", std::to_string(rv));
+	__SET_ARG_OUT__("Thresholds", FormatThresholdTable(thresholds));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
