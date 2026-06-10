@@ -80,6 +80,7 @@ public:
 	void FindThresholds(__ARGS__);
 
 	void FindAndSerializeThresholds(__ARGS__);
+	void DeserializeAndSetThresholds(__ARGS__);
 	void TestJSON(__ARGS__);
 
 	// state machine
@@ -168,6 +169,8 @@ private:
 	static bool SafeSerialize(std::string path,
 														std::string key,
 														nlohmann::json value);
+	static nlohmann::json SafeDeserialize(std::string path,
+													              std::string key);
 
 	static std::mutex _json_filesystem_mutex;
 

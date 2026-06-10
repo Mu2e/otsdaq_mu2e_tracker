@@ -180,6 +180,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        1,
 	                        "" /* tooltip info here */);
 
+  registerFEMacroFunction("Deserialize and set thresholds",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::DeserializeAndSetThresholds),
+	                        std::vector<std::string>{"Filesystem path"},
+	                        std::vector<std::string>{"Failed count"},
+	                        1,
+	                        "" /* tooltip info here */);
+
   registerFEMacroFunction("Test JSON write",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::TestJSON),
@@ -701,6 +709,42 @@ void ROCTrackerInterface::FindAndSerializeThresholds(__ARGS__)
   __SET_ARG_OUT__("Serialization successful", std::to_string(written));
 }
 
+void ROCTrackerInterface::DeserializeAndSetThresholds(__ARGS__)
+{
+  std::string path   = __GET_ARG_IN__("Filesystem path", std::string, "");
+
+  // build key from minnesota id
+  auto minnesota = _roc->ReadPanelID();
+  std::ostringstream ss;
+  ss << std::setw(3) << std::setfill('0') << minnesota;
+  auto key = "MN" + ss.str();
+
+  // read from disk
+  auto json = ROCTrackerInterface::SafeDeserialize(path, key);
+
+  // set thresholds
+	size_t n_failed = 0;
+  for (size_t i = 0 ; i < 96 ; i++){
+    int rc;
+    int dac;
+    auto dacs = json[std::to_string(i)];
+
+    dac = static_cast<int>(dacs["Cal"]);
+    rc = _roc->SetThreshold(i, 0, dac);
+    if (rc != 0){
+        n_failed++;
+    }
+
+    dac = static_cast<int>(dacs["HV"]);
+    _roc->SetThreshold(i, 1, dac);
+    if (rc != 0){
+        n_failed++;
+    }
+  }
+
+	__SET_ARG_OUT__("Failed count", std::to_string(n_failed));
+}
+
 void ROCTrackerInterface::TestJSON(__ARGS__){
   std::string key   = __GET_ARG_IN__("Key", std::string, "");
   std::string value = __GET_ARG_IN__("Value", std::string, "");
@@ -738,6 +782,24 @@ bool ROCTrackerInterface::SafeSerialize(std::string path,
   fo.close();
 
   return true;
+}
+
+nlohmann::json ROCTrackerInterface::SafeDeserialize(std::string path,
+                                                    std::string key){
+  // lock on filesystem access read/write
+  std::lock_guard lock(ROCTrackerInterface::_json_filesystem_mutex);
+  nlohmann::json json;
+
+  // read preexisting mappings from disk
+  std::ifstream fi(path.c_str());
+  if (!fi){
+    return false;
+  }
+  fi >> json;
+  fi.close();
+
+  auto rv = json[key];
+  return rv;
 }
 
 DEFINE_OTS_INTERFACE(ROCTrackerInterface)
