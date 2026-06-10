@@ -203,7 +203,7 @@ void ROCTrackerInterface::ReadRegister(__ARGS__)
 void ROCTrackerInterface::ResetCounters(__ARGS__)
 {
 	int rv = _roc->Reset();
-	__SET_ARG_OUT__("Return code", std::to_string(rv));
+	__SET_ARG_OUT__("Return Code", std::to_string(rv));
 }
 
 void ROCTrackerInterface::FindAlignment(__ARGS__)
