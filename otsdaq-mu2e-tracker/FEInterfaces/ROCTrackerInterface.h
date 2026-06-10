@@ -75,6 +75,7 @@ public:
 	void MeasureThresholds(__ARGS__);
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
+	void SetChannelMask(__ARGS__);
 
 	// state machine
 	//----------------
