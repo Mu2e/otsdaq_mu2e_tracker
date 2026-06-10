@@ -6,12 +6,16 @@
 #define __trkdaq_roc_hh__
 
 // stl
+#include <memory>
 #include <streambuf>
 
 // otsdaq-mu2e-tracker
 #include "otsdaq-mu2e-tracker/Ui/SharedDtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/TrackerRegisters.hh"
 
 namespace trkdaq{
+    class NullStream; // forward
+
     class ROC{
         public:
             using link_t = int;
@@ -39,6 +43,13 @@ namespace trkdaq{
                                       uint16_t TStop,
                                       int PrintLevel = 0,
                                       std::ostream& Stream = std::cout);
+            int SetChannelMask(uint32_t mask_lo,
+                               uint32_t mask_md,
+                               uint32_t mask_hi);
+            int SetDigiChannelMask(trkdaq::fpga_t fpga,
+                                   uint16_t mask_lo,
+                                   uint16_t mask_md,
+                                   uint16_t mask_hi);
 
             // digi register access
             int DigiRead (int Addr,
@@ -100,6 +111,8 @@ namespace trkdaq{
     protected:
             link_t _link;
             std::shared_ptr<SharedDtcInterface> _dtc;
+            std::unique_ptr<trkdaq::NullStream> _nullstream;
+            std::ostream _null;
             Alignment _alignment;
 
         private:
