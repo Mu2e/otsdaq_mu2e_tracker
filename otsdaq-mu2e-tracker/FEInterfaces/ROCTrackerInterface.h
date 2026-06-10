@@ -78,6 +78,7 @@ public:
 	void MeasureThresholds(__ARGS__);
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
+	void SetChannelMask(__ARGS__);
 
 	void FindAndSerializeThresholds(__ARGS__);
 	void DeserializeAndSetThresholds(__ARGS__);

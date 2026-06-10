@@ -172,6 +172,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        1,
 	                        "" /* tooltip info here */);
 
+	registerFEMacroFunction(
+	    "Set Channel Mask",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::SetChannelMask),
+	    std::vector<std::string>{"Mask channels 0-31", "Mask channels 32-63", "Mask channels 64-95"},
+	    std::vector<std::string>{"Return code"},
+	    1,
+	    "" /* tooltip info here */);
+
   registerFEMacroFunction("Find and serialize thresholds",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::FindAndSerializeThresholds),
@@ -563,6 +572,19 @@ void ROCTrackerInterface::FindThresholds(__ARGS__)
 
 	__SET_ARG_OUT__("Failed count", std::to_string(n_failed));
 	__SET_ARG_OUT__("DAC values", FormatDacTable(dacs));
+}
+
+void ROCTrackerInterface::SetChannelMask(__ARGS__)
+{
+	uint32_t mask_lo = __GET_ARG_IN__("Mask channels 0-31", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_md = __GET_ARG_IN__("Mask channels 32-63", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_hi = __GET_ARG_IN__("Mask channels 64-95", uint32_t, 0xFFFFFFFF);
+
+	__FE_COUT__ << std::format(
+	    "ROCTrackerInterface::SetChannelMask mask_lo=0x{:08x} mask_md=0x{:08x} mask_hi=0x{:08x}",
+	    mask_lo, mask_md, mask_hi) << __E__;
+	auto rv = _roc->SetChannelMask(mask_lo, mask_md, mask_hi);
+	__SET_ARG_OUT__("Return code", std::to_string(rv));
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
