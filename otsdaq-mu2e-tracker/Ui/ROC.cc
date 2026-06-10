@@ -7,7 +7,9 @@
 namespace trkdaq{
     ROC::ROC(link_t link, DTCLib::DTC* dtc):
             _link(link),
-            _dtc(SharedDtcInterface::Get(dtc)){
+            _dtc(SharedDtcInterface::Get(dtc)),
+            _nullstream(std::make_unique<trkdaq::NullStream>()),
+            _null(_nullstream.get()){
         /**/
     }
 
@@ -54,6 +56,52 @@ namespace trkdaq{
                                    int print_level,
                                    std::ostream& stream){
         auto rv = _dtc->SetRocDigitizationWindow(_link, t_start, t_stop, print_level, stream);
+        return rv;
+    }
+
+    int ROC::SetChannelMask(uint32_t mask_lo,
+                            uint32_t mask_md,
+                            uint32_t mask_hi){
+        int rv = 0;
+        int rc;
+
+        // 96 = 32x3 bits must be repartitioned into 2x48 = 2x3x16 bit words
+        uint16_t digi_mask_lo;
+        uint16_t digi_mask_md;
+        uint16_t digi_mask_hi;
+
+        // lower bits go to cal-side
+        digi_mask_lo = (mask_lo & 0x0000FFFF) >>  0;
+        digi_mask_md = (mask_lo & 0xFFFF0000) >> 16;
+        digi_mask_hi = (mask_md & 0x0000FFFF) >>  0;
+        rc = this->SetDigiChannelMask(trkdaq::fpga::digi::cal, digi_mask_lo,
+                                                               digi_mask_md,
+                                                               digi_mask_hi);
+        rv += rc;
+
+        // upper bits go to hv-side
+        digi_mask_lo = (mask_md & 0xFFFF0000) >> 16;
+        digi_mask_md = (mask_hi & 0x0000FFFF) >>  0;
+        digi_mask_hi = (mask_hi & 0xFFFF0000) >> 16;
+        rc = this->SetDigiChannelMask(trkdaq::fpga::digi::hv,  digi_mask_lo,
+                                                               digi_mask_md,
+                                                               digi_mask_hi);
+        rv += rc;
+
+        return rv;
+    }
+
+    int ROC::SetDigiChannelMask(trkdaq::fpga_t fpga, uint16_t mask_lo,
+                                                     uint16_t mask_md,
+                                                     uint16_t mask_hi){
+        int rv = 0;
+        int print_level = 0;
+        rv += this->DigiWrite(registers::digi::channel_mask_lo,
+                              fpga, mask_lo, print_level, _null);
+        rv += this->DigiWrite(registers::digi::channel_mask_md,
+                              fpga, mask_md, print_level, _null);
+        rv += this->DigiWrite(registers::digi::channel_mask_hi,
+                              fpga, mask_hi, print_level, _null);
         return rv;
     }
 
