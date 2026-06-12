@@ -63,6 +63,10 @@ namespace trkdaq{
                           int PrintLevel = 0,
                           std::ostream& Stream = std::cout);
 
+            // status
+            int PrintStatus(uint32_t Format = 1,
+                            std::ostream& Stream = std::cout);
+
             // identity
             int ReadPanelID(int PrintLevel = 0);
             roc_serial_t ReadSerialNumber();
