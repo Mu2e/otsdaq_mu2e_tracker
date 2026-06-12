@@ -191,24 +191,24 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                             "Channel mask lo",
 	                             "Channel mask md",
 	                             "Channel mask hi",
-	                             "\"Enable pulser\"",
+	                             "Enable pulser",
 	                             "Fiber clock mask",
 	                             "\"Mode\" (deprecated)",
 	                             "\"Clock\" (deprecated)"},
-	    std::vector<std::string>{"adc_mode",
-	                             "tdc_mode",
-	                             "num_lookback",
-	                             "num_triggers",
-	                             "ch_mask",
-	                             "num_samples",
-	                             "enable_pulser",
-	                             "marker_clock",
-	                             "mode",
-	                             "clock",
-	                             "digi_read_0xb",
-	                             "digi_read_0xe",
-	                             "digi_read_0xd",
-	                             "digi_read_0xc"},
+	    std::vector<std::string>{"ADC Mode",
+	                             "TDC Mode",
+	                             "Waveform delay (lookback)",
+	                             "Trigger count",
+	                             "Channel masks",
+	                             "Additional Sample Packets",
+	                             "Enable pulser",
+	                             "Fiber clock mask",
+	                             "\"Mode\" (deprecated)",
+	                             "\"Clock\" (deprecated)",
+	                             "\"digi_read_0xb\"",
+	                             "\"digi_read_0xe\"",
+	                             "\"digi_read_0xd\"",
+	                             "\"digi_read_0xc\""},
 	    1,
 	    "" /* tooltip info here */);
 }  // end constructor
@@ -632,7 +632,7 @@ void ROCTrackerInterface::NotoriousRead(__ARGS__)
 	uint32_t mask_lo       = __GET_ARG_IN__("Channel mask lo", uint32_t, 0xFFFFFFFF);
 	uint32_t mask_md       = __GET_ARG_IN__("Channel mask md", uint32_t, 0xFFFFFFFF);
 	uint32_t mask_hi       = __GET_ARG_IN__("Channel mask hi", uint32_t, 0xFFFFFFFF);
-	uint16_t enable_pulser = __GET_ARG_IN__("\"Enable pulser\"", uint16_t, 0);
+	uint16_t enable_pulser = __GET_ARG_IN__("Enable pulser", uint16_t, 0);
 	uint16_t marker_clock  = __GET_ARG_IN__("Fiber clock mask", uint16_t, 3);
 	uint16_t mode          = __GET_ARG_IN__("\"Mode\" (deprecated)", uint16_t, 0);
 	uint16_t clock         = __GET_ARG_IN__("\"Clock\" (deprecated)", uint16_t, 99);
@@ -655,20 +655,20 @@ void ROCTrackerInterface::NotoriousRead(__ARGS__)
 
 	auto fields = ParseNotoriousReadOutput(stream.str());
 
-	__SET_ARG_OUT__("adc_mode", fields["adc_mode"]);
-	__SET_ARG_OUT__("tdc_mode", fields["tdc_mode"]);
-	__SET_ARG_OUT__("num_lookback", fields["num_lookback"]);
-	__SET_ARG_OUT__("num_triggers", fields["num_triggers"]);
-	__SET_ARG_OUT__("ch_mask", fields["ch_mask"]);
-	__SET_ARG_OUT__("num_samples", fields["num_samples"]);
-	__SET_ARG_OUT__("enable_pulser", fields["enable_pulser"]);
-	__SET_ARG_OUT__("marker_clock", fields["marker_clock"]);
-	__SET_ARG_OUT__("mode", fields["mode"]);
-	__SET_ARG_OUT__("clock", fields["clock"]);
-	__SET_ARG_OUT__("digi_read_0xb", fields["digi_read_0xb"]);
-	__SET_ARG_OUT__("digi_read_0xe", fields["digi_read_0xe"]);
-	__SET_ARG_OUT__("digi_read_0xd", fields["digi_read_0xd"]);
-	__SET_ARG_OUT__("digi_read_0xc", fields["digi_read_0xc"]);
+	__SET_ARG_OUT__("ADC Mode", fields["adc_mode"]);
+	__SET_ARG_OUT__("TDC Mode", fields["tdc_mode"]);
+	__SET_ARG_OUT__("Waveform delay (lookback)", fields["num_lookback"]);
+	__SET_ARG_OUT__("Trigger count", fields["num_triggers"]);
+	__SET_ARG_OUT__("Channel masks", fields["ch_mask"]);
+	__SET_ARG_OUT__("Additional Sample Packets", fields["num_samples"]);
+	__SET_ARG_OUT__("Enable pulser", fields["enable_pulser"]);
+	__SET_ARG_OUT__("Fiber clock mask", fields["marker_clock"]);
+	__SET_ARG_OUT__("\"Mode\" (deprecated)", fields["mode"]);
+	__SET_ARG_OUT__("\"Clock\" (deprecated)", fields["clock"]);
+	__SET_ARG_OUT__("\"digi_read_0xb\"", fields["digi_read_0xb"]);
+	__SET_ARG_OUT__("\"digi_read_0xe\"", fields["digi_read_0xe"]);
+	__SET_ARG_OUT__("\"digi_read_0xd\"", fields["digi_read_0xd"]);
+	__SET_ARG_OUT__("\"digi_read_0xc\"", fields["digi_read_0xc"]);
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
