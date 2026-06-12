@@ -52,6 +52,13 @@ namespace trkdaq{
                                    uint16_t mask_hi);
 
             // digi register access
+            // low-level digi read/write; Data is the 32-bit word that the
+            // firmware carries as two 16-bit words.
+            int DigiRW(uint16_t Rw,
+                       uint16_t HvCal,
+                       uint16_t Address,
+                       uint32_t Data,
+                       std::ostream& Stream = std::cout);
             int DigiRead (int Addr,
                           int HvCal,
                           uint32_t& Res,

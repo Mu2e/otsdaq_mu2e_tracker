@@ -105,11 +105,31 @@ namespace trkdaq{
         return rv;
     }
 
-    int ROC::DigiRead(int addr,
-                      int hv_cal,
-                      uint32_t& res,
-                      int print_level,
-                      std::ostream& stream){
+	int ROC::DigiRW(uint16_t rw,
+	                uint16_t hv_cal,
+	                uint16_t address,
+	                uint32_t data,
+	                std::ostream& stream){
+		trkdaq::ControlRoc_DigiRW_Input_t  in;
+		trkdaq::ControlRoc_DigiRW_Output_t out;
+		in.rw      = rw;
+		in.hvcal   = hv_cal;
+		in.address = address;
+		// 32-bit word splits into two 16-bit words, low word first
+		in.data[0] = (data      ) & 0xffff;
+		in.data[1] = (data >> 16) & 0xffff;
+
+		// PrintLevel bit 1 => emit the parsed output to the stream
+		int print_level = 0x2;
+		auto rv = _dtc->DigiRW(&in, &out, _link, print_level, stream);
+		return rv;
+	}
+
+	int ROC::DigiRead(int addr,
+	                  int hv_cal,
+	                  uint32_t& res,
+	                  int print_level,
+	                  std::ostream& stream){
         auto rv = _dtc->DigiRead(addr, hv_cal, res, _link, print_level, stream);
         return rv;
     }
