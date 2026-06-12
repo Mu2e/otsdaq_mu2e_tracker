@@ -48,6 +48,8 @@ namespace trkdaq{
 
 			// digi register access
 			template<typename... Args>
+			int DigiRW(Args&&... args);
+			template<typename... Args>
 			int DigiRead(Args&&... args);
 			template<typename... Args>
 			int DigiWrite(Args&&... args);
@@ -194,6 +196,13 @@ namespace trkdaq{
 	int SharedDtcInterface::SetRocDigitizationWindow(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->SetRocDigitizationWindow(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::DigiRW(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->ControlRoc_DigiRW(std::forward<Args>(args)...);
 		return rv;
 	}
 

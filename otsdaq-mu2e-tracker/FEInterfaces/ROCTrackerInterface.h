@@ -81,6 +81,7 @@ public:
 	void NotoriousRead(__ARGS__);
 	void ConfigureDigis(__ARGS__);
 	void InitializeDigis(__ARGS__);
+	void DigiRW(__ARGS__);
 	void PrintStatus(__ARGS__);
 
 	// state machine

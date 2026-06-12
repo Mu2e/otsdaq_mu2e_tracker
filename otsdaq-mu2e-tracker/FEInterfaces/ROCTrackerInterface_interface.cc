@@ -234,6 +234,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        1,
 	                        "" /* tooltip info here */);
 
+	registerFEMacroFunction(
+	    "Digi Read/Write",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::DigiRW),
+	    std::vector<std::string>{"Read/Write", "HvCal", "Address", "Data"},
+	    std::vector<std::string>{"Output"},
+	    1,
+	    "" /* tooltip info here */);
+
 	registerFEMacroFunction("Print Status",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::PrintStatus),
@@ -725,6 +734,19 @@ void ROCTrackerInterface::InitializeDigis(__ARGS__)
 	std::stringstream stream;
 	for(size_t i = 0; i < words.size(); ++i)
 		stream << std::format("0x{:04x}\n", words[i]);
+	__SET_ARG_OUT__("Output", stream.str());
+}
+
+void ROCTrackerInterface::DigiRW(__ARGS__)
+{
+	uint16_t rw      = __GET_ARG_IN__("Read/Write", uint16_t, 0);
+	uint16_t hv_cal  = __GET_ARG_IN__("HvCal", uint16_t, 0);
+	uint16_t address = __GET_ARG_IN__("Address", uint16_t, 0);
+	uint32_t data    = __GET_ARG_IN__("Data", uint32_t, 0);
+
+	std::stringstream stream;
+	__FE_COUT__ << "ROCTrackerInterface::DigiRW" << __E__;
+	_roc->DigiRW(rw, hv_cal, address, data, stream);
 	__SET_ARG_OUT__("Output", stream.str());
 }
 
