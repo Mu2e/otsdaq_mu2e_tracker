@@ -213,7 +213,7 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    "" /* tooltip info here */);
 
 	registerFEMacroFunction(
-	    "Digi Configure",
+	    "Configure Digis",
 	    static_cast<FEVInterface::frontEndMacroFunction_t>(
 	        &ROCTrackerInterface::ConfigureDigis),
 	    std::vector<std::string>{"TDC Mode",
