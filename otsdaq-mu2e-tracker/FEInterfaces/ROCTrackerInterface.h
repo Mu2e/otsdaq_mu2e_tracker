@@ -3,8 +3,10 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "otsdaq-mu2e/FEInterfaces/ROCPolarFireCoreInterface.h"
 #include "otsdaq/DataManager/DataProducer.h"
@@ -79,6 +81,8 @@ public:
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
 	void SetChannelMask(__ARGS__);
+	void NotoriousRead(__ARGS__);
+	void ConfigureDigis(__ARGS__);
 
 	void FindAndSerializeThresholds(__ARGS__);
 	void DeserializeAndSetThresholds(__ARGS__);
@@ -166,6 +170,11 @@ private:
 	// trkdaq::ROC::FindThresholds (layout: [2*ch+0]=CAL, [2*ch+1]=HV)
 	static std::string FormatDacTable(const std::vector<DTCLib::roc_data_t>& Dacs);
 
+	// parse the parsed-field printout emitted by trkdaq::ROC::NotoriousRead
+	// (one "label : value(s)" per line) into a label->value map, with each
+	// label trimmed of surrounding whitespace
+	static std::map<std::string, std::string> ParseNotoriousReadOutput(
+	    const std::string& Text);
 
 	static bool SafeSerialize(std::string path,
 														std::string key,
@@ -174,7 +183,6 @@ private:
 													              std::string key);
 
 	static std::mutex _json_filesystem_mutex;
-
 	// clang-format on
 };
 }  // namespace ots

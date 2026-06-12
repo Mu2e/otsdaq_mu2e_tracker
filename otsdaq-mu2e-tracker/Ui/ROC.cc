@@ -189,7 +189,79 @@ namespace trkdaq{
         return n_failed;
     }
 
-    int ROC::EnableChargeInjection(int first_channel_mask,
+    int ROC::NotoriousRead(uint16_t adc_mode,
+                         uint16_t tdc_mode,
+                         uint16_t num_lookback,
+                         uint16_t num_samples,
+                         uint32_t num_triggers,
+                         uint32_t mask_lo,
+                         uint32_t mask_md,
+                         uint32_t mask_hi,
+                         uint16_t enable_pulser,
+                         uint16_t marker_clock,
+                         uint16_t mode,
+                         uint16_t clock,
+                         std::ostream& stream){
+    trkdaq::ControlRoc_Read_Input_t0 par;
+    par.adc_mode        = adc_mode;
+    par.tdc_mode        = tdc_mode;
+    par.num_lookback    = num_lookback;
+    par.num_samples     = num_samples;
+    // 32-bit count splits into two 16-bit words, low word first:
+    // num_triggers[0] = count & 0xffff, num_triggers[1] = count >> 16
+    par.num_triggers[0] = (num_triggers      ) & 0xffff;
+    par.num_triggers[1] = (num_triggers >> 16) & 0xffff;
+    // each 32-bit mask splits into two 16-bit words, low word first:
+    // ch_mask[2*i] = mask & 0xffff, ch_mask[2*i+1] = mask >> 16
+    par.ch_mask[0]      = (mask_lo      ) & 0xffff;
+    par.ch_mask[1]      = (mask_lo >> 16) & 0xffff;
+    par.ch_mask[2]      = (mask_md      ) & 0xffff;
+    par.ch_mask[3]      = (mask_md >> 16) & 0xffff;
+    par.ch_mask[4]      = (mask_hi      ) & 0xffff;
+    par.ch_mask[5]      = (mask_hi >> 16) & 0xffff;
+    par.enable_pulser   = enable_pulser;
+    par.marker_clock    = marker_clock;
+    par.mode            = mode;
+    par.clock           = clock;
+
+    // PrintLevel bit 1 => emit the parsed fields to the stream
+    int print_level = 0x2;
+    auto rv = _dtc->Read(&par, _link, print_level, stream);
+    return rv;
+  }
+
+  int ROC::ConfigureDigis(uint16_t tdc_mode,
+                          uint16_t num_lookback,
+                          uint16_t num_samples,
+                          uint32_t mask_lo,
+                          uint32_t mask_md,
+                          uint32_t mask_hi,
+                          std::ostream& stream){
+    // hardcoded defaults for the rarely-changed parameters
+    uint16_t adc_mode      = 0;
+    uint32_t num_triggers  = 0;
+    uint16_t enable_pulser = 0;
+    uint16_t marker_clock  = 3;
+    uint16_t mode          = 0;
+    uint16_t clock         = 99;
+
+    auto rv = this->NotoriousRead(adc_mode,
+                                  tdc_mode,
+                                  num_lookback,
+                                  num_samples,
+                                  num_triggers,
+                                  mask_lo,
+                                  mask_md,
+                                  mask_hi,
+                                  enable_pulser,
+                                  marker_clock,
+                                  mode,
+                                  clock,
+                                  stream);
+    return rv;
+  }
+
+  int ROC::EnableChargeInjection(int first_channel_mask,
                                    int duty_cycle,
                                    int delay,
                                    int print_level,
