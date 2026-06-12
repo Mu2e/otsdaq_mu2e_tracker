@@ -98,6 +98,23 @@ namespace trkdaq{
                                float ToleranceMv,
                                std::vector<DTCLib::roc_data_t>& Out);
 
+            // the notorious "read" command: program an acquisition and read
+            // back the resulting configuration. all 16 input words are exposed.
+            int NotoriousRead(uint16_t AdcMode,
+                              uint16_t TdcMode,
+                              uint16_t NumLookback,
+                              uint16_t NumSamples,
+                              uint16_t NumTriggers0,
+                              uint16_t NumTriggers1,
+                              uint32_t MaskLo,
+                              uint32_t MaskMd,
+                              uint32_t MaskHi,
+                              uint16_t EnablePulser,
+                              uint16_t MarkerClock,
+                              uint16_t Mode,
+                              uint16_t Clock,
+                              std::ostream& Stream = std::cout);
+
             int EnableChargeInjection(int FirstChannelMask = 0x10,
                                       int DutyCycle        = 10  ,
                                       int PulserDelay      = 1000,

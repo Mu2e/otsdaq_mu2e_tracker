@@ -178,6 +178,40 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    std::vector<std::string>{"Return code"},
 	    1,
 	    "" /* tooltip info here */);
+
+	registerFEMacroFunction(
+	    "\"Notorious Read\"",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::NotoriousRead),
+	    std::vector<std::string>{"adc_mode",
+	                             "tdc_mode",
+	                             "num_lookback",
+	                             "num_samples",
+	                             "num_triggers0",
+	                             "num_triggers1",
+	                             "mask_lo",
+	                             "mask_md",
+	                             "mask_hi",
+	                             "enable_pulser",
+	                             "marker_clock",
+	                             "mode",
+	                             "clock"},
+	    std::vector<std::string>{"adc_mode",
+	                             "tdc_mode",
+	                             "num_lookback",
+	                             "num_triggers",
+	                             "ch_mask",
+	                             "num_samples",
+	                             "enable_pulser",
+	                             "marker_clock",
+	                             "mode",
+	                             "clock",
+	                             "digi_read_0xb",
+	                             "digi_read_0xe",
+	                             "digi_read_0xd",
+	                             "digi_read_0xc"},
+	    1,
+	    "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -559,6 +593,85 @@ void ROCTrackerInterface::SetChannelMask(__ARGS__)
 	    mask_lo, mask_md, mask_hi) << __E__;
 	auto rv = _roc->SetChannelMask(mask_lo, mask_md, mask_hi);
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
+}
+
+std::map<std::string, std::string> ROCTrackerInterface::ParseNotoriousReadOutput(
+    const std::string& text)
+{
+	auto trim = [](const std::string& s) -> std::string {
+		size_t b = s.find_first_not_of(" \t\r\n");
+		if(b == std::string::npos)
+			return std::string();
+		size_t e = s.find_last_not_of(" \t\r\n");
+		return s.substr(b, e - b + 1);
+	};
+
+	std::map<std::string, std::string> fields;
+	std::stringstream                  in(text);
+	std::string                        line;
+	while(std::getline(in, line))
+	{
+		// each parsed field is printed as "label : value(s)"
+		size_t colon = line.find(':');
+		if(colon == std::string::npos)
+			continue;
+		std::string key   = trim(line.substr(0, colon));
+		std::string value = trim(line.substr(colon + 1));
+		if(!key.empty())
+			fields[key] = value;
+	}
+	return fields;
+}
+
+void ROCTrackerInterface::NotoriousRead(__ARGS__)
+{
+	uint16_t adc_mode      = __GET_ARG_IN__("adc_mode", uint16_t, 0);
+	uint16_t tdc_mode      = __GET_ARG_IN__("tdc_mode", uint16_t, 0);
+	uint16_t num_lookback  = __GET_ARG_IN__("num_lookback", uint16_t, 0);
+	uint16_t num_samples   = __GET_ARG_IN__("num_samples", uint16_t, 1);
+	uint16_t num_triggers0 = __GET_ARG_IN__("num_triggers0", uint16_t, 0);
+	uint16_t num_triggers1 = __GET_ARG_IN__("num_triggers1", uint16_t, 0);
+	uint32_t mask_lo       = __GET_ARG_IN__("mask_lo", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_md       = __GET_ARG_IN__("mask_md", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_hi       = __GET_ARG_IN__("mask_hi", uint32_t, 0xFFFFFFFF);
+	uint16_t enable_pulser = __GET_ARG_IN__("enable_pulser", uint16_t, 0);
+	uint16_t marker_clock  = __GET_ARG_IN__("marker_clock", uint16_t, 3);
+	uint16_t mode          = __GET_ARG_IN__("mode", uint16_t, 0);
+	uint16_t clock         = __GET_ARG_IN__("clock", uint16_t, 99);
+
+	std::stringstream stream;
+	__FE_COUT__ << "ROCTrackerInterface::NotoriousRead" << __E__;
+	_roc->NotoriousRead(adc_mode,
+	                    tdc_mode,
+	                    num_lookback,
+	                    num_samples,
+	                    num_triggers0,
+	                    num_triggers1,
+	                    mask_lo,
+	                    mask_md,
+	                    mask_hi,
+	                    enable_pulser,
+	                    marker_clock,
+	                    mode,
+	                    clock,
+	                    stream);
+
+	auto fields = ParseNotoriousReadOutput(stream.str());
+
+	__SET_ARG_OUT__("adc_mode", fields["adc_mode"]);
+	__SET_ARG_OUT__("tdc_mode", fields["tdc_mode"]);
+	__SET_ARG_OUT__("num_lookback", fields["num_lookback"]);
+	__SET_ARG_OUT__("num_triggers", fields["num_triggers"]);
+	__SET_ARG_OUT__("ch_mask", fields["ch_mask"]);
+	__SET_ARG_OUT__("num_samples", fields["num_samples"]);
+	__SET_ARG_OUT__("enable_pulser", fields["enable_pulser"]);
+	__SET_ARG_OUT__("marker_clock", fields["marker_clock"]);
+	__SET_ARG_OUT__("mode", fields["mode"]);
+	__SET_ARG_OUT__("clock", fields["clock"]);
+	__SET_ARG_OUT__("digi_read_0xb", fields["digi_read_0xb"]);
+	__SET_ARG_OUT__("digi_read_0xe", fields["digi_read_0xe"]);
+	__SET_ARG_OUT__("digi_read_0xd", fields["digi_read_0xd"]);
+	__SET_ARG_OUT__("digi_read_0xc", fields["digi_read_0xc"]);
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)

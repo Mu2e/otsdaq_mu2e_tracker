@@ -3,8 +3,10 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "otsdaq-mu2e/FEInterfaces/ROCPolarFireCoreInterface.h"
 #include "otsdaq/DataManager/DataProducer.h"
@@ -76,6 +78,7 @@ public:
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
 	void SetChannelMask(__ARGS__);
+	void NotoriousRead(__ARGS__);
 
 	// state machine
 	//----------------
@@ -158,6 +161,12 @@ private:
 	// format a per-channel DAC table from the flat 2*96 vector returned by
 	// trkdaq::ROC::FindThresholds (layout: [2*ch+0]=CAL, [2*ch+1]=HV)
 	static std::string FormatDacTable(const std::vector<DTCLib::roc_data_t>& Dacs);
+
+	// parse the parsed-field printout emitted by trkdaq::ROC::NotoriousRead
+	// (one "label : value(s)" per line) into a label->value map, with each
+	// label trimmed of surrounding whitespace
+	static std::map<std::string, std::string> ParseNotoriousReadOutput(
+	    const std::string& Text);
 
 	// clang-format on
 };
