@@ -183,18 +183,18 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    "\"Notorious Read\"",
 	    static_cast<FEVInterface::frontEndMacroFunction_t>(
 	        &ROCTrackerInterface::NotoriousRead),
-	    std::vector<std::string>{"adc_mode",
-	                             "tdc_mode",
-	                             "num_lookback",
-	                             "num_samples",
-	                             "num_triggers",
-	                             "mask_lo",
-	                             "mask_md",
-	                             "mask_hi",
-	                             "enable_pulser",
-	                             "marker_clock",
-	                             "mode",
-	                             "clock"},
+	    std::vector<std::string>{"ADC Mode",
+	                             "TDC Mode",
+	                             "Waveform delay (lookback)",
+	                             "Additional Sample Packets",
+	                             "Trigger count",
+	                             "Channel mask lo",
+	                             "Channel mask md",
+	                             "Channel mask hi",
+	                             "\"Enable pulser\"",
+	                             "Fiber clock mask",
+	                             "\"Mode\" (deprecated)",
+	                             "\"Clock\" (deprecated)"},
 	    std::vector<std::string>{"adc_mode",
 	                             "tdc_mode",
 	                             "num_lookback",
@@ -624,18 +624,18 @@ std::map<std::string, std::string> ROCTrackerInterface::ParseNotoriousReadOutput
 
 void ROCTrackerInterface::NotoriousRead(__ARGS__)
 {
-	uint16_t adc_mode      = __GET_ARG_IN__("adc_mode", uint16_t, 0);
-	uint16_t tdc_mode      = __GET_ARG_IN__("tdc_mode", uint16_t, 0);
-	uint16_t num_lookback  = __GET_ARG_IN__("num_lookback", uint16_t, 0);
-	uint16_t num_samples   = __GET_ARG_IN__("num_samples", uint16_t, 1);
-	uint32_t num_triggers  = __GET_ARG_IN__("num_triggers", uint32_t, 0);
-	uint32_t mask_lo       = __GET_ARG_IN__("mask_lo", uint32_t, 0xFFFFFFFF);
-	uint32_t mask_md       = __GET_ARG_IN__("mask_md", uint32_t, 0xFFFFFFFF);
-	uint32_t mask_hi       = __GET_ARG_IN__("mask_hi", uint32_t, 0xFFFFFFFF);
-	uint16_t enable_pulser = __GET_ARG_IN__("enable_pulser", uint16_t, 0);
-	uint16_t marker_clock  = __GET_ARG_IN__("marker_clock", uint16_t, 3);
-	uint16_t mode          = __GET_ARG_IN__("mode", uint16_t, 0);
-	uint16_t clock         = __GET_ARG_IN__("clock", uint16_t, 99);
+	uint16_t adc_mode      = __GET_ARG_IN__("ADC Mode", uint16_t, 0);
+	uint16_t tdc_mode      = __GET_ARG_IN__("TDC Mode", uint16_t, 0);
+	uint16_t num_lookback  = __GET_ARG_IN__("Waveform delay (lookback)", uint16_t, 8);
+	uint16_t num_samples   = __GET_ARG_IN__("Additional Sample Packets", uint16_t, 1);
+	uint32_t num_triggers  = __GET_ARG_IN__("Trigger count", uint32_t, 0);
+	uint32_t mask_lo       = __GET_ARG_IN__("Channel mask lo", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_md       = __GET_ARG_IN__("Channel mask md", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_hi       = __GET_ARG_IN__("Channel mask hi", uint32_t, 0xFFFFFFFF);
+	uint16_t enable_pulser = __GET_ARG_IN__("\"Enable pulser\"", uint16_t, 0);
+	uint16_t marker_clock  = __GET_ARG_IN__("Fiber clock mask", uint16_t, 3);
+	uint16_t mode          = __GET_ARG_IN__("\"Mode\" (deprecated)", uint16_t, 0);
+	uint16_t clock         = __GET_ARG_IN__("\"Clock\" (deprecated)", uint16_t, 99);
 
 	std::stringstream stream;
 	__FE_COUT__ << "ROCTrackerInterface::NotoriousRead" << __E__;
