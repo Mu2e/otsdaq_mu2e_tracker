@@ -211,6 +211,20 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                             "\"digi_read_0xc\""},
 	    1,
 	    "" /* tooltip info here */);
+
+	registerFEMacroFunction(
+	    "Digi Configure",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::ConfigureDigis),
+	    std::vector<std::string>{"TDC Mode",
+	                             "Waveform delay (lookback)",
+	                             "Additional Sample Packets",
+	                             "Channel mask lo",
+	                             "Channel mask md",
+	                             "Channel mask hi"},
+	    std::vector<std::string>{},
+	    1,
+	    "" /* tooltip info here */);
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -669,6 +683,22 @@ void ROCTrackerInterface::NotoriousRead(__ARGS__)
 	__SET_ARG_OUT__("\"digi_read_0xe\"", fields["digi_read_0xe"]);
 	__SET_ARG_OUT__("\"digi_read_0xd\"", fields["digi_read_0xd"]);
 	__SET_ARG_OUT__("\"digi_read_0xc\"", fields["digi_read_0xc"]);
+}
+
+void ROCTrackerInterface::ConfigureDigis(__ARGS__)
+{
+	uint16_t tdc_mode     = __GET_ARG_IN__("TDC Mode", uint16_t, 0);
+	uint16_t num_lookback = __GET_ARG_IN__("Waveform delay (lookback)", uint16_t, 8);
+	uint16_t num_samples  = __GET_ARG_IN__("Additional Sample Packets", uint16_t, 1);
+	uint32_t mask_lo      = __GET_ARG_IN__("Channel mask lo", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_md      = __GET_ARG_IN__("Channel mask md", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_hi      = __GET_ARG_IN__("Channel mask hi", uint32_t, 0xFFFFFFFF);
+
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
+
+	__FE_COUT__ << "ROCTrackerInterface::ConfigureDigis" << __E__;
+	_roc->ConfigureDigis(tdc_mode, num_lookback, num_samples, mask_lo, mask_md, mask_hi, stream);
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)

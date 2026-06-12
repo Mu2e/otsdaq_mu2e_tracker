@@ -114,6 +114,16 @@ namespace trkdaq{
                               uint16_t Clock,
                               std::ostream& Stream = std::cout);
 
+            // configure the digi readout: a NotoriousRead with sensible
+            // hardcoded defaults for the rarely-changed parameters.
+            int ConfigureDigis(uint16_t TdcMode,
+                               uint16_t NumLookback,
+                               uint16_t NumSamples,
+                               uint32_t MaskLo,
+                               uint32_t MaskMd,
+                               uint32_t MaskHi,
+                               std::ostream& Stream = std::cout);
+
             int EnableChargeInjection(int FirstChannelMask = 0x10,
                                       int DutyCycle        = 10  ,
                                       int PulserDelay      = 1000,

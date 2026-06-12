@@ -230,6 +230,37 @@ namespace trkdaq{
     return rv;
   }
 
+  int ROC::ConfigureDigis(uint16_t tdc_mode,
+                          uint16_t num_lookback,
+                          uint16_t num_samples,
+                          uint32_t mask_lo,
+                          uint32_t mask_md,
+                          uint32_t mask_hi,
+                          std::ostream& stream){
+    // hardcoded defaults for the rarely-changed parameters
+    uint16_t adc_mode      = 0;
+    uint32_t num_triggers  = 0;
+    uint16_t enable_pulser = 0;
+    uint16_t marker_clock  = 3;
+    uint16_t mode          = 0;
+    uint16_t clock         = 99;
+
+    auto rv = this->NotoriousRead(adc_mode,
+                                  tdc_mode,
+                                  num_lookback,
+                                  num_samples,
+                                  num_triggers,
+                                  mask_lo,
+                                  mask_md,
+                                  mask_hi,
+                                  enable_pulser,
+                                  marker_clock,
+                                  mode,
+                                  clock,
+                                  stream);
+    return rv;
+  }
+
   int ROC::EnableChargeInjection(int first_channel_mask,
                                    int duty_cycle,
                                    int delay,

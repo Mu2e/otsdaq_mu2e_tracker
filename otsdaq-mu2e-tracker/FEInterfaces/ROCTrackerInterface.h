@@ -79,6 +79,7 @@ public:
 	void FindThresholds(__ARGS__);
 	void SetChannelMask(__ARGS__);
 	void NotoriousRead(__ARGS__);
+	void ConfigureDigis(__ARGS__);
 
 	// state machine
 	//----------------
