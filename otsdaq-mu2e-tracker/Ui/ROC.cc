@@ -123,6 +123,12 @@ namespace trkdaq{
         return rv;
     }
 
+	std::vector<uint16_t> ROC::InitializeDigis(){
+		std::vector<uint16_t> res;
+		_dtc->RocBlockRead(_link, 0x116, res);
+		return res;
+	}
+
 	int ROC::PrintStatus(uint32_t format, std::ostream& stream){
 		auto rv = _dtc->PrintRocStatus(format, _link, stream);
 		return rv;

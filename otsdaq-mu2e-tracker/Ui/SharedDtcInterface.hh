@@ -52,6 +52,10 @@ namespace trkdaq{
 			template<typename... Args>
 			int DigiWrite(Args&&... args);
 
+			// block read
+			template<typename... Args>
+			int RocBlockRead(Args&&... args);
+
 			// status
 			template<typename... Args>
 			int PrintRocStatus(Args&&... args);
@@ -204,6 +208,13 @@ namespace trkdaq{
 	int SharedDtcInterface::DigiWrite(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->DigiWrite(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::RocBlockRead(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->RocBlockRead(std::forward<Args>(args)...);
 		return rv;
 	}
 

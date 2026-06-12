@@ -63,6 +63,10 @@ namespace trkdaq{
                           int PrintLevel = 0,
                           std::ostream& Stream = std::cout);
 
+            // initialize the digi FPGAs via a block read of register 0x116,
+            // returning the read-back words
+            std::vector<uint16_t> InitializeDigis();
+
             // status
             int PrintStatus(uint32_t Format = 1,
                             std::ostream& Stream = std::cout);
