@@ -228,6 +228,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    1,
 	    "" /* tooltip info here */);
 
+	registerFEMacroFunction("Initialize Digis",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::InitializeDigis),
+	                        std::vector<std::string>{},
+	                        std::vector<std::string>{"Output"},
+	                        1,
+	                        "" /* tooltip info here */);
+
 	registerFEMacroFunction("Print Status",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::PrintStatus),
@@ -733,6 +741,17 @@ void ROCTrackerInterface::ConfigureDigis(__ARGS__)
 
 	__FE_COUT__ << "ROCTrackerInterface::ConfigureDigis" << __E__;
 	_roc->ConfigureDigis(tdc_mode, num_lookback, num_samples, mask_lo, mask_md, mask_hi, stream);
+}
+
+void ROCTrackerInterface::InitializeDigis(__ARGS__)
+{
+	__FE_COUT__ << "ROCTrackerInterface::InitializeDigis" << __E__;
+	auto words = _roc->InitializeDigis();
+
+	std::stringstream stream;
+	for(size_t i = 0; i < words.size(); ++i)
+		stream << std::format("0x{:04x}\n", words[i]);
+	__SET_ARG_OUT__("Output", stream.str());
 }
 
 void ROCTrackerInterface::PrintStatus(__ARGS__)
