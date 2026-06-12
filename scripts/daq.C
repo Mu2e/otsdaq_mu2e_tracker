@@ -1,5 +1,6 @@
 //
 #define __CLING__ 1
+#define __ROOTCLING__ 1
 
 #ifndef DAQ_C
 #define DAQ_C
