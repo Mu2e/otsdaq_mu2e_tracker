@@ -187,8 +187,7 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                             "tdc_mode",
 	                             "num_lookback",
 	                             "num_samples",
-	                             "num_triggers0",
-	                             "num_triggers1",
+	                             "num_triggers",
 	                             "mask_lo",
 	                             "mask_md",
 	                             "mask_hi",
@@ -629,8 +628,7 @@ void ROCTrackerInterface::NotoriousRead(__ARGS__)
 	uint16_t tdc_mode      = __GET_ARG_IN__("tdc_mode", uint16_t, 0);
 	uint16_t num_lookback  = __GET_ARG_IN__("num_lookback", uint16_t, 0);
 	uint16_t num_samples   = __GET_ARG_IN__("num_samples", uint16_t, 1);
-	uint16_t num_triggers0 = __GET_ARG_IN__("num_triggers0", uint16_t, 0);
-	uint16_t num_triggers1 = __GET_ARG_IN__("num_triggers1", uint16_t, 0);
+	uint32_t num_triggers  = __GET_ARG_IN__("num_triggers", uint32_t, 0);
 	uint32_t mask_lo       = __GET_ARG_IN__("mask_lo", uint32_t, 0xFFFFFFFF);
 	uint32_t mask_md       = __GET_ARG_IN__("mask_md", uint32_t, 0xFFFFFFFF);
 	uint32_t mask_hi       = __GET_ARG_IN__("mask_hi", uint32_t, 0xFFFFFFFF);
@@ -645,8 +643,7 @@ void ROCTrackerInterface::NotoriousRead(__ARGS__)
 	                    tdc_mode,
 	                    num_lookback,
 	                    num_samples,
-	                    num_triggers0,
-	                    num_triggers1,
+	                    num_triggers,
 	                    mask_lo,
 	                    mask_md,
 	                    mask_hi,

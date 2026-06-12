@@ -193,8 +193,7 @@ namespace trkdaq{
                          uint16_t tdc_mode,
                          uint16_t num_lookback,
                          uint16_t num_samples,
-                         uint16_t num_triggers0,
-                         uint16_t num_triggers1,
+                         uint32_t num_triggers,
                          uint32_t mask_lo,
                          uint32_t mask_md,
                          uint32_t mask_hi,
@@ -208,8 +207,10 @@ namespace trkdaq{
     par.tdc_mode        = tdc_mode;
     par.num_lookback    = num_lookback;
     par.num_samples     = num_samples;
-    par.num_triggers[0] = num_triggers0;
-    par.num_triggers[1] = num_triggers1;
+    // 32-bit count splits into two 16-bit words, low word first:
+    // num_triggers[0] = count & 0xffff, num_triggers[1] = count >> 16
+    par.num_triggers[0] = (num_triggers      ) & 0xffff;
+    par.num_triggers[1] = (num_triggers >> 16) & 0xffff;
     // each 32-bit mask splits into two 16-bit words, low word first:
     // ch_mask[2*i] = mask & 0xffff, ch_mask[2*i+1] = mask >> 16
     par.ch_mask[0]      = (mask_lo      ) & 0xffff;
