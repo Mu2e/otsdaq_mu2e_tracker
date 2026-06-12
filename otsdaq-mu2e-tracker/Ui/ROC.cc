@@ -123,7 +123,12 @@ namespace trkdaq{
         return rv;
     }
 
-    int ROC::ReadPanelID(int print_level){
+	int ROC::PrintStatus(uint32_t format, std::ostream& stream){
+		auto rv = _dtc->PrintRocStatus(format, _link, stream);
+		return rv;
+	}
+
+	int ROC::ReadPanelID(int print_level){
         auto rv = _dtc->ReadPanelID(_link, print_level);
         return rv;
     }

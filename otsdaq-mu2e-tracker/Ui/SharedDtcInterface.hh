@@ -52,6 +52,10 @@ namespace trkdaq{
 			template<typename... Args>
 			int DigiWrite(Args&&... args);
 
+			// status
+			template<typename... Args>
+			int PrintRocStatus(Args&&... args);
+
 			// identity
 			template<typename... Args>
 			int ReadPanelID(Args&&... args);
@@ -200,6 +204,13 @@ namespace trkdaq{
 	int SharedDtcInterface::DigiWrite(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->DigiWrite(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::PrintRocStatus(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->PrintRocStatus(std::forward<Args>(args)...);
 		return rv;
 	}
 

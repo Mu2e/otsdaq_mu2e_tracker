@@ -228,6 +228,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    1,
 	    "" /* tooltip info here */);
 
+	registerFEMacroFunction("Print Status",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::PrintStatus),
+	                        std::vector<std::string>{},
+	                        std::vector<std::string>{"Output"},
+	                        1,
+	                        "" /* tooltip info here */);
+
   registerFEMacroFunction("Find and serialize thresholds",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::FindAndSerializeThresholds),
@@ -725,6 +733,14 @@ void ROCTrackerInterface::ConfigureDigis(__ARGS__)
 
 	__FE_COUT__ << "ROCTrackerInterface::ConfigureDigis" << __E__;
 	_roc->ConfigureDigis(tdc_mode, num_lookback, num_samples, mask_lo, mask_md, mask_hi, stream);
+}
+
+void ROCTrackerInterface::PrintStatus(__ARGS__)
+{
+	std::stringstream stream;
+	__FE_COUT__ << "ROCTrackerInterface::PrintStatus" << __E__;
+	_roc->PrintStatus(1, stream);
+	__SET_ARG_OUT__("Output", stream.str());
 }
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
