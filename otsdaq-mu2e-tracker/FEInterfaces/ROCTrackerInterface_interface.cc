@@ -88,6 +88,14 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        1,
 	                        "" /* tooltip info here */);
 
+	registerFEMacroFunction("Reset FIFOs from Digis",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::ResetFromDigiFIFOs),
+	                        std::vector<std::string>{},
+	                        std::vector<std::string>{},
+	                        1,
+	                        "" /* tooltip info here */);
+
 	registerFEMacroFunction("Reboot MCU",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::RebootMCU),
@@ -362,6 +370,12 @@ void ROCTrackerInterface::ResetDigis(__ARGS__)
 	__FE_COUT__ << "ROCTrackerInterface::ResetDigis" << __E__;
 	auto rv = _roc->ResetDigis();
 	__SET_ARG_OUT__("Return code", std::to_string(rv));
+}
+
+void ROCTrackerInterface::ResetFromDigiFIFOs(__ARGS__)
+{
+	__FE_COUT__ << "ROCTrackerInterface::ResetFromDigiFIFOs" << __E__;
+	_roc->ResetFromDigiFIFOs();
 }
 
 void ROCTrackerInterface::RebootMCU(__ARGS__)

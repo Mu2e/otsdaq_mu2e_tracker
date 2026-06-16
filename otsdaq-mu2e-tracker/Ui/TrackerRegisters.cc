@@ -14,6 +14,7 @@ namespace trkdaq{
 
   namespace registers{
     namespace roc{
+      const address_t from_digi_fifo_reset = 0xA3;
     } //namespace roc
     namespace digi{
       const address_t channel_mask_lo = 0x0B;

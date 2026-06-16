@@ -67,6 +67,7 @@ public:
 	void DisableChargeInjection(__ARGS__);
 
 	void ResetDigis(__ARGS__);
+	void ResetFromDigiFIFOs(__ARGS__);
 	void RebootMCU(__ARGS__);
 	void SetEventWindowDelay(__ARGS__);
 	void SetDigitizationWindow(__ARGS__);

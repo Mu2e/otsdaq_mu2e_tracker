@@ -18,6 +18,10 @@ namespace trkdaq{
         return rv;
     }
 
+    void ROC::WriteRegister(address_t address, uint16_t data){
+        _dtc->WriteROCRegister(_link, address, data);
+    }
+
     int ROC::Reset(){
         auto rv = _dtc->ResetLink(_link);
         return rv;
@@ -26,6 +30,14 @@ namespace trkdaq{
     int ROC::ResetDigis(){
         auto rv = _dtc->ResetDigis(_link);
         return rv;
+    }
+
+    void ROC::ResetFromDigiFIFOs(){
+        auto address = trkdaq::registers::roc::from_digi_fifo_reset;
+        this->WriteRegister(address, 0);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        this->WriteRegister(address, 1);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 
     int ROC::RebootMCU(){

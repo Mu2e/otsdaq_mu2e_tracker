@@ -19,6 +19,7 @@ namespace trkdaq{
   namespace registers{
     using address_t = uint8_t;
     namespace roc{
+      extern const registers::address_t from_digi_fifo_reset;
     } //namespace roc
     namespace digi{
       extern const registers::address_t channel_mask_lo; 

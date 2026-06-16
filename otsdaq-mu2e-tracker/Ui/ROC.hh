@@ -6,8 +6,11 @@
 #define __trkdaq_roc_hh__
 
 // stl
+#include <chrono>
 #include <memory>
 #include <streambuf>
+#include <thread>
+
 
 // otsdaq-mu2e-tracker
 #include "otsdaq-mu2e-tracker/Ui/SharedDtcInterface.hh"
@@ -23,8 +26,10 @@ namespace trkdaq{
             ROC(link_t, DTCLib::DTC*);
 
             uint32_t ReadRegister(address_t address);
+            void WriteRegister(address_t address, uint16_t data);
             int Reset();
             int ResetDigis();
+            void ResetFromDigiFIFOs();
             int RebootMCU();
             int FindAlignment();
 
