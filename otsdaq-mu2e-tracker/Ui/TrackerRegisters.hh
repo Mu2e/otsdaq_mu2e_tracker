@@ -19,6 +19,8 @@ namespace trkdaq{
   namespace registers{
     using address_t = uint8_t;
     namespace roc{
+      extern const registers::address_t readout_configuration;
+      extern const registers::address_t internal_digi_reset;
       extern const registers::address_t from_digi_fifo_reset;
     } //namespace roc
     namespace digi{

@@ -28,10 +28,19 @@ namespace trkdaq{
             uint32_t ReadRegister(address_t address);
             void WriteRegister(address_t address, uint16_t data);
             int Reset();
-            int ResetDigis();
-            void ResetFromDigiFIFOs();
+            void ResetDigis();
             int RebootMCU();
             int FindAlignment();
+
+            // top-level reset before beginning nominal data-taking
+            int ResetAndConfigure(uint16_t tdc_mode,
+                                  uint16_t lookback,
+                                  uint16_t sample_packets,
+                                  uint32_t mask_lo,
+                                  uint32_t mask_md,
+                                  uint32_t mask_hi,
+                                  uint16_t digitization_window_open,
+                                  uint16_t digitization_window_close);
 
             // readout / lane configuration
             // ejc: TODO the following are intrinsically scoped at dtc-level:

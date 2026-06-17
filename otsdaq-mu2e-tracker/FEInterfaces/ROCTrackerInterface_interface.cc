@@ -84,13 +84,13 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::ResetDigis),
 	                        std::vector<std::string>{},
-	                        std::vector<std::string>{"Return code"},
+	                        std::vector<std::string>{},
 	                        1,
 	                        "" /* tooltip info here */);
 
-	registerFEMacroFunction("Reset FIFOs from Digis",
+	registerFEMacroFunction("Reset and configure",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
-	                            &ROCTrackerInterface::ResetFromDigiFIFOs),
+	                            &ROCTrackerInterface::ResetAndConfigure),
 	                        std::vector<std::string>{},
 	                        std::vector<std::string>{},
 	                        1,
@@ -368,14 +368,41 @@ void ROCTrackerInterface::DisableChargeInjection(__ARGS__)
 void ROCTrackerInterface::ResetDigis(__ARGS__)
 {
 	__FE_COUT__ << "ROCTrackerInterface::ResetDigis" << __E__;
-	auto rv = _roc->ResetDigis();
-	__SET_ARG_OUT__("Return code", std::to_string(rv));
+	_roc->ResetDigis();
 }
 
-void ROCTrackerInterface::ResetFromDigiFIFOs(__ARGS__)
+void ROCTrackerInterface::ResetAndConfigure(__ARGS__)
 {
-	__FE_COUT__ << "ROCTrackerInterface::ResetFromDigiFIFOs" << __E__;
-	_roc->ResetFromDigiFIFOs();
+	uint16_t tdc_mode     = __GET_ARG_IN__("TDC Mode", uint16_t, 0);
+	uint16_t num_lookback = __GET_ARG_IN__("Waveform delay (lookback)", uint16_t, 8);
+	uint16_t num_samples  = __GET_ARG_IN__("Additional Sample Packets", uint16_t, 1);
+	uint32_t mask_lo      = __GET_ARG_IN__("Channel mask lo", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_md      = __GET_ARG_IN__("Channel mask md", uint32_t, 0xFFFFFFFF);
+	uint32_t mask_hi      = __GET_ARG_IN__("Channel mask hi", uint32_t, 0xFFFFFFFF);
+	int t_start           = __GET_ARG_IN__("TStart (5 ns units)", int, -1);
+	int t_stop            = __GET_ARG_IN__("TStop (5 ns units)", int, -1);
+
+	if(t_start < 0 || t_start > 0xFFFF)
+	{
+		__FE_SS__ << "TStart (5 ns units) out of range [0, 65535]: " << t_start << __E__;
+		__FE_SS_THROW__;
+	}
+	if(t_stop < 0 || t_stop > 0xFFFF)
+	{
+		__FE_SS__ << "TStop (5 ns units) out of range [0, 65535]: " << t_stop << __E__;
+		__FE_SS_THROW__;
+	}
+	if(t_stop <= t_start)
+	{
+		__FE_SS__ << "TStop must exceed TStart: TStart=" << t_start << " TStop=" << t_stop
+		          << __E__;
+		__FE_SS_THROW__;
+	}
+	__FE_COUT__ << "ROCTrackerInterface::ResetAndConfigure" << __E__;
+	auto rv = _roc->ResetAndConfigure(tdc_mode, num_lookback, num_samples,
+                                    mask_lo, mask_md, mask_hi,
+                                    t_start, t_stop);
+  __SET_ARG_OUT__("Return code", std::to_string(rv));
 }
 
 void ROCTrackerInterface::RebootMCU(__ARGS__)
