@@ -18,14 +18,42 @@ namespace trkdaq{
         return rv;
     }
 
+    void ROC::WriteRegister(address_t address, uint16_t data){
+        _dtc->WriteROCRegister(_link, address, data);
+    }
+
     int ROC::Reset(){
         auto rv = _dtc->ResetLink(_link);
         return rv;
     }
 
-    int ROC::ResetDigis(){
-        auto rv = _dtc->ResetDigis(_link);
-        return rv;
+    void ROC::ResetDigis(){
+        // underlying call is deprecated
+        //auto rv = _dtc->ResetDigis(_link);
+        //return rv;
+
+        // prefer a stacked reset of device and fifo
+        trkdaq::registers::address_t address;
+
+        // digis lo
+        address = trkdaq::registers::roc::internal_digi_reset;
+        this->WriteRegister(address, 0);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+
+        // fifos lo
+        address = trkdaq::registers::roc::from_digi_fifo_reset;
+        this->WriteRegister(address, 0);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+
+        // fifos hi
+        address = trkdaq::registers::roc::from_digi_fifo_reset;
+        this->WriteRegister(address, 1);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+
+        // digis hi
+        address = trkdaq::registers::roc::internal_digi_reset;
+        this->WriteRegister(address, 1);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 
     int ROC::RebootMCU(){
@@ -57,6 +85,31 @@ namespace trkdaq{
                                    std::ostream& stream){
         auto rv = _dtc->SetRocDigitizationWindow(_link, t_start, t_stop, print_level, stream);
         return rv;
+    }
+
+    int ROC::ResetAndConfigure(uint16_t tdc_mode,
+                               uint16_t lookback,
+                               uint16_t sample_packets,
+                               uint32_t mask_lo,
+                               uint32_t mask_md,
+                               uint32_t mask_hi,
+                               uint16_t digitization_window_open,
+                               uint16_t digitization_window_close){
+      // upper bits: forward clock and EWMs from roc -> digis
+      // lower bits: enable all 4 serdes lanes
+      this->WriteRegister(trkdaq::registers::roc::readout_configuration,
+                          0x030f);
+      // reset counters
+      auto rv = this->Reset();
+      // clear digi -> roc fifos and reset digis
+      this->ResetDigis();
+      // set digitization window
+      this->SetDigitizationWindow(digitization_window_open,
+                                  digitization_window_close);
+      // wrapped read command to set channel mask and begin triggering
+      this->ConfigureDigis(tdc_mode, lookback, sample_packets,
+                           mask_lo, mask_md, mask_hi);
+      return rv;
     }
 
     int ROC::SetChannelMask(uint32_t mask_lo,
