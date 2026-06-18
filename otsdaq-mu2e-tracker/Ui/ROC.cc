@@ -325,7 +325,7 @@ namespace trkdaq{
     uint16_t adc_mode      = 0;
     uint32_t num_triggers  = 0;
     uint16_t enable_pulser = 0;
-    uint16_t marker_clock  = 3;
+    uint16_t marker_clock  = 3; // receive markers from over fiber
     uint16_t mode          = 0;
     uint16_t clock         = 99;
 
@@ -342,6 +342,73 @@ namespace trkdaq{
                                   mode,
                                   clock,
                                   stream);
+    return rv;
+  }
+
+  int ROC::ChannelRates(uint16_t tdc_mode, std::vector<rates_t>& rates){
+    // hardcoded defaults for the rarely-changed parameters
+    uint16_t adc_mode      = 0;
+    uint16_t num_lookback  = 0;
+    uint16_t num_samples   = 1;
+    uint32_t num_triggers  = 0;
+    uint32_t mask_lo       = 0xFFFFFFFF;
+    uint32_t mask_md       = 0xFFFFFFFF;
+    uint32_t mask_hi       = 0xFFFFFFFF;
+    uint16_t enable_pulser = 0;
+    uint16_t marker_clock  = 0; // internal markers
+    uint16_t mode          = 0;
+    uint16_t clock         = 99;
+
+    // first, dummy read to switch the marker source
+    this->NotoriousRead(adc_mode,
+                        tdc_mode,
+                        num_lookback,
+                        num_samples,
+                        num_triggers,
+                        mask_lo,
+                        mask_md,
+                        mask_hi,
+                        enable_pulser,
+                        marker_clock,
+                        mode,
+                        clock,
+                        _null);
+
+    // next, query the rates
+    ControlRoc_Rates_t par;
+    int print_level = 0;
+    std::vector<uint16_t> readings;
+    auto rv = _dtc->Rates(_link, &readings, print_level, &par, _null);
+
+    // there is no exposed decoding of the actual rates in the underlying
+    // interface. so, unfortunately, we have to duplicate the mathematics here.
+    // TODO throw on readings.size() != 580
+    float period = 5e-9; // 200 MHz clock <-> 5 ns tick spacing
+    uint32_t ticks_lo = readings[578] + (readings[579] << 16); // lower 48 channels
+    uint32_t ticks_hi = readings[576] + (readings[577] << 16); // upper 48 channels
+    uint32_t ticks_mean = 0.5*(ticks_lo + ticks_hi); // does this really make sense?
+    rates.clear();
+    rates.resize(96);
+    for (size_t i = 0 ; i < rates.size() ; i++){
+      size_t idx = 6*i;
+      uint32_t counts_hiv = readings[idx + 0] + (readings[idx + 1] << 16);
+      uint32_t counts_cal = readings[idx + 2] + (readings[idx + 3] << 16);
+      uint32_t counts_coi = readings[idx + 4] + (readings[idx + 5] << 16);
+
+      auto ticks = ticks_lo;
+      if (47 < i){
+        ticks = ticks_hi;
+      }
+      float rate_hiv = 1e-3 * static_cast<float>(counts_hiv) / ticks / period;
+      float rate_cal = 1e-3 * static_cast<float>(counts_cal) / ticks / period;
+
+      ticks = ticks_mean;
+      float rate_coi = 1e-3 * static_cast<float>(counts_coi) / ticks / period;
+
+      // populate output
+      rates[i] = std::make_tuple(rate_hiv, rate_cal, rate_coi);
+    }
+
     return rv;
   }
 
