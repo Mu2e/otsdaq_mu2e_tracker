@@ -28,7 +28,47 @@ namespace trkdaq{
 			template<typename... Args>
 			uint16_t ReadROCRegister(Args&&... args);
 			template<typename... Args>
+			void WriteROCRegister(Args&&... args);
+			template<typename... Args>
 			int ResetLink(Args&&... args);
+			template<typename... Args>
+			int ResetDigis(Args&&... args);
+			template<typename... Args>
+			int RebootMcu(Args&&... args);
+
+			// readout / lane configuration
+			template<typename... Args>
+			int InitRocReadoutMode(Args&&... args);
+			template<typename... Args>
+			void SetRocLaneMask(Args&&... args);
+			template<typename... Args>
+			void SetRocNHitsPerLane(Args&&... args);
+			template<typename... Args>
+			int SetRocDelay(Args&&... args);
+			template<typename... Args>
+			int SetRocDigitizationWindow(Args&&... args);
+
+			// digi register access
+			template<typename... Args>
+			int DigiRW(Args&&... args);
+			template<typename... Args>
+			int DigiRead(Args&&... args);
+			template<typename... Args>
+			int DigiWrite(Args&&... args);
+
+			// block read
+			template<typename... Args>
+			int RocBlockRead(Args&&... args);
+
+			// status
+			template<typename... Args>
+			int PrintRocStatus(Args&&... args);
+
+			// identity
+			template<typename... Args>
+			int ReadPanelID(Args&&... args);
+			template<typename... Args>
+			roc_serial_t ReadSerialNumber(Args&&... args);
 
 			// ControlROC paradigm
 			template<typename... Args>
@@ -108,9 +148,111 @@ namespace trkdaq{
 	}
 
 	template<typename... Args>
+	void SharedDtcInterface::WriteROCRegister(Args&&... args){
+		std::lock_guard lock(_mutex);
+		_interface->WriteROCRegister(std::forward<Args>(args)...);
+	}
+
+	template<typename... Args>
 	int SharedDtcInterface::ResetLink(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->ResetLink(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::ResetDigis(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->ResetDigis(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::RebootMcu(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->RebootMcu(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::InitRocReadoutMode(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->InitRocReadoutMode(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	void SharedDtcInterface::SetRocLaneMask(Args&&... args){
+		std::lock_guard lock(_mutex);
+		_interface->SetRocLaneMask(std::forward<Args>(args)...);
+	}
+
+	template<typename... Args>
+	void SharedDtcInterface::SetRocNHitsPerLane(Args&&... args){
+		std::lock_guard lock(_mutex);
+		_interface->SetRocNHitsPerLane(std::forward<Args>(args)...);
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::SetRocDelay(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->SetRocDelay(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::SetRocDigitizationWindow(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->SetRocDigitizationWindow(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::DigiRW(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->ControlRoc_DigiRW(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::DigiRead(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->DigiRead(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::DigiWrite(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->DigiWrite(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::RocBlockRead(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->RocBlockRead(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::PrintRocStatus(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->PrintRocStatus(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::ReadPanelID(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->ReadPanelID(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	roc_serial_t SharedDtcInterface::ReadSerialNumber(Args&&... args){
+		std::lock_guard lock(_mutex);
+		roc_serial_t rv = _interface->ReadSerialNumber(std::forward<Args>(args)...);
 		return rv;
 	}
 
