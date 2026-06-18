@@ -153,6 +153,10 @@ namespace trkdaq{
                                uint32_t MaskHi,
                                std::ostream& Stream = std::cout);
 
+            // read per-channel trigger rates
+            using rates_t = std::tuple<float,float,float>;
+            int ChannelRates(uint16_t tdc_mode, std::vector<rates_t >& rates);
+
             int EnableChargeInjection(int FirstChannelMask = 0x10,
                                       int DutyCycle        = 10  ,
                                       int PulserDelay      = 1000,
