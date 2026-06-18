@@ -258,6 +258,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Output"},
 	                        1,
 	                        "" /* tooltip info here */);
+
+  registerFEMacroFunction("Measure Channel Rates",
+                          static_cast<FEVInterface::frontEndMacroFunction_t>(
+                              &ROCTrackerInterface::MeasureChannelRates),
+                          std::vector<std::string>{"TDC Mode"},
+                          std::vector<std::string>{"Return Code", "Rates"},
+                          1,
+	                        "" /* tooltip info here */);
+
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -798,6 +807,38 @@ void ROCTrackerInterface::PrintStatus(__ARGS__)
 	_roc->PrintStatus(1, stream);
 	__SET_ARG_OUT__("Output", stream.str());
 }
+
+std::string ROCTrackerInterface::FormatRatesTable(
+    const std::vector<trkdaq::ROC::rates_t>& rates)
+{
+	std::stringstream table;
+	table << std::endl;
+	table << std::format(" {:>7} {:>11} {:>11} {:>11}\n", "Channel", "Cal", "HV", "Coinc.");
+	table << "--------------------------------------------\n";
+	for(int channel = 0; channel < 96; ++channel)
+	{
+    auto channel_rates = rates[channel];
+		float hiv = std::get<0>(channel_rates);
+		float cal = std::get<1>(channel_rates);
+		float coi = std::get<2>(channel_rates);
+		table << std::format(
+		    " {:4d} {:11.3f} {:11.3f} {:11.3f}\n", channel, cal, hiv, coi);
+	}
+	return table.str();
+}
+
+void ROCTrackerInterface::MeasureChannelRates(__ARGS__)
+{
+  uint16_t tdc_mode = __GET_ARG_IN__("TDC Mode", uint16_t, 0);
+
+  __FE_COUT__ << "ROCTrackerInterface::MeasureChannelRates" << __E__;
+  std::vector<trkdaq::ROC::rates_t> rates;
+  auto rv = _roc->ChannelRates(tdc_mode, rates);
+  __SET_ARG_OUT__("Return Code", std::to_string(rv));
+  __SET_ARG_OUT__("Rates", FormatRatesTable(rates));
+}
+
+/* --- */
 
 void ROCTrackerInterface::writeEmulatorRegister(uint16_t address, uint16_t data_to_write)
 {

@@ -84,6 +84,7 @@ public:
 	void InitializeDigis(__ARGS__);
 	void DigiRW(__ARGS__);
 	void PrintStatus(__ARGS__);
+  void MeasureChannelRates(__ARGS__);
 
 	// state machine
 	//----------------
@@ -172,6 +173,10 @@ private:
 	// label trimmed of surrounding whitespace
 	static std::map<std::string, std::string> ParseNotoriousReadOutput(
 	    const std::string& Text);
+
+  // format a per-channel rates table from a vector-of-tuples
+  // returned by trkdaq::ROC::ChannelRates
+  static std::string FormatRatesTable(const std::vector<trkdaq::ROC::rates_t>& rates);
 
 	// clang-format on
 };
