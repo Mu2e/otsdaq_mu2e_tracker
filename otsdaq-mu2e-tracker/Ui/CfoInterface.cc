@@ -84,8 +84,15 @@ namespace trkdaq {
     CFOLib::CFO_Compiler compiler;
     TLOG(TLVL_DEBUG+1) << std::format("-- START: InputFn:{} OutputFn:{}",InputFn,OutputFn);
 
-    std::string res = compiler.processFile(InputFn,OutputFn);
-    if (PrintLevel & 0x1) Stream << res;
+    try {
+      std::string res = compiler.processFile(InputFn,OutputFn);
+      if (PrintLevel & 0x1) Stream << res;
+    }
+    catch (...) {
+      std::string msg = std::format("failed to compile:{}",InputFn);
+      TLOG(TLVL_ERROR) << msg;
+      Stream << "ERROR: " << msg << std::endl;
+    }
     
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
   }

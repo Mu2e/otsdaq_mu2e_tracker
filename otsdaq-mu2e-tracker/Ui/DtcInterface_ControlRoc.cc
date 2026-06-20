@@ -222,6 +222,7 @@ namespace  trkdaq {
                                     int                       Link      ,
                                     int                       PrintLevel,
                                     std::ostream&             Stream    ) {
+    int rc(0);
 //-----------------------------------------------------------------------------
 // write parameters into reg 266 (via block write), sleep for some time, 
 // then wait till reg 128 returns 0x8000
@@ -283,35 +284,49 @@ namespace  trkdaq {
     vec.push_back(par->mode  );
     vec.push_back(par->clock );
 
-    int nw = vec.size();
 
-    TLOG(TLVL_DEBUG) << std::format("par->enable_pulser:{} link1:{} link2:{}",par->enable_pulser,link1,link2);
+    TLOG(TLVL_DEBUG+1) << std::format("par->enable_pulser:{} link1:{} link2:{}",par->enable_pulser,link1,link2);
 
-    for (int i=0; i<nw; i++) {
-      TLOG(TLVL_DEBUG) << std::format("vec[{}]: 0x{:04x}",i,vec[i]);
-    }
+    // int nw = vec.size();
+    // for (int i=0; i<nw; i++) {
+    //   TLOG(TLVL_DEBUG+1) << std::format("vec[{}]: 0x{:04x}",i,vec[i]);
+    // }
     
     bool increment_address(false);
     
     for (int i=link1; i<link2; ++i) {
       if (not LinkEnabled(i))                            continue;
+      if (not LinkLocked(i)) {
+        std::string msg = std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << std::format("ERROR: {}\n",msg);
+        continue;
+      }
       auto roc  = DTC_Link_ID(i);
-      fDtc->WriteROCBlock(roc,REG_READ,vec,false,increment_address,100);
-      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      int nw(0);
+      std::vector<uint16_t> vout;
+      try {
+        fDtc->WriteROCBlock(roc,REG_READ,vec,false,increment_address,100);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
                                         // 0x86 = 0x82 + 4
-      uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+        uint16_t u; 
+        while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
-      
-      nw = nw-4;
-      std::vector<uint16_t> vout;
-      fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
+        int nw = fDtc->ReadROCRegister(roc,129,100);
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+        
+        nw = nw-4;
+        fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
+      }
+      catch (...) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} failure to read REG_READ",PcieAddr(),i);
+        rc += -2;
+        continue;
+      }
 //-----------------------------------------------------------------------------
 // bits 0 and 1 - this function
 //-----------------------------------------------------------------------------
@@ -346,8 +361,10 @@ namespace  trkdaq {
 //  is it really needed to reser the ROC in the end ? - no
 //-----------------------------------------------------------------------------
     // ResetLinks();
-    TLOG(TLVL_DEBUG) << std::format("--END:");
-    return 0;
+    if (rc < 0) rc = rc-500;
+    
+    TLOG(TLVL_DEBUG+1) << std::format("--END: rc:{}",rc);
+    return rc;
   }
   
 //-----------------------------------------------------------------------------
@@ -438,7 +455,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_PulserOff(int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-    TLOG(TLVL_DEBUG+1) << "-- START:" << __func__;
+    TLOG(TLVL_DEBUG+1) << "-- START:";
     int l1(Link), l2(Link+1);
     if (Link == -1) {
       l1 = 0;
@@ -462,10 +479,11 @@ namespace  trkdaq {
         }
       }
       else {
-        Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << REG_PULSEROFF << std::endl; 
+        Stream << "ERROR:" << rc << " blockread link:" << i << " register:" << REG_PULSEROFF << std::endl;
+        TLOG(TLVL_ERROR) << std::format("failed to read REG_PULSEROFF");
       }
     }
-    TLOG(TLVL_DEBUG+1) << " -- END " << __func__ << " rc:" << rc;
+    TLOG(TLVL_DEBUG+1) << " -- END: rc:" << rc;
     return rc;
   }
   
@@ -500,6 +518,7 @@ namespace  trkdaq {
       }
       else {
         Stream << std::format("ERROR: DTC:{} link:{} register:{} rc:{}\n", PcieAddr(),i,(int) REG_INITBYFIBER,rc);
+        TLOG(TLVL_ERROR) << std::format("failed to read REG_INITBYFIBER");
       }
     }
     TLOG(TLVL_DEBUG+1) << std::format(" -- END: rc:{}",rc);
@@ -848,10 +867,17 @@ namespace  trkdaq {
     TLOG(TLVL_DEBUG+1) << std::format("-- before WriteRocBlock");
 
     bool increment_address(false);
-    fDtc->WriteROCBlock   (roc,REG_MEAS_THR,vec,false,increment_address,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-
-    TLOG(TLVL_DEBUG+1) << std::format("-- after WriteRocBlock");
+    try {
+      fDtc->WriteROCBlock   (roc,REG_MEAS_THR,vec,false,increment_address,100);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      TLOG(TLVL_DEBUG+1) << std::format("-- after WriteRocBlock");
+    }
+    catch (...) {
+      std::string msg = "failed to write to REG_MEAS_THR";
+      Stream << std::format("ERROR: {}",msg);
+                TLOG(TLVL_ERROR) << std::format("{}",msg);
+      return -102;
+    }
     
     // 0x86 = 0x82 + 4
     uint16_t u;
@@ -1046,6 +1072,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadSpi_1(TrkSpiData_t* Spi, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
 //-----------------------------------------------------------------------------
 // ReadSPI: reg 258
 //-----------------------------------------------------------------------------
@@ -1082,6 +1109,7 @@ namespace  trkdaq {
       }
     }
 
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} rc:{}",PcieAddr(),Link,rc);
     return rc;
   }
   
@@ -1093,6 +1121,7 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_ReadGitCommit(std::string& GitCommit, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
     int nw_expected(40);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
 //-----------------------------------------------------------------------------
 // ReadGitCommit: reg 
 //-----------------------------------------------------------------------------
@@ -1121,6 +1150,7 @@ namespace  trkdaq {
       }
     }
     
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} rc:{}",PcieAddr(),Link,rc);
     return rc;
   }
 
@@ -1129,26 +1159,38 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_ReadIlp(std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
-//-----------------------------------------------------------------------------
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
 
-    int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
-
+    int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
-      for (int i=0; 0<6; i++) {
-        int link_enabled = (link_mask >> 4*i) & 0x1;
-        if (link_enabled) {
-          RocBlockRead(i,REG_READILP,Data);
-          int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,Stream);
-        }
-      }
+      lnk1 = 0;
+      lnk2 = 6;
     }
-    else {
-      RocBlockRead(Link,REG_READILP,Data);
+
+    for (int i=lnk1; i<lnk2; i++) {
+      if ( not LinkEnabled(i)) {
+        continue;
+      }
+      else if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        continue;
+      }
+      
+      int rrc = RocBlockRead(i,REG_READILP,Data);
+      if (rrc < 0) {
+        // should be < 0
+        rc += rrc;
+        
+        std::string msg = std::format("DTC:{} link:{} : failed to read REG_READILP",PcieAddr(),i);
+        Stream << std::format("ERROR: {}",msg);
+        TLOG(TLVL_ERROR) << msg;
+        continue;
+      }
       int nw = Data.size();
       if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,Stream);
     }
     
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} rc:{}",PcieAddr(),Link,rc);
     return rc;
   }
 
@@ -1158,25 +1200,43 @@ namespace  trkdaq {
   int DtcInterface::ControlRoc_GetKey (std::vector<uint16_t>& Data, int Link, int PrintLevel, std::ostream& Stream) {
     int rc(0);
     
-    int link_mask = (Link == -1) ? fLinkMask : (1 << 4*Link) ;
+    TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} Link:{}",PcieAddr(),Link);
 
+    int lnk1(Link), lnk2(Link+1);
     if (Link == -1) {
-      for (int i=0; 0<6; i++) {
-        int link_enabled = (link_mask >> 4*i) & 0x1;
-        if (link_enabled) {
-          RocBlockRead(i,REG_GETKEY,Data);
-          int nw = Data.size();
-          if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,Stream);
-        }
-      }
+      lnk1 = 0;
+      lnk2 = 6;
     }
-    else {
-      RocBlockRead(Link,REG_GETKEY,Data);
+
+    for (int i=lnk1; i<lnk2; i++) {
+      if (not LinkEnabled(i)) {
+        TLOG(TLVL_WARNING) << std::format("DTC:{} link:{} disabled",PcieAddr(),i);
+        continue;
+      }
+      else if (not LinkLocked(i)) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} enabled but not locked",PcieAddr(),i);
+        rc += -1;
+        continue;
+      }
+
+      int rrc = RocBlockRead(i,REG_GETKEY,Data);
+
+      if (rrc < 0) {
+        // should be < 0
+        rc += rrc;
+        
+        std::string msg = std::format("DTC:{} link:{} : failed to read REG_GETKEY",PcieAddr(),i);
+        Stream << std::format("ERROR: {}",msg);
+        TLOG(TLVL_ERROR) << msg;
+        continue;
+      }
+      
       int nw = Data.size();
       if (PrintLevel & 0x1) PrintBuffer(Data.data(),nw,0x0,Stream);
     }
 
-    return rc;
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} rc:{}",PcieAddr(),Link,rc);
+   return rc;
   }
 
 //-----------------------------------------------------------------------------
@@ -1191,7 +1251,7 @@ namespace  trkdaq {
     int                 rc(0);
     ControlRoc_Rates_t  par;   // default construction : (num_lookback=100,num_samples=10,ch_mask=6x0xffff)
     
-    TLOG(TLVL_DEBUG+1) << " -- START PrintLevel:" << PrintLevel;
+    TLOG(TLVL_DEBUG+1) << std::format("-- START DTC:{} Link:{} PrintLevel:{}",PcieAddr(),Link,PrintLevel);
 
     if (Par != nullptr) par = *Par;
 
@@ -1228,34 +1288,53 @@ namespace  trkdaq {
     }
 
     TLOG(TLVL_DEBUG+1) << " -- 002";
-  
-    auto roc  = DTC_Link_ID(Link);
-    fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
+    auto roc  = DTC_Link_ID(Link);
+    try { 
+      fDtc->WriteROCBlock   (roc,REG_READRATES,vec,false,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(1000));
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("failed write to REG_READRATES");
+      
+    }
+    
     // 0x86 = 0x82 + 4
     uint16_t u; 
     while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
     if (PrintLevel) printf("reg:%03i val:0x%04x\n",128,u);
+
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
+    try {
+      int nw = fDtc->ReadROCRegister(roc,129,100);
+      if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
 
-    TLOG(TLVL_DEBUG+1) << " -- 003 from nw(reg_129):" << nw;
-    nw = nw-4;
-    fDtc->ReadROCBlock(*V2,roc,REG_READRATES,nw,false,100);
+      TLOG(TLVL_DEBUG+1) << " -- 003 from nw(reg_129):" << nw;
+      nw = nw-4;
+      
+      fDtc->ReadROCBlock(*V2,roc,REG_READRATES,nw,false,100);
 
-    TLOG(TLVL_DEBUG+1) << " -- 004 read nw:" << nw;
+      TLOG(TLVL_DEBUG+1) << " -- 004 read nw:" << nw;
 //-----------------------------------------------------------------------------
 // print output - in two formats
 //-----------------------------------------------------------------------------
-    if (PrintLevel & 0x1) {
-      PrintBuffer(V2->data(),nw,0x0,Stream);
+      if (PrintLevel & 0x1) {
+        PrintBuffer(V2->data(),nw,0x0,Stream);
+      }
+    }
+    catch (...) {
+      rc += -1;
+        
+      std::string msg = std::format("DTC:{} link:{} : failed to read REG_READRATES",PcieAddr(),Link);
+      Stream << std::format("ERROR: {}",msg);
+      TLOG(TLVL_ERROR) << msg;
     }
 
-    TLOG(TLVL_DEBUG+1) << " -- END";
+    if (rc < 0) rc = -300+rc;
+
+    TLOG(TLVL_DEBUG+1) << std::format(" -- END: rc:{}",rc);
     return rc;
   }
 
@@ -1264,6 +1343,9 @@ namespace  trkdaq {
                                              ControlRoc_DeviceID_t& DevId     ,
                                              int                    PrintLevel,
                                              std::ostream&          Stream    ) {
+    int rc(0);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- START DTC:{} Link:{} PrintLevel:{}",PcieAddr(),Link,PrintLevel);
 
     std::vector<uint16_t> dat = ReadDeviceID(DTC_Link_ID(Link));
 
@@ -1302,6 +1384,7 @@ namespace  trkdaq {
         Stream << std::format("DeviceSerial:{}\n",DevId.DeviceSerial);
     }
 
-    return 0;
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: DTC:{} Link:{} rc:{}",PcieAddr(),Link,rc);
+    return rc;
   }
 };

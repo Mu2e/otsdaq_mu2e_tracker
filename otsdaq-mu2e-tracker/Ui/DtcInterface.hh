@@ -341,18 +341,18 @@ namespace trkdaq {
 // programming ROC over the fiber (I guess, this code is obsolete,
 // in use is the standalone version
 //-----------------------------------------------------------------------------
-    int          SpiProgramRoc     (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiIapAddress     (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiProgramRoc     (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiIapAddress     (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
 
-    int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
-                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
+    //                                 int PrintLevel=0, std::ostream& Stream = std::cout);
     
-    int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
-                                    int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
+    // int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
+    //                                    int PrintLevel=0, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------

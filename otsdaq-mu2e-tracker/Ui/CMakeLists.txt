@@ -6,7 +6,8 @@ cet_make_library(
         SOURCE          
         DtcInterfaceBase.cc DtcInterfaceBase_print.cc
         CfoInterface.cc
-        DtcInterface.cc DtcInterface_ProgramRoc.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc 
+        DtcInterface.cc DtcInterface_ControlRoc.cc DtcInterface_print.cc
+        # DtcInterface_ProgramRoc.cc 
         #	PreampChannel.cc PreampThreshold.cc
         program_drac.cc
         LIBRARIES PUBLIC
