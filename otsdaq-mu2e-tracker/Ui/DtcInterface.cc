@@ -16,6 +16,7 @@
 // #include "artdaq-core-mu2e/Data/TrackerDataDecoder.hh"
 
 #include "DtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/TrackerRegisters.hh"
 #include "TString.h"    // includes ROOT's Form
 
 #include "TRACE/tracemf.h"
@@ -196,16 +197,16 @@ namespace trkdaq {
       // link enabled and locked
 
       try {
-        uint16_t dat = fDtc->ReadROCRegister(DTC_Link_ID(i),18,tmo_ms);
+        uint16_t dat = fDtc->ReadROCRegister(DTC_Link_ID(i),registers::rocdcs::ROC_STATUS,tmo_ms);
         if (dat != 0x0f00) {
-          std::string msg = std::format("DTC:{} link:{} : R18 = 0x{:04x} != 0x0f00",PcieAddr(),i,dat);
+          std::string msg = std::format("DTC:{} link:{} : ROCSTATUS = 0x{:04x} != 0x0f00",PcieAddr(),i,dat);
           TLOG(TLVL_ERROR) << msg;
           Stream << "ERROR: " << msg << std::endl;
           rc += -1;
         }
       }
       catch (...) {
-        std::string msg = std::format("DTC:{} link:{} failed to read R18",PcieAddr(),i);
+        std::string msg = std::format("DTC:{} link:{} failed to read ROCSTATUS",PcieAddr(),i);
         TLOG(TLVL_ERROR) << msg;
         Stream << "ERROR: " << msg << std::endl;
         rc += -1;
@@ -249,20 +250,20 @@ namespace trkdaq {
     int nw(-1);
     vector<uint16_t> v2;
     try {
-      fDtc->WriteROCBlock(roc,279,vec,false,increment_address,100);
+      fDtc->WriteROCBlock(roc,REG_GETPANELID,vec,false,increment_address,100);
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
       uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
-      if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",128,u);
+      while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,5000)) != 0x8000) {}; 
+      if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      nw = fDtc->ReadROCRegister(roc,129,100);
-      if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",129,nw);
+      nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+      if ((PrintLevel & 0x1) != 0) printf("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
       nw = nw-4;
-      fDtc->ReadROCBlock(v2,roc,279,nw,false,100);
+      fDtc->ReadROCBlock(v2,roc,REG_GETPANELID,nw,false,100);
     }
     catch (...) {
       TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} : failed to read panelID, BAIL OUT with rc=-1",PcieAddr(),Link);
@@ -414,7 +415,7 @@ namespace trkdaq {
         continue;
       }
       try {
-        fDtc->WriteROCRegister(DTC_Link_ID(lnk),15,1,false,tmo_ms);       // 1 --> r14: reset ROC
+        fDtc->WriteROCRegister(DTC_Link_ID(lnk),registers::rocdcs::EXT_IRQ,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
       catch(...) {
@@ -434,9 +435,9 @@ namespace trkdaq {
     int rc(0);
     TLOG(TLVL_DEBUG+1) << std::format("-- START: Link:{}\n",Link);
     
-    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x0,false,1000);
+    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x0,false,1000);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),103,0x1,false,1000);
+    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x1,false,1000);
     
 //-----------------------------------------------------------------------------
 // not sure what to do with the print_level, for now, set it to zero
@@ -470,7 +471,7 @@ namespace trkdaq {
         continue;
       }
       try {
-        fDtc->WriteROCRegister(DTC_Link_ID(lnk),14,1,false,tmo_ms);       // 1 --> r14: reset ROC
+        fDtc->WriteROCRegister(DTC_Link_ID(lnk),registers::rocdcs::RESET_DDR,1,false,tmo_ms);       // 1 --> r14: reset ROC
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
       }
       catch (...) {
@@ -515,7 +516,7 @@ namespace trkdaq {
         continue;
       }
       try {
-        fDtc->WriteROCRegister(DTC_Link_ID(i),29,Version,false,tmo_ms);
+        fDtc->WriteROCRegister(DTC_Link_ID(i),registers::rocdcs::DCS_FORMAT_VER,Version,false,tmo_ms);
       }
       catch (...) {
         TLOG(TLVL_ERROR) << std::format("DTC:{} link:{} failed to write data version",PcieAddr(),i);
@@ -544,11 +545,11 @@ namespace trkdaq {
     }
                                         // write nothing to trigger query
     vector<roc_data_t> empty;
-    fDtc->WriteROCBlock(Link, 260, empty, false, false, 1000);
+    fDtc->WriteROCBlock(Link, REG_READDEVICE, empty, false, false, 1000);
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     // read back payload
-    rv = this->ReadROCBlockEnsured(Link, 260);
+    rv = this->ReadROCBlockEnsured(Link, REG_READDEVICE);
 
     if (PrintLevel & 0x1) {
       PrintBuffer(rv.data(),rv.size(),0,Stream);
@@ -610,7 +611,7 @@ namespace trkdaq {
     try {
     // then, wait till reg 128 returns non-zero
       uint16_t u;
-      while ((u = fDtc->ReadROCRegister(Link, 128, 100)) != 0x8000){
+      while ((u = fDtc->ReadROCRegister(Link, registers::rocdcs::DCS_CMD_STATUS, 100)) != 0x8000){
         // idle
       }
     }
@@ -954,41 +955,41 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       auto link = DTCLib::DTC_Link_ID(i);
       try {
         // rocUtil write_register -l $LINK -a 28 -w 16 > /dev/null
-        fDtc->WriteROCRegister(link,28,0x10,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_ADDR,0x10,false,1000); // 
 
         // Writing 0 & 1 to  address=16 for HV DIGIs ??? 
         // rocUtil write_register -l $LINK -a 27 -w  0 > /dev/null # write 0 
         // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null ## toggle INIT 
         // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-        fDtc->WriteROCRegister(link,27,0x00,false,1000); // 
-        fDtc->WriteROCRegister(link,26,0x01,false,1000); // toggle INIT 
-        fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_DATA_IN,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_INIT,0x01,false,1000); // toggle INIT 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_INIT,0x00,false,1000); // 
         
 
         // rocUtil write_register -l $LINK -a 27 -w  1 > /dev/null # write 1  
         // rocUtil write_register -l $LINK -a 26 -w  1 > /dev/null # toggle INIT
         // rocUtil write_register -l $LINK -a 26 -w  0 > /dev/null
-        fDtc->WriteROCRegister(link,27,0x01,false,1000); // 
-        fDtc->WriteROCRegister(link,26,0x01,false,1000); // 
-        fDtc->WriteROCRegister(link,26,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_DATA_IN,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_INIT,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::HV_TWI_INIT,0x00,false,1000); // 
         
         // echo "Writing 0 & 1 to  address=16 for CAL DIGIs"
         // rocUtil write_register -l $LINK -a 25 -w 16 > /dev/null
-        fDtc->WriteROCRegister(link,25,0x10,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_ADDR,0x10,false,1000); // 
     
         // rocUtil write_register -l $LINK -a 24 -w  0 > /dev/null # write 0
         // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
         // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-        fDtc->WriteROCRegister(link,24,0x00,false,1000); // 
-        fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-        fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_DATA_IN,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_INIT,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_INIT,0x00,false,1000); // 
         
         // rocUtil write_register -l $LINK -a 24 -w  1 > /dev/null # write 1
         // rocUtil write_register -l $LINK -a 23 -w  1 > /dev/null # toggle INIT
         // rocUtil write_register -l $LINK -a 23 -w  0 > /dev/null
-        fDtc->WriteROCRegister(link,24,0x01,false,1000); // 
-        fDtc->WriteROCRegister(link,23,0x01,false,1000); // 
-        fDtc->WriteROCRegister(link,23,0x00,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_DATA_IN,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_INIT,0x01,false,1000); // 
+        fDtc->WriteROCRegister(link,registers::rocdcs::CAL_TWI_INIT,0x00,false,1000); // 
       }
       catch (...) {
         std::string msg = std::format("failed to reset DIGIs for DTC:{} link:{}",PcieAddr(),i);
@@ -1039,9 +1040,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       }
 
       try {
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,lane_mask,false,1000);              // enable lanes
+        fDtc->WriteROCRegister(DTC_Link_ID(i), registers::rocdcs::ROC_ENABLE,lane_mask,false,1000);              // enable lanes
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        std::string msg = std::format("DTC:{} link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",PcieAddr(),i,lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),8,100));
+        std::string msg = std::format("DTC:{} link:{} wrote lane_mask:0x{:04x} read back reg_8:0x{:04x}",PcieAddr(),i,lane_mask,fDtc->ReadROCRegister(DTC_Link_ID(i),registers::rocdcs::ROC_ENABLE,100));
         TLOG(TLVL_INFO) << msg;
         Stream << msg << std::endl;
       }
@@ -1066,9 +1067,109 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     for (int i=0; i<6; i++) {
       
       if ((fLinkStatus[i] != 0) or (not LinkEnabled(i)))    continue;
+
+      int print_level = 0;
+
+      // first check that the alignment to the digis is ok
+      ControlRoc_DigiRW_Input_t  pi;
+      ControlRoc_DigiRW_Output_t po;
+      pi.rw      = 0;                   // read
+      pi.hvcal   = fpga::digi::roc;                   // ROC SC register
+      pi.address = registers::rocsc::DIGI_SERDES_ALIGNED;
+      pi.data[0] = 0x0;
+      pi.data[1] = 0x0;
+      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+      
+      if (rc < 0) {
+        std::string msg = std::format("DTC:{} link:{} failed to read SC RxB6",PcieAddr(),i);
+        TLOG(TLVL_ERROR) << msg;
+        Stream << std::format("Error:{}\n",msg);
+        continue;
+      }
+      uint16_t realign = 0x0;
+      if ((po.data[0] & 0xF) == 0xF){
+	      // aligned, check if getting errors 
+	      pi.address = registers::rocsc::CAL_SERDES_ERRORS;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      uint16_t calcount0 = po.data[0] & 0xFF;
+	      uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
+	      pi.address = registers::rocsc::HV_SERDES_ERRORS;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      uint16_t hvcount0 = po.data[0] & 0xFF;
+	      uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
+
+	      if (calcount0 != 0x0)
+		      realign |= 0x1;
+	      if (calcount1 != 0x0)
+		      realign |= 0x2;
+	      if (hvcount0 != 0x0)
+		      realign |= 0x4;
+	      if (hvcount1 != 0x0)
+		      realign |= 0x8;
+
+	      if (rc < 0) {
+		      std::string msg = std::format("DTC:{} link:{} failed to read SC RxB8/B9",PcieAddr(),i);
+		      TLOG(TLVL_ERROR) << msg;
+		      Stream << std::format("Error:{}\n",msg);
+		      continue;
+	      }
+      }else{
+          realign = 0xF;
+      }
+ 
+      // Reset Digi-ROC serdes PCS/PMA if needed
+      if (realign != 0x0){
+	      // FIXME for now do all lanes
+	      pi.rw = 1;
+	      pi.address = registers::rocsc::DIGI_SERDES_RESETS;
+	      pi.data[0] = 0x00;
+	      pi.data[1] = 0x0;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+	      pi.data[0] = 0xFF;
+	      pi.data[1] = 0x0;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+	      if (rc < 0) {
+		      std::string msg = std::format("DTC:{} link:{} failed to write SC RxB5",PcieAddr(),i);
+		      TLOG(TLVL_ERROR) << msg;
+		      Stream << std::format("Error:{}\n",msg);
+		      continue;
+	      }
+
+	      // check that now we are good
+	      pi.rw      = 0;                   // read
+	      pi.hvcal   = fpga::digi::roc;                   // ROC SC register
+	      pi.address = registers::rocsc::DIGI_SERDES_ALIGNED;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      if ((po.data[0] & 0xF) != 0xF){
+		      std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: ROC-DIGI serdes unaligned: expect:0x0f read:0x{:04x}, call Monica and Richie",PcieAddr(),i,po.data[0]);
+		      Stream << "ERROR: " << msg << std::endl;
+		      TLOG(TLVL_WARNING) << msg;
+		      // for now, leave status untouched
+		      // SetLinkStatus(i,-1);
+	      }
+	      // aligned, check if getting errors 
+	      pi.address = registers::rocsc::CAL_SERDES_ERRORS;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      uint16_t calcount0 = po.data[0] & 0xFF;
+	      uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
+	      pi.address = registers::rocsc::HV_SERDES_ERRORS;
+	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+	      uint16_t hvcount0 = po.data[0] & 0xFF;
+	      uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
+	      if (calcount0 != 0 || calcount1 != 0 || hvcount0 != 0 || hvcount1 != 0){
+		      std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: ROC-DIGI serdes errors, call Monica and Richie",PcieAddr(),i);
+		      Stream << "ERROR: " << msg << std::endl;
+		      TLOG(TLVL_WARNING) << msg;
+		      // for now, leave status untouched
+		      // SetLinkStatus(i,-1);
+	      }
+      }
+
       uint16_t u(0);
       try {
-        u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+        u = fDtc->ReadROCRegister(DTC_Link_ID(i),registers::rocdcs::ROC_STATUS,100);
       }
       catch (...) {
         std::string msg = std::format("DTC:{} link:{} failed to read R18",PcieAddr(),i);
@@ -1080,9 +1181,9 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if ((u >> 0x8) != 0xF) {
         // try to recover - write 1, then - 0 to reg 13
         try {
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
+          fDtc->WriteROCRegister(DTC_Link_ID(i), registers::rocdcs::RESET_DIGI_FIFOS,0x1,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
+          fDtc->WriteROCRegister(DTC_Link_ID(i), registers::rocdcs::RESET_DIGI_FIFOS,0x0,false,1000);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
         }
         catch (...) {
@@ -1092,9 +1193,22 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           continue;
         }
 
+	// now reset ROC fifos again 
+	try {
+		fDtc->WriteROCRegister(DTC_Link_ID(i),registers::rocdcs::RESET_DDR,1,false,100);       // 1 --> r14: reset ROC
+		std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+	}
+	catch (...) {
+		std::string msg = std::format("DTC:{} link:{} failed to write R14 (reset roc)",PcieAddr(),i);
+		TLOG(TLVL_ERROR) << msg;
+		Stream << std::format("Error:{}\n",msg);
+		continue;
+	}
+
+
         try {
           // and check again
-          u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
+          u = fDtc->ReadROCRegister(DTC_Link_ID(i),registers::rocdcs::ROC_STATUS,100);
           if (u != 0x0F00) {
             // still in trouble
             std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",PcieAddr(),i,u);
@@ -1169,7 +1283,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 // mask bit#04=1: variable length
 // mask bit#12=0: 'ROC counter;
 //-----------------------------------------------------------------------------
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,0x2010,false,1000); // configure ROC to send variable length patterns
+        fDtc->WriteROCRegister(DTC_Link_ID(i), registers::rocdcs::ROC_ENABLE,0x2010,false,1000); // configure ROC to send variable length patterns
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       }
       else {
@@ -1190,13 +1304,13 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         if (var_pattern_length == 1) mask = mask | 0x00000010;
         else                         mask = mask & 0xffffffef;
         
-        fDtc->WriteROCRegister(DTC_Link_ID(i), 8,mask,false,1000);   // configure ROC to send fixed length patterns
+        fDtc->WriteROCRegister(DTC_Link_ID(i), registers::rocdcs::ROC_ENABLE,mask,false,1000);   // configure ROC to send fixed length patterns
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
         int nhits = NHitsPerLane;
         if (nhits < 0) nhits = fRocNHitsPerLane;
         uint16_t w15 = (nhits & 0x3ff);
-        fDtc->WriteROCRegister(DTC_Link_ID(i),15,w15,false,1000);
+        fDtc->WriteROCRegister(DTC_Link_ID(i),registers::rocdcs::EXT_IRQ,w15,false,1000);
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
         
         TLOG(TLVL_DEBUG+1) << "var_pattern_length:" << var_pattern_length
@@ -1423,7 +1537,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
       uint32_t max_wait_us(100000), wait_us(0), sleep_us(1000);
       uint16_t u;
-      while ((wait_us < max_wait_us) and (u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {
+      while ((wait_us < max_wait_us) and (u = fDtc->ReadROCRegister(link_id,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {
         usleep(sleep_us);
         wait_us += sleep_us;
       };
@@ -1437,7 +1551,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      nw = fDtc->ReadROCRegister(link_id,129,100);
+      nw = fDtc->ReadROCRegister(link_id,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
       TLOG(TLVL_DEBUG+2) << std::format("reg:{:03d} val:0x{:04x}\n",129,nw);
 
       nw -= 4;
@@ -1487,14 +1601,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     DTC_Link_ID link_id = DTC_Link_ID(Link);
   
   // write block number to reg 33
-    fDtc->WriteROCRegister(link_id,33,((Block      ) & 0xffff) ,false,1000);
-    fDtc->WriteROCRegister(link_id,34,((Block >> 16) & 0xffff) ,false,1000);
+    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_L,((Block      ) & 0xffff) ,false,1000);
+    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_H,((Block >> 16) & 0xffff) ,false,1000);
   // cycle reg 32
-    fDtc->WriteROCRegister(link_id,32, 0x01,false,1000);
-    fDtc->WriteROCRegister(link_id,32, 0x00,false,1000);
+    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x01,false,1000);
+    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x00,false,1000);
   // success: reg 20:0x8080  reg21:nwords to read (512)
-    int reg_20 = fDtc->ReadROCRegister (link_id,20,1000);         // ox8080
-    int nw     = fDtc->ReadROCRegister (link_id,21,1000);         // number of 16-bit words in a 1 kByte block (512)
+    int reg_20 = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_WR_STATUS,1000);         // ox8080
+    int nw     = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_RD_STATUS,1000);         // number of 16-bit words in a 1 kByte block (512)
 //-----------------------------------------------------------------------------
 // at this point, if everything was OK (nw=512), can read the data
 //-----------------------------------------------------------------------------
@@ -1528,7 +1642,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
   std::vector<roc_data_t> DtcInterface::ReadROCBlockEnsured(const DTC_Link_ID& Link, const roc_address_t& address){
     // register 129: number of words to read
     TLOG(TLVL_DEBUG+1) << std::format("-- START");
-    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, 129, 1000));
+    size_t nwords = static_cast<size_t>(fDtc->ReadROCRegister(Link, registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS, 1000));
     nwords -= 4; // account for low-level headers already consumed on-chip
 
     std::vector<roc_data_t> rv;
@@ -1784,7 +1898,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
         try {
           int tmo_ms(100);
-          fDtc->WriteROCRegister(DTC_Link_ID(lnk),4,Delay5ns,false,tmo_ms);
+          fDtc->WriteROCRegister(DTC_Link_ID(lnk),registers::rocdcs::LOOPBACK_COARSE_DELAY,Delay5ns,false,tmo_ms);
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
           Stream << header << std::format(" delay set at {} x 5 ns",Delay5ns);
         }
@@ -1834,8 +1948,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
                                         // write TStart to reg 0x81
       pi.rw      = 1;                   // write
-      pi.hvcal   = 0;                   // both
-      pi.address = 0x81;
+      pi.hvcal   = fpga::digi::both;                   // both
+      pi.address = registers::digi::EWMEARLY;
       pi.data[0] = (TStart >>  0) & 0xffff;
       pi.data[1] = (TStart >> 16) & 0xffff;
       rc = ControlRoc_DigiRW(&pi,&po,lnk,PrintLevel,Stream);
@@ -1847,7 +1961,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         return rc;
       }
   
-      pi.address = 0x82;
+      pi.address = registers::digi::EWMLATE;
       pi.data[0] = (TStop  >>  0) & 0xffff;
       pi.data[1] = (TStop  >> 16) & 0xffff;
       rc = ControlRoc_DigiRW(&pi,&po,lnk,PrintLevel,Stream);
@@ -1892,7 +2006,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
         try {
           int tmo_ms(100);
-          fDtc->WriteROCRegister(DTC_Link_ID(lnk),30,fDtcID,false,tmo_ms);       // 1 --> r14: reset ROC
+          fDtc->WriteROCRegister(DTC_Link_ID(lnk),registers::rocdcs::DCS_DTC_ID,fDtcID,false,tmo_ms);       // 1 --> r14: reset ROC
           std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
         }
         catch(...) {

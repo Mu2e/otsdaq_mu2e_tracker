@@ -14,6 +14,7 @@ namespace trkdaq {
 
   enum {
     REG_READSPI       = 258,
+    REG_READDEVICE    = 260,
     REG_DIGIRW        = 263,
     REG_FINDALIGNMENT = 264,
     REG_READ          = 265,
@@ -30,6 +31,7 @@ namespace trkdaq {
     REG_SETCALDAC     = 276,
     REG_DUMPSETTINGS  = 277,
     REG_INITBYFIBER   = 278,
+    REG_GETPANELID    = 279,
   };
 
   struct ControlRoc_Read_Input_t0 {

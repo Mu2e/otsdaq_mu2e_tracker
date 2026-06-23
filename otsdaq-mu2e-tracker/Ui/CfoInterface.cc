@@ -239,6 +239,8 @@ namespace trkdaq {
     PrintRegister(0x9220,"Receive  Packet Count Link 0               ",Stream);
     PrintRegister(0x9240,"Transmit Byte   Count Link 0               ",Stream);
     PrintRegister(0x9260,"Transmit Packet Count Link 0               ",Stream);
+    PrintRegister(0x9380,"Loopback Delay CSR                         ",Stream);
+    PrintRegister(0x93a0,"Firefly CSR                                ",Stream);
 
     PrintRegister(0x9500,"CFO Jitter Attenuator CSR                  ",Stream);  // CFO_Register_JitterAttenuatorCSR = 0x9500,
     TLOG(TLVL_DEBUG+1) << std::format("-- END");

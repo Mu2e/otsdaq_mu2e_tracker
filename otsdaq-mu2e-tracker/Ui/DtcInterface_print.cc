@@ -13,6 +13,7 @@ using namespace DTCLib;
 using namespace std;
 
 #include "otsdaq-mu2e-tracker/Ui/ControlRocTypes.hh"
+#include "otsdaq-mu2e-tracker/Ui/TrackerRegisters.hh"
 
 namespace trkdaq {
 
@@ -35,6 +36,9 @@ namespace trkdaq {
     par.data[0]      = 0;
     par.data[1]      = 0;
 
+    int format       = Format % 100;
+    int soft_console = Format / 100;
+
     std::string text;
     for (int i=0; i<6; i++) {
       int used = (LinkMask >> 4*i) & 0x1;
@@ -49,20 +53,25 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
       DTC_Link_ID link = DTC_Link_ID(i);
 
-      par.hvcal        = 1;
+      par.hvcal        = fpga::digi::cal;
+      if (soft_console) par.hvcal = fpga::digi::roc;
+      
       rc               = ControlRoc_DigiRW(&par,&pcal,link,print_level,Stream);
       if (rc < 0) {
         TLOG(TLVL_ERROR) << std::format("failed to read CAL side");
       }
       text            += std::format("  0x{:04x}",pcal.data[0]);
-      par.hvcal        = 2;
+
+      par.hvcal        = fpga::digi::hv;
+      if (soft_console) par.hvcal = fpga::digi::roc;
+      
       rc               = ControlRoc_DigiRW(&par,&phv,link,print_level,Stream);
       text            += std::format(" 0x{:04x}",phv.data[0]);
     }
 
     std::string sreg   = std::format("reg 0x{:04x}",Reg);
 
-    if (Format == 1) text += Form("  %s",Desc.data());
+    if (format == 1) text += Form("  %s",Desc.data());
     Stream << Form("%-12s %s\n",sreg.data(),text.data());
 
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
@@ -105,34 +114,54 @@ namespace trkdaq {
       return rc;
     }
                      
-    if (Format != 0) text += " Description";
+    if (Format != 0) text += "Description";
     Stream << Form("%s\n",text.data());
     Stream << "-----------------------------------------------------------------------------";
-    Stream << "---------------------\n";
+    Stream << "-----------------------------------\n";
 
     std::string desc;
     uint32_t    reg;
     
-    reg =  0xA4; desc = "0xA4";
+    reg =  registers::digi::EWM_FIFOS0; desc = "EWM_FIFOS0";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  0xA5; desc = "0xA5";
+    reg =  registers::digi::EWM_FIFOS1; desc = "EWM_FIFOS1";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
 
-    reg =  0xA6; desc = "0xA6";
+    reg =  registers::digi::EWM_FIFOS2; desc = "EWM_FIFOS2";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
 
-    reg =  0xC0; desc = "0xC0";
+    reg =  registers::digi::SERDES_ALIGNMENT; desc = "DIGI SERDES ALIGNMENT";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
 
-    reg =  0xD0; desc = "0xD0";
+    reg =  registers::digi::EWM_COUNT1; desc = "EWM_COUNT1";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  0xD1; desc = "0xD1";
+    reg =  registers::digi::EWM_COUNT2; desc = "EWM_COUNT2";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  0xD2; desc = "0xD2";
+    reg =  registers::digi::EWM_COUNT3; desc = "EWM_COUNT3";
     PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    reg =  registers::digi::EW_MISSED_COUNT; desc = "EW_MISSED_COUNT";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+
+    reg =  registers::digi::EW_LAST_PERIOD; desc = "EW_LAST_PERIOD";
+    PrintDigiRegister(reg,desc,Format,link_mask,Stream);
+//-----------------------------------------------------------------------------
+// the following is a hack, as B6-B9 are the soft_console registers
+//-----------------------------------------------------------------------------
+    reg =  registers::rocsc::DIGI_SERDES_ALIGNED; desc = "ROC from DIGI serdes aligned";
+    PrintDigiRegister(reg,desc,Format+100,link_mask,Stream);
+
+    reg =  registers::rocsc::DIGI_SERDES_ALIGNMENT; desc = "ROC from DIGI serdes alignment";
+    PrintDigiRegister(reg,desc,Format+100,link_mask,Stream);
+
+    reg =  registers::rocsc::CAL_SERDES_ERRORS; desc = "ROC from digi CAL serdes errors";
+    PrintDigiRegister(reg,desc,Format+100,link_mask,Stream);
+
+    reg =  registers::rocsc::HV_SERDES_ERRORS; desc = "ROC from digi HV serdes errors";
+    PrintDigiRegister(reg,desc,Format+100,link_mask,Stream);
 
     return 0;
     
@@ -244,122 +273,122 @@ namespace trkdaq {
     Stream << Form("%s\n",text.data());
     Stream << "------------------------------------------------------------------------\n";
 
-    reg =  0; desc = "ALWAYS 0x1234";
+    reg = registers::rocdcs::DBG; desc = "ALWAYS 0x1234";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 18; desc = "ROC FIFO status";
+    reg = registers::rocdcs::ROC_STATUS; desc = "ROC FIFO status";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  8; desc = "ROC pattern mode ??"; 
+    reg = registers::rocdcs::ROC_ENABLE; desc = "ROC pattern mode ??"; 
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 60; desc = "ROC readout timeout delay "; 
+    reg = registers::rocdcs::EVENT_TIMEOUT_L; desc = "ROC readout timeout delay "; 
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 15; desc = "N simulated hits per lane";
+    reg = registers::rocdcs::DCS_DDR_ADDRESS_L; desc = "N simulated hits per lane"; //FIXME???
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 16; desc = " ??";
+    reg = registers::rocdcs::DCS_DDR_ADDRESS_H; desc = " ??";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  7; desc = "Fiber loss/lock counter";
+    reg = registers::rocdcs::LOSS_LOCK; desc = "Fiber loss/lock counter";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
-    reg =  6; desc = "Bad Markers counter";
+    reg = registers::rocdcs::TWI_CONTROL; desc = "Bad Markers counter"; //FIXME???
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg =  4; desc = "Loopback coarse delay";
+    reg = registers::rocdcs::LOOPBACK_COARSE_DELAY; desc = "Loopback coarse delay";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
     
-    reg = 23; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
+    reg = registers::rocdcs::DREQ_FIFO_WRCNT; desc = "SIZE_FIFO_FULL [28]+STORE_POS[25:24]+STORE_CNT[19:0]";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 25; desc = "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]";
+    reg = registers::rocdcs::DREQ_FIFO_RDCNT; desc = "SIZE_FIFO_EMPTY[28]+FETCH_POS[25:24]+FETCH_CNT[19:0]";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 11; desc = "Num EWM seen";
+    reg = registers::rocdcs::EWM_CNT_L; desc = "Num EWM seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
     
-    reg = 64; desc = "Num windows seen";
+    reg = registers::rocdcs::DCS_EVMCNT_L; desc = "Num windows seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 27; desc = "Num HB seen";
+    reg = registers::rocdcs::DCS_HB_CNT_L; desc = "Num HB seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 29; desc = "Num null HB seen";
+    reg = registers::rocdcs::DCS_NULLHB_CNT_L; desc = "Num null HB seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 31; desc = "Num HB on hold";
+    reg = registers::rocdcs::DCS_HBCNT_ONHOLD_L; desc = "Num HB on hold";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 33; desc = "Num PREFETCH seen";
+    reg = registers::rocdcs::DCS_PREFCNT_L; desc = "Num PREFETCH seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
     Stream << Form("\n");
 
-    reg =  9; desc = "Num DATA REQ seen";
+    reg = registers::rocdcs::DATAREQ_CNT_L; desc = "Num DATA REQ seen";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 35; desc = "Num DATA REQ written to DDR";
+    reg = registers::rocdcs::DCS_DREQCNT_L; desc = "Num DATA REQ written to DDR";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 13; desc = "Num skipped DATA REQ";
+    reg = registers::rocdcs::IS_SKIPPED_DREQ_CNT; desc = "Num skipped DATA REQ";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
-    reg = 37; desc = "Num DATA REQ read from DDR";
+    reg = registers::rocdcs::DCS_DREQREAD_L; desc = "Num DATA REQ read from DDR";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    reg = 39; desc = "Num DATA REQ sent to DTC";
+    reg = registers::rocdcs::DCS_DREQSENT_L; desc = "Num DATA REQ sent to DTC";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    reg = 41; desc = "Num DATA REQ with null data";
+    reg = registers::rocdcs::DCS_DREQNULL_L; desc = "Num DATA REQ with null data";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     Stream << Form("\n");
       
-    reg = 43; desc = "Last spill tag";
+    reg = registers::rocdcs::DCS_SPILLCNT_L; desc = "Last spill tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    reg = 45; desc = "Last HB tag";
+    reg = registers::rocdcs::DCS_HBTAG_0; desc = "Last HB tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    reg = 48; desc = "Last PREFETCH tag";
+    reg = registers::rocdcs::DCS_PREFTAG_0; desc = "Last PREFETCH tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
-    reg = 51; desc = "Last fetched tag";
+    reg = registers::rocdcs::DCS_FETCHTAG_0; desc = "Last fetched tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 54; desc = "Last DATA REQ tag";
+    reg = registers::rocdcs::DCS_DREQTAG_0; desc = "Last DATA REQ tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
 
-    reg = 57; desc = "OFFSET tag";
+    reg = registers::rocdcs::DCS_OFFSETTAG_0; desc = "OFFSET tag";
     PrintRocRegister2(reg,desc,Format,link_mask,Stream);
       
     Stream << std::endl;
       
-    reg = 72; desc = "Num HB tag inconsistencies";
+    reg = registers::rocdcs::HB_TAG_ERR_CNT; desc = "Num HB tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
-    reg = 73; desc = "Num DATA REQ tag inconsistencies";
+    reg = registers::rocdcs::HB_DREQ_ERR_CNT; desc = "Num DATA REQ tag inconsistencies";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
-    reg = 74; desc = "Num HB tag lost";
+    reg = registers::rocdcs::HB_LOST_CNT; desc = "Num HB tag lost";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
       
-    reg = 75; desc = "Num DATA REQ tag lost";
+    reg = registers::rocdcs::EWM_LOST_CNT; desc = "Num DATA REQ tag lost";
     PrintRocRegister(reg,desc,Format,link_mask,Stream);
 
-    reg = 0x90; desc = "total N packets (DCS+data)";    // r_144
+    reg = registers::rocdcs::DTC_PKT_COUNT; desc = "total N packets (DCS+data)";    // r_144
     PrintRocRegister(reg,desc,Format,link_mask,Stream); // 
-    reg = 0x91; desc = "N(DCS) packets sent to DTC";    // r_145
+    reg = registers::rocdcs::DCS_PKT_COUNT; desc = "N(DCS) packets sent to DTC";    // r_145
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
-    reg = 0x92; desc = "Num of non-DCS packets";        // r_146
+    reg = registers::rocdcs::DREQ_PKT_COUNT; desc = "Num of non-DCS packets";        // r_146
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
-    reg = 0x93; desc = "Num of data header packets";    // r_147
+    reg = registers::rocdcs::DREQ_HDR_PKT_COUNT; desc = "Num of data header packets";    // r_147
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
-    reg = 0x94; desc = "Num of data payload packets";   // r_148
+    reg = registers::rocdcs::DREQ_DATA_PKT_COUNT; desc = "Num of data payload packets";   // r_148
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
-    reg = 0x95; desc = "Num of empty data packets";     // r_149
+    reg = registers::rocdcs::DREQ_EMPTY_PKT_COUNT; desc = "Num of empty data packets";     // r_149
     PrintRocRegister(reg,desc,Format,link_mask,Stream); //
 
     Stream << "------------------------------------------------------------------------\n";
@@ -437,9 +466,9 @@ namespace trkdaq {
       int   counts_hv   = int((*Rates)[loc  ])+(int((*Rates)[loc+1]) << 16);
       int   counts_cal  = int((*Rates)[loc+2])+(int((*Rates)[loc+3]) << 16);
       int   counts_coin = int((*Rates)[loc+4])+(int((*Rates)[loc+5]) << 16);
-      int   fpga        = fgFpga[ich];
-      float rate_hv     = counts_hv /total[fpga]/clock_tick/1000.;
-      float rate_cal    = counts_cal/total[fpga]/clock_tick/1000.;
+      int   ifpga        = fgFpga[ich];
+      float rate_hv     = counts_hv /total[ifpga]/clock_tick/1000.;
+      float rate_cal    = counts_cal/total[ifpga]/clock_tick/1000.;
       float rate_coin   = counts_coin/(total[0]+total[1])*2/clock_tick/1000.;
       
       int ch_mask = 1;

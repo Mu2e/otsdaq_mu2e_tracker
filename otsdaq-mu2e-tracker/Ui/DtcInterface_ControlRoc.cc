@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "otsdaq-mu2e-tracker/Ui/DtcInterface.hh"
+#include "otsdaq-mu2e-tracker/Ui/TrackerRegisters.hh"
 
 #include "TRACE/tracemf.h"
 #define  TRACE_NAME "DtcInterface_ControlRoc"
@@ -66,13 +67,13 @@ namespace  trkdaq {
         std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
       
         uint16_t u; 
-        while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",128,u);
+        while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,1000)) != 0x8000) {}; 
+        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-        int nw = fDtc->ReadROCRegister(roc,129,100);
-        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",129,nw);
+        int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+        if (PrintLevel & 0x8) Stream << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
         TLOG(TLVL_DEBUG+1) << std::format("read nw:{}",nw);
         nw = nw-4;
@@ -311,13 +312,13 @@ namespace  trkdaq {
       
                                         // 0x86 = 0x82 + 4
         uint16_t u; 
-        while ((u = fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
-        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+        while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,1000)) != 0x8000) {}; 
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-        int nw = fDtc->ReadROCRegister(roc,129,100);
-        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+        int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
         
         nw = nw-4;
         fDtc->ReadROCBlock(vout,roc,REG_READ,nw,false,100);
@@ -423,13 +424,13 @@ namespace  trkdaq {
 
                                         // 0x86 = 0x82 + 4
       uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+      while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+      int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
       nw = nw-4;
       if (nw == 4) {
@@ -567,11 +568,11 @@ namespace  trkdaq {
 
       uint16_t u;
       try {
-        while ((u = fDtc->ReadROCRegister(link_id,128,100)) != 0x8000) {}; 
-        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+        while ((u = fDtc->ReadROCRegister(link_id,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+        TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
       }
       catch(...) {
-        TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,128,100)" << std::endl;
+        TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,registers::rocdcs::DCS_CMD_STATUS,100)" << std::endl;
         rc = -2;
         return rc;
       }
@@ -580,7 +581,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
       int nw(-1);
       try {
-        nw = fDtc->ReadROCRegister(link_id,129,100);
+        nw = fDtc->ReadROCRegister(link_id,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
       }
       catch(...) {
         TLOG(TLVL_ERROR) << "failed ReadROCRegister(link_id,129,100), nw:" << nw << std::endl;
@@ -588,7 +589,7 @@ namespace  trkdaq {
         return rc;
       }
 
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
       nw = nw-4;
       Settings.clear();
       try {
@@ -662,13 +663,13 @@ namespace  trkdaq {
       }
 
       uint16_t u; 
-      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+      while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-      int nw = fDtc->ReadROCRegister(roc,129,100);
-      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+      int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
       nw = nw-4;
       std::vector<uint16_t> v2;
@@ -703,13 +704,13 @@ namespace  trkdaq {
 
                                         // 0x86 = 0x82 + 4
     uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+    while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
@@ -745,13 +746,13 @@ namespace  trkdaq {
 
                                         // 0x86 = 0x82 + 4
     uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+    while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently-  (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
     nw = nw-4;
     std::vector<uint16_t> v2;
@@ -789,13 +790,13 @@ namespace  trkdaq {
     std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
     uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",128,u);
+    while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, if empty: 0x1000
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,129,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",129,nw);
+    int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
     return 0;
   }
@@ -882,9 +883,9 @@ namespace  trkdaq {
     // 0x86 = 0x82 + 4
     uint16_t u;
     try {
-      while ((u = fDtc->ReadROCRegister(roc,128,100)) != 0x8000) {};
+      while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {};
       if (PrintLevel & 0x1) {
-        Stream << std::format("reg:{:03d} val:0x{:04x}",128,u) << std::endl;
+        Stream << std::format("reg:{:03d} val:0x{:04x}",registers::rocdcs::DCS_CMD_STATUS,u) << std::endl;
       }
     }
     catch(...) {
@@ -898,10 +899,10 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     int nw(-1);
     try {
-      nw = fDtc->ReadROCRegister(roc,129,100);
+      nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
     }
     catch (...) {
-      std::string msg = std::format("failed to read ROC register:{}",129);
+      std::string msg = std::format("failed to read ROC register:{}",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS);
       TLOG(TLVL_ERROR) << msg;
       Stream << msg << nw << std::endl;
       return -2;
@@ -910,7 +911,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
 // get here only if all reads didn't lead to exceptions
 //-----------------------------------------------------------------------------
-    if (PrintLevel & 0x1) Stream << std::format("reg:{:03d} val:0x{:04x}",129,nw) << std::endl;
+    if (PrintLevel & 0x1) Stream << std::format("reg:{:03d} val:0x{:04x}",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw) << std::endl;
 //-----------------------------------------------------------------------------
 // read raw numbers
 // expect nw=288 = 96*3, if not - in trouble
@@ -1301,15 +1302,15 @@ namespace  trkdaq {
     
     // 0x86 = 0x82 + 4
     uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,128,5000)) != 0x8000) {}; 
-    if (PrintLevel) printf("reg:%03i val:0x%04x\n",128,u);
+    while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,5000)) != 0x8000) {}; 
+    if (PrintLevel) printf("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, currently (+ 4) (ask Monica)
 //-----------------------------------------------------------------------------
     try {
-      int nw = fDtc->ReadROCRegister(roc,129,100);
-      if (PrintLevel) printf("reg:%03i val:0x%04x\n",129,nw);
+      int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+      if (PrintLevel) printf("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
 
       TLOG(TLVL_DEBUG+1) << " -- 003 from nw(reg_129):" << nw;
       nw = nw-4;
