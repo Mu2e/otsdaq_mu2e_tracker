@@ -173,19 +173,20 @@ And that no TIMEOUT should be observed on the very first event after a DTC_Reset
 - this is an expert-only operation
 - make sure that the directory contains only two entries - "Golden" and the latest one
 #+begin_src
-auto x = dtc_gui("mu2e-trk-XX-pcieY")                // GUI is used as a convenience to initialize the DTC
-auto dtc_i = trkdaq::DtcInterface::Instance(-1);     // get a pointer
+# auto x = dtc_gui("mu2e-trk-XX",pcie)                // GUI is used as a convenience to initialize the DTC
+# auto dtc_i = trkdaq::DtcInterface::Instance(-1);    // get a pointer
+auto dtc_i = dtc_init("mu2e-trk-XX",pcie)             // don't always need GUI
 program_drac t("",true);
 int roc=3;
 t.spi_write_directory(dtc_i,roc);
 t.spi_read_record    (dtc_i,roc,0x0,64,0,0xF);            // a quick check, read 64 words, 32 wouldn't do
 t.spi_write_version  (dtc_i,roc,"GoldenV17");             // upload GoldenV17 to SPI memory, takes about 12 min
 t.spi_write_version  (dtc_i,roc,"ROCV19");                // the same, also about 12 min
-t.spi_program_roc    (dtc_i,roc,"ROCV19");                // program the FPGA, should be at index=1
+t.spi_program_roc    (dtc_i,roc,"ROCV19");                // program the FPGA, should be at index=2, about 35 sec
 #+end_src
 - SPI files are stored at https://... and in [[file:~/test_stand/spi_files]] locally
   - local directory is the same in MC2, Lab3, and EC
-- memory layout is coded in [[file:../otsdaq-mu2e-tracker/Ui/program_drac.cc::/FwVersion_t drac_fw/]]
+- memory layout is coded in the confi
 - reading an image back takes about 30 min per large image
 - so far, reading back and validating was not adding anything
 ** programming DIGIs                                                         

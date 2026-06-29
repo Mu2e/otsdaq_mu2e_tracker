@@ -438,7 +438,8 @@ namespace trkdaq {
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x0,false,1000);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x1,false,1000);
-    
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+   
 //-----------------------------------------------------------------------------
 // not sure what to do with the print_level, for now, set it to zero
 //-----------------------------------------------------------------------------
@@ -1566,7 +1567,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 
     if ((rc == 0) and (NExpected > 0) and (nw != NExpected)) {
       TLOG(TLVL_ERROR) << "WRONG NUMBER OF WORDS: NExpected:" << NExpected << " nw:" << nw;
-      rc = -1;
+      rc = -nw;
     }
 //-----------------------------------------------------------------------------
 // does the ROC need to be reset ? Monica says NO.

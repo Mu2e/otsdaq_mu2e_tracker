@@ -1137,6 +1137,11 @@ namespace  trkdaq {
         int rc = RocBlockRead(i,REG_READGITCOMMIT,data,nw_expected);
         if (rc < 0) {
           GitCommit = "READ_ERROR";
+          // int nw = -rc;
+          // if ((nw > 0) and (PrintLevel & 0x4)) {
+          //   PrintBuffer(data.data(),nw,0x0,Stream);
+          // }
+          
         }
         else {
           std::stringstream ss;
