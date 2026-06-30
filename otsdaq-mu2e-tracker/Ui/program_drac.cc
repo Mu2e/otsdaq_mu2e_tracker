@@ -687,9 +687,24 @@ int program_drac::spi_write_directory(trkdaq::DtcInterface* Dtc_i, int Link) {
 //-----------------------------------------------------------------------------
 // hopefully, OK. lets see how it goes
 //------------------------------------------------------------------------------
+  int      wait_time_us(5000),  kMaxTries(5000);
   uint16_t u; 
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {};
 
+  int ntries = 0;
+  while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000)  and (ntries < kMaxTries)) {
+    std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
+    ntries++;
+  };
+  
+  if (ntries > 0) {
+    TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} polling R128 took {:4} extra attempts {} us each",
+                                      Dtc_i->PcieAddr(),Link,ntries,wait_time_us);
+    if (ntries == kMaxTries) {
+      TLOG(TLVL_ERROR) << std::format("DTC:{} ROC:{} : R128 not ready after {:4} polls of {:4} us. BAIL OUT",
+                                      Dtc_i->PcieAddr(),Link,ntries,wait_time_us);
+      return -2;
+    }
+  }
                                         // read return code
   rc = Dtc_i->fDtc->ReadROCRegister(roc,132,1000);
 
@@ -708,6 +723,8 @@ int program_drac::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int Fi
   bool done             (false);
   int  ntries           (0);
   
+  TLOG(TLVL_DEBUG+1) << std::format("-- START: DTC:{} ROC:{}",Dtc_i->PcieAddr(),Link);
+
   auto roc  = DTCLib::DTC_Link_ID(Link);
 
   while (ntries < 3) {
@@ -728,7 +745,7 @@ int program_drac::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int Fi
     Dtc_i->fDtc->WriteROCBlock(roc,RREG,input,false,increment_address,100);
     ntries += 1;
 //-----------------------------------------------------------------------------
-// the suspicion is tChat sometimes the ROC doesn't recieve all data
+// the suspicion is that sometimes the ROC doesn't recieve all data
 // potential workaround: read ROC register 0 multiple times, till the read succeeds
 // that provides "fake data" the ROC needs to complete reading of the missing part of
 // the data
@@ -791,8 +808,23 @@ int program_drac::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int Fi
     
   }
   
+  int      wait_time_us(2000),  kMaxTries(1000);
   uint16_t u; 
-  while ((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) {}; 
+
+  ntries = 0;
+  while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000)  and (ntries < kMaxTries)) {
+    std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
+    ntries++;
+  };
+  
+  if (ntries > 0) {
+    TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} polling R128 took {:4} extra attempts {} us each",
+                                      Dtc_i->PcieAddr(),Link,ntries,wait_time_us);
+    if (ntries == kMaxTries) {
+      TLOG(TLVL_ERROR) << std::format("DTC:{} ROC:{} : R128 not ready after {:4} polls. BAIL OUT", Dtc_i->PcieAddr(),Link,ntries);
+      return -2;
+    }
+  }
 
   int rc = Dtc_i->fDtc->ReadROCRegister(roc,132,1000);
 
@@ -804,9 +836,7 @@ int program_drac::spi_write_record(trkdaq::DtcInterface* Dtc_i, int Link, int Fi
     }
   }
 
-  if (DebugMode & 0x1) {
-    std::cout << __func__ << ":END rc:" << rc << std::endl;
-  }
+  TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}",rc);
   return rc;
 }
 
@@ -1185,11 +1215,10 @@ int program_drac::spi_read_digi_id(trkdaq::DtcInterface* Dtc_i, int Link, uint16
   while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) and (ntries < kMaxTries)) {
     std::this_thread::sleep_for(std::chrono::microseconds(2));
     ntries++;
-  }; 
-
-  if (ntries == kMaxTries) {
-    TLOG(TLVL_ERROR) << std::format("no response from ROC after {} tries, r128:0x{:04x}. BAIL OUT",kMaxTries,u);
-    return -1;
+    if (ntries == kMaxTries) {
+      TLOG(TLVL_ERROR) << std::format("no response from ROC after {} tries, r128:0x{:04x}. BAIL OUT",kMaxTries,u);
+      return -1;
+    }
   }
 
   int nw (-1);
@@ -1238,7 +1267,7 @@ int program_drac::spi_read_digi_info(trkdaq::DtcInterface* Dtc_i, int Link, uint
       TLOG(TLVL_ERROR) << std::format("after ntimes:{} r128:0x{:04x}. BAIL OUT",ntimes,u);
       return -1;
     }
-  }; 
+  }
 
   ntimes = 0;
   int nw (-1);
@@ -1318,38 +1347,70 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
 // on return :: 3 words + next_offset , next_nbytes ..(each 2 uint16_t's)
 //-----------------------------------------------------------------------------
   bool done(false);
-  int nbwr(0), nbwr_tot(0);
+  int nbwr(0), nbwr_tot(0), pass(0);
   
   while (not done) {
 //-----------------------------------------------------------------------------
 // check that the previous operation has completed
 // don't remember why sleep's are here
 //-----------------------------------------------------------------------------
+    int      wait_time_us(2000),  kMaxTries(1000);
+    int      ntries(0);
     uint16_t u;
-    int ntries(0), kMaxTries(1000);
     while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) and (ntries < kMaxTries)) {
-      std::this_thread::sleep_for(std::chrono::microseconds(2));
+      std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
       ntries++;
     };
     
-    if (ntries == kMaxTries) {
-      TLOG(TLVL_ERROR) << std::format("no response from ROC after {} tries. BAIL OUT",kMaxTries);
-      return -2;
+    if (ntries > 0) {
+      TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} pass:{:4} polling R128 took {:4} extra attempts {} us each",
+                                        Dtc_i->PcieAddr(),Link,pass,ntries,wait_time_us);
+      if (ntries == kMaxTries) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} ROC:{} pass:{:4} : R128 not ready after {:4} polls. BAIL OUT", Dtc_i->PcieAddr(),Link,pass,ntries);
+        return -2;
+      }
     }
 //-----------------------------------------------------------------------------
-// expect reg 129 to return nw=8
+// now poll reg 129 until it is ready, expect it to return nw=8
+// bit 12 = 1 means NOT_READY
 //-----------------------------------------------------------------------------
-    int nw (-1), ntimes(0);
+    ntries = 0;
+    while (ntries < kMaxTries) {
+      u = Dtc_i->fDtc->ReadROCRegister(roc,129,1000);
+      if (((u >> 12) & 0x1) == 0) break;
+      ntries++;
+      std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
+    };
+
+    if (ntries > 0) {
+      TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} pass:{:4} polling R129 took {:4} extra attempts {:4} us each",
+                                        Dtc_i->PcieAddr(),Link,pass,ntries,wait_time_us);
+    }
+
+    if (ntries == kMaxTries) {
+      TLOG(TLVL_ERROR) << std::format("DTC:{} ROC:{} pass:{:4} : R129 not ready, BAIL OUT",Dtc_i->PcieAddr(),Link,pass,kMaxTries);
+      return -3;
+    }
+    
+    int nw (-1);
+    ntries = 0;
     while ((nw = Dtc_i->fDtc->ReadROCRegister(roc,129,1000)) != 8) {
-      std::this_thread::sleep_for(std::chrono::microseconds(2));
-      TLOG(TLVL_WARNING) << std::format("attempt:{} reg 129 nw:{}",ntimes,nw);
-      ntimes++;
-      if (ntimes > 0) { //  100) {
-        TLOG(TLVL_ERROR) << std::format("after ntimes:{} nw:{}. BAIL OUT",ntimes,nw);
-        rc = -3;
+      std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
+      TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} pass:{:4} attempt:{:4} to read R129, nw:{}",Dtc_i->PcieAddr(),Link,pass,ntries,nw);
+      ntries++;
+      if (ntries >= kMaxTries) {
+        TLOG(TLVL_ERROR) << std::format("DTC:{} ROC:{} pass:{:4} : after reading R129 ntimes:{:4} nw:{:3}. BAIL OUT",
+                                        Dtc_i->PcieAddr(),Link,pass,ntries,nw);
+        rc = -4;
         break;
       }
     }
+
+    if (ntries > 0) {
+      TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} pass:{:4} reading R129 took {:4} extra attempts {:4} us each, rc = {}",
+                                        Dtc_i->PcieAddr(),Link,pass,ntries,wait_time_us,rc);
+    }
+
     if (rc < 0) break;
 //-----------------------------------------------------------------------------
 // reading back the offset and the number of bytes
@@ -1362,7 +1423,8 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
     int next_nbytes = int(res[2]) + (int)(res[3]<<16);
     
     if (nbwr >= kNbReport) {
-      TLOG(TLVL_INFO) << std::format("nbwr_tot:{:10d} last_nbwr:{:6d} next_offset:0x{:08x} next_nbytes:{}",nbwr_tot,nbwr,next_offset,next_nbytes);
+      TLOG(TLVL_INFO) << std::format("DTC:{} ROC:{} pass:{:4} nbwr_tot:{:10d} last_nbwr:{:6d} next_offset:0x{:08x} next_nbytes:{}",
+                                     Dtc_i->PcieAddr(),Link,pass,nbwr_tot,nbwr,next_offset,next_nbytes);
       nbwr = 0;
     }
 //--------------------------------------------------
@@ -1394,6 +1456,7 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
     if (DebugMode & 0x8) {
       Dtc_i->PrintBuffer(input.data(),input.size());
     }
+    pass++;
   }
   
   TLOG(TLVL_INFO) << std::format("-- END: nbwr_tot:{:10d} last_nbwr:{:6d}",nbwr_tot,nbwr);
