@@ -1618,6 +1618,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return rv;
   }
 
+  void DtcInterface::WriteROCRegister(const int link,
+                                      const uint16_t address,
+                                      const uint16_t data){
+    int timeout = 200;
+    auto dtclink = DTCLib::DTC_Link_ID(link);
+    this->fDtc->WriteROCRegister(dtclink, address, data, false, timeout);
+  }
+
 // Link = -1: 'all ROCs'
 // returns number of failed links .. delay in units of 5ns
 //-----------------------------------------------------------------------------

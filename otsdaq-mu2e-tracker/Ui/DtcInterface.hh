@@ -238,6 +238,7 @@ namespace trkdaq {
                                           const DTCLib::roc_data_t dac);
 
 		uint16_t ReadROCRegister(int link, uint16_t address);
+		void WriteROCRegister(int link, uint16_t address, uint16_t data);
 
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
