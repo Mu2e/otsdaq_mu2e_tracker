@@ -93,6 +93,8 @@ public:
 	void DeserializeAndSetThresholds(__ARGS__);
 	void TestJSON(__ARGS__);
 
+	void UpdateChannelThresholds(__ARGS__);
+
 	// state machine
 	//----------------
 	void configure(void) override;

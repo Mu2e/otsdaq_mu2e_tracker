@@ -1,6 +1,7 @@
 #include <format>
 
 #include "otsdaq-mu2e-tracker/FEInterfaces/ROCTrackerInterface.h"
+#include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/Macros/InterfacePluginMacros.h"
 
 using namespace ots;
@@ -292,6 +293,15 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Serialization successful"},
 	                        1,
 	                        "" /* tooltip info here */);
+
+	registerFEMacroFunction("Update Channel Thresholds",
+	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
+	                            &ROCTrackerInterface::UpdateChannelThresholds),
+	                        std::vector<std::string>{"ChannelUID", "ThresholdCal", "ThresholdHV"},
+	                        std::vector<std::string>{"Result"},
+	                        1,
+	                        "Updates ThresholdCal and ThresholdHV for a given ChannelUID "
+	                        "in SubsystemTrackerChannelsTable. Creates a new table version.");
 }  // end constructor
 
 ROCTrackerInterface::~ROCTrackerInterface(void)
@@ -1100,6 +1110,65 @@ nlohmann::json ROCTrackerInterface::SafeDeserialize(std::string path,
 
   auto rv = json[key];
   return rv;
+}
+
+void ROCTrackerInterface::UpdateChannelThresholds(__ARGS__)
+{
+	std::string channelUID   = __GET_ARG_IN__("ChannelUID", std::string, "");
+	std::string thresholdCal = __GET_ARG_IN__("ThresholdCal", std::string, "");
+	std::string thresholdHV  = __GET_ARG_IN__("ThresholdHV", std::string, "");
+
+	__FE_COUT__ << "Updating thresholds for ChannelUID=" << channelUID
+	            << " ThresholdCal=" << thresholdCal
+	            << " ThresholdHV=" << thresholdHV << __E__;
+
+	if(channelUID.empty())
+	{
+		__SET_ARG_OUT__("Result", "Error: ChannelUID is required.");
+		return;
+	}
+
+	std::map<std::string, std::map<std::string, std::string>> cellUpdates;
+	if(!thresholdCal.empty())
+		cellUpdates[channelUID]["ThresholdCal"] = thresholdCal;
+	if(!thresholdHV.empty())
+		cellUpdates[channelUID]["ThresholdHV"] = thresholdHV;
+
+	if(cellUpdates[channelUID].empty())
+	{
+		__SET_ARG_OUT__("Result", "Error: At least one of ThresholdCal or ThresholdHV must be provided.");
+		return;
+	}
+
+	try
+	{
+		ConfigurationManagerRW  cfgMgrInst("FEMacro_admin");
+		ConfigurationManagerRW* cfgMgr = &cfgMgrInst;
+
+		std::string accumulatedWarnings;
+		cfgMgr->getAllTableInfo(true,
+		                       &accumulatedWarnings,
+		                       "",
+		                       false,
+		                       false,
+		                       true /* initializeActiveGroups */);
+
+		TableVersion newVersion = cfgMgr->updateTableCells(
+		    "SubsystemTrackerChannelsTable",
+		    cellUpdates,
+		    "FEMacro" /* author */);
+
+		std::stringstream result;
+		result << "Success: " << channelUID << " updated. New version: v" << newVersion;
+		__FE_COUT__ << result.str() << __E__;
+		__SET_ARG_OUT__("Result", result.str());
+	}
+	catch(const std::runtime_error& e)
+	{
+		std::string errMsg = std::string("Error: ") + e.what();
+		__FE_COUT_ERR__ << errMsg << __E__;
+		__SET_ARG_OUT__("Result", errMsg);
+	}
 }
 
 DEFINE_OTS_INTERFACE(ROCTrackerInterface)
