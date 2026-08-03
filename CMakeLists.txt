@@ -23,6 +23,7 @@ cet_set_compiler_flags(
 #------------------------------------------------------------------------------
 # it looks that these packages are looked for only after cet_cmake_env
 #------------------------------------------------------------------------------
+find_package(art               3.15.00 REQUIRED EXPORT)
 find_package(artdaq            3.12.07 REQUIRED EXPORT)
 find_package(artdaq-core       3.09.16 REQUIRED EXPORT)
 find_package(artdaq-core-demo  1.11.00 REQUIRED EXPORT)

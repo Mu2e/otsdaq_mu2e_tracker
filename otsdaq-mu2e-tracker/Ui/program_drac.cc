@@ -1312,9 +1312,11 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
   std::ifstream file(pq_fn, std::ios::binary);
 
   if (not file.is_open()) {
-    TLOG(TLVL_ERROR) << std::format("failed to open file:{} . BAIL OUT",Fn);
+    TLOG(TLVL_ERROR) << std::format("failed to open file:{} . BAIL OUT",pq_fn);
     return -1;
   }
+
+  TLOG(TLVL_INFO) << std::format("programming image : {}",pq_fn);
 
   file.seekg(0, std::ios::end);
   int fsize = file.tellg();
@@ -1354,10 +1356,10 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
 // check that the previous operation has completed
 // don't remember why sleep's are here
 //-----------------------------------------------------------------------------
-    int      wait_time_us(2000),  kMaxTries(1000);
+    int      wait_time_us(5000),  kMaxTries(1000);
     int      ntries(0);
     uint16_t u;
-    while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,1000)) != 0x8000) and (ntries < kMaxTries)) {
+    while (((u = Dtc_i->fDtc->ReadROCRegister(roc,128,10000)) != 0x8000) and (ntries < kMaxTries)) {
       std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
       ntries++;
     };
@@ -1376,7 +1378,7 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
 //-----------------------------------------------------------------------------
     ntries = 0;
     while (ntries < kMaxTries) {
-      u = Dtc_i->fDtc->ReadROCRegister(roc,129,1000);
+      u = Dtc_i->fDtc->ReadROCRegister(roc,129,10000);
       if (((u >> 12) & 0x1) == 0) break;
       ntries++;
       std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
@@ -1394,7 +1396,7 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
     
     int nw (-1);
     ntries = 0;
-    while ((nw = Dtc_i->fDtc->ReadROCRegister(roc,129,1000)) != 8) {
+    while ((nw = Dtc_i->fDtc->ReadROCRegister(roc,129,10000)) != 8) {
       std::this_thread::sleep_for(std::chrono::microseconds(wait_time_us));
       TLOG(TLVL_DEBUG+1) << std::format("DTC:{} ROC:{} pass:{:4} attempt:{:4} to read R129, nw:{}",Dtc_i->PcieAddr(),Link,pass,ntries,nw);
       ntries++;
@@ -1418,7 +1420,7 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> res;
     nw -= 4;
-    Dtc_i->fDtc->ReadROCBlock(res,roc,REG_DIGI,nw,false,100);
+    Dtc_i->fDtc->ReadROCBlock(res,roc,REG_DIGI,nw,false,1000);
     int next_offset = int(res[0]) + (int)(res[1]<<16);
     int next_nbytes = int(res[2]) + (int)(res[3]<<16);
     
@@ -1448,7 +1450,7 @@ int program_drac::spi_program_digis(trkdaq::DtcInterface* Dtc_i, int Link, const
       input.push_back(w16);
     }
     
-    Dtc_i->fDtc->WriteROCBlock(roc,REG_DIGI,input,false,increment_address,100);
+    Dtc_i->fDtc->WriteROCBlock(roc,REG_DIGI,input,false,increment_address,1000);
 
     nbwr     += next_nbytes;
     nbwr_tot += next_nbytes;

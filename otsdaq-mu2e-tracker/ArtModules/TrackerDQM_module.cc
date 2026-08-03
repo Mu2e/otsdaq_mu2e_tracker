@@ -32,27 +32,6 @@ int TrackerDQM::dtcIndex(int DtcID) {
 }
 
 //-----------------------------------------------------------------------------
-// unsigned int reverseBits(unsigned int num) {
-//   unsigned int numOfBits = 10; // sizeof(num) * 8; // Number of bits in an unsigned int
-
-//   unsigned int reversedNum = 0;
-//   for (unsigned int i = 0; i < numOfBits; ++i) {
-//     if ((num & (1 << i)) != 0)
-//       reversedNum |= 1 << ((numOfBits - 1) - i);
-//   }
-
-//   return reversedNum;
-// }
-
-//-----------------------------------------------------------------------------
-// is this still in play ?
-//-----------------------------------------------------------------------------
-// unsigned int correctedTDC(unsigned int TDC) {
-//   uint32_t corrected_tdc = ((TDC & 0xFFFF00) + (0xFF  - (TDC & 0xFF)));
-//   return corrected_tdc;
-// }
-
-//-----------------------------------------------------------------------------
 void TrackerDQM::unpack_adc_waveform(mu2e::TrackerDataDecoder::TrackerDataPacket* Hit, float* Wf, WfParam_t* Wp) {
 
     int n_adc_packets = Hit->NumADCPackets;
@@ -1042,13 +1021,99 @@ void TrackerDQM::analyze(const art::Event& AnEvent) {
 //-----------------------------------------------------------------------------
 // first get all fragments, select Tracker ones
 //-----------------------------------------------------------------------------
-  auto handle = AnEvent.getValidHandle<std::vector<artdaq::Fragment> >("daq:TRK");
-//-----------------------------------------------------------------------------
-// proxy for event histograms
-//-----------------------------------------------------------------------------
-  TLOG(TLVL_DEBUG+1) << Form(" Event : %06i:%06i:%08i\n", AnEvent.run(),AnEvent.subRun(),AnEvent.event());
-  if (_diagLevel > 1) printf("%s\n",Form(" Event : %06i:%06i:%08i", AnEvent.run(),AnEvent.subRun(),AnEvent.event()));
+
+  artdaq::Fragments    fragments;
+  artdaq::FragmentPtrs containerFragments;
+
+  auto fragmentHandles = _art_event->getMany<std::vector<artdaq::Fragment>>();
+  _event->nfrag = 0;
   
+  if (_debugMode > 0) {
+    std::string msg = std::format("n_fragment_collections):{}",fragmentHandles.size());
+    print_(e_DEBUG,msg);
+  }
+
+  for (auto handle : fragmentHandles) {
+    if (!handle.isValid() || handle->empty())     continue;
+
+    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
+      // not sure what this is....
+      for (const auto& cont : *handle) {
+        artdaq::ContainerFragment contf(cont);
+        for (size_t ii = 0; ii < contf.block_count(); ++ii) {
+          containerFragments.push_back(contf[ii]);
+          fragments.push_back(*containerFragments.back());
+        }
+      }
+    }
+    else {
+      // 
+      int n_fragments = handle->size();
+
+      _event->nfrag += n_fragments;
+      
+      if (_debugMode) {
+        print_(e_DEBUG,std::format("-- next fragment collection with n_fragments:{}",n_fragments));
+      }
+      
+      for (int ifrag=0; ifrag<n_fragments; ifrag++) {
+        const artdaq::Fragment* frag = &handle->at(ifrag);
+
+        if (_debugMode and (_debugBits[0] > 0)) {
+          print_(e_DEBUG,std::format("-- fragment number:{} version:{} timestamp:{} data_size:{} type:{} DTC_SubEventHeader.size:{}",
+                             ifrag,frag->version(),frag->timestamp(),frag->dataSizeBytes(),
+                             frag->typeString(),sizeof(DTCLib::DTC_SubEventHeader)));
+          //          print_fragment(frag);
+        }
+//-----------------------------------------------------------------------------
+// skip CFO fragment (type = 12)
+//-----------------------------------------------------------------------------
+        if (frag->type() == mu2e::FragmentType::CFO)        continue;
+        uint8_t* fdata = (uint8_t*) (frag->dataBegin());
+//-----------------------------------------------------------------------------
+// skip fragments with the payload size less than the DTC header size
+// do it only for the current data format (runs > 107236)
+//-----------------------------------------------------------------------------
+        if (frag->dataSizeBytes() <= sizeof(DTCLib::DTC_SubEventHeader)) {
+          std::string msg = std::format("ERROR: fragment:{} data size:{} < DTC_SubEventHeader.size:{}. SKIP FRAGMENT",
+                                        ifrag,frag->dataSizeBytes(),sizeof(DTCLib::DTC_SubEventHeader));
+          print_(e_DEBUG,msg);
+          continue;
+        }
+        fdata += sizeof(DTCLib::DTC_EventHeader);
+//-----------------------------------------------------------------------------
+// skip non-tracker fragments
+// after a recent format change, a DTC fragment may contain ROC data from different
+// subdetectors, make sure that at least one of them is the tracker ROC
+//-----------------------------------------------------------------------------
+        DTCLib::DTC_SubEventHeader* seh = (DTCLib::DTC_SubEventHeader*) fdata;
+        if ((seh->link0_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link1_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link2_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link3_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link4_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker) and
+            (seh->link5_subsystem != DTCLib::DTC_Subsystem::DTC_Subsystem_Tracker)     )
+                                                            continue;
+//-----------------------------------------------------------------------------
+// this is a tracker DTC fragment, loop over the ROCs
+//-----------------------------------------------------------------------------
+        ushort* buf = (ushort*) (frag.dataBegin());
+        int nbytes            = buf[0];
+        int fsize             = frag.sizeBytes();
+
+        
+        uint8_t* roc_data     = fdata+sizeof(*seh); // everything starts from the subevent (DTC) header
+        uint8_t* last_address = fdata+nbytes;
+        for (int lnk=0; lnk<6; lnk++) {
+          RocDataHeaderPacket_t* rdh = (RocDataHeaderPacket_t*) roc_data;
+          RocData_t* nt_rd   = &nt_fr->roc[lnk];
+          // ...
+          roc_data           = roc_data+rdh->byteCount;
+        }
+      }
+    }
+  }
+
   int ifrag = 0;
 
   for (const artdaq::Fragment& frag : *handle) {

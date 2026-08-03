@@ -7,6 +7,14 @@ BEGIN_PROLOG
 otsdaq_mu2e_tracker : {
 
     analyzers : {
+        
+        TrkDqmNew : { module_type: TrkDqmNew
+            diagMode       : 0
+            debugBits      : [ "bit0:0", "bit1:0" ]
+            sdCollTag      : "makeSD"
+            shCollTag      : "makeSH"
+            port           : 8877
+        }
     
         TrackerDQM : { module_type:TrackerDQM
             analyzeFragments    : 1           ## set to 0 to print only

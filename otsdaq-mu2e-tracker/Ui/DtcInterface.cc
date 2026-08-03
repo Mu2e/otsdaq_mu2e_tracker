@@ -434,17 +434,23 @@ namespace trkdaq {
   int DtcInterface::ResetDigis(int Link) {
     int rc(0);
     TLOG(TLVL_DEBUG+1) << std::format("-- START: Link:{}\n",Link);
+
+    try { 
+      fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x0,false,1000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x1,false,1000);
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("failed to write DIGIRESET\n");
+      rc = -1;
+      return rc;
+    }
     
-    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x0,false,1000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    fDtc->WriteROCRegister(DTCLib::DTC_Link_ID(Link),registers::rocdcs::DIGIRESET,0x1,false,1000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-   
 //-----------------------------------------------------------------------------
 // not sure what to do with the print_level, for now, set it to zero
 //-----------------------------------------------------------------------------
     int print_level = 0;
-    ControlRoc_InitByFiber(Link,print_level);
+    rc = ControlRoc_InitByFiber(Link,print_level);
 
     TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}\n",rc);
     return rc;
@@ -545,9 +551,15 @@ namespace trkdaq {
       return rv;
     }
                                         // write nothing to trigger query
-    vector<roc_data_t> empty;
-    fDtc->WriteROCBlock(Link, REG_READDEVICE, empty, false, false, 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    try {
+      vector<roc_data_t> empty;
+      fDtc->WriteROCBlock(Link, REG_READDEVICE, empty, false, false, 1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("failed to write READ_READDEVICE");
+      return rv;
+    }
 
     // read back payload
     rv = this->ReadROCBlockEnsured(Link, REG_READDEVICE);
@@ -1324,187 +1336,6 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     return 0;
   }
 
-//-----------------------------------------------------------------------------
-// ROC reset : write 0x1 to register 14
-// if Fn = "", don't write the output file
-//-----------------------------------------------------------------------------
-  int DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
-                                   ulong             FirstEWT   ,
-                                   int               PrintLevel ,
-                                   std::ostream&     Stream     ,
-                                   int               Validate   ,
-                                   const std::string Fn         ) {
-    int rc(0);
-    
-    TLOG(TLVL_DEBUG+1) << std::format("-- START");
-    ulong    ewt      = FirstEWT;
-    bool     match_ts = false;
-    int      nerr_tot  (0);
-    ulong    nbytes_tot(0);
-    ulong    offset    (0);               // used in validation mode
-    int      nerr_roc[6], nerr_roc_tot[6];
-
-    FILE*    file(nullptr);
-    
-    if (Fn != "") {
-//-----------------------------------------------------------------------------
-// check if Fn exists 
-//-----------------------------------------------------------------------------
-      if((file = fopen(Fn.data(),"r")) != NULL) {
-        // file exists
-        fclose(file);
-        TLOG(TLVL_ERROR) << "file " << Fn << " already exists, BAIL OUT";
-        return -1;
-      }
-      else {
-//-----------------------------------------------------------------------------
-// Fn doesn't exist, open it 
-//-----------------------------------------------------------------------------
-        TLOG(TLVL_DEBUG+1) << std::format("opening output binary file {}",Fn);
-        file = fopen(Fn.data(),"w");
-        if (file == nullptr) {
-          TLOG(TLVL_ERROR) <<  "failed to open " << Fn << " , BAIL OUT";
-          return -2;
-        }
-      }
-    }
-//-----------------------------------------------------------------------------
-// reset per-roc error counters
-//-----------------------------------------------------------------------------
-    for (int i=0; i<6; i++) {
-      nerr_roc    [i] = 0;
-      nerr_roc_tot[i] = 0;
-    }
-//-----------------------------------------------------------------------------
-// always read an event into the same external buffer (VSub), 
-// so no problem with the memory management
-//-----------------------------------------------------------------------------
-    int header_printed = 0;
-    while(1) {
-      // sleep(1);
-      DTC_EventWindowTag event_tag = DTC_EventWindowTag(ewt);
-      try {
-        if (PrintLevel > 0) {
-//-----------------------------------------------------------------------------
-// print header
-// if fValidate != 0, there is a lot of printout, so it is better to print header
-// for every event
-//-----------------------------------------------------------------------------
-          if ((Validate and PrintLevel > 1) or (header_printed == 0)) {
-            Stream << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
-            Stream << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
-            header_printed = 1;
-          }
-        }
-        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
-        int sz = VSub.size();
-        if (sz == 0) {
-          if (PrintLevel > 0) {
-            Stream << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
-          }
-          break;
-        }
-//-----------------------------------------------------------------------------
-// a subevent contains data of a single DTC
-//-----------------------------------------------------------------------------
-        int rs[6];
-        std::vector<uint8_t> dtc_block;
-        
-        for (int i=0; i<sz; i++) {
-          DTC_SubEvent* ev  = VSub[i].get();
-          uint64_t ew_tag   = ev->GetEventWindowTag().GetEventWindowTag(true);
-          char*    raw_data = (char*) ev->GetRawBufferPointer();
-
-          int      nbytes  = ev->GetSubEventByteCount();
-//-----------------------------------------------------------------------------
-// create a local copy of the DTC data block
-//-----------------------------------------------------------------------------
-          dtc_block.reserve(nbytes);
-          memcpy(dtc_block.data(),raw_data,nbytes);
-
-          nbytes_tot += nbytes;
-
-          int nerr(0);
-          
-          if (Validate > 0) {
-            // different readout modes - different validation
-            if      ((fRocReadoutMode & 0xf) == 0) {
-              nerr = ValidateVarPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-            else if ((fRocReadoutMode & 0xf) == 1) {
-              nerr = ValidateDigiPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-            else if ((fRocReadoutMode & 0xf) == 2) {
-              nerr = ValidateFixedPatterns((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
-            }
-              
-            nerr_tot += nerr;
-            for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
-          }
-
-          uint8_t* roc_data  = dtc_block.data()+0x30;
-
-          int nb_roc[6];
-          for (int roc=0; roc<6; roc++) {
-            nb_roc[roc] = *((ushort*) roc_data);
-            rs[roc]     = *((ushort*)(roc_data+0x0c));
-            roc_data   += nb_roc[roc];
-          }
-        
-          if (PrintLevel > 0) {
-            Stream << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
-                           ewt,i,ew_tag,nbytes,nbytes_tot,
-                           rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
-                           nerr,nerr_tot,
-                           nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
-            if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
-              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2,0x0,Stream);
-            }
-          }
-          
-          if (file) {
-//-----------------------------------------------------------------------------
-// write event to output file
-//-----------------------------------------------------------------------------
-            int nbb = fwrite(dtc_block.data(),1,nbytes,file);
-            if (nbb == 0) {
-              TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
-              fclose(file);
-              return -3;
-            }
-          }
-        }
-        
-        ewt++;                          // event in sequence
-      }
-      catch (...) {
-        TLOG(TLVL_ERROR) << std::format("error reading event_tag:{} ewt:{}",event_tag.GetEventWindowTag(true),ewt);
-        break;
-      }
-    }
-
-    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
-//-----------------------------------------------------------------------------
-// print summary
-//-----------------------------------------------------------------------------
-    ulong nev = ewt-FirstEWT;
-    TLOG(TLVL_DEBUG+1) << Form("nevents: %10li nbytes_tot: %13li Validate:%i\n",nev, nbytes_tot,Validate)
-                       << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
-                               nerr_tot,
-                               nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
-                               nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
-//-----------------------------------------------------------------------------
-// to simplify first steps, assume that in a file writing mode all events 
-// are read at once, so close the file on exit
-//-----------------------------------------------------------------------------
-    if (file) {
-      fclose(file);
-    }
-    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}",rc);
-    return rc;
-  }
-
-  
 //-----------------------------------------------------------------------------  
 // 2025-01-31: P.Murat: presently, calls to begin_dcs_transaction() and end_dcs_transaction()
 // are just TODO reminders and don't do anything useful
@@ -1600,16 +1431,23 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     }
 
     DTC_Link_ID link_id = DTC_Link_ID(Link);
-  
-  // write block number to reg 33
-    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_L,((Block      ) & 0xffff) ,false,1000);
-    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_H,((Block >> 16) & 0xffff) ,false,1000);
-  // cycle reg 32
-    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x01,false,1000);
-    fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x00,false,1000);
-  // success: reg 20:0x8080  reg21:nwords to read (512)
-    int reg_20 = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_WR_STATUS,1000);         // ox8080
-    int nw     = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_RD_STATUS,1000);         // number of 16-bit words in a 1 kByte block (512)
+    int nw(-1), reg_20;
+    try {
+      // write block number to reg 33
+      fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_L,((Block      ) & 0xffff) ,false,1000);
+      fDtc->WriteROCRegister(link_id,registers::rocdcs::DCM_MEM_OFFSET_H,((Block >> 16) & 0xffff) ,false,1000);
+      // cycle reg 32
+      fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x01,false,1000);
+      fDtc->WriteROCRegister(link_id,registers::rocdcs::DCS_MEM_READ, 0x00,false,1000);
+      // success: reg 20:0x8080  reg21:nwords to read (512)
+      reg_20 = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_WR_STATUS,1000);         // ox8080
+      nw     = fDtc->ReadROCRegister (link_id,registers::rocdcs::DDR_FIFO_RD_STATUS,1000);         // number of 16-bit words in a 1 kByte block (512)
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("failed.... ");
+      rc = -1;
+      return rc;
+    }
 //-----------------------------------------------------------------------------
 // at this point, if everything was OK (nw=512), can read the data
 //-----------------------------------------------------------------------------
@@ -2018,6 +1856,25 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     }
     return rc;
   }
+
+//-----------------------------------------------------------------------------
+  int  DtcInterface::Validate(ushort* Data, uint64_t EwTag, uint64_t* Offset, int PrintLevel, int* NErrRoc) {
+    int nerr(0);
+    
+    // different readout modes - different validation
+    
+    if      ((fRocReadoutMode & 0xf) == 0) {
+      nerr = ValidateVarPatterns(Data,EwTag,Offset,PrintLevel,NErrRoc);
+    }
+    else if ((fRocReadoutMode & 0xf) == 1) {
+      nerr = ValidateDigiPatterns(Data,EwTag,Offset,PrintLevel,NErrRoc);
+    }
+    else if ((fRocReadoutMode & 0xf) == 2) {
+      nerr = ValidateFixedPatterns(Data,EwTag,Offset,PrintLevel,NErrRoc);
+    }
+    return nerr;
+  }
+  
 };
 
 #endif

@@ -771,6 +771,7 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
   int DtcInterface::ControlRoc_SetThresholds(int Link, uint16_t* GT_Cal_HV,
                                              int PrintLevel, std::ostream& Stream) {
+    int rc(0);
 //-----------------------------------------------------------------------------
 // convert into enum
 //-----------------------------------------------------------------------------
@@ -784,21 +785,27 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec(GT_Cal_HV,GT_Cal_HV+4*96);
 
-    bool increment_address(false);
-    auto roc  = DTC_Link_ID(Link);
-    fDtc->WriteROCBlock(roc,REG_SETGAINTHR,vec,false,increment_address,100);
-    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    try { 
+      bool increment_address(false);
+      auto roc  = DTC_Link_ID(Link);
+      fDtc->WriteROCBlock(roc,REG_SETGAINTHR,vec,false,increment_address,100);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
 
-    uint16_t u; 
-    while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
+      uint16_t u; 
+      while ((u = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_CMD_STATUS,100)) != 0x8000) {}; 
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_CMD_STATUS,u);
 //-----------------------------------------------------------------------------
 // register 129: number of words to read, if empty: 0x1000
 //-----------------------------------------------------------------------------
-    int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
-    TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
+      int nw = fDtc->ReadROCRegister(roc,registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,100);
+      TLOG(TLVL_DEBUG+1) << Form("reg:%03i val:0x%04x\n",registers::rocdcs::DCS_TX_BUFFER_FIFO_STATUS,nw);
+    }
+    catch (...) {
+      TLOG(TLVL_ERROR) << std::format("failed");
+      rc = -1;
+    }
 
-    return 0;
+    return rc;
   }
 
 
@@ -1137,11 +1144,6 @@ namespace  trkdaq {
         int rc = RocBlockRead(i,REG_READGITCOMMIT,data,nw_expected);
         if (rc < 0) {
           GitCommit = "READ_ERROR";
-          // int nw = -rc;
-          // if ((nw > 0) and (PrintLevel & 0x4)) {
-          //   PrintBuffer(data.data(),nw,0x0,Stream);
-          // }
-          
         }
         else {
           std::stringstream ss;
@@ -1247,7 +1249,7 @@ namespace  trkdaq {
 
 //-----------------------------------------------------------------------------
 // at this point, assume just one Link. If needed, make it more general (a mask) later
-// only unformatted printout internally, 
+// only unformatted printout internally,
 //-----------------------------------------------------------------------------
   int  DtcInterface::ControlRoc_Rates(int                    Link,
                                       std::vector<uint16_t>* V2,

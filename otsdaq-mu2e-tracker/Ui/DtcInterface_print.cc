@@ -395,44 +395,7 @@ namespace trkdaq {
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
     return rc;
   }
-//-----------------------------------------------------------------------------
-// 'nw' : number of 16-bit words to print.
-// if Stream == nullptr , use TLOG, otherwise - *Stream
-//-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream& Stream) {
 
-    ushort*      p16 = (ushort*) ptr;
-
-    int          n(0);
-    std::string  line;
-
-    // if (Stream == nullptr) { TLOG(TLVL_DEBUG+1) << Form("-------- nw = %i\n",nw); }
-    // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
-   
-    for (int i=0; i<nw; i++) {
-      if (n == 0) line = Form("0x%08x:",i*2+Offset);
-      ushort  word = p16[i];
-      line += Form(" 0x%04x",word);
-      
-      n   += 1;
-      if (n == 8) {
-        if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
-        else {
-          Stream             << line << std::endl;
-          TLOG(TLVL_DEBUG+1) << line << std::endl;
-        }
-        n = 0;
-      }
-    }
-    
-    if (n != 0) {
-      if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
-      else {
-        Stream             << line << std::endl;
-        TLOG(TLVL_DEBUG+1) << line << std::endl;
-      }
-    }
-  }
 
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintRatesSingleRoc(std::vector<uint16_t>* Rates, std::vector<int>* ChMask, std::ostream& Stream) {
@@ -441,6 +404,7 @@ namespace trkdaq {
 // formatted printout
 // should be 96*3*2+2*2 = 580 16-bit words
 // 3 words per channel (straw)
+// total counts the time in 200 MHz clock units, convert printed rate to kHz
 //-----------------------------------------------------------------------------
     int nw = Rates->size();
     if (nw != 580) {
@@ -489,6 +453,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
 // do the printing
 // bit 2: formattted printout, parallel
+// total counts the time in 200 MHz clock units, convert printed rate to kHz
 //-----------------------------------------------------------------------------
     float clock_tick(5.e-9); // 5 ns <-> 200 MHz clock
     

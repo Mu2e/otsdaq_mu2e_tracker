@@ -24,7 +24,6 @@ using namespace std;
 
 namespace mu2edaq {
   
-
   DtcInterface* DtcInterface::fgInstance[2] = {nullptr, nullptr};
   
 //-----------------------------------------------------------------------------
@@ -472,7 +471,7 @@ namespace mu2edaq {
     
     for (int i=0; i<6; i++) {
       if (LinkEnabled(i)) {
-        int ret = ResetLink(i);   // actually reset the ROC, this function is virtual
+        int ret = ResetLink(i);   // actually reset the ROC, this function is virtual and subdetector-specific
         rc += ret;
       }
     }
@@ -591,6 +590,178 @@ namespace mu2edaq {
     return std::vector<float>(registers.begin(), registers.end());
   }
 
+
+
+//-----------------------------------------------------------------------------
+// tracker ROC reset : write 0x1 to register 14
+// if Fn = "", don't write the output file
+//-----------------------------------------------------------------------------
+  int DtcInterface::ReadSubevents(std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& VSub, 
+                                  ulong             FirstEWT   ,
+                                  int               PrintLevel ,
+                                  std::ostream&     Stream     ,
+                                  int               Validation ,
+                                  const std::string Fn         ) {
+    int rc(0);
+    
+    TLOG(TLVL_DEBUG+1) << std::format("-- START");
+    ulong    ewt      = FirstEWT;
+    bool     match_ts = false;
+    int      nerr_tot  (0);
+    ulong    nbytes_tot(0);
+    ulong    offset    (0);               // used in validation mode
+    int      nerr_roc[6], nerr_roc_tot[6];
+
+    FILE*    file(nullptr);
+    
+    if (Fn != "") {
+//-----------------------------------------------------------------------------
+// check if Fn exists 
+//-----------------------------------------------------------------------------
+      if((file = fopen(Fn.data(),"r")) != NULL) {
+        // file exists
+        fclose(file);
+        TLOG(TLVL_ERROR) << "file " << Fn << " already exists, BAIL OUT";
+        return -1;
+      }
+      else {
+//-----------------------------------------------------------------------------
+// Fn doesn't exist, open it 
+//-----------------------------------------------------------------------------
+        TLOG(TLVL_DEBUG+1) << std::format("opening output binary file {}",Fn);
+        file = fopen(Fn.data(),"w");
+        if (file == nullptr) {
+          TLOG(TLVL_ERROR) <<  "failed to open " << Fn << " , BAIL OUT";
+          return -2;
+        }
+      }
+    }
+//-----------------------------------------------------------------------------
+// reset per-roc error counters
+//-----------------------------------------------------------------------------
+    for (int i=0; i<6; i++) {
+      nerr_roc    [i] = 0;
+      nerr_roc_tot[i] = 0;
+    }
+//-----------------------------------------------------------------------------
+// always read an event into the same external buffer (VSub), 
+// so no problem with the memory management
+//-----------------------------------------------------------------------------
+    int header_printed = 0;
+    while(1) {
+      // sleep(1);
+      DTC_EventWindowTag event_tag = DTC_EventWindowTag(ewt);
+      try {
+        if (PrintLevel > 0) {
+//-----------------------------------------------------------------------------
+// print header
+//-----------------------------------------------------------------------------
+          if ((Validation and PrintLevel > 1) or (header_printed == 0)) {
+            Stream << Form("      event  DTC     EW Tag nbytes   nbytes_tot  link0   nb0  link1   nb1  link2   nb2  link3   nb3  link4   nb4  link5   nb5  nerr nerr_tot\n");
+            Stream << Form("--------------------------------------------------------------------------------------------------------------------------------------------\n");
+            header_printed = 1;
+          }
+        }
+        VSub   = fDtc->GetSubEventData(event_tag, match_ts);
+        int sz = VSub.size();
+        if (sz == 0) {
+          if (PrintLevel > 0) {
+            Stream << Form(">>>> ------- ewt = %5li NDTCs:%2i END_OF_DATA\n",ewt,sz);
+          }
+          break;
+        }
+//-----------------------------------------------------------------------------
+// a subevent contains data of a single DTC
+//-----------------------------------------------------------------------------
+        int rs[6];
+        std::vector<uint8_t> dtc_block;
+        
+        for (int i=0; i<sz; i++) {
+          DTC_SubEvent* ev  = VSub[i].get();
+          uint64_t ew_tag   = ev->GetEventWindowTag().GetEventWindowTag(true);
+          char*    raw_data = (char*) ev->GetRawBufferPointer();
+
+          int      nbytes  = ev->GetSubEventByteCount();
+//-----------------------------------------------------------------------------
+// create a local copy of the DTC data block
+//-----------------------------------------------------------------------------
+          dtc_block.reserve(nbytes);
+          memcpy(dtc_block.data(),raw_data,nbytes);
+
+          nbytes_tot += nbytes;
+
+          int nerr(0);
+          
+          if (Validation > 0) {
+            nerr = Validate((ushort*) dtc_block.data(),ew_tag,&offset,PrintLevel,nerr_roc);
+              
+            nerr_tot += nerr;
+            for (int ir=0; ir<6; ir++) nerr_roc_tot[ir] += nerr_roc[ir];
+          }
+
+          uint8_t* roc_data  = dtc_block.data()+0x30;
+
+          int nb_roc[6];
+          for (int roc=0; roc<6; roc++) {
+            nb_roc[roc] = *((ushort*) roc_data);
+            rs[roc]     = *((ushort*)(roc_data+0x0c));
+            roc_data   += nb_roc[roc];
+          }
+        
+          if (PrintLevel > 0) {
+            Stream << Form(" %10li  %2i  %10li %5i %13li 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i 0x%04x %5i %5i %8i %4i %4i %4i %4i %4i %4i\n",
+                           ewt,i,ew_tag,nbytes,nbytes_tot,
+                           rs[0],nb_roc[0],rs[1],nb_roc[1],rs[2],nb_roc[2],rs[3],nb_roc[3],rs[4],nb_roc[4],rs[5],nb_roc[5],
+                           nerr,nerr_tot,
+                           nerr_roc[0],nerr_roc[1],nerr_roc[2],nerr_roc[3],nerr_roc[4],nerr_roc[5] );
+            if (((nerr > 0) and (PrintLevel > 1)) or (PrintLevel > 2)) {
+              PrintBuffer(ev->GetRawBufferPointer(),ev->GetSubEventByteCount()/2,0x0,Stream);
+            }
+          }
+          
+          if (file) {
+//-----------------------------------------------------------------------------
+// write event to output file
+//-----------------------------------------------------------------------------
+            int nbb = fwrite(dtc_block.data(),1,nbytes,file);
+            if (nbb == 0) {
+              TLOG(TLVL_ERROR) << Form("failed to write event %10li , close file and BAIL OUT\n",ew_tag);
+              fclose(file);
+              return -3;
+            }
+          }
+        }
+        
+        ewt++;                          // event in sequence
+      }
+      catch (...) {
+        TLOG(TLVL_ERROR) << std::format("error reading event_tag:{} ewt:{}",event_tag.GetEventWindowTag(true),ewt);
+        break;
+      }
+    }
+
+    //    fDtc->ReleaseAllBuffers(DTC_DMA_Engine_DAQ);
+//-----------------------------------------------------------------------------
+// print summary
+//-----------------------------------------------------------------------------
+    ulong nev = ewt-FirstEWT;
+    TLOG(TLVL_DEBUG+1) << Form("nevents: %10li nbytes_tot: %13li Validation:%i\n",nev, nbytes_tot,Validation)
+                       << Form("nerr_tot:%10i nerr_roc_tot: %8i %8i %8i %8i %8i %8i\n",
+                               nerr_tot,
+                               nerr_roc_tot[0],nerr_roc_tot[1],nerr_roc_tot[2],
+                               nerr_roc_tot[3],nerr_roc_tot[4],nerr_roc_tot[5]);
+//-----------------------------------------------------------------------------
+// to simplify first steps, assume that in a file writing mode all events 
+// are read at once, so close the file on exit
+//-----------------------------------------------------------------------------
+    if (file) {
+      fclose(file);
+    }
+    TLOG(TLVL_DEBUG+1) << std::format("-- END: rc:{}",rc);
+    return rc;
+  }
+
+
 //-----------------------------------------------------------------------------
 // to be overriden in derived subdetector-specific classes
 // ROC ID, ROC firmware ID , and the corresponding git commit
@@ -598,6 +769,16 @@ namespace mu2edaq {
   std::string  DtcInterface::GetRocID         (int Link) { return std::string("undefined"); }
   std::string  DtcInterface::GetRocDesignInfo (int Link) { return std::string("undefined"); }
   std::string  DtcInterface::GetRocFwGitCommit(int Link) { return std::string("undefined"); }
+
+//-----------------------------------------------------------------------------
+// to be overloaded, does nothing...
+//-----------------------------------------------------------------------------
+  int  DtcInterface::Validate(ushort* Data, uint64_t EwTag, uint64_t* Offset, int PrintLevel, int* NErrRoc) {
+    for (int i=0; i<6; i++) {
+      NErrRoc[i] = 0;
+    }
+    return 0;
+  }
 
 };
 #endif

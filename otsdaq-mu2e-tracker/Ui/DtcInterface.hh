@@ -97,6 +97,9 @@ namespace trkdaq {
                                     int                         PrintLevel =  0,
                                     std::ostream&               Stream     = std::cout);
 
+    // for a given channel, returns CAL=0/HV=1 
+    static int   DigiFpga(int Channel) { return fgFpga[Channel]; }
+    
                                         // result as an integer
     int          DigiRead (int Addr, int HvCal, uint32_t& Res, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
     int          DigiWrite(int Addr, int HvCal, uint16_t  Dat, int Link = -1, int PrintLevel = 0, std::ostream& Stream = std::cout);
@@ -264,11 +267,6 @@ namespace trkdaq {
 // reboot microcontroller unit, Link=-1: all active links
 //-----------------------------------------------------------------------------
     int          RebootMcu          (int Link);
-//-----------------------------------------------------------------------------
-// assume that to be printed are 'nw' uint16_t words , in hex
-// if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
-//-----------------------------------------------------------------------------    
-    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
 
     void         PrintDigiRegister  (uint32_t Reg, std::string& Desc, int Format, int LinkMask, std::ostream& Stream = std::cout);
     int          PrintDigis         (uint32_t Format, int Link, std::ostream& Stream = std::cout);
@@ -304,13 +302,6 @@ namespace trkdaq {
                                                  int                 PrintLevel = 0,
                                                  std::ostream&       Stream     = std::cout);
    
-    int          ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
-                                    ulong             FirstTS               ,
-                                    int               PrintLevel = 0        ,
-                                    std::ostream&     Stream     = std::cout,
-                                    int               Validate   = 0        , 
-                                    const std::string Fn         = ""       );  // if "", do not write output
-
                                         // returns the panel MNID
     int          ReadPanelID       (int Link, int PrintLevel = 0);
     int          ReadRocDDR        (int Link, int Block, std::ostream& Stream = std::cout);
@@ -338,24 +329,10 @@ namespace trkdaq {
     void         SetRocLaneMask    (int Mask ) { fRocLaneMask     = Mask ; }
     void         SetRocNHitsPerLane(int NHits) { fRocNHitsPerLane = NHits; }
 //-----------------------------------------------------------------------------
-// programming ROC over the fiber (I guess, this code is obsolete,
-// in use is the standalone version
-//-----------------------------------------------------------------------------
-    // int          SpiProgramRoc     (int Link, const RocFwData_t* FwData, const char* Version, int Doit=0, int PrintLevel=0, std::ostream& Stream = std::cout);
-    // int          SpiClearMemory    (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    // int          SpiLoadImage      (int Link, const roc_fw_data_t* Dir, int TestMode, int NWrites=-1, int PrintLevel=0, std::ostream& Stream = std::cout);
-    // int          SpiIapIndex       (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    // int          SpiIapAddress     (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-
-    // int          SpiReadFlash      (int Link, int Address, int NWords, std::vector<uint16_t>* Res,
-    //                                 int PrintLevel=0, std::ostream& Stream = std::cout);
-    
-    // int          SpiWriteDirectory (int Link, const roc_fw_data_t* Dir, int PrintLevel=0, std::ostream& Stream = std::cout);
-    // int          SpiWriteRecord    (int Link, int FirstAddr, int NWords, const uint16_t* Data,
-    //                                    int PrintLevel=0, std::ostream& Stream = std::cout);
-//-----------------------------------------------------------------------------
 // return number of found errors
 //-----------------------------------------------------------------------------
+    virtual int  Validate             (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc) override ;
+    
     int          ValidateDigiPatterns (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateFixedPatterns(ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);
     int          ValidateVarPatterns  (ushort* Data, ulong EwTag, ulong* Offset, int PrintLevel, int* NErrRoc);

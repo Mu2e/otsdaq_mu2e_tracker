@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 #include "iostream"
+#include <sstream>
+
 #include "dtcInterfaceLib/DTC.h"
 #include "artdaq-core-mu2e/Overlays/DTC_Types/DTC_Link_ID.h"
 
@@ -169,9 +171,14 @@ namespace mu2edaq {
     int          GetRocEwmDelay5ns(int Link) { return fRocEwmDelay5ns[Link]; }
     
     int          GetLinkMask() { return fLinkMask; }
+//-----------------------------------------------------------------------------
+// assume that to be printed are 'nw' uint16_t words , in hex
+// if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
+//-----------------------------------------------------------------------------    
+    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
     void         PrintFireflyTemp(std::ostream& Stream = std::cout);
     
-    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, std::ostream& Stream = std::cout);
+    void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, int NoCfo, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
     int          PrintStatus          (std::ostream& Stream = std::cout);
@@ -179,6 +186,13 @@ namespace mu2edaq {
 
     uint32_t     ReadRegister         (uint16_t Register);
 
+    int          ReadSubevents     (std::vector<std::unique_ptr<DTCLib::DTC_SubEvent>>& Vsev, 
+                                    ulong             FirstTS               ,
+                                    int               PrintLevel = 0        ,
+                                    std::ostream&     Stream     = std::cout,
+                                    int               Validation = 0        , 
+                                    const std::string Fn         = ""       );  // if "", do not write output
+    
 //-----------------------------------------------------------------------------
 // ROC functions
 // if LinkMask=0, use fLinkMask
@@ -238,6 +252,8 @@ namespace mu2edaq {
     virtual std::string              GetRocID         (int Link);
     virtual std::string              GetRocDesignInfo (int Link);
     virtual std::string              GetRocFwGitCommit(int Link);
+
+    virtual int  Validate(ushort* Data, uint64_t EwTag, uint64_t* Offset, int PrintLevel, int* NErrRoc);
   };
 
 };

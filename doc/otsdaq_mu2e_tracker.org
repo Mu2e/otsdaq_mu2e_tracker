@@ -193,10 +193,11 @@ t.spi_program_roc    (dtc_i,roc,"ROCV19");                // program the FPGA, s
 #+begin_src
 program_drac t;
 t.spi_program_digis(dtc_i,0,"CalV6.dat")
-// cycle the power
+// now reset the station (or cycle the LV on it), w/o the reset, can't proceed with the other side
+// as the microcontroller gets stuck in some way
 dtc_i->fDtc->SoftReset()
 t.spi_program_digis(dtc_i,0,"HVV6.dat")
-// cycle the power
+// reset the station (tower, test stand) again (or cycle the LV)
 dtc_i->fDtc->SoftReset()
 t.spi_read_digi_id(dtc_i,0,0,0xf)
 t.spi_read_digi_id(dtc_i,0,1,0xf)
@@ -205,15 +206,10 @@ t.spi_read_digi_id(dtc_i,0,1,0xf)
   programming each FPGA
 ** reprogramming the Minnesota ID                                            
 #+begin_src
-auto dtc_i = dtc_init("mu2e-trk-08-pcie1")
-program_drac t;
-auto image = t.get_image_data("ROCV16-1","bin")
-t.spi_write_image(dtc_i,1,image)
-// cycle the ROC LV
-// it the ROC is running V16+, programming (commented out line) should not be needed
-// t.spi_program_roc(dtc_i,1,"ROCV16-1")  // this should not be needed
-int panel_id=52
-dtc_i->PanelID_RW(1,1,panel_id,0xf)
+auto dtc_i = dtc_init("mu2e-trk-08",0)
+int link = 1;
+int mnid = 52;
+dtc_i->WritePanelID(link,mnid);
 dtc_i->ReadPanelID(1) ;                    // should return 52
 #+end_src
 * slow control of DTCs                                                       

@@ -23,6 +23,46 @@ namespace mu2edaq {
 
 
 namespace mu2edaq {
+
+//-----------------------------------------------------------------------------
+// 'nw' : number of 16-bit words to print.
+// if Stream == nullptr , use TLOG, otherwise - *Stream
+//-----------------------------------------------------------------------------
+  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream& Stream) {
+
+    ushort*      p16 = (ushort*) ptr;
+
+    int          n(0);
+    std::string  line;
+
+    // if (Stream == nullptr) { TLOG(TLVL_DEBUG+1) << Form("-------- nw = %i\n",nw); }
+    // else                   { (*Stream)        << Form("-------- nw = %i\n",nw); }
+   
+    for (int i=0; i<nw; i++) {
+      if (n == 0) line = Form("0x%08x:",i*2+Offset);
+      ushort  word = p16[i];
+      line += Form(" 0x%04x",word);
+      
+      n   += 1;
+      if (n == 8) {
+        if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
+        else {
+          Stream             << line << std::endl;
+          TLOG(TLVL_DEBUG+1) << line << std::endl;
+        }
+        n = 0;
+      }
+    }
+    
+    if (n != 0) {
+      if (Stream.rdbuf() == nullptr) TLOG(TLVL_INFO) << line << std::endl;
+      else {
+        Stream             << line << std::endl;
+        TLOG(TLVL_DEBUG+1) << line << std::endl;
+      }
+    }
+  }
+
 //-----------------------------------------------------------------------------
   void DtcInterface::PrintFireflyTemp(std::ostream& Stream) {
     int tmo_ms(50);
@@ -71,16 +111,22 @@ namespace mu2edaq {
 //-----------------------------------------------------------------------------
 // link 6: CFO
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, std::ostream& Stream) {
+  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, int NoCfo, std::ostream& Stream) {
 
     std::string text = Form("(0x%04x) : ",FirstReg);
     
     for (int i=0; i<7; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if ((i < 6) and (used == 0))                          continue;
-      uint32_t reg = FirstReg+4*i;
-      uint32_t iw  = ReadRegister(reg);
-      text        += Form(" 0x%08x",iw);
+      
+      if ((i == 6) and NoCfo) {
+        text      += Form("%11s","");
+      }
+      else {
+        uint32_t reg = FirstReg+4*i;
+        uint32_t iw  = ReadRegister(reg);
+        text        += Form(" 0x%08x",iw);
+      }
     }
 
     text += Form(" %s",Desc);
@@ -140,12 +186,17 @@ namespace mu2edaq {
     Stream << Form("%-s\n",text1.data());
     Stream << Form("%-s\n",text2.data());
     
-    PrintDtcLinkRegisters(0x9630,"TX Data Request Packet Count",Stream);
-    PrintDtcLinkRegisters(0x9650,"TX Heartbeat    Packet Count",Stream);
-    PrintDtcLinkRegisters(0x9670,"RX Data Header  Packet Count",Stream);
-    PrintDtcLinkRegisters(0x9690,"RX Data         Packet Count",Stream);
-    PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",Stream);
-    PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",Stream);
+    PrintDtcLinkRegisters(0x9320,"Retransmit request count    ",1,Stream);
+    PrintDtcLinkRegisters(0x9340,"Missed CFO packet count     ",1,Stream);
+   
+    PrintDtcLinkRegisters(0x9380,"Link status and errors      ",0,Stream);
+    PrintDtcLinkRegisters(0x93B0,"RX CDR unlock count         ",1,Stream);
+    PrintDtcLinkRegisters(0x9630,"TX Data Request Packet Count",0,Stream);
+    PrintDtcLinkRegisters(0x9650,"TX Heartbeat    Packet Count",0,Stream);
+    PrintDtcLinkRegisters(0x9670,"RX Data Header  Packet Count",0,Stream);
+    PrintDtcLinkRegisters(0x9690,"RX Data         Packet Count",0,Stream);
+    PrintDtcLinkRegisters(0xa400,"TX Event Window Marker Count",0,Stream);
+    PrintDtcLinkRegisters(0xa420,"RX Data Header Timeout Count",0,Stream);
                           
     TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
@@ -183,6 +234,7 @@ namespace mu2edaq {
     Stream << Form("%s\n",text.data());
     Stream << "-------------to be completed-------------------------------------------\n";
 
+    return 0;
   }
 };
 #endif

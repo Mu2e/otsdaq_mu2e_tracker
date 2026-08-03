@@ -1,13 +1,26 @@
 #
-cet_build_plugin(TrackerDQM art::module LIBRARIES REG
-art_root_io::TFileService_service
-artdaq-core-mu2e::Data
-ROOT::Hist
-ROOT::Tree
-ROOT::Core
-ROOT::RIO
-ROOT::Gui
-Offline::RecoDataProducts
+# cet_build_plugin(TrackerDQM art::module
+# 	LIBRARIES REG
+# 	art_root_io::TFileService_service
+# 	artdaq-core-mu2e::Data
+# 	ROOT::Hist                  
+# 	ROOT::Tree                  
+# 	ROOT::Core
+# 	ROOT::RIO
+# 	ROOT::Gui
+# 	Offline::RecoDataProducts
+# )
+
+cet_build_plugin(TrkDqmNew art::module
+	LIBRARIES REG
+	art_root_io::TFileService_service
+	artdaq-core-mu2e::Data
+	ROOT::Hist                  
+	ROOT::Tree                  
+	ROOT::Core
+	ROOT::RIO
+	ROOT::Gui
+	Offline::RecoDataProducts
 )
 
 # cet_build_plugin(StrawDigiFilter art::module LIBRARIES REG
