@@ -173,6 +173,22 @@ int dtc_configure_ja(int ClockSource, int Reset, int PcieAddress = -1) {
 }
 
 
+int node_configure_ja() {
+  // do reset, just in case...
+
+  std::cout << std::format("-- Configuring DTC0 JA\n");
+  auto dtc0 = DtcInterface::Instance(0);
+  int rc0 = dtc0->ConfigureJA(1,1);
+  dtc0->PrintStatus();
+  
+  std::cout << std::format("-- Configuring DTC1 JA\n");
+  auto dtc1 = DtcInterface::Instance(0);
+  int rc1 = dtc1->ConfigureJA(1,1);
+  dtc1->PrintStatus();
+
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // test of the 'READ' command implementation over the fiber
 // if LinkMask != -1, operate on the specified links only

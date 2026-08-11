@@ -243,8 +243,8 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     std::vector<uint16_t> vec;
     
-    TLOG(TLVL_DEBUG+1) << std::format("-- START Link: 0x{:04x} Par->enable_pulser:{} PrintLevel:{}",
-                                      Link,Par->enable_pulser,PrintLevel);
+    TLOG(TLVL_DEBUG+1) << std::format("-- START DTC:{} Link: 0x{:04x} Par->enable_pulser:{} PrintLevel:{}",
+                                      PcieAddr(),Link,Par->enable_pulser,PrintLevel);
 
     int link1(Link), link2(Link+1);
     if (Link == -1) {
@@ -252,7 +252,7 @@ namespace  trkdaq {
       link2 = 6;
     }
     else if ((Link > 5) or (Link < -1)){
-      TLOG(TLVL_ERROR) << "wrong Link: 0x" << std::hex << Link ;
+      TLOG(TLVL_ERROR) << std::format("DTC:{} wrong Link: 0x{:04x}",PcieAddr(),Link) ;
       return -1;
     }
                                         // rely on supplied constructor
@@ -266,7 +266,7 @@ namespace  trkdaq {
     vec.push_back(par->num_lookback);
         
     if (par->num_samples > 63) {
-      TLOG(TLVL_WARNING) << "num_samples:" << par->num_samples << " gt 63, truncate to 63" ;
+      TLOG(TLVL_WARNING) << std::format("DTC:{} link:{} num_samples:{} gt 63, truncate to 63",PcieAddr(),Link,par->num_samples);
       par->num_samples = 63;
     }
 

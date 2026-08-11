@@ -1082,6 +1082,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       if ((fLinkStatus[i] != 0) or (not LinkEnabled(i)))    continue;
 
       int print_level = 0;
+      int roc_rc      = 0;
 
       // first check that the alignment to the digis is ok
       ControlRoc_DigiRW_Input_t  pi;
@@ -1091,9 +1092,10 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       pi.address = registers::rocsc::DIGI_SERDES_ALIGNED;
       pi.data[0] = 0x0;
       pi.data[1] = 0x0;
-      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+      roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
       
-      if (rc < 0) {
+      if (roc_rc < 0) {
+        rc += roc_rc;
         std::string msg = std::format("DTC:{} link:{} failed to read SC RxB6",PcieAddr(),i);
         TLOG(TLVL_ERROR) << msg;
         Stream << std::format("Error:{}\n",msg);
@@ -1101,83 +1103,88 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
       }
       uint16_t realign = 0x0;
       if ((po.data[0] & 0xF) == 0xF){
-	      // aligned, check if getting errors 
-	      pi.address = registers::rocsc::CAL_SERDES_ERRORS;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      uint16_t calcount0 = po.data[0] & 0xFF;
-	      uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
-	      pi.address = registers::rocsc::HV_SERDES_ERRORS;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      uint16_t hvcount0 = po.data[0] & 0xFF;
-	      uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
+        // aligned, check if getting errors 
+        pi.address = registers::rocsc::CAL_SERDES_ERRORS;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        uint16_t calcount0 = po.data[0] & 0xFF;
+        uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
+        pi.address = registers::rocsc::HV_SERDES_ERRORS;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        uint16_t hvcount0 = po.data[0] & 0xFF;
+        uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
 
-	      if (calcount0 != 0x0)
-		      realign |= 0x1;
-	      if (calcount1 != 0x0)
-		      realign |= 0x2;
-	      if (hvcount0 != 0x0)
-		      realign |= 0x4;
-	      if (hvcount1 != 0x0)
-		      realign |= 0x8;
-
-	      if (rc < 0) {
-		      std::string msg = std::format("DTC:{} link:{} failed to read SC RxB8/B9",PcieAddr(),i);
-		      TLOG(TLVL_ERROR) << msg;
-		      Stream << std::format("Error:{}\n",msg);
-		      continue;
-	      }
-      }else{
-          realign = 0xF;
+        if (calcount0 != 0x0)
+          realign |= 0x1;
+        if (calcount1 != 0x0)
+          realign |= 0x2;
+        if (hvcount0 != 0x0)
+          realign |= 0x4;
+        if (hvcount1 != 0x0)
+          realign |= 0x8;
+        
+        if (roc_rc < 0) {
+          rc += roc_rc;
+          std::string msg = std::format("DTC:{} link:{} failed to read SC RxB8/B9",PcieAddr(),i);
+          TLOG(TLVL_ERROR) << msg;
+          Stream << std::format("Error:{}\n",msg);
+          continue;
+        }
+      } else{
+        realign = 0xF;
       }
  
       // Reset Digi-ROC serdes PCS/PMA if needed
       if (realign != 0x0){
-	      // FIXME for now do all lanes
-	      pi.rw = 1;
-	      pi.address = registers::rocsc::DIGI_SERDES_RESETS;
-	      pi.data[0] = 0x00;
-	      pi.data[1] = 0x0;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-	      pi.data[0] = 0xFF;
-	      pi.data[1] = 0x0;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-	      if (rc < 0) {
-		      std::string msg = std::format("DTC:{} link:{} failed to write SC RxB5",PcieAddr(),i);
-		      TLOG(TLVL_ERROR) << msg;
-		      Stream << std::format("Error:{}\n",msg);
-		      continue;
-	      }
-
-	      // check that now we are good
-	      pi.rw      = 0;                   // read
-	      pi.hvcal   = fpga::digi::roc;                   // ROC SC register
-	      pi.address = registers::rocsc::DIGI_SERDES_ALIGNED;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      if ((po.data[0] & 0xF) != 0xF){
-		      std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: ROC-DIGI serdes unaligned: expect:0x0f read:0x{:04x}, call Monica and Richie",PcieAddr(),i,po.data[0]);
-		      Stream << "ERROR: " << msg << std::endl;
-		      TLOG(TLVL_WARNING) << msg;
-		      // for now, leave status untouched
-		      // SetLinkStatus(i,-1);
-	      }
+        // FIXME for now do all lanes
+        pi.rw = 1;
+        pi.address = registers::rocsc::DIGI_SERDES_RESETS;
+        pi.data[0] = 0x00;
+        pi.data[1] = 0x0;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        pi.data[0] = 0xFF;
+        pi.data[1] = 0x0;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        if (roc_rc < 0) {
+          std::string msg = std::format("DTC:{} link:{} failed to write SC RxB5",PcieAddr(),i);
+          TLOG(TLVL_ERROR) << msg;
+          Stream << std::format("Error:{}\n",msg);
+          rc += roc_rc;
+          continue;
+        }
+        
+        // check that now we are good
+        pi.rw      = 0;                   // read
+        pi.hvcal   = fpga::digi::roc;                   // ROC SC register
+        pi.address = registers::rocsc::DIGI_SERDES_ALIGNED;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        if ((po.data[0] & 0xF) != 0xF){
+          rc += -10;
+          std::string msg = std::format("DTC:{} ROC link:{} ROC_DIGI SERDES unaligned: expect:0x0f read:0x{:04x}, call Monica and Richie",PcieAddr(),i,po.data[0]);
+          Stream << "ERROR: " << msg << std::endl;
+          TLOG(TLVL_WARNING) << msg;
+          // for now, leave status untouched
+          SetLinkStatus(i,-1);
+          continue;
+        }
 	      // aligned, check if getting errors 
-	      pi.address = registers::rocsc::CAL_SERDES_ERRORS;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      uint16_t calcount0 = po.data[0] & 0xFF;
-	      uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
-	      pi.address = registers::rocsc::HV_SERDES_ERRORS;
-	      rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
-	      uint16_t hvcount0 = po.data[0] & 0xFF;
-	      uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
-	      if (calcount0 != 0 || calcount1 != 0 || hvcount0 != 0 || hvcount1 != 0){
-		      std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: ROC-DIGI serdes errors, call Monica and Richie",PcieAddr(),i);
-		      Stream << "ERROR: " << msg << std::endl;
-		      TLOG(TLVL_WARNING) << msg;
-		      // for now, leave status untouched
-		      // SetLinkStatus(i,-1);
-	      }
+        pi.address = registers::rocsc::CAL_SERDES_ERRORS;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        uint16_t calcount0 = po.data[0] & 0xFF;
+        uint16_t calcount1 = (po.data[0] & 0xFF00) >> 8;
+        pi.address = registers::rocsc::HV_SERDES_ERRORS;
+        roc_rc = ControlRoc_DigiRW(&pi,&po,i,print_level,Stream);
+        uint16_t hvcount0 = po.data[0] & 0xFF;
+        uint16_t hvcount1 = (po.data[0] & 0xFF) >> 8;
+        if (calcount0 != 0 || calcount1 != 0 || hvcount0 != 0 || hvcount1 != 0){
+          std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: ROC-DIGI serdes errors, call Monica and Richie",PcieAddr(),i);
+          Stream << "ERROR: " << msg << std::endl;
+          TLOG(TLVL_WARNING) << msg;
+          rc += -10;
+          // for now, leave status untouched
+          SetLinkStatus(i,-1);
+        }
       }
 
       uint16_t u(0);
@@ -1188,6 +1195,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
         std::string msg = std::format("DTC:{} link:{} failed to read R18",PcieAddr(),i);
         TLOG(TLVL_ERROR) << msg;
         Stream << std::format("Error:{}\n",msg);
+        rc += -1;
         continue;
       }
       
@@ -1203,19 +1211,21 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           std::string msg = std::format("DTC:{} link:{} failed to write R13 (reset digis)",PcieAddr(),i);
           TLOG(TLVL_ERROR) << msg;
           Stream << std::format("Error:{}\n",msg);
+          rc += -1;
           continue;
         }
 
 	// now reset ROC fifos again 
 	try {
-		fDtc->WriteROCRegister(DTC_Link_ID(i),registers::rocdcs::RESET_DDR,1,false,100);       // 1 --> r14: reset ROC
-		std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
+          fDtc->WriteROCRegister(DTC_Link_ID(i),registers::rocdcs::RESET_DDR,1,false,100);       // 1 --> r14: reset ROC
+          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCReset));
 	}
 	catch (...) {
-		std::string msg = std::format("DTC:{} link:{} failed to write R14 (reset roc)",PcieAddr(),i);
-		TLOG(TLVL_ERROR) << msg;
-		Stream << std::format("Error:{}\n",msg);
-		continue;
+          std::string msg = std::format("DTC:{} link:{} failed to write R14 (reset roc)",PcieAddr(),i);
+          TLOG(TLVL_ERROR) << msg;
+          Stream << std::format("Error:{}\n",msg);
+          rc += -1;
+          continue;
 	}
 
 
@@ -1227,6 +1237,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
             std::string msg = std::format("DTC:{} ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",PcieAddr(),i,u);
             Stream << "ERROR: " << msg << std::endl;
             TLOG(TLVL_WARNING) << msg;
+            rc += -1;
+            continue;
             // for now, leave status untouched
             // SetLinkStatus(i,-1);
           }
@@ -1235,6 +1247,7 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
           std::string msg = std::format("DTC:{} link:{} failed to read R18",PcieAddr(),i);
           TLOG(TLVL_ERROR) << msg;
           Stream << std::format("ERROR: {}\n",msg);
+          rc += -1;
           continue;
         }
       }
