@@ -29,7 +29,7 @@ namespace trkdaq {
 //-----------------------------------------------------------------------------
   private:
     CfoInterface(int PcieAddr = -1, uint DtcMask = 0x1, DTC_SimMode SimMode=DTCLib::DTC_SimMode_Disabled,
-                 bool SkipInit = false);
+                 bool SkipInit = true /*false*/);
   public:
     
     virtual ~CfoInterface();

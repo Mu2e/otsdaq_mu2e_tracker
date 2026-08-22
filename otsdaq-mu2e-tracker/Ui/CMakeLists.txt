@@ -46,3 +46,10 @@ cet_add_compiler_flags(-g -O0)
 
 install_headers()
 install_source()
+
+if(${BUILD_PYTHON_INTERFACE})
+    message(-- otsdaq-mu2e-tracker/Ui BUILD_PYTHON_INTERFACE=${BUILD_PYTHON_INTERFACE})
+   find_package(SWIG REQUIRED)
+   include(${SWIG_USE_FILE})
+   add_subdirectory(python)
+endif()

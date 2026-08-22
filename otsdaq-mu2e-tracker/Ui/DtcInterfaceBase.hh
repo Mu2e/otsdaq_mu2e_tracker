@@ -8,8 +8,8 @@
 // 1. std::ostream& --> std::ostream* or use std::ostream(nullptr)
 //    to avoid ifs in the functions being called
 //-----------------------------------------------------------------------------
-#ifndef __mu2edaq_dtc_interface_hh__
-#define __mu2edaq_dtc_interface_hh__
+#ifndef __mu2edaq_dtc_interface_base_hh__
+#define __mu2edaq_dtc_interface_base_hh__
 
 #define __CLING__ 1
 
@@ -87,9 +87,9 @@ namespace mu2edaq {
     int IsCfo() { return fName == "CFO"; }
   };
 
-  class DtcInterface { 
+  class DtcInterfaceBase { 
   public:
-    static DtcInterface* fgInstance[2];
+    static DtcInterfaceBase* fgInstance[2];
 
     DTCLib::DTC*         fDtc;
     int                  fEnabled;           // if comes from ODB, could be 0
@@ -100,6 +100,7 @@ namespace mu2edaq {
                                              // fRocReadoutMode: (fixed_length << 4) | readout_mode
     int                  fRocReadoutMode;    // 0: 'counter patterns' 1:digis 2:checkerboard patterns
     int                  fSampleEdgeMode;    // 0:force raising 1:force falling 2:auto
+    int                  fEnableClockMarkers;//
     int                  fEmulateCfo;        // 1: this DTC operated in the emulated CFO mode
     int                  fJAMode;            // (clock_source << 4) | reset
 
@@ -120,12 +121,12 @@ namespace mu2edaq {
 // functions
 //-----------------------------------------------------------------------------
   protected:
-    DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
-    DtcInterface(DTCLib::DTC* Dtc) { fDtc = Dtc; }
+    DtcInterfaceBase(int PcieAddr, uint LinkMask, bool SkipInit);
+    DtcInterfaceBase(DTCLib::DTC* Dtc) { fDtc = Dtc; }
   public:
-    virtual ~DtcInterface();
+    virtual ~DtcInterfaceBase();
 
-    static DtcInterface* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
+    static DtcInterfaceBase* Instance(int PcieAddr, uint LinkMask = 0x11, bool SkipInit = true /*false*/);
 
     int PcieAddr() { return fPcieAddr; }
 
@@ -135,7 +136,7 @@ namespace mu2edaq {
 // clock source= 0:internal, 1:RTF (RJ45)
 // Reset: 0 or 1 (do it)
 // -1: use fJAMode
-//-----------------------------------------------------------------------------    
+//-----------------------------------------------------------------------------
     int          ConfigureJA(int ClockSource = -1, int Reset = -1, std::ostream& Stream = std::cout);
     int          ClearLinkStatus(int Link = -1);
 
@@ -175,14 +176,16 @@ namespace mu2edaq {
 // assume that to be printed are 'nw' uint16_t words , in hex
 // if Stream.rdbuf() == nullptr, PrintBuffer uses TRACE's TLOG
 //-----------------------------------------------------------------------------    
-    void         PrintBuffer        (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
-    void         PrintFireflyTemp(std::ostream& Stream = std::cout);
+    void         PrintBuffer          (const void* ptr, int nw, int Offset = 0, std::ostream& Stream = std::cout);
+    void         PrintFireflyTemp     (std::ostream& Stream = std::cout);
     
     void         PrintDtcLinkRegisters(uint     FirstReg, const char* Desc, int NoCfo, std::ostream& Stream = std::cout);
     void         PrintRegister        (uint16_t Register, const char* Title = "",
                                        std::ostream& Stream = std::cout);
     int          PrintStatus          (std::ostream& Stream = std::cout);
     virtual int  PrintRocStatus       (uint32_t Format = 1, int Link = -1, std::ostream& Stream = std::cout);
+
+    int          ReadCfoLinkStatus    (int PrintLevel, std::ostream& Stream);
 
     uint32_t     ReadRegister         (uint16_t Register);
 
@@ -238,7 +241,8 @@ namespace mu2edaq {
                                    int ForceCFOEdge    , 
                                    int EnableCFORxTx   , 
                                    int EnableAutogenDRP);
-
+    
+    int          SetupCfoLink     (int PrintLevel = 0, std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // to be redefined in the derived classes
 //-----------------------------------------------------------------------------

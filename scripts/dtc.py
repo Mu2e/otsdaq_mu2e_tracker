@@ -1,17 +1,27 @@
 #!/usr/bin/env python
 # rely on $DTCLIB_DTC
 
-import os, sys
+import os, sys, subprocess
 import TRACE
 
-sys.path.append(os.environ["PWD"]+'/build_slf7.x86_64/mu2e_pcie_utils/slf7.x86_64.e28.s128.prof/lib')
-sys.path.append(os.environ["PWD"]+'/build_slf7.x86_64/mu2e_pcie_utils/dtcInterfaceLib/python')
+result = subprocess.run(
+    "spack find -p mu2e-pcie-utils | grep mu2e-pcie-utils | tail -n 1 | awk '{print $2}'", 
+    shell=True,
+    capture_output=True,
+    text=True,
+    check=True,
+)
 
-import dtcInterfaceLib
+path = result.stdout.strip()
+sys.path.append(path+'/lib')
+
+print (sys.path)
+
+from dtcInterfaceLib import *
 
 class Dtc:
     def __init__(self):
-        self.dtc = dtcInterfaceLib.DTC(DTC_SimMode_NoCFO)
+        self.dtc = DTC(DTC_SimMode_Disabled,0,0x111111,"")
 
     def read_register(self,register):
         data = self.dtc.GetDevice().read_register(register,150)
@@ -38,9 +48,6 @@ class Dtc:
 # rely on os.environ['DTCLIB_DTC']
 #------------------------------------------------------------------------------
 if __name__ == "__main__":
-
-#    print(f'PYTHONHOME={os.environ["PYTHONHOME"]}')
-#    print(f'PYTHONPATH={os.environ["PYTHONPATH"]}')
 
     dtc = Dtc()
     dtc.print_status();

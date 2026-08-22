@@ -157,28 +157,57 @@ namespace trkdaq {
     int rc(0);
 
     TLOG(TLVL_DEBUG+1) << std::format("-- START: runplan_fn:{} TimeChainMask:0x{:08x}",RunPlanFn,fLinkMask);
+
+    fCfo->DisableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
+    fCfo->DisableBeamOffMode(CFO_Link_ID::CFO_Link_ALL);
     
+    fCfo->SoftReset();                  //         symmetric with DTC
     fCfo->DisableLinks();               // Ryan says this is important
-    fCfo->DisableEmbeddedClockMarker();
+    fCfo->ClearControlRegister();
+    
+    fCfo->DisableEmbeddedClockMarker(); // clearing 0x9100 above should've done this...
                                         // I guess, Halt disables transmission?
-    Halt();
+    Halt();                             // disables beam_on and beam_off - why repeat ?
+    
                                         // for convenience: to pass one parameter instead of two
     ConfigureJA(-1,-1,Stream);
+                                        // ... (step 2)
+    fCfo->ResetAllSERDESTx(); 
+                                        // (step 4)
+    fCfo->EnableEmbeddedClockMarker();
+    fCfo->SetPunchEnable();
+    // fCfo->EnableAcceleratorRF0();
+    fCfo->SetPunchEnable();
+                                        // re-enable time chain links
+    
+    if (TimingChainMask > 0) fLinkMask = TimingChainMask;
+    
+    // cfo->EnableLink(CFOLib::CFO_Link_ID::CFO_Link_ALL,);
+    for (int lnk=0; lnk<8; lnk++) {
+      int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
+      if (ndtcs > 0) {
+        fCfo->EnableLink (CFO_Link_ID(lnk),DTC_LinkEnableMode(true,true),ndtcs);
+      }
+    }
+                                        // reset SERDES
+    
+    fCfo->CFOandDTC_Registers::ResetSERDES();
 
+    for (int lnk=0; lnk<8; lnk++) {
+      int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
+      if (ndtcs > 0) {
+        fCfo->ResetSERDES(CFOLib::CFO_Link_ID(lnk));
+      }
+    }
+                                        // at begin run, only set run plan
     fCfo->SoftReset();
+    
     SetRunPlan(RunPlanFn);
     usleep(10);
 //-----------------------------------------------------------------------------
 // in the end, re-initialize the time chains defined by the DTC mask
 //-----------------------------------------------------------------------------
-    if (TimingChainMask > 0) fLinkMask = TimingChainMask;
-    for (int lnk=0; lnk<8; lnk++) {
-      int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
-      if (ndtcs > 0) {
-        fCfo->EnableLink (CFO_Link_ID(lnk),DTC_LinkEnableMode(true,true),ndtcs);
-        TLOG(TLVL_INFO) << std::format("enabled DTC time chain {} with {} DTCs\n",lnk,ndtcs);
-      }
-    }
+
     TLOG(TLVL_DEBUG+1) << Form("-- END");
     return rc;
   }
@@ -188,6 +217,15 @@ namespace trkdaq {
 // [at this point] disabling the BeamOn mode may be an overkill, but...
 //-----------------------------------------------------------------------------
   void CfoInterface::LaunchRunPlan() {
+    // 2026-08-13 PM try enabling the time chain links right before they are needed
+    // for (int lnk=0; lnk<8; lnk++) {
+    //   int ndtcs = (fLinkMask >> 4*lnk) & 0xf;
+    //   if (ndtcs > 0) {
+    //     fCfo->EnableLink (CFO_Link_ID(lnk),DTC_LinkEnableMode(true,true),ndtcs);
+    //     TLOG(TLVL_INFO) << std::format("enabled DTC time chain {} with {} DTCs\n",lnk,ndtcs);
+    //   }
+    // }
+    
     Halt();
 //-----------------------------------------------------------------------------
 // soft reset is commmon for the DTC and CFO - set bit31 of 0x9100 to reset,
@@ -196,8 +234,8 @@ namespace trkdaq {
     fCfo->SoftReset();
     usleep(20);	
 
-    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
-    // fCfo->EnableBeamOnMode (CFO_Link_ID::CFO_Link_ALL); // what does that really do beyond writing to a register?
+    fCfo->EnableBeamOffMode (CFO_Link_ID::CFO_Link_ALL);
+    // fCfo->EnableBeamOnMode (CFO_Link_ID::CFO_Link_ALL);
   }  
   
 //-----------------------------------------------------------------------------
@@ -233,14 +271,21 @@ namespace trkdaq {
     PrintRegister(0x9144,"Beam On Timer Preset                       ",Stream);
     PrintRegister(0x9148,"Enable Beam On Mode                        ",Stream);
     PrintRegister(0x914c,"Enable Beam Off Mode                       ",Stream);
+    PrintRegister(0x9154,"Run plan subrun event limit                ",Stream);
+    PrintRegister(0x9158,"Run plan subrun predecessor offset         ",Stream);
+    PrintRegister(0x9160,"SERDES ref clock frequency                 ",Stream);
+    PrintRegister(0x9164,"SERDES ref clock control                   ",Stream);
+    PrintRegister(0x9168,"SERDES ref clock conf low                  ",Stream);
+    PrintRegister(0x916c,"SERDES ref clock conf high                 ",Stream);
+    
     PrintRegister(0x918c,"Number of DTCs                             ",Stream);
     
-    PrintRegister(0x9200,"Receive  Byte   Count Link 0               ",Stream);
-    PrintRegister(0x9220,"Receive  Packet Count Link 0               ",Stream);
-    PrintRegister(0x9240,"Transmit Byte   Count Link 0               ",Stream);
-    PrintRegister(0x9260,"Transmit Packet Count Link 0               ",Stream);
+    PrintRegister(0x9200,"Receive RFO marker count                   ",Stream);
+    PrintRegister(0x9240,"Transmit HB count                          ",Stream);
+    PrintRegister(0x9260,"Transmit EWM Count                         ",Stream);
     PrintRegister(0x9380,"Loopback Delay CSR                         ",Stream);
     PrintRegister(0x93a0,"Firefly CSR                                ",Stream);
+    PrintRegister(0x93a4,"SFP CSR                                    ",Stream);
 
     PrintRegister(0x9500,"CFO Jitter Attenuator CSR                  ",Stream);  // CFO_Register_JitterAttenuatorCSR = 0x9500,
     TLOG(TLVL_DEBUG+1) << std::format("-- END");

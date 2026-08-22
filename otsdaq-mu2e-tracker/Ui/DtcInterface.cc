@@ -81,7 +81,7 @@ namespace trkdaq {
   int           DtcInterface::fgFpga[96];
 
 //-----------------------------------------------------------------------------  
-  DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterface(Dtc) {
+  DtcInterface::DtcInterface(DTCLib::DTC* Dtc) : mu2edaq::DtcInterfaceBase(Dtc) {
     // initialization of the interface data members is done externally
     // nothibg should happen here
   }
@@ -90,7 +90,7 @@ namespace trkdaq {
 // default ROC readout mode:0
 //-----------------------------------------------------------------------------
   DtcInterface::DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit) 
-    : mu2edaq::DtcInterface(PcieAddr, LinkMask, SkipInit) {
+    : mu2edaq::DtcInterfaceBase(PcieAddr, LinkMask, SkipInit) {
     fRocLaneMask     = 0xf;              // all lanes enabled
     fRocNHitsPerLane = 2;                // Monica's default for fRocReadoutMode=2
     if (not initialized) {

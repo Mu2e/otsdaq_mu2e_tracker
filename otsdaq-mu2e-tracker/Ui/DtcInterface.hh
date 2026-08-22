@@ -45,7 +45,7 @@ namespace trkdaq {
       0x90, 0x91, 0x92, 0x93, 0x94, 0x95
   };
 
-  class DtcInterface : public mu2edaq::DtcInterface { 
+  class DtcInterface : public mu2edaq::DtcInterfaceBase { 
   private:
     DtcInterface(int PcieAddr, uint LinkMask, bool SkipInit);
   public:
@@ -74,7 +74,7 @@ namespace trkdaq {
 // functions
 //-----------------------------------------------------------------------------
   public:
-    static       DtcInterface* Instance             (int PcieAddr, uint LinkMask = 0x11, bool SkipInit = false);
+    static       DtcInterface* Instance             (int PcieAddr, uint LinkMask = 0x11, bool SkipInit = true /*false*/);
     static const RocFwData_t*  RocFwData            ()      { return (const RocFwData_t*) &fgRocFwData; }
 
     static const char*         SpiVarName           (int I) { return fgSpiVarName[I]; }

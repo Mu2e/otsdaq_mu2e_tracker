@@ -4,9 +4,6 @@
 // assume everything is happening on one node
 // there could be one or two DTCs and only one CFO
 //-----------------------------------------------------------------------------
-#ifndef __mu2edaq_dtc_interface_cc__
-#define __mu2edaq_dtc_interface_cc__
-
 #include "iostream"
 #include "vector"
 
@@ -21,14 +18,11 @@ using namespace std;
 
 namespace mu2edaq {
 
-
-namespace mu2edaq {
-
 //-----------------------------------------------------------------------------
 // 'nw' : number of 16-bit words to print.
 // if Stream == nullptr , use TLOG, otherwise - *Stream
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream& Stream) {
+  void DtcInterfaceBase::PrintBuffer(const void* ptr, int nw, int Offset, std::ostream& Stream) {
 
     ushort*      p16 = (ushort*) ptr;
 
@@ -64,7 +58,7 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintFireflyTemp(std::ostream& Stream) {
+  void DtcInterfaceBase::PrintFireflyTemp(std::ostream& Stream) {
     int tmo_ms(50);
     TLOG(TLVL_DEBUG) << "START" << std::endl;
 //-----------------------------------------------------------------------------
@@ -104,14 +98,14 @@ namespace mu2edaq {
   }
 
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintRegister(uint16_t Register, const char* Title, std::ostream& Stream) {
+  void DtcInterfaceBase::PrintRegister(uint16_t Register, const char* Title, std::ostream& Stream) {
     Stream << Form("(0x%04x) : 0x%08x : %s\n",Register,ReadRegister(Register),Title);
   }
 
 //-----------------------------------------------------------------------------
 // link 6: CFO
 //-----------------------------------------------------------------------------
-  void DtcInterface::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, int NoCfo, std::ostream& Stream) {
+  void DtcInterfaceBase::PrintDtcLinkRegisters(uint FirstReg, const char* Desc, int NoCfo, std::ostream& Stream) {
 
     std::string text = Form("(0x%04x) : ",FirstReg);
     
@@ -134,7 +128,7 @@ namespace mu2edaq {
   }
   
 //-----------------------------------------------------------------------------
-  int DtcInterface::PrintStatus(std::ostream& Stream) {
+  int DtcInterfaceBase::PrintStatus(std::ostream& Stream) {
     int rc(0);
     TLOG(TLVL_DEBUG) << "-- START";
     
@@ -160,8 +154,8 @@ namespace mu2edaq {
     PrintRegister(0x91a8,"CFO Emulation Heartbeat Interval           ",Stream);
     PrintRegister(0x91ac,"CFO Emulation Number of HB Packets         ",Stream);
     PrintRegister(0x91bc,"CFO Emulation Number of Null HB Packets    ",Stream);
+    PrintRegister(0x91cc,"RX packet count error flags (bitmask)      ",Stream);
     PrintRegister(0x91f4,"CFO Emulation 40 MHz Clock Marker Interval ",Stream);
-    PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
     PrintRegister(0x91f8,"CFO Marker Enables                         ",Stream);
 
     PrintRegister(0x9218,"bytes received from CFO                    ",Stream);
@@ -201,13 +195,12 @@ namespace mu2edaq {
     TLOG(TLVL_DEBUG) << std::format("-- END: rc:{}",rc);
     return rc;
   }
-};
 
 //-----------------------------------------------------------------------------
 // most of the time Link = -1 meaning 'all enabled links'
 // otherwise it is the link to print
 //-----------------------------------------------------------------------------
-  int DtcInterface::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
+  int DtcInterfaceBase::PrintRocStatus(uint32_t Format, int Link, std::ostream& Stream) {
     TLOG(TLVL_DBG+1) << Form("Format=%i Link:%i \n",Format,Link);
 
     std::string desc;
@@ -237,4 +230,3 @@ namespace mu2edaq {
     return 0;
   }
 };
-#endif

@@ -78,6 +78,15 @@ int cfo_halt(int PcieAddress = -1) {
   return rc;
 }
 
+//-----------------------------------------------------------------------------
+void cfo_print_status(int PcieAddr) {
+  vector<uint16_t>   spi_data;
+
+  CfoInterface* cfo_i = CfoInterface::Instance(PcieAddr);
+  cfo_i->PrintStatus();
+}
+
+//-----------------------------------------------------------------------------
 void cfo_soft_reset(int PcieAddress = -1) {
   CfoInterface* cfo_i = CfoInterface::Instance(PcieAddress); 
   cfo_i->Cfo()->SoftReset();
@@ -102,7 +111,7 @@ void cfo_compile_run_plan(const char* InputFn, const char* OutputFn, int PcieAdd
 trkdaq::CfoInterface* cfo_init(const char* ConfigName, int DeviceID=0) {
   mu2edaq::DtcInputData_t dat;
   
-  mu2edaq::DtcInterface::InitConfiguration(ConfigName,DeviceID,&dat);
+  mu2edaq::DtcInterfaceBase::InitConfiguration(ConfigName,DeviceID,&dat);
   
   trkdaq::CfoInterface* cfo_i = trkdaq::CfoInterface::Instance(dat.fPcieAddr);
    if (cfo_i) {
@@ -453,7 +462,7 @@ int dtc_control_roc_set_thresholds(int Link, const char* Fn = "settings_vadim.js
 trkdaq::DtcInterface* dtc_init(const char* ConfigName, int DeviceID=0) {
   mu2edaq::DtcInputData_t dat;
   
-  mu2edaq::DtcInterface::InitConfiguration(ConfigName,DeviceID,&dat);
+  mu2edaq::DtcInterfaceBase::InitConfiguration(ConfigName,DeviceID,&dat);
   
   trkdaq::DtcInterface* dtc_i = trkdaq::DtcInterface::Instance(dat.fPcieAddr);
    if (dtc_i) {
@@ -505,6 +514,13 @@ int dtc_configure_roc_readout_mode(int ReadoutMode, int PcieAddr = -1) {
   dtc_i->SetRocReadoutMode(ReadoutMode);                     // 0:patterns 1:digis
   dtc_i->InitRocReadoutMode();
   return 0;
+}
+
+//-----------------------------------------------------------------------------
+void dtc_print_status(int PcieAddr, int Link = -1, int PrintLevel = 1) {
+
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
+  dtc_i->PrintStatus();
 }
 
 //-----------------------------------------------------------------------------
@@ -659,6 +675,18 @@ void dtc_read_spi(int Link, int PrintLevel = 2, int PcieAddr = -1) {
 
   DtcInterface* dtc_i = DtcInterface::Instance(PcieAddr);
   dtc_i->ControlRoc_ReadSpi(spi_data,Link,PrintLevel);
+}
+
+//-----------------------------------------------------------------------------
+void dtc_hard_reset(int PcieAddress = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddress); 
+  dtc_i->Dtc()->HardReset();
+}
+
+//-----------------------------------------------------------------------------
+void dtc_soft_reset(int PcieAddress = -1) {
+  DtcInterface* dtc_i = DtcInterface::Instance(PcieAddress); 
+  dtc_i->Dtc()->SoftReset();
 }
 
 //-----------------------------------------------------------------------------
