@@ -238,6 +238,7 @@ namespace trkdaq {
                                           const DTCLib::roc_data_t dac);
 
 		uint16_t ReadROCRegister(int link, uint16_t address);
+		void WriteROCRegister(int link, uint16_t address, uint16_t data);
 
     virtual std::vector<std::string> GetRocRegistersNames     (bool history = false)            override;
     virtual std::vector<uint32_t>    GetRocRegisters          (int ilink, bool history = false) override;
@@ -248,6 +249,13 @@ namespace trkdaq {
     virtual std::string              GetRocFwGitCommit(int Link) override;
 
     virtual int                      InitRocReadoutMode(std::ostream& Stream = std::cout)      override;
+    int                              InitReadoutROC(int                            Link,
+                                                    int                            RocReadoutMode,
+                                                    int                            DtcID,
+                                                    uint16_t                       DigitizationStart5ns,
+                                                    uint16_t                       DigitizationStop5ns,
+                                                    const ControlRoc_Read_Input_t0& ReadSettings,
+                                                    std::ostream&                  Stream = std::cout);
 //-----------------------------------------------------------------------------
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------

@@ -355,6 +355,69 @@ namespace trkdaq {
   }
 
 //-----------------------------------------------------------------------------
+// Tracker-only, per-ROC subset of MIDAS InitReadout.  SharedDtcInterface holds
+// its mutex around this entire function, so the reset/configure/clear/ID/window
+// sequence cannot interleave with another ROC command on the same DTC.
+//-----------------------------------------------------------------------------
+  int DtcInterface::InitReadoutROC(int                            Link,
+                                   int                            RocReadoutMode,
+                                   int                            DtcID,
+                                   uint16_t                       DigitizationStart5ns,
+                                   uint16_t                       DigitizationStop5ns,
+                                   const ControlRoc_Read_Input_t0& ReadSettings,
+                                   std::ostream&                  Stream) {
+    if ((Link < 0) or (Link > 5)) {
+      Stream << std::format("ERROR: invalid ROC link {}; expected 0-5\n",Link);
+      return -1;
+    }
+
+    fRocReadoutMode = RocReadoutMode;
+    fDtcID           = DtcID;
+
+    Stream << std::format(
+        "Readout settings: link:{} roc_readout_mode:{} digitization_start_5ns:{} digitization_stop_5ns:{} DTC_ID:{}\n",
+        Link,fRocReadoutMode,DigitizationStart5ns,DigitizationStop5ns,fDtcID);
+
+    int rc = ResetLink(Link);
+    if (rc != 0) {
+      Stream << std::format("ERROR: ROC register-14 reset failed, rc:{}\n",rc);
+      return rc;
+    }
+
+    auto settings = ReadSettings;
+    rc = ControlRoc_Read(&settings,Link,0x2,Stream);
+    if (rc != 0) {
+      Stream << std::format("ERROR: ControlRoc_Read failed, rc:{}\n",rc);
+      return rc;
+    }
+
+    if ((fRocReadoutMode & 0xf) == 1) {
+      rc = ResetDigis(Link);
+      if (rc != 0) {
+        Stream << std::format("ERROR: DIGI clear failed, rc:{}\n",rc);
+        return rc;
+      }
+      Stream << "DIGIs cleared for real-DIGI readout mode.\n";
+    }
+
+    rc = SetRocDtcID(Link);
+    if (rc != 0) {
+      Stream << std::format("ERROR: writing the DTC ID failed, rc:{}\n",rc);
+      return rc;
+    }
+
+    rc = SetRocDigitizationWindow(
+        Link,DigitizationStart5ns,DigitizationStop5ns,0,Stream);
+    if (rc != 0) {
+      Stream << std::format("ERROR: digitization-window setup failed, rc:{}\n",rc);
+      return rc;
+    }
+
+    Stream << std::format("Init Readout completed for ROC link {}, rc:{}\n",Link,rc);
+    return rc;
+  }
+
+//-----------------------------------------------------------------------------
 // reboot microcontroller unit: write 1 to Reg 15
 //-----------------------------------------------------------------------------
   int DtcInterface::RebootMcu(int Link) {
@@ -1616,6 +1679,14 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     auto dtclink = DTCLib::DTC_Link_ID(link);
     auto rv = this->fDtc->ReadROCRegister(dtclink, address, timeout);
     return rv;
+  }
+
+  void DtcInterface::WriteROCRegister(const int link,
+                                      const uint16_t address,
+                                      const uint16_t data){
+    int timeout = 200;
+    auto dtclink = DTCLib::DTC_Link_ID(link);
+    this->fDtc->WriteROCRegister(dtclink, address, data, false, timeout);
   }
 
 // Link = -1: 'all ROCs'
