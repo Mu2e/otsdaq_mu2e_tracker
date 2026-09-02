@@ -1,6 +1,7 @@
 #ifndef _ots_ROCTrackerInterface_h_
 #define _ots_ROCTrackerInterface_h_
 
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -60,6 +61,7 @@ public:
 	virtual void onDTCReady();
 
 	using address_t = trkdaq::ROC::address_t;
+	void InitReadout(__ARGS__);
 	void ReadRegister(__ARGS__);
 	void ResetCounters(__ARGS__);
 	void FindAlignment(__ARGS__);
@@ -75,6 +77,8 @@ public:
 	void SetEventWindowDelay(__ARGS__);
 	void SetDigitizationWindow(__ARGS__);
 	void DigiRead(__ARGS__);
+	void PrintDigis(__ARGS__);
+	void Preflight(__ARGS__);
 	void DigiWrite(__ARGS__);
 	void ReadPanelID(__ARGS__);
 	void ReadSerialNumber(__ARGS__);
@@ -82,10 +86,14 @@ public:
 	void FindThreshold(__ARGS__);
 	void FindThresholds(__ARGS__);
 	void SetChannelMask(__ARGS__);
+	std::map<std::string, std::string> getFEMacroInputDefaults(
+	    const std::string&                        feMacroName,
+	    const std::map<std::string, std::string>& currentInputValues) const override;
 	void NotoriousRead(__ARGS__);
 	void ConfigureDigis(__ARGS__);
 	void InitializeDigis(__ARGS__);
 	void DigiRW(__ARGS__);
+	void ReadSPI(__ARGS__);
 	void PrintStatus(__ARGS__);
   void MeasureChannelRates(__ARGS__);
 
@@ -182,6 +190,8 @@ private:
 	// label trimmed of surrounding whitespace
 	static std::map<std::string, std::string> ParseNotoriousReadOutput(
 	    const std::string& Text);
+
+	std::array<uint32_t, 3> GetConfiguredChannelMasks() const;
 
   // format a per-channel rates table from a vector-of-tuples
   // returned by trkdaq::ROC::ChannelRates

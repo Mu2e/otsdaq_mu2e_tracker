@@ -32,6 +32,15 @@ namespace  trkdaq {
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("-- START:");
 
+    if ((Input == nullptr) or (Output == nullptr)) {
+      TLOG(TLVL_ERROR) << "ControlRoc_DigiRW requires non-null input and output";
+      Stream << "ERROR: ControlRoc_DigiRW requires non-null input and output\n";
+      return -1;
+    }
+
+    *Output = {};
+    int rc = 0;
+
     std::vector<uint16_t> vec;
 
     vec.push_back(Input->rw     );
@@ -77,6 +86,27 @@ namespace  trkdaq {
         std::vector<uint16_t> v2;
         fDtc->ReadROCBlock(v2,roc,REG_DIGIRW,nw,false,100);
 
+        constexpr int expectedWords =
+            sizeof(ControlRoc_DigiRW_Output_t)/sizeof(uint16_t);
+        if ((nw != expectedWords) or
+            (v2.size() != static_cast<size_t>(expectedWords))) {
+          TLOG(TLVL_ERROR) << std::format(
+              "DIGIRW link:{} returned {} words; expected {}",i,v2.size(),expectedWords);
+          Stream << std::format(
+              "ERROR: DIGIRW link {} returned {} words; expected {}\n",
+              i,v2.size(),expectedWords);
+          rc = -2;
+          continue;
+        }
+
+        Output->rw       = v2[0];
+        Output->hvcal    = v2[1];
+        Output->address  = v2[2];
+        Output->data[0]  = v2[3];
+        Output->data[1]  = v2[4];
+        Output->adc_num  = v2[5];
+        Output->adc_mask = v2[6];
+
         if (PrintLevel > 0) {
           if (PrintLevel & 0x8) Stream << " ---------------- link:" << i << ":";
           if (PrintLevel & 0x1) PrintBuffer(v2.data(),nw,0x0,Stream);
@@ -93,6 +123,7 @@ namespace  trkdaq {
       catch (...) {
         TLOG(TLVL_ERROR) << "ERROR reading link:" << i;
         Stream << std::format("ERROR reading link:{}",i) << std::endl;
+        rc = -3;
       }
     }
     Stream << std::endl;
@@ -100,7 +131,7 @@ namespace  trkdaq {
 // no need to reset the ROCs
 //-----------------------------------------------------------------------------
     TLOG(TLVL_DEBUG+1) << std::format("-- END");
-    return 0;
+    return rc;
   }
 
 //-----------------------------------------------------------------------------

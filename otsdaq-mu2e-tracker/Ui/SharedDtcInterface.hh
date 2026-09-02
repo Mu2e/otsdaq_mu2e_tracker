@@ -38,6 +38,8 @@ namespace trkdaq{
 
 			// readout / lane configuration
 			template<typename... Args>
+			int InitReadoutROC(Args&&... args);
+			template<typename... Args>
 			int InitRocReadoutMode(Args&&... args);
 			template<typename... Args>
 			void SetRocLaneMask(Args&&... args);
@@ -171,6 +173,13 @@ namespace trkdaq{
 	int SharedDtcInterface::RebootMcu(Args&&... args){
 		std::lock_guard lock(_mutex);
 		int rv = _interface->RebootMcu(std::forward<Args>(args)...);
+		return rv;
+	}
+
+	template<typename... Args>
+	int SharedDtcInterface::InitReadoutROC(Args&&... args){
+		std::lock_guard lock(_mutex);
+		int rv = _interface->InitReadoutROC(std::forward<Args>(args)...);
 		return rv;
 	}
 

@@ -61,6 +61,23 @@ namespace trkdaq{
         return rv;
     }
 
+    int ROC::InitReadout(uint32_t                       rocReadoutMode,
+                         uint16_t                       digitizationStart5ns,
+                         uint16_t                       digitizationStop5ns,
+                         uint8_t                        dtcId,
+                         const ControlRoc_Read_Input_t0& readSettings,
+                         std::ostream&                  output){
+        auto rv = _dtc->InitReadoutROC(
+                _link,
+                rocReadoutMode,
+                dtcId,
+                digitizationStart5ns,
+                digitizationStop5ns,
+                readSettings,
+                output);
+        return rv;
+    }
+
     int ROC::InitReadoutMode(std::ostream& stream){
         auto rv = _dtc->InitRocReadoutMode(stream);
         return rv;
@@ -200,6 +217,13 @@ namespace trkdaq{
 		std::vector<uint16_t> res;
 		_dtc->RocBlockRead(_link, 0x116, res);
 		return res;
+	}
+
+	int ROC::ReadSpi(std::vector<uint16_t>& spi_raw_data,
+	                 int print_level,
+	                 std::ostream& stream){
+		auto rv = _dtc->ReadSpi(spi_raw_data, _link, print_level, stream);
+		return rv;
 	}
 
 	int ROC::PrintStatus(uint32_t format, std::ostream& stream){

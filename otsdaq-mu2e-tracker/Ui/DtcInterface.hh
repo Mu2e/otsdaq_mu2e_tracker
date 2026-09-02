@@ -249,6 +249,13 @@ namespace trkdaq {
     virtual std::string              GetRocFwGitCommit(int Link) override;
 
     virtual int                      InitRocReadoutMode(std::ostream& Stream = std::cout)      override;
+    int                              InitReadoutROC(int                            Link,
+                                                    int                            RocReadoutMode,
+                                                    int                            DtcID,
+                                                    uint16_t                       DigitizationStart5ns,
+                                                    uint16_t                       DigitizationStop5ns,
+                                                    const ControlRoc_Read_Input_t0& ReadSettings,
+                                                    std::ostream&                  Stream = std::cout);
 //-----------------------------------------------------------------------------
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------

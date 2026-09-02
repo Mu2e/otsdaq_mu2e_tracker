@@ -43,11 +43,12 @@ namespace trkdaq{
                                   uint16_t digitization_window_close);
 
             // readout / lane configuration
-            // ejc: TODO the following are intrinsically scoped at dtc-level:
-            //      - InitRaedoutMode
-            //      - SetLaneMask
-            //      - SetNHitsPerLane
-            // need to increase granularity of low-level interface
+            int InitReadout(uint32_t                       rocReadoutMode,
+                            uint16_t                       digitizationStart5ns,
+                            uint16_t                       digitizationStop5ns,
+                            uint8_t                        dtcId,
+                            const ControlRoc_Read_Input_t0& readSettings,
+                            std::ostream&                  output);
             int InitReadoutMode(std::ostream& Stream = std::cout);
             void SetLaneMask(int Mask);
             void SetNHitsPerLane(int NHits);
@@ -89,6 +90,9 @@ namespace trkdaq{
             std::vector<uint16_t> InitializeDigis();
 
             // status
+            int ReadSpi(std::vector<uint16_t>& SpiRawData,
+                        int PrintLevel = 0,
+                        std::ostream& Stream = std::cout);
             int PrintStatus(uint32_t Format = 1,
                             std::ostream& Stream = std::cout);
 
