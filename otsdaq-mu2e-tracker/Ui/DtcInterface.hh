@@ -256,6 +256,9 @@ namespace trkdaq {
                                                     uint16_t                       DigitizationStop5ns,
                                                     const ControlRoc_Read_Input_t0& ReadSettings,
                                                     std::ostream&                  Stream = std::cout);
+    int                              EnsureDigiRxLanesReady(int            Link,
+                                                            uint16_t       EnabledLanes,
+                                                            std::ostream& Stream = std::cout);
 //-----------------------------------------------------------------------------
 // ROC has 4 lanes: 2 CAL lanes (0x5) and 2 HV lanes (0xa)
 //-----------------------------------------------------------------------------

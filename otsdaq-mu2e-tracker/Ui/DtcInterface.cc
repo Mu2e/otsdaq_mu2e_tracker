@@ -313,12 +313,6 @@ namespace trkdaq {
         TLOG(TLVL_ERROR) << std::format("failed to configure links, rc:{}",rc);
         return rc;
       }
-
-      rc = MonicaDigiClear(Stream);                          //
-      if (rc < 0)  {
-        TLOG(TLVL_ERROR) << std::format("failed to clear DIGIs, rc:{}",rc);
-        return rc;
-      }
     }
     else {
       TLOG(TLVL_ERROR) << "unknown mode:" << fRocReadoutMode << "> BAIL OUT";
@@ -428,28 +422,6 @@ namespace trkdaq {
         register8Readback);
 
     if (readoutMode == 1) {
-      uint16_t laneStatus = fDtc->ReadROCRegister(rocLink,18,100);
-      if ((laneStatus >> 8) != 0xf) {
-        Stream << std::format(
-            "ROC lanes not ready (R18=0x{:04x}); toggling R13 for recovery.\n",
-            laneStatus);
-        fDtc->WriteROCRegister(rocLink,13,1,false,1000);
-        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        fDtc->WriteROCRegister(rocLink,13,0,false,1000);
-        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-        laneStatus = fDtc->ReadROCRegister(rocLink,18,100);
-        if ((laneStatus >> 8) != 0xf) {
-          const std::string message = std::format(
-              "ROC link {} not ready to read DIGIs: R18 expected 0x0f00 mask, read 0x{:04x}",
-              Link,
-              laneStatus);
-          Stream << "ERROR: " << message << '\n';
-          TLOG(TLVL_ERROR) << message;
-          return -3;
-        }
-      }
-      Stream << std::format("ROC DIGI lanes ready: R18=0x{:04x}\n",laneStatus);
-
       // Match MIDAS MonicaDigiClear for this ROC only.  This clears the HV
       // and CAL DIGIs through the ROC TWI command registers without asserting
       // the hard DIGI reset on ROC register 103.
@@ -476,6 +448,16 @@ namespace trkdaq {
       writeRocRegister(23,0x00);
 
       Stream << "DIGIs cleared using the MIDAS TWI sequence.\n";
+
+      // Clear the ROC receive FIFOs only after the DIGI transmit paths have
+      // been cleared, then validate both EMPTY and FULL for configured lanes.
+      fDtc->WriteROCRegister(rocLink,13,1,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      fDtc->WriteROCRegister(rocLink,13,0,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+      rc = EnsureDigiRxLanesReady(Link,fRocLaneMask & 0xf,Stream);
+      if (rc != 0) return rc;
     }
 
     auto settings = ReadSettings;
@@ -500,6 +482,126 @@ namespace trkdaq {
 
     Stream << std::format("Init Readout completed for ROC link {}, rc:{}\n",Link,rc);
     return rc;
+  }
+
+//-----------------------------------------------------------------------------
+// If an enabled ROC receive lane is not empty or is full, reset only that
+// lane's PCS and PMA through active-low ROC register B5.  After releasing the
+// SERDES reset, wait for alignment, clear the ROC receive FIFOs, and recheck
+// R18 once before failing initialization.
+//-----------------------------------------------------------------------------
+  int DtcInterface::EnsureDigiRxLanesReady(int            Link,
+                                           uint16_t       EnabledLanes,
+                                           std::ostream& Stream) {
+    const auto rocLink = DTC_Link_ID(Link);
+    EnabledLanes &= 0xf;
+
+    const auto readLaneStatus = [&]() {
+      return fDtc->ReadROCRegister(rocLink,18,100);
+    };
+    const auto readInternalRegister = [&](uint16_t address, uint16_t& value) {
+      uint32_t rawValue = 0;
+      const int readRc = DigiRead(address,3,rawValue,Link,0,Stream);
+      value = static_cast<uint16_t>(rawValue & 0xffff);
+      return readRc;
+    };
+    const auto writeInternalRegister = [&](uint16_t address, uint16_t value) {
+      return DigiWrite(address,3,value,Link,0,Stream);
+    };
+    const auto lanesReady = [&](uint16_t status) {
+      const uint16_t laneEmpty = (status >> 8) & 0xf;
+      const uint16_t laneFull  = (status >> 4) & 0xf;
+      return ((laneEmpty & EnabledLanes) == EnabledLanes) &&
+             ((laneFull  & EnabledLanes) == 0);
+    };
+
+    const uint16_t initialStatus = readLaneStatus();
+    if (lanesReady(initialStatus)) {
+      Stream << std::format("ROC DIGI lanes ready: R18=0x{:04x}\n",initialStatus);
+      return 0;
+    }
+
+    const uint16_t initialEmpty = (initialStatus >> 8) & 0xf;
+    const uint16_t initialFull  = (initialStatus >> 4) & 0xf;
+    uint16_t initialAlignment = 0;
+    if (readInternalRegister(0xb6,initialAlignment) != 0) {
+      const std::string message = std::format(
+          "ROC link {} failed to read internal alignment register B6",Link);
+      Stream << "ERROR: " << message << '\n';
+      TLOG(TLVL_ERROR) << message;
+      return -3;
+    }
+    initialAlignment &= 0xf;
+    const uint16_t failingLanes =
+        EnabledLanes &
+        (static_cast<uint16_t>((~initialEmpty) & 0xf) | initialFull |
+         static_cast<uint16_t>((~initialAlignment) & 0xf));
+
+    // B5 is active-low.  Lane order is CAL0, CAL1, HV0, HV1; each lane has
+    // one PCS-reset bit and one PMA-reset bit.  HV0 alone therefore gives
+    // B5=0xAF, matching the successful manual recovery.
+    uint16_t serdesResetValue = 0xff;
+    if (failingLanes & 0x1) serdesResetValue &= ~0x05;  // CAL0: bits 0,2
+    if (failingLanes & 0x2) serdesResetValue &= ~0x0a;  // CAL1: bits 1,3
+    if (failingLanes & 0x4) serdesResetValue &= ~0x50;  // HV0:  bits 4,6
+    if (failingLanes & 0x8) serdesResetValue &= ~0xa0;  // HV1:  bits 5,7
+
+    const std::string recoveryMessage = std::format(
+        "ROC link {} DIGI lane check failed: enabled:0x{:x} empty:0x{:x} "
+        "full:0x{:x} B6:0x{:x} R18:0x{:04x}; resetting failing lanes:0x{:x} "
+        "with B5=0x{:02x}, then releasing B5=0xff",
+        Link,EnabledLanes,initialEmpty,initialFull,initialAlignment,initialStatus,
+        failingLanes,serdesResetValue);
+    Stream << "WARNING: " << recoveryMessage << '\n';
+    TLOG(TLVL_WARNING) << recoveryMessage;
+
+    const int assertResetRc =
+        writeInternalRegister(0xb5,serdesResetValue);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    const int releaseResetRc = writeInternalRegister(0xb5,0xff);
+    if (assertResetRc != 0 or releaseResetRc != 0) {
+      const std::string message = std::format(
+          "ROC link {} internal B5 reset write failed: assert rc:{} release rc:{}",
+          Link,assertResetRc,releaseResetRc);
+      Stream << "ERROR: " << message << '\n';
+      TLOG(TLVL_ERROR) << message;
+      return -3;
+    }
+
+    uint16_t alignment = 0;
+    for (int attempt=0; attempt<50; ++attempt) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (readInternalRegister(0xb6,alignment) != 0) continue;
+      alignment &= 0xf;
+      if ((alignment & EnabledLanes) == EnabledLanes) break;
+    }
+
+    fDtc->WriteROCRegister(rocLink,13,1,false,1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+    fDtc->WriteROCRegister(rocLink,13,0,false,1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+    const uint16_t finalStatus = readLaneStatus();
+    const bool allEnabledAligned =
+        (alignment & EnabledLanes) == EnabledLanes;
+    if (not lanesReady(finalStatus) or not allEnabledAligned) {
+      const uint16_t finalEmpty = (finalStatus >> 8) & 0xf;
+      const uint16_t finalFull  = (finalStatus >> 4) & 0xf;
+      const std::string message = std::format(
+          "ROC link {} not ready after targeted DIGI SERDES reset: "
+          "enabled lanes:0x{:x} empty:0x{:x} full:0x{:x} "
+          "B6:0x{:x} R18:0x{:04x}",
+          Link,EnabledLanes,finalEmpty,finalFull,alignment,finalStatus);
+      Stream << "ERROR: " << message << '\n';
+      TLOG(TLVL_ERROR) << message;
+      return -3;
+    }
+
+    Stream << std::format(
+        "ROC DIGI lanes recovered after targeted SERDES reset: "
+        "lanes:0x{:x} B5:0x{:02x}->0xff B6:0x{:x} R18:0x{:04x}\n",
+        failingLanes,serdesResetValue,alignment,finalStatus);
+    return 0;
   }
 
 //-----------------------------------------------------------------------------
@@ -1062,8 +1164,8 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
 //-----------------------------------------------------------------------------
 // LaneMask bits:
 //           0x1 : CAL lane 0
-//           0x2 : HV  lane 0
-//           0x4 : CAL lane 1
+//           0x2 : CAL lane 1
+//           0x4 : HV  lane 0
 //           0x8 : HV  lane 1
 //
 // origin: ~mu2etrk/test_stand/monica_002/var_link_config.sh from Mar 12 2024
@@ -1100,31 +1202,38 @@ int DtcInterface::ValidateVarPatterns  (ushort* DtcData, ulong EwTag, ulong* Off
     int data_version = 1;
     RocSetDataVersion(data_version);    // data version: ROC R29
 
-    ResetLinks();                       // use fLinkMask
+    rc = ResetLinks();                  // use fLinkMask
+    if (rc < 0) {
+      TLOG(TLVL_ERROR) << std::format("failed to reset ROC links, rc:{}",rc);
+      return rc;
+    }
+
+//-----------------------------------------------------------------------------
+// Clear the DIGI readout/FIFO paths before checking the ROC receive FIFOs.
+// Checking R18 first can fail on stale DIGI data and prevent this clear from
+// ever running.
+//-----------------------------------------------------------------------------
+    rc = MonicaDigiClear(Stream);
+    if (rc < 0) {
+      TLOG(TLVL_ERROR) << std::format("failed to clear DIGIs, rc:{}",rc);
+      return rc;
+    }
 //-----------------------------------------------------------------------------
 // according to Monica, this is the place for find_alignment and control_roc_read
-// check if all lanes are ready to be read
+// Reset the ROC receive FIFOs, then check each configured lane. ROC R18 is:
+//   [11:8] lane empty, [7:4] lane full, [3:0] lane-empty-seen.
 //-----------------------------------------------------------------------------
+    const uint16_t enabled_lanes = fRocLaneMask & 0xf;
     for (int i=0; i<6; i++) {
       int used = (fLinkMask >> 4*i) & 0x1;
       if (used != 0) {
-        uint16_t u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
-        if ((u >> 0x8) != 0xF) {
-          // try to recover - write 1, then - 0 to reg 13
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x1,false,1000);
-          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-          fDtc->WriteROCRegister(DTC_Link_ID(i), 13,0x0,false,1000);
-          std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
-          // and check again
-          u = fDtc->ReadROCRegister(DTC_Link_ID(i),18,100);
-          if ((u >> 0x8) != 0xF) {
-            // still in trouble
-            std::string msg = std::format("ROC link:{} not ready to read DIGIs: R18: expect:0x0f00 read:0x{:04x}, call Monica and Richie",i,u);
-            Stream << msg << std::endl;
-            TLOG(TLVL_ERROR) << msg;
-            rc -= 1;
-          }
-        }
+        fDtc->WriteROCRegister(DTC_Link_ID(i),13,0x1,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        fDtc->WriteROCRegister(DTC_Link_ID(i),13,0x0,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+        if (EnsureDigiRxLanesReady(i,enabled_lanes,Stream) != 0)
+          rc -= 1;
       }
     }
 

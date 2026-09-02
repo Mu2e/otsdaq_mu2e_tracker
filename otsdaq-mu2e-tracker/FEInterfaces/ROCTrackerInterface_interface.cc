@@ -150,7 +150,8 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Return code", "Value"},
 	                        1,
 	                        "Read one 16-bit register from a DIGI through this ROC. "
-	                        "HvCal selects the DIGI: 1=CAL, 2=HV. For a read-only "
+	                        "HvCal selects the target: 1=CAL DIGI, 2=HV DIGI, "
+	                        "3=ROC internal register space. For a read-only "
 	                        "communications check, read address 0xC0; its low 10 bits "
 	                        "are expected to be 0x047 by the current ROC firmware.");
 
@@ -198,9 +199,10 @@ ROCTrackerInterface::ROCTrackerInterface(
 	                        std::vector<std::string>{"Address", "HvCal", "Data"},
 	                        std::vector<std::string>{"Return code"},
 	                        1,
-	                        "Write one 16-bit register on a DIGI through this ROC. "
-	                        "HvCal selects the target: 1=CAL, 2=HV. This changes DIGI "
-	                        "firmware state and must not be used during active readout.");
+	                        "Write one 16-bit register through this ROC. HvCal selects "
+	                        "the target: 1=CAL DIGI, 2=HV DIGI, 3=ROC internal register "
+	                        "space. This changes DIGI or ROC firmware state and must not "
+	                        "be used during active readout.");
 
 	registerFEMacroFunction("Read Panel ID",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -788,9 +790,10 @@ void ROCTrackerInterface::DigiRead(__ARGS__)
 		__FE_SS__ << "DIGI address out of range [0, 255]: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if(hv_cal != 1 && hv_cal != 2)
+	if(hv_cal != 1 && hv_cal != 2 && hv_cal != 3)
 	{
-		__FE_SS__ << "HvCal must be 1 (CAL) or 2 (HV): " << hv_cal << __E__;
+		__FE_SS__ << "HvCal must be 1 (CAL), 2 (HV), or 3 (ROC internal): "
+		          << hv_cal << __E__;
 		__FE_SS_THROW__;
 	}
 
@@ -953,9 +956,10 @@ void ROCTrackerInterface::DigiWrite(__ARGS__)
 		__FE_SS__ << "DIGI address out of range [0, 255]: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if(hv_cal != 1 && hv_cal != 2)
+	if(hv_cal != 1 && hv_cal != 2 && hv_cal != 3)
 	{
-		__FE_SS__ << "HvCal must be 1 (CAL) or 2 (HV): " << hv_cal << __E__;
+		__FE_SS__ << "HvCal must be 1 (CAL), 2 (HV), or 3 (ROC internal): "
+		          << hv_cal << __E__;
 		__FE_SS_THROW__;
 	}
 	if(data < 0 || data > 0xFFFF)

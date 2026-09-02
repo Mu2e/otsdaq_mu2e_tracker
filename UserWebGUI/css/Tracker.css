@@ -306,6 +306,16 @@ body {
 	gap: 5px;
 }
 
+.tracker-more-actions {
+	background: #ffffff;
+	color: #1769aa;
+	border-style: dashed;
+}
+
+.tracker-more-actions:hover {
+	background: #eaf4ff;
+}
+
 .tracker-selection-inputs {
 	margin-top: 10px;
 }
