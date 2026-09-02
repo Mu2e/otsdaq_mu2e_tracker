@@ -29,6 +29,8 @@
 		var _globalCompletedTargets = {};
 		var _dtcCommandState = {};
 		var _outputEntrySequence = 0;
+		var ACTION_BUTTON_LIMIT = 8;
+		var _expandedActionGroups = {};
 
 		function init() {
 			Debug.log("Tracker controls init()");
@@ -78,6 +80,30 @@
 
 		function escapeJS(value) {
 			return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+		}
+
+		function visibleActionNames(names, groupKey) {
+			if (_expandedActionGroups[groupKey] || names.length <= ACTION_BUTTON_LIMIT)
+				return names;
+			// Reserve the last visible slot for the More button.
+			return names.slice(0, ACTION_BUTTON_LIMIT - 1);
+		}
+
+		function actionGroupToggleButton(groupKey, actionCount) {
+			if (actionCount <= ACTION_BUTTON_LIMIT) return "";
+			var expanded = !!_expandedActionGroups[groupKey];
+			var hiddenCount = actionCount - (ACTION_BUTTON_LIMIT - 1);
+			return "<button class='macro-btn-primary tracker-more-actions' type='button' " +
+				"aria-expanded='" + (expanded ? "true" : "false") + "' " +
+				"title='" + (expanded ? "Show fewer actions" : "Show " + hiddenCount + " more actions") + "' " +
+				"onclick=\"toggleActionGroup('" + escapeJS(groupKey) + "')\">" +
+				(expanded ? "Less" : "More (" + hiddenCount + ")") + "</button>";
+		}
+
+		function toggleActionGroup(groupKey) {
+			_expandedActionGroups[groupKey] = !_expandedActionGroups[groupKey];
+			if (groupKey === "tracker") renderGlobalActions();
+			else if (_selectedUID) renderSelection(_selectedUID);
 		}
 
 		function createOutputEntry() {
@@ -349,15 +375,22 @@
 					escapeHTML(_macroRunTarget.dtcUID) + " · link " +
 					_macroRunTarget.linkIndex + "</span>";
 			html += "</div>";
-			html += "<div class='tracker-action-buttons'>";
+			var available = [];
 			for (var i = 0; i < allowed.length; ++i) {
 				var name = allowed[i];
-				if (!_activeMacros[name]) continue;
+				if (_activeMacros[name]) available.push(name);
+			}
+			var actionGroupKey = deviceType + ":" + uid;
+			var visible = visibleActionNames(available, actionGroupKey);
+			html += "<div class='tracker-action-buttons'>";
+			for (var i = 0; i < visible.length; ++i) {
+				var name = visible[i];
 				html += "<button class='macro-btn-primary' type='button' " +
 					"title='" + escapeHTML(_activeMacros[name].tooltip || name) + "' " +
 					"onclick=\"prepareMacro('" + escapeJS(name) + "')\">" +
 					escapeHTML(Mu2eHardware.macroDisplayName(name)) + "</button>";
 			}
+			html += actionGroupToggleButton(actionGroupKey, available.length);
 			html += "</div><div id='selectionInputs' class='tracker-selection-inputs'></div>";
 			panel.innerHTML = html;
 		}
@@ -420,6 +453,9 @@
 		}
 
 		function confirmationText(macroName) {
+			if (macroName === "DTC Soft Reset") return "";
+			if (macroName === "ROC FEMacro - Write DIGI Register")
+				return "";
 			if (macroName === "ROC FEMacro - Deserialize and set thresholds")
 				return "Program configured thresholds on " + _selectedUID +
 					"?\n\nThis writes all configured Cal and HV threshold DACs. " +
@@ -490,14 +526,19 @@
 			var el = document.getElementById("globalActions");
 			var allowed = Mu2eHardware.ALL_TRACKER_BUTTON_ALLOWLIST ||
 				["preflight", "init-readout", "link-status", "read-panel-id", "reset-counters", "find-alignment", "set-thresholds"];
+			var available = [];
+			for (var i = 0; i < allowed.length; ++i)
+				if (GLOBAL_ACTIONS[allowed[i]]) available.push(allowed[i]);
+			var visible = visibleActionNames(available, "tracker");
 			var html = "";
-			for (var i = 0; i < allowed.length; ++i) {
-				var action = GLOBAL_ACTIONS[allowed[i]];
-				if (!action) continue;
+			for (var i = 0; i < visible.length; ++i) {
+				var actionKey = visible[i];
+				var action = GLOBAL_ACTIONS[actionKey];
 				html += "<button class='macro-btn-primary' type='button' " +
-					"onclick=\"runGlobalAction('" + allowed[i] + "')\">" +
+					"onclick=\"runGlobalAction('" + actionKey + "')\">" +
 					escapeHTML(action.label) + "</button>";
 			}
+			html += actionGroupToggleButton("tracker", available.length);
 			el.innerHTML = html;
 		}
 

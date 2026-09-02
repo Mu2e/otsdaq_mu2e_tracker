@@ -1961,22 +1961,23 @@ var Mu2eHardware = Mu2eHardware || {};
 
 	Mu2eHardware.PROMOTED_MACROS = {
 		"DTCFrontEndInterface": [
-			"ROC FEMacro - Init Readout",
 			"DTC Soft Reset",
-			"Get Simple Status",
+			"ROC FEMacro - Init Readout",
 			"Get DTC Counters",
+			"ROC FEMacro - Read SPI",
+			"ROC FEMacro - Print Digis",
+			"ROC FEMacro - Print Status",
+			"ROC FEMacro - Measure Channel Rates",
+			"Get Simple Status",
 			"Get Firmware Version",
 			"Get Link Lock Status",
 			"DTC Read",
 			"DTC Write",
 			"ROC Read",
 			"ROC Write",
-			"ROC FEMacro - Read SPI",
+			"ROC FEMacro - Read Register",
 			"ROC FEMacro - Read DIGI Register",
 			"ROC FEMacro - Write DIGI Register",
-			"ROC FEMacro - Print Digis",
-			"ROC FEMacro - Print Status",
-			"ROC FEMacro - Measure Channel Rates",
 			"ROC FEMacro - Read Panel ID",
 			"ROC FEMacro - Find Alignment",
 			"ROC FEMacro - Deserialize and set thresholds",
@@ -1987,6 +1988,7 @@ var Mu2eHardware = Mu2eHardware || {};
 	// Exact DTC-forwarded macro names approved for per-ROC buttons.
 	Mu2eHardware.ROC_BUTTON_ALLOWLIST = [
 		"ROC FEMacro - Init Readout",
+		"ROC FEMacro - Read Register",
 		"ROC FEMacro - Read SPI",
 		"ROC FEMacro - Read DIGI Register",
 		"ROC FEMacro - Write DIGI Register",
@@ -2021,6 +2023,8 @@ var Mu2eHardware = Mu2eHardware || {};
 			return "Set Thresholds";
 		if (name === "ROC FEMacro - Measure Channel Rates")
 			return "Read Rates";
+		if (name === "ROC FEMacro - Print Status")
+			return "ROC Status";
 		if (name.indexOf("ROC FEMacro - ") === 0)
 			return name.substring(14);
 		if (name.indexOf("ROC FEMacro -") === 0)
