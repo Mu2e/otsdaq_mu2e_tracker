@@ -143,21 +143,64 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    1,
 	    "" /* tooltip info here */);
 
-	registerFEMacroFunction("Digi Read",
+	registerFEMacroFunction("Read DIGI Register",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::DigiRead),
 	                        std::vector<std::string>{"Address", "HvCal"},
 	                        std::vector<std::string>{"Return code", "Value"},
 	                        1,
-	                        "" /* tooltip info here */);
+	                        "Read one 16-bit register from a DIGI through this ROC. "
+	                        "HvCal selects the DIGI: 1=CAL, 2=HV. For a read-only "
+	                        "communications check, read address 0xC0; its low 10 bits "
+	                        "are expected to be 0x047 by the current ROC firmware.");
 
-	registerFEMacroFunction("Digi Write",
+	registerFEMacroFunction(
+	    "Print Digis",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::PrintDigis),
+	    std::vector<std::string>{},
+	    std::vector<std::string>{"Return code", "Output"},
+	    1,
+	    "Read DIGI registers 0xA4, 0xA5, 0xA6, 0xC0, 0xD0, 0xD1, and 0xD2 "
+	    "from both CAL and HV. This is the otsdaq equivalent of MIDAS print_digis.");
+
+	registerFEMacroFunction(
+	    "Preflight",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::Preflight),
+	    std::vector<std::string>{},
+	    std::vector<std::string>{"Return code",
+	                             "ROC FIFO status",
+	                             "CAL DIGI 0xA4",
+	                             "HV DIGI 0xA4",
+	                             "CAL DIGI 0xA5",
+	                             "HV DIGI 0xA5",
+	                             "CAL DIGI 0xA6",
+	                             "HV DIGI 0xA6",
+	                             "CAL DIGI 0xC0",
+	                             "HV DIGI 0xC0",
+	                             "CAL DIGI 0xD0",
+	                             "HV DIGI 0xD0",
+	                             "CAL DIGI 0xD1",
+	                             "HV DIGI 0xD1",
+	                             "CAL DIGI 0xD2",
+	                             "HV DIGI 0xD2",
+	                             "Checks"},
+	    1,
+	    "Read-only preflight for this ROC. Requires ROC register 18 to be "
+	    "0x0F00; requires CAL and HV DIGI register 0xC0 low 10 bits to be "
+	    "0x047; and requires DIGI registers 0xA4, 0xA5, 0xA6, 0xD0, 0xD1, "
+	    "and 0xD2 to be zero. Returns every CAL and HV DIGI value read.");
+
+	registerFEMacroFunction("Write DIGI Register",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
 	                            &ROCTrackerInterface::DigiWrite),
 	                        std::vector<std::string>{"Address", "HvCal", "Data"},
 	                        std::vector<std::string>{"Return code"},
 	                        1,
-	                        "" /* tooltip info here */);
+	                        "Write one 16-bit register on a DIGI through this ROC. "
+	                        "HvCal selects the target: 1=CAL, 2=HV. This changes DIGI "
+	                        "firmware state and must not be used during active readout.");
 
 	registerFEMacroFunction("Read Panel ID",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -275,6 +318,16 @@ ROCTrackerInterface::ROCTrackerInterface(
 	    std::vector<std::string>{"Output"},
 	    1,
 	    "" /* tooltip info here */);
+
+	registerFEMacroFunction(
+	    "Read SPI",
+	    static_cast<FEVInterface::frontEndMacroFunction_t>(
+	        &ROCTrackerInterface::ReadSPI),
+	    std::vector<std::string>{},
+	    std::vector<std::string>{"Return Code", "Output"},
+	    1,
+	    "Read and convert the 36 ROC/DIGI SPI monitoring values for this ROC, "
+	    "including currents, voltages, and temperatures. This operation is read-only.");
 
 	registerFEMacroFunction("Print Status",
 	                        static_cast<FEVInterface::frontEndMacroFunction_t>(
@@ -439,8 +492,8 @@ void ROCTrackerInterface::InitReadout(__ARGS__)
 		    "DTC through LinkToROCGroupTable.",
 		    theConfigurationPath_));
 	const std::string parentDtcPath = theConfigurationPath_.substr(0, parentPosition);
-	const uint32_t dtcId = getConfigurationManager()
-	                           ->getNode(parentDtcPath)
+	const uint32_t dtcId = theXDAQContextConfigTree_
+	                           .getNode(parentDtcPath)
 	                           .getNode("EventBuilderDTCID")
 	                           .getValue<uint32_t>();
 	if(dtcId > 0xffu)
@@ -730,14 +783,14 @@ void ROCTrackerInterface::DigiRead(__ARGS__)
 	int hv_cal      = __GET_ARG_IN__("HvCal", int, -1);
 	int print_level = 0;
 
-	if(addr < 0)
+	if(addr < 0 || addr > 0xFF)
 	{
-		__FE_SS__ << "Address must be non-negative: " << addr << __E__;
+		__FE_SS__ << "DIGI address out of range [0, 255]: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if(hv_cal != 0 && hv_cal != 1)
+	if(hv_cal != 1 && hv_cal != 2)
 	{
-		__FE_SS__ << "HvCal must be 0 or 1: " << hv_cal << __E__;
+		__FE_SS__ << "HvCal must be 1 (CAL) or 2 (HV): " << hv_cal << __E__;
 		__FE_SS_THROW__;
 	}
 
@@ -752,6 +805,142 @@ void ROCTrackerInterface::DigiRead(__ARGS__)
 	__SET_ARG_OUT__("Value", std::to_string(value));
 }
 
+void ROCTrackerInterface::PrintDigis(__ARGS__)
+{
+	struct DigiRegister
+	{
+		uint16_t address;
+	};
+	constexpr std::array<DigiRegister, 7> registers = {
+	    DigiRegister{0xA4}, DigiRegister{0xA5}, DigiRegister{0xA6},
+	    DigiRegister{0xC0}, DigiRegister{0xD0}, DigiRegister{0xD1},
+	    DigiRegister{0xD2}};
+
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
+	int                returnCode = 0;
+	std::stringstream  output;
+	output << std::format(" {:>10} {:>10} {:>10}\n", "Register", "CAL", "HV");
+	output << "----------------------------------\n";
+
+	__FE_COUT__ << "ROCTrackerInterface::PrintDigis" << __E__;
+	for(const auto& digiRegister : registers)
+	{
+		uint32_t calValue = 0;
+		uint32_t hvValue  = 0;
+		// Match MIDAS PrintDigis: selector 1 is CAL and selector 2 is HV.
+		const int calReturnCode =
+		    _roc->DigiRead(digiRegister.address, 1, calValue, 0, stream);
+		const int hvReturnCode =
+		    _roc->DigiRead(digiRegister.address, 2, hvValue, 0, stream);
+		if(returnCode == 0 && calReturnCode != 0)
+			returnCode = calReturnCode;
+		if(returnCode == 0 && hvReturnCode != 0)
+			returnCode = hvReturnCode;
+
+		const std::string calText = calReturnCode == 0 ?
+		                                std::format("0x{:04X}", calValue & 0xFFFF) :
+		                                "ERROR";
+		const std::string hvText = hvReturnCode == 0 ?
+		                               std::format("0x{:04X}", hvValue & 0xFFFF) :
+		                               "ERROR";
+		output << std::format(
+		    " 0x{:04X} {:>10} {:>10}\n", digiRegister.address, calText, hvText);
+	}
+
+	__SET_ARG_OUT__("Return code", std::to_string(returnCode));
+	__SET_ARG_OUT__("Output", output.str());
+}
+
+void ROCTrackerInterface::Preflight(__ARGS__)
+{
+	struct DigiCheck
+	{
+		uint16_t address;
+		uint16_t expected;
+		uint16_t mask;
+	};
+
+	constexpr std::array<DigiCheck, 7> digiChecks = {
+	    DigiCheck{0xA4, 0x0000, 0xFFFF},
+	    DigiCheck{0xA5, 0x0000, 0xFFFF},
+	    DigiCheck{0xA6, 0x0000, 0xFFFF},
+	    DigiCheck{0xC0, 0x0047, 0x03FF},
+	    DigiCheck{0xD0, 0x0000, 0xFFFF},
+	    DigiCheck{0xD1, 0x0000, 0xFFFF},
+	    DigiCheck{0xD2, 0x0000, 0xFFFF}};
+
+	std::vector<std::string>       failures;
+	std::array<std::string, 7>     calValues{};
+	std::array<std::string, 7>     hvValues{};
+	const uint16_t rocFifoStatus =
+	    static_cast<uint16_t>(_roc->ReadRegister(18) & 0xFFFF);
+	if(rocFifoStatus != 0x0F00)
+		failures.emplace_back(std::format(
+		    "ROC R18 expected 0x0F00 read 0x{:04X}", rocFifoStatus));
+
+	trkdaq::NullStream null;
+	auto               stream = std::ostream(&null);
+	for(size_t checkIndex = 0; checkIndex < digiChecks.size(); ++checkIndex)
+	{
+		const auto& check = digiChecks[checkIndex];
+		for(const int hvCal : {1, 2})
+		{
+			uint32_t value = 0;
+			const int returnCode =
+			    _roc->DigiRead(check.address, hvCal, value, 0, stream);
+			const char* digiName = hvCal == 1 ? "CAL" : "HV";
+			auto& valueText = hvCal == 1 ? calValues[checkIndex] : hvValues[checkIndex];
+			if(returnCode != 0)
+			{
+				valueText = "ERROR";
+				failures.emplace_back(std::format(
+				    "{} DIGI 0x{:02X} read failed rc {}",
+				    digiName,
+				    check.address,
+				    returnCode));
+				continue;
+			}
+
+			const uint16_t value16 = static_cast<uint16_t>(value & 0xFFFF);
+			valueText = std::format("0x{:04X}", value16);
+			if((value16 & check.mask) != check.expected)
+				failures.emplace_back(std::format(
+				    "{} DIGI 0x{:02X} expected 0x{:04X} read 0x{:04X}",
+				    digiName,
+				    check.address,
+				    check.expected,
+				    value16));
+		}
+	}
+
+	std::string checks = "PASS";
+	if(!failures.empty())
+	{
+		checks = "FAIL: ";
+		for(size_t i = 0; i < failures.size(); ++i)
+			checks += (i ? "; " : "") + failures[i];
+	}
+
+	__SET_ARG_OUT__("Return code", std::to_string(failures.size()));
+	__SET_ARG_OUT__("ROC FIFO status", std::format("0x{:04X}", rocFifoStatus));
+	__SET_ARG_OUT__("CAL DIGI 0xA4", calValues[0]);
+	__SET_ARG_OUT__("HV DIGI 0xA4", hvValues[0]);
+	__SET_ARG_OUT__("CAL DIGI 0xA5", calValues[1]);
+	__SET_ARG_OUT__("HV DIGI 0xA5", hvValues[1]);
+	__SET_ARG_OUT__("CAL DIGI 0xA6", calValues[2]);
+	__SET_ARG_OUT__("HV DIGI 0xA6", hvValues[2]);
+	__SET_ARG_OUT__("CAL DIGI 0xC0", calValues[3]);
+	__SET_ARG_OUT__("HV DIGI 0xC0", hvValues[3]);
+	__SET_ARG_OUT__("CAL DIGI 0xD0", calValues[4]);
+	__SET_ARG_OUT__("HV DIGI 0xD0", hvValues[4]);
+	__SET_ARG_OUT__("CAL DIGI 0xD1", calValues[5]);
+	__SET_ARG_OUT__("HV DIGI 0xD1", hvValues[5]);
+	__SET_ARG_OUT__("CAL DIGI 0xD2", calValues[6]);
+	__SET_ARG_OUT__("HV DIGI 0xD2", hvValues[6]);
+	__SET_ARG_OUT__("Checks", checks);
+}
+
 void ROCTrackerInterface::DigiWrite(__ARGS__)
 {
 	int addr        = __GET_ARG_IN__("Address", int, -1);
@@ -759,14 +948,14 @@ void ROCTrackerInterface::DigiWrite(__ARGS__)
 	int data        = __GET_ARG_IN__("Data", int, -1);
 	int print_level = 0;
 
-	if(addr < 0)
+	if(addr < 0 || addr > 0xFF)
 	{
-		__FE_SS__ << "Address must be non-negative: " << addr << __E__;
+		__FE_SS__ << "DIGI address out of range [0, 255]: " << addr << __E__;
 		__FE_SS_THROW__;
 	}
-	if(hv_cal != 0 && hv_cal != 1)
+	if(hv_cal != 1 && hv_cal != 2)
 	{
-		__FE_SS__ << "HvCal must be 0 or 1: " << hv_cal << __E__;
+		__FE_SS__ << "HvCal must be 1 (CAL) or 2 (HV): " << hv_cal << __E__;
 		__FE_SS_THROW__;
 	}
 	if(data < 0 || data > 0xFFFF)
@@ -1153,6 +1342,21 @@ void ROCTrackerInterface::DigiRW(__ARGS__)
 	__FE_COUT__ << "ROCTrackerInterface::DigiRW" << __E__;
 	_roc->DigiRW(rw, hv_cal, address, data, stream);
 	__SET_ARG_OUT__("Output", stream.str());
+}
+
+void ROCTrackerInterface::ReadSPI(__ARGS__)
+{
+	std::vector<uint16_t> rawData;
+	std::stringstream     stream;
+	__FE_COUT__ << "ROCTrackerInterface::ReadSPI" << __E__;
+	// PrintLevel bit 1 prints only the named, converted monitoring values.
+	// Bit 0 would prepend the raw hexadecimal SPI words.
+	const int rc = _roc->ReadSpi(rawData, 0x2, stream);
+	__SET_ARG_OUT__("Return Code", std::to_string(rc));
+	__SET_ARG_OUT__("Output", stream.str());
+	if(rc != 0)
+		throw std::runtime_error(
+		    std::format("Read SPI failed with return code {}.\n{}", rc, stream.str()));
 }
 
 void ROCTrackerInterface::PrintStatus(__ARGS__)

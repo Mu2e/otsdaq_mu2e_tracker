@@ -52,7 +52,7 @@ namespace trkdaq {
     94, 88, 82, 76, 70, 64, 58, 52
   };
 
-  const char* kSpiVarName[TrkSpiDataNWords] = {
+  const char* DtcInterface::fgSpiVarName[TrkSpiDataNWords] = {
     "I3_3", "I2_5", "I1_8HV" , "IHV5_0",                          //  0
     "VDMBHV5_0", "V1_8HV"  , "V3_3HV", "V2_5" ,                   //  4
     "A0"     , "A1"  ,    "A2"  , "A3"  ,                         //  8
@@ -65,17 +65,13 @@ namespace trkdaq {
     "HV_RAIL_1V" , "HV_RAIL_1_8V" , "HV_RAIL_2_5V" , "HV_TEMP"    // 32
   };
 
-  const char* kKeyVarName[] = {
+  const char* DtcInterface::fgKeyVarName[TrkKeyDataNWords] = {
     "KEY_TEMP", "KEY_V2P5", "KEY_V5P1", "KEY_DCDCTEMP"
   };
 
-  const char* kIlpVarName[] = {
+  const char* DtcInterface::fgIlpVarName[TrkIlpDataNWords] = {
     "ILP_ID", "ILP_TEMP", "ILP_PRESSURE"
   };
-
-  const char*   DtcInterface::fgSpiVarName[TrkSpiDataNWords];
-  const char*   DtcInterface::fgKeyVarName[TrkKeyDataNWords];
-  const char*   DtcInterface::fgIlpVarName[TrkIlpDataNWords];
 
   int           DtcInterface::fgFpga[96];
 
@@ -139,21 +135,6 @@ namespace trkdaq {
         return nullptr;
       }
     }
-//-----------------------------------------------------------------------------
-// initialize the variable names just once
-//-----------------------------------------------------------------------------
-    if ((fgInstance[0] == nullptr) and (fgInstance[1] == nullptr)) {
-      for (int i=0; i<TrkSpiDataNWords; i++) {
-        fgSpiVarName[i] = kSpiVarName[i];
-      }
-      for (int i=0; i<TrkKeyDataNWords; i++) {
-        fgKeyVarName[i] = kKeyVarName[i];
-      }
-      for (int i=0; i<TrkSpiDataNWords; i++) {
-        fgIlpVarName[i] = kIlpVarName[i];
-      }
-    }
-
     TLOG(TLVL_DEBUG+1) << "inputs      : TRK PcieAddr: " << PcieAddr
                        << " pcie_addr:" << pcie_addr
                        << " fgInstance[pcie_addr]:0x" << std::hex << fgInstance[pcie_addr]
@@ -378,10 +359,123 @@ namespace trkdaq {
         "Readout settings: link:{} roc_readout_mode:{} digitization_start_5ns:{} digitization_stop_5ns:{} DTC_ID:{}\n",
         Link,fRocReadoutMode,DigitizationStart5ns,DigitizationStop5ns,fDtcID);
 
-    int rc = ResetLink(Link);
-    if (rc != 0) {
-      Stream << std::format("ERROR: ROC register-14 reset failed, rc:{}\n",rc);
-      return rc;
+    const int readoutMode = fRocReadoutMode & 0xf;
+    if (readoutMode > 2) {
+      Stream << std::format(
+          "ERROR: invalid ROC readout-mode low nibble {}; expected 0, 1, or 2\n",
+          readoutMode);
+      return -2;
+    }
+
+    const auto rocLink = DTC_Link_ID(Link);
+    int        rc      = 0;
+
+    // Match the ROC-FPGA portion of MIDAS InitRocReadoutMode.  Pattern modes
+    // reset before programming their readout registers; real-DIGI mode resets
+    // after register 8 and the data-format version have been programmed.
+    if (readoutMode != 1) {
+      rc = ResetLink(Link);
+      if (rc != 0) {
+        Stream << std::format("ERROR: ROC register-14 reset failed, rc:{}\n",rc);
+        return rc;
+      }
+    }
+
+    uint16_t register8 = 0;
+    if (readoutMode == 1) {
+      register8 = static_cast<uint16_t>(0x2300 | fRocLaneMask);
+      fDtc->WriteROCRegister(rocLink,8,register8,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+      fDtc->WriteROCRegister(rocLink,29,1,false,100);  // data format R29
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+      rc = ResetLink(Link);
+      if (rc != 0) {
+        Stream << std::format("ERROR: ROC register-14 reset failed, rc:{}\n",rc);
+        return rc;
+      }
+    }
+    else {
+      fDtc->WriteROCRegister(rocLink,29,1,false,100);  // data format R29
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+      if (readoutMode == 0) {
+        register8 = 0x2010;  // variable-length ROC pattern
+      }
+      else {
+        register8 = static_cast<uint16_t>(0x3800 | fRocLaneMask);
+        if (((fRocReadoutMode >> 4) & 0xf) == 1) register8 |= 0x0010;
+        else                                      register8 &= 0xffef;
+      }
+
+      fDtc->WriteROCRegister(rocLink,8,register8,false,1000);
+      std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+
+      if (readoutMode == 2) {
+        const uint16_t hitsPerLane =
+            static_cast<uint16_t>(fRocNHitsPerLane & 0x3ff);
+        fDtc->WriteROCRegister(rocLink,15,hitsPerLane,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        Stream << std::format("ROC fixed-pattern hits per lane: {}\n",hitsPerLane);
+      }
+    }
+
+    const uint16_t register8Readback =
+        fDtc->ReadROCRegister(rocLink,8,100);
+    Stream << std::format(
+        "ROC readout-path setup: R8 wrote 0x{:04x}, read 0x{:04x}; R29=1\n",
+        register8,
+        register8Readback);
+
+    if (readoutMode == 1) {
+      uint16_t laneStatus = fDtc->ReadROCRegister(rocLink,18,100);
+      if ((laneStatus >> 8) != 0xf) {
+        Stream << std::format(
+            "ROC lanes not ready (R18=0x{:04x}); toggling R13 for recovery.\n",
+            laneStatus);
+        fDtc->WriteROCRegister(rocLink,13,1,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        fDtc->WriteROCRegister(rocLink,13,0,false,1000);
+        std::this_thread::sleep_for(std::chrono::microseconds(fSleepTimeROCWrite));
+        laneStatus = fDtc->ReadROCRegister(rocLink,18,100);
+        if ((laneStatus >> 8) != 0xf) {
+          const std::string message = std::format(
+              "ROC link {} not ready to read DIGIs: R18 expected 0x0f00 mask, read 0x{:04x}",
+              Link,
+              laneStatus);
+          Stream << "ERROR: " << message << '\n';
+          TLOG(TLVL_ERROR) << message;
+          return -3;
+        }
+      }
+      Stream << std::format("ROC DIGI lanes ready: R18=0x{:04x}\n",laneStatus);
+
+      // Match MIDAS MonicaDigiClear for this ROC only.  This clears the HV
+      // and CAL DIGIs through the ROC TWI command registers without asserting
+      // the hard DIGI reset on ROC register 103.
+      const auto writeRocRegister = [&](uint16_t address, uint16_t value) {
+        fDtc->WriteROCRegister(rocLink,address,value,false,1000);
+        std::this_thread::sleep_for(
+            std::chrono::microseconds(fSleepTimeROCWrite));
+      };
+
+      writeRocRegister(28,0x10);  // HV DIGI address
+      writeRocRegister(27,0x00);
+      writeRocRegister(26,0x01);  // toggle HV TWI INIT
+      writeRocRegister(26,0x00);
+      writeRocRegister(27,0x01);
+      writeRocRegister(26,0x01);  // toggle HV TWI INIT
+      writeRocRegister(26,0x00);
+
+      writeRocRegister(25,0x10);  // CAL DIGI address
+      writeRocRegister(24,0x00);
+      writeRocRegister(23,0x01);  // toggle CAL TWI INIT
+      writeRocRegister(23,0x00);
+      writeRocRegister(24,0x01);
+      writeRocRegister(23,0x01);  // toggle CAL TWI INIT
+      writeRocRegister(23,0x00);
+
+      Stream << "DIGIs cleared using the MIDAS TWI sequence.\n";
     }
 
     auto settings = ReadSettings;
@@ -389,15 +483,6 @@ namespace trkdaq {
     if (rc != 0) {
       Stream << std::format("ERROR: ControlRoc_Read failed, rc:{}\n",rc);
       return rc;
-    }
-
-    if ((fRocReadoutMode & 0xf) == 1) {
-      rc = ResetDigis(Link);
-      if (rc != 0) {
-        Stream << std::format("ERROR: DIGI clear failed, rc:{}\n",rc);
-        return rc;
-      }
-      Stream << "DIGIs cleared for real-DIGI readout mode.\n";
     }
 
     rc = SetRocDtcID(Link);

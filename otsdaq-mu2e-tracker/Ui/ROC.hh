@@ -90,6 +90,9 @@ namespace trkdaq{
             std::vector<uint16_t> InitializeDigis();
 
             // status
+            int ReadSpi(std::vector<uint16_t>& SpiRawData,
+                        int PrintLevel = 0,
+                        std::ostream& Stream = std::cout);
             int PrintStatus(uint32_t Format = 1,
                             std::ostream& Stream = std::cout);
 

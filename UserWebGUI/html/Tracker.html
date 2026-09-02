@@ -197,7 +197,25 @@
 				return zeroValuedOutputSucceeded(result, "success");
 			if (/Init Readout$/i.test(macroName || ""))
 				return zeroValuedOutputSucceeded(result, "return code");
+			if (/Preflight$/i.test(macroName || ""))
+				return zeroValuedOutputSucceeded(result, "return code");
 			return true;
+		}
+
+		function batchSlipResult(result) {
+			if (!result || result.error) return {found: false, value: null};
+			var targets = result.targets || [];
+			for (var targetIndex = 0; targetIndex < targets.length; ++targetIndex) {
+				var outputs = targets[targetIndex].outputs || {};
+				var outputNames = Object.keys(outputs);
+				for (var outputIndex = 0; outputIndex < outputNames.length; ++outputIndex) {
+					var text = String(outputs[outputNames[outputIndex]] || "");
+					var match = text.match(
+						/EvtStart\s+40MHz\s+Parity\s+BatchSlip\s+Count:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/i);
+					if (match) return {found: true, value: Number(match[4])};
+				}
+			}
+			return {found: false, value: null};
 		}
 
 		function beginDTCCommand(uid, deferRender) {
@@ -406,12 +424,7 @@
 				return "Program configured thresholds on " + _selectedUID +
 					"?\n\nThis writes all configured Cal and HV threshold DACs. " +
 					"Run only when tracker data taking is stopped.";
-			if (/Init Readout$/i.test(macroName || ""))
-				return "Initialize every enabled ROC on " + _selectedUID +
-					" from the active otsdaq tables?\n\nThis resets the ROCs, " +
-					"configures pattern or real-DIGI readout, clears DIGIs in DIGI " +
-					"mode, and writes the DTC ID. Run only when tracker data taking is stopped.";
-			if (/reset|\bwrite\b|find alignment/i.test(macroName))
+			if (/reset|\bwrite\b/i.test(macroName))
 				return "Run " + Mu2eHardware.macroDisplayName(macroName) +
 					" on " + _selectedUID + "?";
 			return "";
@@ -444,10 +457,12 @@
 		}
 
 		var GLOBAL_ACTIONS = {
+			"preflight": {
+				label: "Preflight", macro: "ROC FEMacro - Preflight", allROCs: true,
+				preflight: true
+			},
 			"init-readout": {
-				label: "Init Readout", macro: "ROC FEMacro - Init Readout", allROCs: true,
-				confirm: "Initialize every enabled ROC on every enabled tracker DTC from the active otsdaq tables?\n\n" +
-					"This resets and reconfigures tracker ROCs. Run only when tracker data taking is stopped."
+				label: "Init Readout", macro: "ROC FEMacro - Init Readout", allROCs: true
 			},
 			"link-status": {
 				label: "Link Status", macro: "Get Link Lock Status", inputs: {}
@@ -461,7 +476,7 @@
 			},
 			"find-alignment": {
 				label: "Find Alignment", macro: "ROC FEMacro - Find Alignment",
-				allROCs: true, confirm: "Run Find Alignment on every enabled tracker ROC?"
+				allROCs: true
 			},
 			"set-thresholds": {
 				label: "Set Thresholds", macro: "ROC FEMacro - Deserialize and set thresholds",
@@ -474,7 +489,7 @@
 		function renderGlobalActions() {
 			var el = document.getElementById("globalActions");
 			var allowed = Mu2eHardware.ALL_TRACKER_BUTTON_ALLOWLIST ||
-				["init-readout", "link-status", "read-panel-id", "reset-counters", "find-alignment", "set-thresholds"];
+				["preflight", "init-readout", "link-status", "read-panel-id", "reset-counters", "find-alignment", "set-thresholds"];
 			var html = "";
 			for (var i = 0; i < allowed.length; ++i) {
 				var action = GLOBAL_ACTIONS[allowed[i]];
@@ -509,6 +524,82 @@
 			updateOutputEntry(outputEntryId, html);
 		}
 
+		function preflightItemSucceeded(item) {
+			var batchSlip = batchSlipResult(item.batchResult);
+			return batchSlip.found && batchSlip.value === 0 &&
+				commandSucceeded("ROC FEMacro - Preflight", item.rocResult);
+		}
+
+		function renderPreflightResults(complete, outputEntryId, stage) {
+			var html = "<div class='batch-summary'><b>Preflight</b>: " +
+				_globalResults.length + " / " + _globalTargets.length +
+				" DTCs complete" + (complete ? "." : "...") + "</div>";
+			if (stage)
+				html += "<div class='tracker-running'>" + escapeHTML(stage) + "</div>";
+
+			for (var i = 0; i < _globalResults.length; ++i) {
+				var item = _globalResults[i];
+				var batchSlip = batchSlipResult(item.batchResult);
+				var success = preflightItemSucceeded(item);
+				var batchText = batchSlip.found ? String(batchSlip.value) : "missing";
+				html += "<details class='dtc-report " +
+					(success ? "dtc-report-pass" : "dtc-report-fail") + "'>";
+				html += "<summary><span>" + escapeHTML(item.uid) + "</span><span>" +
+					(success ? "PASS" : "FAIL") + "</span></summary>";
+				html += "<div class='dtc-report-body'>";
+				html += "<div class='macro-output-item'><div class='macro-output-name'>" +
+					"DTC BatchSlip</div><div class='macro-output-value " +
+					(batchSlip.found && batchSlip.value === 0 ? "goodValue" : "badValue") +
+					"'>" + escapeHTML(batchText) + "</div></div>";
+				if (!batchSlip.found)
+					html += Mu2eHardware.formatMacroResult(
+						"Get RTF Interface Status", item.batchResult, item.uid);
+				html += Mu2eHardware.formatMacroResult(
+					"ROC FEMacro - Preflight", item.rocResult, item.uid);
+				html += "</div></details>";
+			}
+			updateOutputEntry(outputEntryId, html);
+		}
+
+		function runGlobalPreflight(action, outputEntryId, generation) {
+			renderPreflightResults(false, outputEntryId, "Checking DTC batch slip...");
+			Mu2eHardware.runMacroOnUIDs(_globalTargets,
+				"Get RTF Interface Status", {},
+				function (batchResults) {
+					if (generation !== _globalGeneration) return;
+					var batchByUID = {};
+					for (var batchIndex = 0; batchIndex < (batchResults || []).length; ++batchIndex)
+						batchByUID[batchResults[batchIndex].uid] = batchResults[batchIndex].result;
+
+					renderPreflightResults(false, outputEntryId, "Checking ROC and DIGI registers...");
+					Mu2eHardware.runMacroOnUIDs(_globalTargets, action.macro,
+						function (uid) {
+							return Mu2eHardware.getAllROCInputs(uid, action.macro);
+						},
+						function (rocResults) {
+							if (generation !== _globalGeneration) return;
+							var rocByUID = {};
+							for (var rocIndex = 0; rocIndex < (rocResults || []).length; ++rocIndex)
+								rocByUID[rocResults[rocIndex].uid] = rocResults[rocIndex].result;
+
+							_globalResults = [];
+							for (var targetIndex = 0; targetIndex < _globalTargets.length; ++targetIndex) {
+								var uid = _globalTargets[targetIndex];
+								var item = {
+									uid: uid,
+									batchResult: batchByUID[uid] || {error: "No DTC batch-slip response"},
+									rocResult: rocByUID[uid] || {error: "No ROC preflight response"}
+								};
+								_globalResults.push(item);
+								finishDTCCommand(uid, preflightItemSucceeded(item), true);
+							}
+							renderDTCGrid();
+							renderPreflightResults(true, outputEntryId, "");
+							setGlobalDisabled(false);
+						});
+				});
+		}
+
 		function runGlobalAction(key) {
 			var action = GLOBAL_ACTIONS[key];
 			if (!action) return;
@@ -527,6 +618,10 @@
 				beginDTCCommand(_globalTargets[targetIndex], true);
 			renderDTCGrid();
 			setGlobalDisabled(true);
+			if (action.preflight) {
+				runGlobalPreflight(action, outputEntryId, generation);
+				return;
+			}
 			renderGlobalResults(action, false, outputEntryId);
 
 			Mu2eHardware.runMacroOnUIDs(_globalTargets, action.macro,

@@ -77,6 +77,8 @@ public:
 	void SetEventWindowDelay(__ARGS__);
 	void SetDigitizationWindow(__ARGS__);
 	void DigiRead(__ARGS__);
+	void PrintDigis(__ARGS__);
+	void Preflight(__ARGS__);
 	void DigiWrite(__ARGS__);
 	void ReadPanelID(__ARGS__);
 	void ReadSerialNumber(__ARGS__);
@@ -91,6 +93,7 @@ public:
 	void ConfigureDigis(__ARGS__);
 	void InitializeDigis(__ARGS__);
 	void DigiRW(__ARGS__);
+	void ReadSPI(__ARGS__);
 	void PrintStatus(__ARGS__);
   void MeasureChannelRates(__ARGS__);
 

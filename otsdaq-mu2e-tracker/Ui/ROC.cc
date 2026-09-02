@@ -219,6 +219,13 @@ namespace trkdaq{
 		return res;
 	}
 
+	int ROC::ReadSpi(std::vector<uint16_t>& spi_raw_data,
+	                 int print_level,
+	                 std::ostream& stream){
+		auto rv = _dtc->ReadSpi(spi_raw_data, _link, print_level, stream);
+		return rv;
+	}
+
 	int ROC::PrintStatus(uint32_t format, std::ostream& stream){
 		auto rv = _dtc->PrintRocStatus(format, _link, stream);
 		return rv;
